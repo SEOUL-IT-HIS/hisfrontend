@@ -1,4 +1,4 @@
-/** admin-service 직원(EMP) + 계정(ACCOUNT) 관련 타입 */
+/** admin-service 직원(EMP) + 계정(ACCOUNT) + 메뉴(MENU) 관련 타입 */
 
 /** 공통 API 응답 포맷 (개발표준가이드 11.3) */
 export type ApiResponse<T> = {
@@ -60,3 +60,20 @@ export const DEPT_CODE_OPTIONS: { value: string; label: string }[] = [
   { value: "LAB", label: "검사/영상" },
   { value: "PHARM", label: "약국" },
 ];
+
+/**
+ * admin-service GET /api/menus 트리 노드
+ * - parentMenuId null → L0 업무영역
+ * - children → L1 기능 메뉴
+ */
+export type MenuNode = {
+  menuId: number;
+  parentMenuId: number | null;
+  menuCode: string;
+  menuName: string;
+  menuUrl: string | null;
+  areaKey: string | null;
+  serviceCode: string | null;
+  sortOrder: number | null;
+  children: MenuNode[];
+};

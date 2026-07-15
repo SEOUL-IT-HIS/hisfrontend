@@ -1,10 +1,10 @@
 /**
- * 업무영역 기준 메뉴 트리
- * - L0: 업무영역 (Sidebar 토글 그룹) — 원무 / 진료 / 진료지원 / 시스템
- * - L1: 기능 메뉴 (Sidebar children) — 실제 화면 진입점
- * - serviceCode: MSA 소유 서비스 메타 (UI 미표시, 권한·시드 연동용)
- * - app/{service} 경로·폴더는 MSA 경계 유지. 메뉴 IA만 업무 흐름으로 분리.
+ * 업무영역 기준 메뉴 트리 타입·헬퍼
+ * - 메뉴 데이터 source of truth: admin-service MENU 테이블 (GET /api/menus)
+ * - SIDEBAR_MENU 상수는 로컬 폴백/참고용이며 Sidebar 렌더는 API 결과를 사용한다.
  */
+
+import type { MenuNode } from "@/features/admin/types";
 
 export type ServiceCode =
   | "PAT"
@@ -21,7 +21,7 @@ export type ServiceCode =
 export type WorkAreaKey = "frontOffice" | "clinical" | "ancillary" | "system";
 
 export type MenuChild = {
-  /** 메뉴 표시명 (DB menu_name 후보) */
+  /** 메뉴 표시명 */
   label: string;
   /** App Router 경로 */
   href: string;
@@ -37,7 +37,7 @@ export type SidebarMenuItem = {
   /** 업무영역 홈 경로 */
   href: string;
   /**
-   * 기존 MSA 서비스 루트 경로.
+   * MSA 서비스 루트 경로.
    * 업무영역 홈이 아닌 /patient, /reception 등 진입 시 L0 매칭용.
    */
   serviceRoots: string[];
@@ -45,6 +45,70 @@ export type SidebarMenuItem = {
   children: MenuChild[];
 };
 
+const WORK_AREA_KEYS: WorkAreaKey[] = ["frontOffice", "clinical", "ancillary", "system"];
+
+const SERVICE_CODES: ServiceCode[] = [
+  "PAT",
+  "RCP",
+  "BIL",
+  "OPD",
+  "EMG",
+  "IPT",
+  "LAB",
+  "PHM",
+  "SUR",
+  "ADM",
+];
+
+function toWorkAreaKey(value: string | null): WorkAreaKey {
+  if (value && (WORK_AREA_KEYS as string[]).includes(value)) {
+    return value as WorkAreaKey;
+  }
+  return "system";
+}
+
+function toServiceCode(value: string | null): ServiceCode {
+  if (value && (SERVICE_CODES as string[]).includes(value)) {
+    return value as ServiceCode;
+  }
+  return "ADM";
+}
+
+function serviceRootFromHref(href: string): string | null {
+  const segment = href.split("/").filter(Boolean)[0];
+  return segment ? `/${segment}` : null;
+}
+
+/** GET /api/menus 응답을 Sidebar 뷰 모델로 변환 */
+export function mapApiMenusToSidebarItems(nodes: MenuNode[]): SidebarMenuItem[] {
+  return nodes.map((node) => {
+    const children: MenuChild[] = (node.children ?? [])
+      .filter((child) => Boolean(child.menuUrl))
+      .map((child) => ({
+        label: child.menuName,
+        href: child.menuUrl as string,
+        serviceCode: toServiceCode(child.serviceCode),
+      }));
+
+    const serviceRoots = [
+      ...new Set(
+        children
+          .map((child) => serviceRootFromHref(child.href))
+          .filter((root): root is string => root != null),
+      ),
+    ];
+
+    return {
+      area: toWorkAreaKey(node.areaKey),
+      label: node.menuName,
+      href: node.menuUrl ?? "/",
+      serviceRoots,
+      children,
+    };
+  });
+}
+
+/** @deprecated Sidebar는 GET /api/menus 결과를 사용한다. 로컬 폴백/참고용. */
 export const SIDEBAR_MENU: SidebarMenuItem[] = [
   {
     area: "frontOffice",
@@ -116,23 +180,29 @@ function matchesPath(pathname: string, href: string) {
 }
 
 /** 현재 경로에 해당하는 L0 업무영역 메뉴 */
-export function findWorkAreaMenuByPath(pathname: string): SidebarMenuItem | undefined {
-  const byAreaHome = SIDEBAR_MENU.find((item) => matchesPath(pathname, item.href));
+export function findWorkAreaMenuByPath(
+  pathname: string,
+  menus: SidebarMenuItem[],
+): SidebarMenuItem | undefined {
+  const byAreaHome = menus.find((item) => matchesPath(pathname, item.href));
   if (byAreaHome) return byAreaHome;
 
-  const byChild = SIDEBAR_MENU.find((item) =>
+  const byChild = menus.find((item) =>
     item.children.some((child) => matchesPath(pathname, child.href)),
   );
   if (byChild) return byChild;
 
-  return SIDEBAR_MENU.find((item) =>
+  return menus.find((item) =>
     item.serviceRoots.some((root) => matchesPath(pathname, root)),
   );
 }
 
 /** 현재 경로에 해당하는 L1 child */
-export function findChildMenuByPath(pathname: string): MenuChild | undefined {
-  const workArea = findWorkAreaMenuByPath(pathname);
+export function findChildMenuByPath(
+  pathname: string,
+  menus: SidebarMenuItem[],
+): MenuChild | undefined {
+  const workArea = findWorkAreaMenuByPath(pathname, menus);
   if (!workArea) return undefined;
 
   return workArea.children.find((child) => matchesPath(pathname, child.href));

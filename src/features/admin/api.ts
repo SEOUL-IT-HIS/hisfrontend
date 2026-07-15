@@ -1,7 +1,13 @@
 import apiClient from "@/lib/axios";
-import type { ApiResponse, CreateEmployeeRequest, Employee } from "@/features/admin/types";
+import type {
+  ApiResponse,
+  CreateEmployeeRequest,
+  Employee,
+  MenuNode,
+} from "@/features/admin/types";
 
 const EMPLOYEE_PATH = "/api/employees";
+const MENU_PATH = "/api/menus";
 
 /**
  * 직원 목록 조회
@@ -20,4 +26,13 @@ export async function getEmployees(): Promise<Employee[]> {
 export async function createEmployee(payload: CreateEmployeeRequest): Promise<Employee> {
   const { data } = await apiClient.post<ApiResponse<Employee>>(EMPLOYEE_PATH, payload);
   return data.data;
+}
+
+/**
+ * 사이드바 메뉴 트리 조회
+ * GET /api/menus
+ */
+export async function getMenus(): Promise<MenuNode[]> {
+  const { data } = await apiClient.get<ApiResponse<MenuNode[]>>(MENU_PATH);
+  return data.data ?? [];
 }

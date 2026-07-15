@@ -2,6 +2,7 @@
 
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/sidebar/Sidebar";
+import { MenuProvider, useMenus } from "@/features/admin/MenuProvider";
 import { findChildMenuByPath, findWorkAreaMenuByPath } from "@/constants/menu";
 import { usePathname } from "next/navigation";
 
@@ -10,10 +11,11 @@ type AppShellProps = {
   title?: string;
 };
 
-export default function AppShell({ children, title }: AppShellProps) {
+function AppShellContent({ children, title }: AppShellProps) {
   const pathname = usePathname();
-  const workAreaMenu = findWorkAreaMenuByPath(pathname);
-  const childMenu = findChildMenuByPath(pathname);
+  const { menus } = useMenus();
+  const workAreaMenu = findWorkAreaMenuByPath(pathname, menus);
+  const childMenu = findChildMenuByPath(pathname, menus);
 
   const resolvedTitle = title ?? childMenu?.label ?? workAreaMenu?.label ?? "HIS";
 
@@ -25,5 +27,13 @@ export default function AppShell({ children, title }: AppShellProps) {
         <main className="min-h-0 flex-1 overflow-auto p-3">{children}</main>
       </div>
     </div>
+  );
+}
+
+export default function AppShell({ children, title }: AppShellProps) {
+  return (
+    <MenuProvider>
+      <AppShellContent title={title}>{children}</AppShellContent>
+    </MenuProvider>
   );
 }

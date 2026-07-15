@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { useMenus } from "@/features/admin/MenuProvider";
 import {
   findWorkAreaMenuByPath,
-  SIDEBAR_MENU,
   type SidebarMenuItem,
   type WorkAreaKey,
 } from "@/constants/menu";
@@ -50,24 +50,27 @@ function isWorkAreaActive(pathname: string, item: SidebarMenuItem) {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const activeArea = findWorkAreaMenuByPath(pathname)?.area;
+  const { menus, loading, error } = useMenus();
+  const activeArea = findWorkAreaMenuByPath(pathname, menus)?.area;
 
   const [collapsed, setCollapsed] = useState(false);
-  const [openAreas, setOpenAreas] = useState<Record<WorkAreaKey, boolean>>(() => {
-    const initial = {} as Record<WorkAreaKey, boolean>;
-    for (const item of SIDEBAR_MENU) {
-      initial[item.area] = item.area === activeArea;
-    }
-    return initial;
-  });
+  const [openAreas, setOpenAreas] = useState<Partial<Record<WorkAreaKey, boolean>>>({});
 
   useEffect(() => {
-    if (!activeArea) return;
+    if (menus.length === 0) return;
     setOpenAreas((prev) => {
-      if (prev[activeArea]) return prev;
-      return { ...prev, [activeArea]: true };
+      const next: Partial<Record<WorkAreaKey, boolean>> = { ...prev };
+      for (const item of menus) {
+        if (next[item.area] === undefined) {
+          next[item.area] = item.area === activeArea;
+        }
+      }
+      if (activeArea) {
+        next[activeArea] = true;
+      }
+      return next;
     });
-  }, [activeArea]);
+  }, [menus, activeArea]);
 
   function toggleArea(area: WorkAreaKey) {
     setOpenAreas((prev) => ({ ...prev, [area]: !prev[area] }));
@@ -91,9 +94,25 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2" aria-label="업무영역 메뉴">
-        {SIDEBAR_MENU.map((item) => {
+        {loading ? (
+          <p className={`px-2 py-2 text-xs text-slate-500 ${collapsed ? "text-center" : ""}`}>
+            메뉴 불러오는 중…
+          </p>
+        ) : null}
+        {!loading && error ? (
+          <p className={`px-2 py-2 text-xs text-rose-500 ${collapsed ? "text-center" : ""}`}>
+            {collapsed ? "메뉴 오류" : error}
+          </p>
+        ) : null}
+        {!loading && !error && menus.length === 0 ? (
+          <p className={`px-2 py-2 text-xs text-slate-500 ${collapsed ? "text-center" : ""}`}>
+            표시할 메뉴가 없습니다.
+          </p>
+        ) : null}
+
+        {menus.map((item) => {
           const areaActive = isWorkAreaActive(pathname, item);
-          const expanded = openAreas[item.area];
+          const expanded = Boolean(openAreas[item.area]);
 
           if (collapsed) {
             return (
