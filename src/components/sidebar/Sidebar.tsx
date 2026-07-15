@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { clearSession } from "@/features/auth/session";
 import {
   findWorkAreaMenuByPath,
   SIDEBAR_MENU,
@@ -50,7 +51,13 @@ function isWorkAreaActive(pathname: string, item: SidebarMenuItem) {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const activeArea = findWorkAreaMenuByPath(pathname)?.area;
+
+  function handleLogout() {
+    clearSession();
+    router.replace("/login");
+  }
 
   const [collapsed, setCollapsed] = useState(false);
   const [openAreas, setOpenAreas] = useState<Record<WorkAreaKey, boolean>>(() => {
@@ -201,6 +208,7 @@ export default function Sidebar() {
         </button>
         <button
           type="button"
+          onClick={handleLogout}
           className="w-full rounded-lg px-2 py-1.5 text-left text-rose-500 hover:bg-white/70"
         >
           로그아웃
