@@ -1,5 +1,10 @@
 import apiClient from "@/lib/axios";
-import type { ApiResponse, CreateEmployeeRequest, Employee } from "@/features/admin/types";
+import type {
+  ApiResponse,
+  CreateEmployeeRequest,
+  Employee,
+  UpdateEmployeeRequest,
+} from "@/features/admin/types";
 
 const EMPLOYEE_PATH = "/api/employees";
 
@@ -19,5 +24,22 @@ export async function getEmployees(): Promise<Employee[]> {
  */
 export async function createEmployee(payload: CreateEmployeeRequest): Promise<Employee> {
   const { data } = await apiClient.post<ApiResponse<Employee>>(EMPLOYEE_PATH, payload);
+  return data.data;
+}
+
+/**
+ * 직원 수정
+ * PUT /api/employees/{empId}
+ * - empNo / loginId 수정 불가
+ * - password 변경은 별도 API 사용
+ */
+export async function updateEmployee(
+  empId: number,
+  payload: UpdateEmployeeRequest,
+): Promise<Employee> {
+  const { data } = await apiClient.put<ApiResponse<Employee>>(
+    `${EMPLOYEE_PATH}/${empId}`,
+    payload,
+  );
   return data.data;
 }

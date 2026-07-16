@@ -4,12 +4,125 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { clearSession } from "@/features/auth/session";
-import {
-  findWorkAreaMenuByPath,
-  SIDEBAR_MENU,
-  type SidebarMenuItem,
-  type WorkAreaKey,
-} from "@/constants/menu";
+
+type ServiceCode =
+  | "PAT"
+  | "RCP"
+  | "BIL"
+  | "OPD"
+  | "EMG"
+  | "IPT"
+  | "LAB"
+  | "PHM"
+  | "SUR"
+  | "ADM";
+
+type WorkAreaKey = "frontOffice" | "clinical" | "ancillary" | "system";
+
+type MenuChild = {
+  label: string;
+  href: string;
+  serviceCode: ServiceCode;
+};
+
+type SidebarMenuItem = {
+  area: WorkAreaKey;
+  label: string;
+  href: string;
+  serviceRoots: string[];
+  children: MenuChild[];
+};
+
+const SIDEBAR_MENU: SidebarMenuItem[] = [
+  {
+    area: "frontOffice",
+    label: "원무",
+    href: "/frontoffice",
+    serviceRoots: ["/patient", "/reception", "/billing"],
+    children: [
+      { label: "환자기본정보", href: "/patient/patientbasicinfo", serviceCode: "PAT" },
+      { label: "환자안전정보", href: "/patient/patientsafetystatus", serviceCode: "PAT" },
+      { label: "환자관리", href: "/reception/patientmanagement", serviceCode: "RCP" },
+      { label: "접수관리", href: "/reception/receptionmanagement", serviceCode: "RCP" },
+      { label: "예약관리", href: "/reception/appointmentmanagement", serviceCode: "RCP" },
+      { label: "대기열관리", href: "/reception/queuemanagement", serviceCode: "RCP" },
+      { label: "입원등록관리", href: "/reception/admissionregistrationmanagement", serviceCode: "RCP" },
+      { label: "수납", href: "/billing/payment", serviceCode: "BIL" },
+      { label: "청구", href: "/billing/claim", serviceCode: "BIL" },
+      { label: "미수금", href: "/billing/outstanding", serviceCode: "BIL" },
+    ],
+  },
+  {
+    area: "clinical",
+    label: "진료",
+    href: "/clinical",
+    serviceRoots: ["/outpatient", "/emergency", "/inpatient"],
+    children: [
+      { label: "외래진료", href: "/outpatient/chart", serviceCode: "OPD" },
+      { label: "외래처방", href: "/outpatient/prescription", serviceCode: "OPD" },
+      { label: "응급접수", href: "/emergency/reception", serviceCode: "EMG" },
+      { label: "응급진료", href: "/emergency/chart", serviceCode: "EMG" },
+      { label: "병동", href: "/inpatient/ward", serviceCode: "IPT" },
+      { label: "입원환자", href: "/inpatient/patient", serviceCode: "IPT" },
+      { label: "퇴원", href: "/inpatient/discharge", serviceCode: "IPT" },
+    ],
+  },
+  {
+    area: "ancillary",
+    label: "진료지원",
+    href: "/ancillary",
+    serviceRoots: ["/labimaging", "/pharmacy", "/surgery"],
+    children: [
+      { label: "검체", href: "/labimaging/labspecimen", serviceCode: "LAB" },
+      { label: "검사결과", href: "/labimaging/labresult", serviceCode: "LAB" },
+      { label: "영상촬영", href: "/labimaging/imagingacquisition", serviceCode: "LAB" },
+      { label: "판독", href: "/labimaging/imaginginterpretation", serviceCode: "LAB" },
+      { label: "공통", href: "/labimaging/common", serviceCode: "LAB" },
+      { label: "처방조제", href: "/pharmacy/dispense", serviceCode: "PHM" },
+      { label: "약재고", href: "/pharmacy/inventory", serviceCode: "PHM" },
+      { label: "수술스케줄", href: "/surgery/schedule", serviceCode: "SUR" },
+      { label: "수술기록", href: "/surgery/record", serviceCode: "SUR" },
+    ],
+  },
+  {
+    area: "system",
+    label: "시스템",
+    href: "/system",
+    serviceRoots: ["/admin"],
+    children: [
+      { label: "직원", href: "/admin/user", serviceCode: "ADM" },
+      { label: "권한", href: "/admin/permission", serviceCode: "ADM" },
+      { label: "공통코드", href: "/admin/commoncode", serviceCode: "ADM" },
+      { label: "문서양식", href: "/admin/document", serviceCode: "ADM" },
+      { label: "병원설정", href: "/admin/hospital", serviceCode: "ADM" },
+    ],
+  },
+];
+
+function matchesPath(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export function findWorkAreaMenuByPath(pathname: string): SidebarMenuItem | undefined {
+  const byAreaHome = SIDEBAR_MENU.find((item) => matchesPath(pathname, item.href));
+  if (byAreaHome) return byAreaHome;
+
+  const byChild = SIDEBAR_MENU.find((item) =>
+    item.children.some((child) => matchesPath(pathname, child.href)),
+  );
+  if (byChild) return byChild;
+
+  return SIDEBAR_MENU.find((item) =>
+    item.serviceRoots.some((root) => matchesPath(pathname, root)),
+  );
+}
+
+export function findChildMenuByPath(pathname: string): MenuChild | undefined {
+  const workArea = findWorkAreaMenuByPath(pathname);
+  if (!workArea) return undefined;
+
+  return workArea.children.find((child) => matchesPath(pathname, child.href));
+}
 
 const workAreaIcons: Record<WorkAreaKey, ReactNode> = {
   frontOffice: (

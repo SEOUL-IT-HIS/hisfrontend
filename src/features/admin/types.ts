@@ -46,6 +46,24 @@ export type CreateEmployeeRequest = {
   password: string;
 };
 
+/**
+ * 직원 수정 요청
+ * - empNo / loginId 는 식별값이므로 수정 범위에서 제외
+ * - password 변경은 별도 API 로 처리
+ */
+export type UpdateEmployeeRequest = {
+  name: string;
+  email?: string;
+  phone?: string;
+  /** yyyy-MM-dd */
+  hireDate?: string;
+  /** yyyy-MM-dd */
+  retireDate?: string;
+  /** ACTIVE | LEAVE | RETIRED */
+  empStatus?: EmpStatus;
+  deptCode?: string;
+};
+
 export const EMP_STATUS_OPTIONS: { value: EmpStatus; label: string }[] = [
   { value: "ACTIVE", label: "재직" },
   { value: "LEAVE", label: "휴직" },

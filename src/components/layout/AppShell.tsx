@@ -1,8 +1,10 @@
 "use client";
 
 import Header from "@/components/layout/Header";
-import Sidebar from "@/components/sidebar/Sidebar";
-import { findChildMenuByPath, findWorkAreaMenuByPath } from "@/constants/menu";
+import Sidebar, {
+  findChildMenuByPath,
+  findWorkAreaMenuByPath,
+} from "@/components/sidebar/Sidebar";
 import { usePathname } from "next/navigation";
 
 type AppShellProps = {
