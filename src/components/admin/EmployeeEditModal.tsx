@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { resolveAdmMessage } from "@/features/admin/messages";
 import type { Employee, EmpStatus, UpdateEmployeeRequest } from "@/features/admin/types";
 import { DEPT_CODE_OPTIONS, EMP_STATUS_OPTIONS } from "@/features/admin/types";
 
 type EmployeeEditModalProps = {
   open: boolean;
   employee: Employee | null;
+  submitting: boolean;
+  apiError: string;
   onClose: () => void;
-  onSubmit: (empId: number, payload: UpdateEmployeeRequest) => void | Promise<void>;
+  onSubmit: (empId: number, payload: UpdateEmployeeRequest) => void;
 };
 
 type EditForm = {
@@ -37,6 +38,8 @@ function toForm(employee: Employee): EditForm {
 export default function EmployeeEditModal({
   open,
   employee,
+  submitting,
+  apiError,
   onClose,
   onSubmit,
 }: EmployeeEditModalProps) {
@@ -49,19 +52,20 @@ export default function EmployeeEditModal({
     empStatus: "ACTIVE",
     deptCode: "",
   });
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState("");
 
   useEffect(() => {
     if (open && employee) {
       setForm(toForm(employee));
-      setError("");
+      setValidationError("");
     }
   }, [open, employee]);
 
   if (!open || !employee) {
     return null;
   }
+
+  const error = validationError || apiError;
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -72,11 +76,10 @@ export default function EmployeeEditModal({
     if (submitting) {
       return;
     }
-    setError("");
     onClose();
   }
 
-  async function handleSubmit(e: FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
     if (!employee) {
@@ -84,7 +87,7 @@ export default function EmployeeEditModal({
     }
 
     if (!form.name.trim()) {
-      setError("이름은 필수입니다.");
+      setValidationError("이름은 필수입니다.");
       return;
     }
 
@@ -99,18 +102,8 @@ export default function EmployeeEditModal({
       deptCode: form.deptCode || undefined,
     };
 
-    setSubmitting(true);
-    setError("");
-    try {
-      await onSubmit(empId, payload);
-      setError("");
-      onClose();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "직원 수정에 실패했습니다.";
-      setError(resolveAdmMessage(message));
-    } finally {
-      setSubmitting(false);
-    }
+    setValidationError("");
+    onSubmit(empId, payload);
   }
 
   return (

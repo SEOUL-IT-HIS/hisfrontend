@@ -1,4 +1,5 @@
 import { all, fork } from "redux-saga/effects";
+import adminSaga from "@/features/admin/saga";
 import systemSaga from "@/features/system/saga";
 
 /**
@@ -7,5 +8,8 @@ import systemSaga from "@/features/system/saga";
  * - API 호출은 각 서비스 saga 안에서만 한다.
  */
 export default function* rootSaga() {
-  yield all([fork(systemSaga)]);
+  yield all([
+      fork(adminSaga),
+      fork(systemSaga)
+  ]);
 }

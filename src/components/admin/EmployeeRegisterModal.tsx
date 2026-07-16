@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
-import { resolveAdmMessage } from "@/features/admin/messages";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import type { CreateEmployeeRequest, EmpStatus } from "@/features/admin/types";
 import { DEPT_CODE_OPTIONS, EMP_STATUS_OPTIONS } from "@/features/admin/types";
 
 type EmployeeRegisterModalProps = {
   open: boolean;
+  submitting: boolean;
+  apiError: string;
   onClose: () => void;
-  onSubmit: (payload: CreateEmployeeRequest) => void | Promise<void>;
+  onSubmit: (payload: CreateEmployeeRequest) => void;
 };
 
 const initialForm = {
@@ -26,16 +27,26 @@ const initialForm = {
 
 export default function EmployeeRegisterModal({
   open,
+  submitting,
+  apiError,
   onClose,
   onSubmit,
 }: EmployeeRegisterModalProps) {
   const [form, setForm] = useState(initialForm);
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState("");
+
+  useEffect(() => {
+    if (!open) {
+      setForm(initialForm);
+      setValidationError("");
+    }
+  }, [open]);
 
   if (!open) {
     return null;
   }
+
+  const error = validationError || apiError;
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -56,36 +67,34 @@ export default function EmployeeRegisterModal({
     if (submitting) {
       return;
     }
-    setForm(initialForm);
-    setError("");
     onClose();
   }
 
-  async function handleSubmit(e: FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
     if (!form.empNo.trim() || !form.name.trim()) {
-      setError("사번과 이름은 필수입니다.");
+      setValidationError("사번과 이름은 필수입니다.");
       return;
     }
 
     if (!form.loginId.trim()) {
-      setError("로그인 ID는 필수입니다.");
+      setValidationError("로그인 ID는 필수입니다.");
       return;
     }
 
     if (!form.password) {
-      setError("임시 비밀번호는 필수입니다.");
+      setValidationError("임시 비밀번호는 필수입니다.");
       return;
     }
 
     if (form.password !== form.passwordConfirm) {
-      setError("임시 비밀번호와 확인 값이 일치하지 않습니다.");
+      setValidationError("임시 비밀번호와 확인 값이 일치하지 않습니다.");
       return;
     }
 
     if (form.password.length < 4) {
-      setError("임시 비밀번호는 4자 이상으로 입력해주세요.");
+      setValidationError("임시 비밀번호는 4자 이상으로 입력해주세요.");
       return;
     }
 
@@ -101,19 +110,8 @@ export default function EmployeeRegisterModal({
       password: form.password,
     };
 
-    setSubmitting(true);
-    setError("");
-    try {
-      await onSubmit(payload);
-      setForm(initialForm);
-      setError("");
-      onClose();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "직원 등록에 실패했습니다.";
-      setError(resolveAdmMessage(message));
-    } finally {
-      setSubmitting(false);
-    }
+    setValidationError("");
+    onSubmit(payload);
   }
 
   return (

@@ -1,66 +1,102 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import EmployeeEditModal from "@/components/admin/EmployeeEditModal";
 import EmployeeRegisterModal from "@/components/admin/EmployeeRegisterModal";
-import { createEmployee, getEmployees, updateEmployee } from "@/features/admin/api";
-import { resolveAdmMessage } from "@/features/admin/messages";
+import {
+  clearSaveStatus,
+  createEmployeeRequest,
+  fetchEmployeesRequest,
+  selectEmployeeSaveError,
+  selectEmployeeSaveStatus,
+  selectEmployeeSaving,
+  selectEmployees,
+  selectEmployeesError,
+  selectEmployeesLoading,
+  updateEmployeeRequest,
+} from "@/features/admin/slice";
 import type {
   CreateEmployeeRequest,
   Employee,
   UpdateEmployeeRequest,
 } from "@/features/admin/types";
 import { EMP_STATUS_OPTIONS } from "@/features/admin/types";
+import type { AppDispatch } from "@/store/store";
 
 function statusLabel(status: Employee["empStatus"]) {
   if (!status) return "-";
   return EMP_STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status;
 }
 
+/**
+ * 화면(Presentation)
+ * - API 직접 호출 X
+ * - dispatch(Request) 만 하고, 데이터는 selector 로 읽는다
+ */
 export default function EmployeePage() {
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+
+  const employees = useSelector(selectEmployees);
+  const loading = useSelector(selectEmployeesLoading);
+  const listError = useSelector(selectEmployeesError);
+  const saving = useSelector(selectEmployeeSaving);
+  const saveStatus = useSelector(selectEmployeeSaveStatus);
+  const saveError = useSelector(selectEmployeeSaveError);
+
   const [registerOpen, setRegisterOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [listError, setListError] = useState("");
 
   useEffect(() => {
-    let cancelled = false;
+    dispatch(fetchEmployeesRequest());
+  }, [dispatch]);
 
-    async function loadEmployees() {
-      setLoading(true);
-      setListError("");
-      try {
-        const list = await getEmployees();
-        if (!cancelled) {
-          setEmployees(list);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          const message = err instanceof Error ? err.message : "목록 조회에 실패했습니다.";
-          setListError(resolveAdmMessage(message));
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+  /** 등록/수정 성공 시 모달 닫기 */
+  useEffect(() => {
+    if (saveStatus !== "success") {
+      return;
     }
+    if (registerOpen) {
+      setRegisterOpen(false);
+    }
+    if (editingEmployee !== null) {
+      setEditingEmployee(null);
+    }
+    dispatch(clearSaveStatus());
+  }, [saveStatus, registerOpen, editingEmployee, dispatch]);
 
-    void loadEmployees();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  async function handleRegister(payload: CreateEmployeeRequest) {
-    const created = await createEmployee(payload);
-    setEmployees((prev) => [created, ...prev]);
+  function handleOpenRegister() {
+    dispatch(clearSaveStatus());
+    setRegisterOpen(true);
   }
 
-  async function handleUpdate(empId: number, payload: UpdateEmployeeRequest) {
-    const updated = await updateEmployee(empId, payload);
-    setEmployees((prev) => prev.map((emp) => (emp.empId === empId ? updated : emp)));
+  function handleCloseRegister() {
+    if (saving) {
+      return;
+    }
+    setRegisterOpen(false);
+    dispatch(clearSaveStatus());
+  }
+
+  function handleOpenEdit(emp: Employee) {
+    dispatch(clearSaveStatus());
+    setEditingEmployee(emp);
+  }
+
+  function handleCloseEdit() {
+    if (saving) {
+      return;
+    }
+    setEditingEmployee(null);
+    dispatch(clearSaveStatus());
+  }
+
+  function handleRegister(payload: CreateEmployeeRequest) {
+    dispatch(createEmployeeRequest(payload));
+  }
+
+  function handleUpdate(empId: number, payload: UpdateEmployeeRequest) {
+    dispatch(updateEmployeeRequest({ empId, payload }));
   }
 
   return (
@@ -69,7 +105,7 @@ export default function EmployeePage() {
         <h2 className="text-base font-semibold text-slate-800">직원</h2>
         <button
           type="button"
-          onClick={() => setRegisterOpen(true)}
+          onClick={handleOpenRegister}
           className="h-9 rounded-lg bg-sky-500 px-4 text-sm font-medium text-white hover:bg-sky-600"
         >
           직원등록
@@ -124,7 +160,7 @@ export default function EmployeePage() {
                   <td className="px-4 py-3">
                     <button
                       type="button"
-                      onClick={() => setEditingEmployee(emp)}
+                      onClick={() => handleOpenEdit(emp)}
                       className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-white"
                     >
                       수정
@@ -139,14 +175,18 @@ export default function EmployeePage() {
 
       <EmployeeRegisterModal
         open={registerOpen}
-        onClose={() => setRegisterOpen(false)}
+        submitting={saving && registerOpen}
+        apiError={registerOpen ? saveError : ""}
+        onClose={handleCloseRegister}
         onSubmit={handleRegister}
       />
 
       <EmployeeEditModal
         open={editingEmployee !== null}
         employee={editingEmployee}
-        onClose={() => setEditingEmployee(null)}
+        submitting={saving && editingEmployee !== null}
+        apiError={editingEmployee !== null ? saveError : ""}
+        onClose={handleCloseEdit}
         onSubmit={handleUpdate}
       />
     </div>

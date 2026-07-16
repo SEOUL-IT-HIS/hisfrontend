@@ -1,4 +1,5 @@
 import { combineReducers } from "@reduxjs/toolkit";
+import adminReducer from "@/features/admin/slice";
 import systemReducer from "@/features/system/slice";
 
 /**
@@ -7,6 +8,7 @@ import systemReducer from "@/features/system/slice";
  * - 예: patient: patientReducer, admin: adminReducer
  */
 const rootReducer = combineReducers({
+  admin: adminReducer,
   system: systemReducer,
 });
 
