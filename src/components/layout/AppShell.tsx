@@ -55,11 +55,3 @@ export default function AppShell({ children, title }: AppShellProps) {
     </div>
   );
 }
-
-export default function AppShell({ children, title }: AppShellProps) {
-  return (
-    <MenuProvider>
-      <AppShellContent title={title}>{children}</AppShellContent>
-    </MenuProvider>
-  );
-}
