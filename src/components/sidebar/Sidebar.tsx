@@ -3,15 +3,20 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { useMenus } from "@/features/admin/MenuProvider";
 import { clearSession } from "@/features/auth/session";
 import {
-  findWorkAreaMenuByPath,
-  type SidebarMenuItem,
-  type WorkAreaKey,
-} from "@/constants/menu";
+  isActivePath,
+  isWorkAreaActive,
+} from "@/features/system/menuTree";
+import type { MenuTreeNode } from "@/features/system/types";
 
-const workAreaIcons: Record<WorkAreaKey, ReactNode> = {
+type SidebarProps = {
+  menuTree: MenuTreeNode[];
+  loading?: boolean;
+  error?: string;
+};
+
+const workAreaIcons: Record<string, ReactNode> = {
   frontOffice: (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
       <rect x="3" y="5" width="18" height="16" rx="2" />
@@ -39,21 +44,34 @@ const workAreaIcons: Record<WorkAreaKey, ReactNode> = {
   ),
 };
 
-function isActivePath(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
+const defaultAreaIcon = (
+  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <circle cx="12" cy="12" r="8" />
+    <path d="M12 8v8M8 12h8" />
+  </svg>
+);
+
+function areaIcon(areaKey: string | null) {
+  if (!areaKey) return defaultAreaIcon;
+  return workAreaIcons[areaKey] ?? defaultAreaIcon;
 }
 
-function isWorkAreaActive(pathname: string, item: SidebarMenuItem) {
-  if (isActivePath(pathname, item.href)) return true;
-  if (item.children.some((child) => isActivePath(pathname, child.href))) return true;
-  return item.serviceRoots.some((root) => isActivePath(pathname, root));
+function areaStateKey(item: MenuTreeNode) {
+  return item.areaKey ?? `menu-${item.menuId}`;
 }
 
-export default function Sidebar() {
+export default function Sidebar({ menuTree, loading = false, error = "" }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { menus, loading, error } = useMenus();
-  const activeArea = findWorkAreaMenuByPath(pathname, menus)?.area;
+
+  const activeAreaKey = (() => {
+    for (const item of menuTree) {
+      if (isWorkAreaActive(pathname, item)) {
+        return areaStateKey(item);
+      }
+    }
+    return undefined;
+  })();
 
   function handleLogout() {
     clearSession();
@@ -61,26 +79,33 @@ export default function Sidebar() {
   }
 
   const [collapsed, setCollapsed] = useState(false);
-  const [openAreas, setOpenAreas] = useState<Partial<Record<WorkAreaKey, boolean>>>({});
+  const [openAreas, setOpenAreas] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (menus.length === 0) return;
     setOpenAreas((prev) => {
-      const next: Partial<Record<WorkAreaKey, boolean>> = { ...prev };
-      for (const item of menus) {
-        if (next[item.area] === undefined) {
-          next[item.area] = item.area === activeArea;
+      const next = { ...prev };
+      let changed = false;
+      for (const item of menuTree) {
+        const key = areaStateKey(item);
+        if (!(key in next)) {
+          next[key] = key === activeAreaKey;
+          changed = true;
         }
       }
-      if (activeArea) {
-        next[activeArea] = true;
-      }
-      return next;
+      return changed ? next : prev;
     });
-  }, [menus, activeArea]);
+  }, [menuTree, activeAreaKey]);
 
-  function toggleArea(area: WorkAreaKey) {
-    setOpenAreas((prev) => ({ ...prev, [area]: !prev[area] }));
+  useEffect(() => {
+    if (!activeAreaKey) return;
+    setOpenAreas((prev) => {
+      if (prev[activeAreaKey]) return prev;
+      return { ...prev, [activeAreaKey]: true };
+    });
+  }, [activeAreaKey]);
+
+  function toggleArea(key: string) {
+    setOpenAreas((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
   return (
@@ -102,31 +127,27 @@ export default function Sidebar() {
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2" aria-label="업무영역 메뉴">
         {loading ? (
-          <p className={`px-2 py-2 text-xs text-slate-500 ${collapsed ? "text-center" : ""}`}>
-            메뉴 불러오는 중…
-          </p>
+          <p className="px-2 py-3 text-xs text-slate-400">메뉴 불러오는 중…</p>
         ) : null}
-        {!loading && error ? (
-          <p className={`px-2 py-2 text-xs text-rose-500 ${collapsed ? "text-center" : ""}`}>
-            {collapsed ? "메뉴 오류" : error}
-          </p>
+        {error ? (
+          <p className="px-2 py-3 text-xs text-rose-500">{error}</p>
         ) : null}
-        {!loading && !error && menus.length === 0 ? (
-          <p className={`px-2 py-2 text-xs text-slate-500 ${collapsed ? "text-center" : ""}`}>
-            표시할 메뉴가 없습니다.
-          </p>
+        {!loading && !error && menuTree.length === 0 ? (
+          <p className="px-2 py-3 text-xs text-slate-400">표시할 메뉴가 없습니다.</p>
         ) : null}
 
-        {menus.map((item) => {
+        {menuTree.map((item) => {
+          const key = areaStateKey(item);
           const areaActive = isWorkAreaActive(pathname, item);
-          const expanded = Boolean(openAreas[item.area]);
+          const expanded = openAreas[key];
+          const homeHref = item.menuUrl ?? "#";
 
           if (collapsed) {
             return (
               <Link
-                key={item.area}
-                href={item.href}
-                title={item.label}
+                key={item.menuId}
+                href={homeHref}
+                title={item.menuName}
                 className={`flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] transition-colors ${
                   areaActive
                     ? "bg-white font-semibold text-sky-600 shadow-sm"
@@ -134,18 +155,18 @@ export default function Sidebar() {
                 }`}
               >
                 <span className={areaActive ? "text-sky-600" : "text-slate-500"}>
-                  {workAreaIcons[item.area]}
+                  {areaIcon(item.areaKey)}
                 </span>
-                <span className="text-center leading-tight">{item.label}</span>
+                <span className="text-center leading-tight">{item.menuName}</span>
               </Link>
             );
           }
 
           return (
-            <div key={item.area} className="rounded-xl">
+            <div key={item.menuId} className="rounded-xl">
               <button
                 type="button"
-                onClick={() => toggleArea(item.area)}
+                onClick={() => toggleArea(key)}
                 aria-expanded={expanded}
                 className={`flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm transition-colors ${
                   areaActive
@@ -154,9 +175,9 @@ export default function Sidebar() {
                 }`}
               >
                 <span className={areaActive ? "text-sky-600" : "text-slate-500"}>
-                  {workAreaIcons[item.area]}
+                  {areaIcon(item.areaKey)}
                 </span>
-                <span className="flex-1">{item.label}</span>
+                <span className="flex-1">{item.menuName}</span>
                 <svg
                   viewBox="0 0 20 20"
                   className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
@@ -173,31 +194,34 @@ export default function Sidebar() {
 
               {expanded ? (
                 <ul className="mt-1 space-y-0.5 pb-1 pl-2">
-                  <li>
-                    <Link
-                      href={item.href}
-                      className={`block rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                        pathname === item.href
-                          ? "bg-sky-50 font-medium text-sky-600"
-                          : "text-slate-600 hover:bg-white/80 hover:text-slate-900"
-                      }`}
-                    >
-                      {item.label} 홈
-                    </Link>
-                  </li>
+                  {item.menuUrl ? (
+                    <li>
+                      <Link
+                        href={item.menuUrl}
+                        className={`block rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                          pathname === item.menuUrl
+                            ? "bg-sky-50 font-medium text-sky-600"
+                            : "text-slate-600 hover:bg-white/80 hover:text-slate-900"
+                        }`}
+                      >
+                        {item.menuName} 홈
+                      </Link>
+                    </li>
+                  ) : null}
                   {item.children.map((child) => {
-                    const childActive = isActivePath(pathname, child.href);
+                    if (!child.menuUrl) return null;
+                    const childActive = isActivePath(pathname, child.menuUrl);
                     return (
-                      <li key={child.href}>
+                      <li key={child.menuId}>
                         <Link
-                          href={child.href}
+                          href={child.menuUrl}
                           className={`block rounded-lg px-3 py-1.5 text-sm transition-colors ${
                             childActive
                               ? "bg-sky-50 font-medium text-sky-600"
                               : "text-slate-600 hover:bg-white/80 hover:text-slate-900"
                           }`}
                         >
-                          {child.label}
+                          {child.menuName}
                         </Link>
                       </li>
                     );

@@ -3,7 +3,7 @@ import type {
   ApiResponse,
   CreateEmployeeRequest,
   Employee,
-  MenuNode,
+  UpdateEmployeeRequest,
 } from "@/features/admin/types";
 
 const EMPLOYEE_PATH = "/api/employees";
@@ -29,10 +29,18 @@ export async function createEmployee(payload: CreateEmployeeRequest): Promise<Em
 }
 
 /**
- * 사이드바 메뉴 트리 조회
- * GET /api/menus
+ * 직원 수정
+ * PUT /api/employees/{empId}
+ * - empNo / loginId 수정 불가
+ * - password 변경은 별도 API 사용
  */
-export async function getMenus(): Promise<MenuNode[]> {
-  const { data } = await apiClient.get<ApiResponse<MenuNode[]>>(MENU_PATH);
-  return data.data ?? [];
+export async function updateEmployee(
+  empId: number,
+  payload: UpdateEmployeeRequest,
+): Promise<Employee> {
+  const { data } = await apiClient.put<ApiResponse<Employee>>(
+    `${EMPLOYEE_PATH}/${empId}`,
+    payload,
+  );
+  return data.data;
 }
