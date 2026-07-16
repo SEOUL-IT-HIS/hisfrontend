@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { login } from "@/features/auth/api";
 import { resolveAuthMessage } from "@/features/auth/messages";
-import { saveSession } from "@/features/auth/session";
 
 const SAVED_ID_KEY = "his.auth.savedLoginId";
 
@@ -48,7 +47,7 @@ export default function LoginForm() {
     setSubmitting(true);
     setError("");
     try {
-      const session = await login({
+      await login({
         loginId: loginId.trim(),
         password,
       });
@@ -57,7 +56,7 @@ export default function LoginForm() {
       } else {
         localStorage.removeItem(SAVED_ID_KEY);
       }
-      saveSession(session);
+      // 인증은 BE HttpSession(JSESSIONID). 화면 이동 후 AppFrame 이 /me 로 확인
       router.replace("/");
     } catch (err) {
       const message = err instanceof Error ? err.message : "로그인에 실패했습니다.";

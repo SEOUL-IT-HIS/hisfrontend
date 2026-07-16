@@ -3,15 +3,15 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AppShell from "@/components/layout/AppShell";
-import { getSession } from "@/features/auth/session";
+import { fetchMe } from "@/features/auth/api";
 
 type AppFrameProps = {
   children: React.ReactNode;
 };
 
 /**
- * - 비로그인: /login 만 허용 (localhost:3000 접속 시 로그인 폼)
- * - 로그인 후: 기존 AppShell(사이드바·헤더) + 홈 화면
+ * - 비로그인: /login 만 허용
+ * - 로그인 여부: BE GET /api/auth/me (HttpSession) 로 확인
  */
 export default function AppFrame({ children }: AppFrameProps) {
   const pathname = usePathname();
@@ -20,23 +20,36 @@ export default function AppFrame({ children }: AppFrameProps) {
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
-    const session = getSession();
-    const hasSession = session != null;
-    setAuthed(hasSession);
+    let cancelled = false;
 
-    if (!hasSession && pathname !== "/login") {
-      router.replace("/login");
-      setReady(true);
-      return;
+    async function checkAuth() {
+      try {
+        await fetchMe();
+        if (cancelled) return;
+
+        setAuthed(true);
+
+        if (pathname === "/login") {
+          router.replace("/");
+        }
+        setReady(true);
+      } catch {
+        if (cancelled) return;
+
+        setAuthed(false);
+
+        if (pathname !== "/login") {
+          router.replace("/login");
+        }
+        setReady(true);
+      }
     }
 
-    if (hasSession && pathname === "/login") {
-      router.replace("/");
-      setReady(true);
-      return;
-    }
+    checkAuth();
 
-    setReady(true);
+    return () => {
+      cancelled = true;
+    };
   }, [pathname, router]);
 
   if (!ready) {

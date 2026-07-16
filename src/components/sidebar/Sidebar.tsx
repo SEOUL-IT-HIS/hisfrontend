@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { clearSession } from "@/features/auth/session";
+import { logout } from "@/features/auth/api";
 import {
   isActivePath,
   isWorkAreaActive,
@@ -73,8 +73,12 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
     return undefined;
   })();
 
-  function handleLogout() {
-    clearSession();
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch {
+      // 서버 세션이 이미 없어도 화면은 로그인으로 이동
+    }
     router.replace("/login");
   }
 
