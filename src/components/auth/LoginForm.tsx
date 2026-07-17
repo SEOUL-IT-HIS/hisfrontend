@@ -1,27 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { login } from "@/features/auth/api";
 import { resolveAuthMessage } from "@/features/auth/messages";
-
-const SAVED_ID_KEY = "his.auth.savedLoginId";
 
 export default function LoginForm() {
   const router = useRouter();
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
-  const [saveId, setSaveId] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    const saved = localStorage.getItem(SAVED_ID_KEY);
-    if (saved) {
-      setLoginId(saved);
-      setSaveId(true);
-    }
-  }, []);
 
   function handleLoginIdChange(e: ChangeEvent<HTMLInputElement>) {
     setLoginId(e.target.value);
@@ -51,11 +40,6 @@ export default function LoginForm() {
         loginId: loginId.trim(),
         password,
       });
-      if (saveId) {
-        localStorage.setItem(SAVED_ID_KEY, loginId.trim());
-      } else {
-        localStorage.removeItem(SAVED_ID_KEY);
-      }
       // 인증은 BE HttpSession(JSESSIONID). 화면 이동 후 AppFrame 이 /me 로 확인
       router.replace("/");
     } catch (err) {
@@ -122,17 +106,7 @@ export default function LoginForm() {
         </label>
       </div>
 
-      <div className="mt-4 flex items-center justify-between text-sm">
-        <label className="flex cursor-pointer items-center gap-2 text-slate-600">
-          <input
-            type="checkbox"
-            checked={saveId}
-            onChange={(e) => setSaveId(e.target.checked)}
-            disabled={submitting}
-            className="h-4 w-4 rounded border-slate-300 text-[#2f80ed] focus:ring-[#2f80ed]"
-          />
-          ID 저장
-        </label>
+      <div className="mt-4 flex justify-end text-sm">
         <button
           type="button"
           className="text-slate-500 hover:text-[#2f80ed]"
