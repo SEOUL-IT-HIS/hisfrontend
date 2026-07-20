@@ -1,5 +1,6 @@
 import { combineReducers } from "@reduxjs/toolkit";
 import adminReducer from "@/features/admin/slice";
+import commonCodeReducer from "@/features/commoncode/slice";
 import systemReducer from "@/features/system/slice";
 
 // ----- 서비스별 reducer (담당자 slice 준비되면 import 후 아래에 등록) -----
@@ -26,6 +27,7 @@ import systemReducer from "@/features/system/slice";
 const rootReducer = combineReducers({
   // 공통
   system: systemReducer,
+  commoncode: commonCodeReducer,
 
   // 관리자 (ADM)
   admin: adminReducer,

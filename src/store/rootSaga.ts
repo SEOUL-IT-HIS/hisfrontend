@@ -1,5 +1,6 @@
 import { all, fork } from "redux-saga/effects";
 import adminSaga from "@/features/admin/saga";
+import commonCodeSaga from "@/features/commoncode/saga";
 import systemSaga from "@/features/system/saga";
 
 // ----- 서비스별 saga (담당자 saga 준비되면 import 후 fork 등록) -----
@@ -23,6 +24,7 @@ export default function* rootSaga() {
   yield all([
     // 공통
     fork(systemSaga),
+    fork(commonCodeSaga),
 
     // 관리자 (ADM)
     fork(adminSaga),
