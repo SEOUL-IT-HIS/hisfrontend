@@ -7,7 +7,8 @@ export type ApiResponse<T> = {
   data: T;
 };
 
-export type EmpStatus = "ACTIVE" | "LEAVE" | "RETIRED";
+/** 공통코드 EMP_STATUS_CD 코드값 (01=재직, 02=휴직, 03=퇴직) */
+export type EmpStatus = string;
 
 export type AccountStatus = "ACTIVE" | "LOCKED" | "DISABLED";
 
@@ -20,7 +21,9 @@ export type Employee = {
   phone: string | null;
   hireDate: string | null;
   retireDate: string | null;
+  /** 공통코드 EMP_STATUS_CD */
   empStatus: EmpStatus | null;
+  /** 공통코드 DEPT_CD */
   deptCode: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -59,22 +62,7 @@ export type UpdateEmployeeRequest = {
   hireDate?: string;
   /** yyyy-MM-dd */
   retireDate?: string;
-  /** ACTIVE | LEAVE | RETIRED */
+  /** 공통코드 EMP_STATUS_CD */
   empStatus?: EmpStatus;
   deptCode?: string;
 };
-
-export const EMP_STATUS_OPTIONS: { value: EmpStatus; label: string }[] = [
-  { value: "ACTIVE", label: "재직" },
-  { value: "LEAVE", label: "휴직" },
-  { value: "RETIRED", label: "퇴직" },
-];
-
-/** 부서 코드 임시 옵션 (공통코드 API 연동 전) */
-export const DEPT_CODE_OPTIONS: { value: string; label: string }[] = [
-  { value: "ADMIN", label: "원무/관리" },
-  { value: "OPD", label: "외래" },
-  { value: "WARD", label: "병동" },
-  { value: "LAB", label: "검사/영상" },
-  { value: "PHARM", label: "약국" },
-];

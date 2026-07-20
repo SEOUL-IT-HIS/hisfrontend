@@ -1,8 +1,18 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import type { CreateEmployeeRequest, EmpStatus } from "@/features/admin/types";
-import { DEPT_CODE_OPTIONS, EMP_STATUS_OPTIONS } from "@/features/admin/types";
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useSelector } from "react-redux";
+import {
+  Alert,
+  Button,
+  FormField,
+  Input,
+  Modal,
+  Select,
+} from "@/components/common";
+import type { CreateEmployeeRequest } from "@/features/admin/types";
+import { selectCommonCodesByGroup } from "@/features/commoncode/slice";
+import { CODE_GROUP } from "@/features/commoncode/types";
 
 type EmployeeRegisterModalProps = {
   open: boolean;
@@ -18,7 +28,7 @@ const initialForm = {
   email: "",
   phone: "",
   hireDate: "",
-  empStatus: "ACTIVE" as EmpStatus,
+  empStatus: "01",
   deptCode: "",
   loginId: "",
   password: "",
@@ -32,6 +42,27 @@ export default function EmployeeRegisterModal({
   onClose,
   onSubmit,
 }: EmployeeRegisterModalProps) {
+  const empStatusCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.EMP_STATUS_CD));
+  const deptCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.DEPT_CD));
+
+  const empStatusOptions = useMemo(
+    () =>
+      empStatusCodes.map((c) => ({
+        value: c.codeValue,
+        label: c.codeName,
+      })),
+    [empStatusCodes],
+  );
+
+  const deptOptions = useMemo(
+    () =>
+      deptCodes.map((c) => ({
+        value: c.codeValue,
+        label: c.codeName,
+      })),
+    [deptCodes],
+  );
+
   const [form, setForm] = useState(initialForm);
   const [validationError, setValidationError] = useState("");
 
@@ -41,10 +72,6 @@ export default function EmployeeRegisterModal({
       setValidationError("");
     }
   }, [open]);
-
-  if (!open) {
-    return null;
-  }
 
   const error = validationError || apiError;
 
@@ -115,207 +142,153 @@ export default function EmployeeRegisterModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="employee-register-title"
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-xl"
-      >
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <h2 id="employee-register-title" className="text-base font-semibold text-slate-800">
-            직원등록
-          </h2>
-          <button
-            type="button"
-            onClick={handleClose}
-            disabled={submitting}
-            className="rounded-lg px-2 py-1 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
-            aria-label="닫기"
-          >
-            ✕
-          </button>
+    <Modal
+      open={open}
+      title="직원등록"
+      titleId="employee-register-title"
+      closeDisabled={submitting}
+      onClose={handleClose}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error ? <Alert variant="error">{error}</Alert> : null}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormField label="사번" required>
+            <Input
+              name="empNo"
+              value={form.empNo}
+              onChange={handleChange}
+              maxLength={20}
+              disabled={submitting}
+            />
+          </FormField>
+
+          <FormField label="이름" required>
+            <Input
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              maxLength={100}
+              disabled={submitting}
+            />
+          </FormField>
+
+          <FormField label="이메일">
+            <Input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              maxLength={200}
+              disabled={submitting}
+            />
+          </FormField>
+
+          <FormField label="연락처">
+            <Input
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
+              maxLength={20}
+              disabled={submitting}
+            />
+          </FormField>
+
+          <FormField label="입사일">
+            <Input
+              type="date"
+              name="hireDate"
+              value={form.hireDate}
+              onChange={handleChange}
+              disabled={submitting}
+            />
+          </FormField>
+
+          <FormField label="재직상태">
+            <Select
+              name="empStatus"
+              value={form.empStatus}
+              onChange={handleChange}
+              disabled={submitting || empStatusOptions.length === 0}
+              options={empStatusOptions}
+            />
+          </FormField>
+
+          <FormField label="부서" className="sm:col-span-2">
+            <Select
+              name="deptCode"
+              value={form.deptCode}
+              onChange={handleChange}
+              disabled={submitting || deptOptions.length === 0}
+              options={deptOptions}
+              placeholder="선택"
+            />
+          </FormField>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 px-5 py-4">
-          {error ? (
-            <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>
-          ) : null}
-
+        <div className="space-y-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
+          <p className="text-xs font-medium text-slate-500">계정 (ACCOUNT)</p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">
-                사번 <span className="text-rose-500">*</span>
-              </span>
-              <input
-                name="empNo"
-                value={form.empNo}
+            <FormField
+              label="로그인 ID"
+              required
+              className="sm:col-span-2"
+              hint="기본값은 사번과 동일합니다. 변경 가능합니다."
+            >
+              <Input
+                name="loginId"
+                value={form.loginId}
                 onChange={handleChange}
-                maxLength={20}
+                maxLength={50}
+                autoComplete="off"
                 disabled={submitting}
-                className="h-10 rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50"
+                className="bg-white"
               />
-            </label>
+            </FormField>
 
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">
-                이름 <span className="text-rose-500">*</span>
-              </span>
-              <input
-                name="name"
-                value={form.name}
+            <FormField label="임시 비밀번호" required>
+              <Input
+                type="password"
+                name="password"
+                value={form.password}
                 onChange={handleChange}
                 maxLength={100}
+                autoComplete="new-password"
                 disabled={submitting}
-                className="h-10 rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50"
+                className="bg-white"
               />
-            </label>
+            </FormField>
 
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">이메일</span>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
+            <FormField label="비밀번호 확인" required>
+              <Input
+                type="password"
+                name="passwordConfirm"
+                value={form.passwordConfirm}
                 onChange={handleChange}
-                maxLength={200}
+                maxLength={100}
+                autoComplete="new-password"
                 disabled={submitting}
-                className="h-10 rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50"
+                className="bg-white"
               />
-            </label>
-
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">연락처</span>
-              <input
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                maxLength={20}
-                disabled={submitting}
-                className="h-10 rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">입사일</span>
-              <input
-                type="date"
-                name="hireDate"
-                value={form.hireDate}
-                onChange={handleChange}
-                disabled={submitting}
-                className="h-10 rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-slate-700">재직상태</span>
-              <select
-                name="empStatus"
-                value={form.empStatus}
-                onChange={handleChange}
-                disabled={submitting}
-                className="h-10 rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50"
-              >
-                {EMP_STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-              <span className="font-medium text-slate-700">부서</span>
-              <select
-                name="deptCode"
-                value={form.deptCode}
-                onChange={handleChange}
-                disabled={submitting}
-                className="h-10 rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50"
-              >
-                <option value="">선택</option>
-                {DEPT_CODE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            </FormField>
           </div>
+        </div>
 
-          <div className="space-y-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
-            <p className="text-xs font-medium text-slate-500">계정 (ACCOUNT)</p>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-                <span className="font-medium text-slate-700">
-                  로그인 ID <span className="text-rose-500">*</span>
-                </span>
-                <input
-                  name="loginId"
-                  value={form.loginId}
-                  onChange={handleChange}
-                  maxLength={50}
-                  autoComplete="off"
-                  disabled={submitting}
-                  className="h-10 rounded-lg border border-slate-200 bg-white px-3 outline-none focus:border-sky-400 disabled:bg-slate-50"
-                />
-                <span className="text-xs text-slate-400">기본값은 사번과 동일합니다. 변경 가능합니다.</span>
-              </label>
-
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-slate-700">
-                  임시 비밀번호 <span className="text-rose-500">*</span>
-                </span>
-                <input
-                  type="password"
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  maxLength={100}
-                  autoComplete="new-password"
-                  disabled={submitting}
-                  className="h-10 rounded-lg border border-slate-200 bg-white px-3 outline-none focus:border-sky-400 disabled:bg-slate-50"
-                />
-              </label>
-
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-slate-700">
-                  비밀번호 확인 <span className="text-rose-500">*</span>
-                </span>
-                <input
-                  type="password"
-                  name="passwordConfirm"
-                  value={form.passwordConfirm}
-                  onChange={handleChange}
-                  maxLength={100}
-                  autoComplete="new-password"
-                  disabled={submitting}
-                  className="h-10 rounded-lg border border-slate-200 bg-white px-3 outline-none focus:border-sky-400 disabled:bg-slate-50"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={submitting}
-              className="h-10 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-            >
-              취소
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="h-10 rounded-lg bg-sky-500 px-4 text-sm font-medium text-white hover:bg-sky-600 disabled:opacity-50"
-            >
-              {submitting ? "저장 중..." : "저장"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-10"
+            onClick={handleClose}
+            disabled={submitting}
+          >
+            취소
+          </Button>
+          <Button type="submit" variant="primary" className="h-10" disabled={submitting}>
+            {submitting ? "저장 중..." : "저장"}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
