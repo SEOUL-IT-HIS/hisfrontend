@@ -57,16 +57,25 @@ export function findWorkAreaMenuByPath(
   );
 }
 
-/** 현재 경로에 해당하는 L1 child */
+/** 현재 경로에 해당하는 L1 child (더 긴 menuUrl 을 우선) */
 export function findChildMenuByPath(
   tree: MenuTreeNode[],
   pathname: string,
 ): MenuTreeNode | undefined {
+  let best: MenuTreeNode | undefined;
+  let bestLen = -1;
+
   for (const root of tree) {
-    const child = root.children.find((c) => matchesPath(pathname, c.menuUrl));
-    if (child) return child;
+    for (const child of root.children) {
+      if (!matchesPath(pathname, child.menuUrl)) continue;
+      const len = child.menuUrl?.length ?? 0;
+      if (len > bestLen) {
+        best = child;
+        bestLen = len;
+      }
+    }
   }
-  return undefined;
+  return best;
 }
 
 export function isActivePath(pathname: string, href: string | null | undefined) {

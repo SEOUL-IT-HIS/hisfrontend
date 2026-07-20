@@ -12,6 +12,7 @@ type AppFrameProps = {
 /**
  * - 비로그인: /login 만 허용
  * - 로그인 여부: BE GET /api/auth/me (HttpSession) 로 확인
+ * - 로딩 중에도 밝은 화면 + 문구 (검은 빈 화면 방지)
  */
 export default function AppFrame({ children }: AppFrameProps) {
   const pathname = usePathname();
@@ -53,7 +54,11 @@ export default function AppFrame({ children }: AppFrameProps) {
   }, [pathname, router]);
 
   if (!ready) {
-    return <div className="h-full min-h-screen bg-[#e8eef5]" />;
+    return (
+      <div className="flex h-full min-h-screen items-center justify-center bg-slate-100 text-slate-600">
+        <p className="text-sm">화면을 불러오는 중...</p>
+      </div>
+    );
   }
 
   if (!authed || pathname === "/login") {
