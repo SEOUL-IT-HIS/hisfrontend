@@ -1,5 +1,6 @@
-import { combineReducers } from "@reduxjs/toolkit";
+import { combineReducers, type Action, type Reducer } from "@reduxjs/toolkit";
 import adminReducer from "@/features/admin/slice";
+import { LOGOUT_RESET } from "@/features/auth/logoutReset";
 import commonCodeReducer from "@/features/commoncode/slice";
 import systemReducer from "@/features/system/slice";
 
@@ -24,7 +25,7 @@ import systemReducer from "@/features/system/slice";
  * - inpatient | labImaging | pharmacy | surgery | admin
  * - system 은 공통(메뉴 등) 영역
  */
-const rootReducer = combineReducers({
+const appReducer = combineReducers({
   // 공통
   system: systemReducer,
   commoncode: commonCodeReducer,
@@ -59,5 +60,19 @@ const rootReducer = combineReducers({
   // 수술 (SUR)
   // surgery: surgeryReducer,
 });
+
+export type AppState = ReturnType<typeof appReducer>;
+
+/**
+ * 로그아웃 시 전체 state 초기화 (IH2-59)
+ * - action.type === auth/logoutReset 이면 state 를 undefined 로 넘겨
+ *   combineReducers 가 각 slice initialState 로 다시 만든다
+ */
+const rootReducer: Reducer<AppState, Action> = (state, action) => {
+  if (action.type === LOGOUT_RESET) {
+    return appReducer(undefined, action);
+  }
+  return appReducer(state, action);
+};
 
 export default rootReducer;

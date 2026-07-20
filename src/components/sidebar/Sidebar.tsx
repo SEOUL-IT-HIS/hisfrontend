@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { useDispatch } from "react-redux";
 import { logout } from "@/features/auth/api";
+import { logoutReset } from "@/features/auth/logoutReset";
 import {
   isActivePath,
   isWorkAreaActive,
 } from "@/features/system/menuTree";
 import type { MenuTreeNode } from "@/features/system/types";
+import type { AppDispatch } from "@/store/store";
 
 type SidebarProps = {
   menuTree: MenuTreeNode[];
@@ -63,6 +66,7 @@ function areaStateKey(item: MenuTreeNode) {
 export default function Sidebar({ menuTree, loading = false, error = "" }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
 
   const activeAreaKey = (() => {
     for (const item of menuTree) {
@@ -79,6 +83,8 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
     } catch {
       // 서버 세션이 이미 없어도 화면은 로그인으로 이동
     }
+    // IH2-59: Redux 메뉴/직원/공통코드 등 클라이언트 상태 초기화
+    dispatch(logoutReset());
     router.replace("/login");
   }
 
