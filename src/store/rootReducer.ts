@@ -12,7 +12,7 @@ import { combineReducers } from "@reduxjs/toolkit";
 // import surgeryReducer from "@/features/surgery/slice";
 // import adminReducer from "@/features/admin/slice";
 // import commonCodeReducer from "@/features/commoncode/slice";
-// import systemReducer from "@/features/system/slice";
+import systemReducer from "@/features/system/slice/menuSlice";
 
 /**
  * RootReducer (프론트 리더 관리 영역)
@@ -25,7 +25,7 @@ const rootReducer = combineReducers({
   _bootstrap: placeholderReducer,
 
   // 공통
-  // system: systemReducer,
+  system: systemReducer,
   // commoncode: commonCodeReducer,
 
   // 관리자 (ADM)

@@ -1,4 +1,4 @@
-import { all } from "redux-saga/effects";
+import {all, fork} from "redux-saga/effects";
 
 // ----- 서비스별 saga (담당자 saga 준비되면 import 후 fork 등록) -----
 // import patientSaga from "@/features/patient/saga";
@@ -12,7 +12,7 @@ import { all } from "redux-saga/effects";
 // import surgerySaga from "@/features/surgery/saga";
 // import adminSaga from "@/features/admin/saga";
 // import commonCodeSaga from "@/features/commoncode/saga";
-// import systemSaga from "@/features/system/saga";
+import menuSaga from "@/features/system/saga/menuSaga";
 
 /**
  * RootSaga (프론트 리더 관리 영역)
@@ -20,7 +20,7 @@ import { all } from "redux-saga/effects";
  */
 export default function* rootSaga() {
   yield all([
-    // fork(systemSaga),
+      fork(menuSaga),
     // fork(commonCodeSaga),
     // fork(adminSaga),
     // fork(patientSaga),
