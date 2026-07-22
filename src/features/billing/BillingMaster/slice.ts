@@ -1,16 +1,14 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Emp, EmpState, Status } from "./types";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { type BillingMaster, type BillingMasterCreateRequest, type BillingMasterState, type Status } from "./types";
 
 const initialStatus:Status={ loading:false,error:null,success:false };
 
-const initialState:EmpState={
+const initialState:BillingMasterState={
     list:[],detail:null,
 
     listStatus:{...initialStatus},
     detailStatus:{...initialStatus},
-    createStatus:{...initialStatus},
-    updateStatus:{...initialStatus},
-    deleteStatus:{...initialStatus},
+    createStatus:{...initialStatus}
 };
 const BillingMasterSlice=createSlice({
     name:"billingMaster",
@@ -20,7 +18,7 @@ const BillingMasterSlice=createSlice({
         fetchBillingMasterRequest:(state)=>{
             state.listStatus={...initialStatus,loading:true};
         },
-        fetchBillingMasterSuccess:(state,action:PayloadAction<Emp[]>)=>{
+        fetchBillingMasterSuccess:(state,action:PayloadAction<BillingMaster[]>)=>{
             state.listStatus={...initialStatus,loading:false};
             state.list=action.payload;
         },
@@ -29,11 +27,11 @@ const BillingMasterSlice=createSlice({
         },
 
         // 상세조회
-        fetchBillingMasterDetailRequest:(state,action:PayloadAction<string>)=>{
+        fetchBillingMasterDetailRequest:(state,_action:PayloadAction<string>)=>{
             state.detailStatus={...initialStatus,loading:true};
             state.detail = null;
         },
-        fetchBillingMasterDetailSuccess:(state,action:PayloadAction<Emp>)=>{
+        fetchBillingMasterDetailSuccess:(state,action:PayloadAction<BillingMaster>)=>{
             state.detailStatus={...initialStatus,loading:false};
             state.detail=action.payload;
         },
@@ -42,7 +40,7 @@ const BillingMasterSlice=createSlice({
         },
 
         // 등록
-        registerBillingMasterRequest:(state,action:PayloadAction<Emp>)=>{
+        registerBillingMasterRequest:(state,_action:PayloadAction<BillingMasterCreateRequest>)=>{
             state.createStatus={...initialStatus,loading:true};
         },
         registerBillingMasterSuccess:(state)=>{
@@ -67,4 +65,4 @@ export const {
     registerBillingMasterSuccess,
     registerBillingMasterFailure
 }=BillingMasterSlice.actions;
-export default BillingMaster.reducer;
+export default BillingMasterSlice.reducer;

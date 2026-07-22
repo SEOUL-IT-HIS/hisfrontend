@@ -12,6 +12,16 @@ export interface BillingMaster {
     createdAt: Date;
     updatedAt: Date;
 }
+export interface BillingMasterCreateRequest {
+    billingMasterId: string;
+    sourceServiceCode: string;
+    feeCode: string;
+    feeName: string;
+    defaultPrice: string;
+    categoryCode: string;
+    insuranceTypeCode: string;
+    effectiveFrom: string;
+}
 export interface Status{
     loading:boolean;
     error:string|null;

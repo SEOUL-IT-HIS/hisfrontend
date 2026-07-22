@@ -1,10 +1,14 @@
 "use client"
 
-import { AppDispatch, RootState } from '@/store/store';
+import type { AppDispatch, RootState } from '@/store/store';
 import { useEffect } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import BillingMasterRow from '@/components/billing/BillingMasterRow';
+import { fetchBillingMasterRequest } from '@/features/billing/BillingMaster/slice';
+import { useRouter } from 'next/navigation';
 
 const BillingMaster = () => {
+    const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error, list } = useSelector((state: RootState) => ({
         loading: state.billingMaster.listStatus.loading,
@@ -13,16 +17,20 @@ const BillingMaster = () => {
     }), shallowEqual);
 
     useEffect(() => {
-        dispatch(fetchEmpRequest())
+        dispatch(fetchBillingMasterRequest())
     }, [dispatch]);
 
     return (
         <div>
+
+                <h2>수납 기준정보</h2>
+                <button onClick={() => router.push('/billing/master/register')}>수납 기준등록</button>
+            
             {loading && <p>로딩중...</p>}
             {error && <p>{error}</p>}
             {!loading && 
                 <div>
-                    {list?.map(e => (<key={e.billingMasterId} billingMaster={e} />))}
+                    {list?.map(e => (<BillingMasterRow key={e.billingMasterId} billingMaster={e} />))}
                 </div>
             }
         </div>
