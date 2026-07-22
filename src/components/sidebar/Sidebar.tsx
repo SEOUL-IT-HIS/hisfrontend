@@ -1,23 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { useDispatch } from "react-redux";
-import { logout } from "@/features/auth/api";
-import { logoutReset } from "@/features/auth/logoutReset";
-import {
-  isActivePath,
-  isWorkAreaActive,
-} from "@/features/system/menuTree";
-import type { MenuTreeNode } from "@/features/system/types";
-import type { AppDispatch } from "@/store/store";
+
+/** 메뉴 재구현 전까지 Sidebar 가 받는 최소 트리 타입 */
+export type MenuTreeNode = {
+  menuId: number;
+  parentMenuId: number | null;
+  menuCode: string;
+  menuName: string;
+  menuUrl: string | null;
+  sortOrder: number | null;
+  useYn: string | null;
+  areaKey: string | null;
+  serviceCode: string | null;
+  children: MenuTreeNode[];
+};
 
 type SidebarProps = {
   menuTree: MenuTreeNode[];
   loading?: boolean;
   error?: string;
 };
+
+function matchesPath(pathname: string, href: string | null | undefined) {
+  if (!href) return false;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function isActivePath(pathname: string, href: string | null | undefined) {
+  return matchesPath(pathname, href);
+}
+
+function isWorkAreaActive(pathname: string, item: MenuTreeNode) {
+  if (isActivePath(pathname, item.menuUrl)) return true;
+  return item.children.some((child) => isActivePath(pathname, child.menuUrl));
+}
 
 const workAreaIcons: Record<string, ReactNode> = {
   frontOffice: (
@@ -63,10 +82,13 @@ function areaStateKey(item: MenuTreeNode) {
   return item.areaKey ?? `menu-${item.menuId}`;
 }
 
+/**
+ * 담당 영역(auth logout / system menu API) 초기화 상태
+ * - 메뉴 트리는 props 로만 받음 (현재 AppShell 에서 빈 배열)
+ * - 로그아웃 API 연동 제거
+ */
 export default function Sidebar({ menuTree, loading = false, error = "" }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
 
   const activeAreaKey = (() => {
     for (const item of menuTree) {
@@ -76,17 +98,6 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
     }
     return undefined;
   })();
-
-  async function handleLogout() {
-    try {
-      await logout();
-    } catch {
-      // 서버 세션이 이미 없어도 화면은 로그인으로 이동
-    }
-    // IH2-59: Redux 메뉴/직원/공통코드 등 클라이언트 상태 초기화
-    dispatch(logoutReset());
-    router.replace("/login");
-  }
 
   const [collapsed, setCollapsed] = useState(false);
   const [openAreas, setOpenAreas] = useState<Record<string, boolean>>({});
@@ -258,13 +269,6 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
         </button>
         <button type="button" className="w-full rounded-lg px-2 py-1.5 text-left hover:bg-white/70">
           환경설정
-        </button>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-full rounded-lg px-2 py-1.5 text-left text-rose-500 hover:bg-white/70"
-        >
-          로그아웃
         </button>
       </div>
     </aside>

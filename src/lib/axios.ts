@@ -22,17 +22,6 @@ const apiClient = axios.create({
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // ?. : 왼쪽이 null/undefined 이면 중단하고 undefined 반환 (없으면 에러 남)
-    const status = error.response?.status;
-
-    if (status === 401 && typeof window !== "undefined") {
-      const path = window.location.pathname;
-      if (path !== "/login") {
-        window.location.href = "/login";
-      }
-    }
-
-    // ?? : 왼쪽이 null 또는 undefined 일 때만 오른쪽 사용 ("" 빈 문자열은 유지)
     const message =
       error.response?.data?.message ??
       error.message ??
