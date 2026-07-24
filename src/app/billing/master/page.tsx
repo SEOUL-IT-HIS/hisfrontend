@@ -1,4 +1,4 @@
-import BillingMaster from "@/components/billing/BillingMaster";
+import BillingMaster from "@/components/billing/billingMaster";
 
 const master=()=>{
      return(

@@ -3,11 +3,11 @@
 import type { AppDispatch, RootState } from '@/store/store';
 import { useEffect } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import BillingMasterRow from '@/components/billing/BillingMasterRow';
-import { fetchBillingMasterRequest } from '@/features/billing/BillingMaster/slice';
+import { fetchBillingMasterRequest } from '@/features/billing/billingMaster/slice';
 import { useRouter } from 'next/navigation';
+import BillingMasterRow from '@/components/billing/billingMasterRow';
 
-const BillingMaster = () => {
+const billingMaster = () => {
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error, list } = useSelector((state: RootState) => ({
@@ -37,4 +37,4 @@ const BillingMaster = () => {
     );
 };
 
-export default BillingMaster;
+export default billingMaster;

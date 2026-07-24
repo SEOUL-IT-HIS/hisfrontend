@@ -1,26 +1,24 @@
-export interface BillingMaster {
-    billingMasterId: string;
-    sourceServiceCode: string;
-    feeCode: string;
-    feeName: string;
-    defaultPrice: string;
-    categoryCode: string;
-    insuranceTypeCode: string;
-    effectiveFrom: string;
-    effectiveTo: string;
-    useYn: string;
-    createdAt: Date;
-    updatedAt: Date;
+export interface BillingMaster{
+  billingMasterId: string;
+  sourceServiceCode: string;
+  feeCode: string;
+  feeName: string;
+  defaultPrice: string;
+  categoryCode: string;
+  insuranceTypeCode: string;
+  effectiveFrom: string;
+  effectiveTo: string;
+  useYn: string;
 }
-export interface BillingMasterCreateRequest {
-    billingMasterId: string;
+export interface BillingMasterCreateRequest{
     sourceServiceCode: string;
     feeCode: string;
     feeName: string;
     defaultPrice: string;
     categoryCode: string;
     insuranceTypeCode: string;
-    effectiveFrom: string;
+    effectiveFrom:string;
+    effectiveTo:string;
 }
 export interface Status{
     loading:boolean;

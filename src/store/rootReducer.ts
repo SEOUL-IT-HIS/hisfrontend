@@ -13,6 +13,7 @@ import { combineReducers } from "@reduxjs/toolkit";
 // import adminReducer from "@/features/admin/slice";
 // import commonCodeReducer from "@/features/commoncode/slice";
 import systemReducer from "@/features/system/slice/menuSlice";
+import billingMasterReducer from "@/features/billing/billingMaster/slice";
 
 /**
  * RootReducer (프론트 리더 관리 영역)
@@ -38,7 +39,7 @@ const rootReducer = combineReducers({
   // reception: receptionReducer,
 
   // 수납/청구 (BIL)
-  // billing: billingReducer,
+  billingMaster: billingMasterReducer,
 
   // 외래 (OPD)
   // outpatient: outpatientReducer,

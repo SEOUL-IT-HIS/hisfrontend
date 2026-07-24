@@ -13,6 +13,7 @@ import {all, fork} from "redux-saga/effects";
 // import adminSaga from "@/features/admin/saga";
 // import commonCodeSaga from "@/features/commoncode/saga";
 import menuSaga from "@/features/system/saga/menuSaga";
+import { watchBillingMasterSaga } from "@/features/billing/billingMaster/saga";
 
 /**
  * RootSaga (프론트 리더 관리 영역)
@@ -21,6 +22,7 @@ import menuSaga from "@/features/system/saga/menuSaga";
 export default function* rootSaga() {
   yield all([
       fork(menuSaga),
+      fork(watchBillingMasterSaga),
     // fork(commonCodeSaga),
     // fork(adminSaga),
     // fork(patientSaga),

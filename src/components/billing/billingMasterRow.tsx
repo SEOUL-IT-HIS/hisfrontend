@@ -1,8 +1,9 @@
 "use client"
 
-import type { BillingMaster } from "@/features/billing/BillingMaster/types";
+import { BillingMaster } from "@/features/billing/billingMaster/types";
 
-const BillingMasterRow = ({ billingMaster }: { billingMaster: BillingMaster }) => {
+
+const billingMasterRow = ({ billingMaster }: { billingMaster: BillingMaster }) => {
     
 
     return (
@@ -20,4 +21,4 @@ const BillingMasterRow = ({ billingMaster }: { billingMaster: BillingMaster }) =
     );
 };
 
-export default BillingMasterRow;
+export default billingMasterRow;
