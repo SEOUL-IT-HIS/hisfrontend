@@ -1,5 +1,7 @@
 import { combineReducers } from "@reduxjs/toolkit";
 import systemReducer from "@/features/system/slice";
+import billingMasterReducer from "@/features/billing/billingMaster/slice";
+import billingDetailReducer from "@/features/billing/searchBillingDetail/slice";
 
 /**
  * RootReducer (프론트 리더 관리 영역)
@@ -8,6 +10,8 @@ import systemReducer from "@/features/system/slice";
  */
 const rootReducer = combineReducers({
   system: systemReducer,
+  billingMaster: billingMasterReducer,
+  billingDetail: billingDetailReducer,
 });
 
 export default rootReducer;
