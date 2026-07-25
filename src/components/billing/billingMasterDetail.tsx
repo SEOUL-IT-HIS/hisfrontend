@@ -5,10 +5,9 @@ import { AppDispatch, RootState } from "@/store/store";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
-const Detail = () => {
+const billingMasterDetail = () => {
     const { billingId } = useParams<{ billingId : string }>();
     const dispatch = useDispatch<AppDispatch>();
-    const router = useRouter(); 
 
     const { loading, error, detail } = useSelector((state: RootState) => ({
         loading: state.billingMaster.detailStatus.loading,
@@ -38,4 +37,4 @@ const Detail = () => {
     );
 };
 
-export default Detail;
+export default billingMasterDetail;
