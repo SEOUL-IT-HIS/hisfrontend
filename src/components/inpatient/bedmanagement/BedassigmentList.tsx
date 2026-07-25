@@ -8,6 +8,7 @@ import {
   selectBedAssignments,
   selectBedAssignmentListStatus,
 } from "@/features/inpatient/bedmanagement/slice";
+import Link from "next/link";
 
 const BedAssignmentList = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -23,6 +24,8 @@ const BedAssignmentList = () => {
       {listStatus.loading && <p>로딩중...</p>}
       {listStatus.error && <p>{listStatus.error}</p>}
       {!listStatus.loading && !listStatus.error && (
+        <>
+        <Link href="/inpatient/bedmanagement/create">배정 등록</Link>
         <table>
           <thead>
             <tr>
@@ -36,7 +39,11 @@ const BedAssignmentList = () => {
           <tbody>
             {bedAssignments.map((bedAssignment) => (
               <tr key={bedAssignment.assignmentId}>
-                <td>{bedAssignment.assignmentId}</td>
+                <td>
+                <Link href={`/inpatient/bedmanagement/${bedAssignment.assignmentId}`}>
+                    {bedAssignment.assignmentId}
+                </Link>
+                </td>
                 <td>{bedAssignment.bedId}</td>
                 <td>{bedAssignment.admissionId}</td>
                 <td>{bedAssignment.assignedAt}</td>
@@ -45,6 +52,7 @@ const BedAssignmentList = () => {
             ))}
           </tbody>
         </table>
+        </>
       )}
     </div>
   );

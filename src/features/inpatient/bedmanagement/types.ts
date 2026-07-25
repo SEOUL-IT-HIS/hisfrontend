@@ -1,5 +1,5 @@
 export interface BedAssignmentDTO {
-  assignmentId: string;
+  assignmentId: number;
   bedId: string;
   admissionId: string;
   assignedAt: string;

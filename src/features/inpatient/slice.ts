@@ -1,6 +1,6 @@
 import { combineReducers } from "@reduxjs/toolkit";
 import bedManagementReducer from "./bedmanagement/slice";
-
+import admissionReducer from "./admissiondischarge/slice";
 /**
  * inpatient(입원) 서비스 reducer
  * - 기능(Story) 단위 하위 slice 를 combine 한다.
@@ -8,6 +8,7 @@ import bedManagementReducer from "./bedmanagement/slice";
  */
 const inpatientReducer = combineReducers({
   bedmanagement: bedManagementReducer,
+  admissiondischarge: admissionReducer,
 });
 
 export default inpatientReducer;
