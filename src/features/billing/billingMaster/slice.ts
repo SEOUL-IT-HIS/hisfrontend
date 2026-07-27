@@ -4,15 +4,7 @@ import type {
   BillingMasterCreateRequest,
 } from "@/features/billing/billingMaster/types";
 
-/**
- * billingMaster slice
- * - 수납 기준정보 목록/상세/등록 상태만 관리
- * - API 호출은 여기서 하지 않는다 → saga 가 담당
- *
- * Action 이름 규칙 (가이드 10.2)
- * - Request / Success / Failure
- * - prefix: billingMaster/...  (createSlice name = "billingMaster")
- */
+
 type Status = {
   loading: boolean;
   error: string;

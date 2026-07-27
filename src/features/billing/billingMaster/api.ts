@@ -1,4 +1,4 @@
-import apiClient from "@/lib/axios";
+import api from "@/lib/axios";
 import type { ApiResponse } from "@/features/admin/types";
 import type {
   BillingMaster,
@@ -7,24 +7,17 @@ import type {
 
 const BILLING_MASTER_PATH = "/api/billing/master";
 
-/** 수납 기준정보 목록 조회 */
-export async function getBillingMasters(): Promise<BillingMaster[]> {
-  const { data } = await apiClient.get<ApiResponse<BillingMaster[]>>(BILLING_MASTER_PATH);
-  return data.data ?? [];
-}
+// 전체조회
+export const fetchBillingMasterAPI = () => {
+  return api.get<ApiResponse<BillingMaster[]>>(BILLING_MASTER_PATH);
+};
 
-/** 수납 기준정보 상세 조회 */
-export async function getBillingMasterDetail(billingMasterId: string): Promise<BillingMaster> {
-  const { data } = await apiClient.get<ApiResponse<BillingMaster>>(
-    `${BILLING_MASTER_PATH}/${billingMasterId}`,
-  );
-  return data.data;
-}
+// 단일 조회
+export const fetchBillingMasterDetailAPI = (billingMasterId: string) => {
+  return api.get<ApiResponse<BillingMaster>>(`${BILLING_MASTER_PATH}/${billingMasterId}`);
+};
 
-/** 수납 기준정보 등록 */
-export async function createBillingMaster(
-  payload: BillingMasterCreateRequest,
-): Promise<BillingMaster> {
-  const { data } = await apiClient.post<ApiResponse<BillingMaster>>(BILLING_MASTER_PATH, payload);
-  return data.data;
-}
+// 등록
+export const createBillingMasterAPI = (payload: BillingMasterCreateRequest) => {
+  return api.post<ApiResponse<BillingMaster>>(BILLING_MASTER_PATH, payload);
+};

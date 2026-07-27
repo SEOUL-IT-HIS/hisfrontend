@@ -1,9 +1,11 @@
 import { call, put, takeLatest } from "redux-saga/effects";
+import type { AxiosResponse } from "axios";
 import {
-  createBillingMaster,
-  getBillingMasterDetail,
-  getBillingMasters,
+  createBillingMasterAPI,
+  fetchBillingMasterAPI,
+  fetchBillingMasterDetailAPI,
 } from "@/features/billing/billingMaster/api";
+import type { ApiResponse } from "@/features/admin/types";
 import {
   fetchBillingMasterDetailFailure,
   fetchBillingMasterDetailRequest,
@@ -23,8 +25,8 @@ import type {
 
 function* fetchBillingMasterSaga() {
   try {
-    const list: BillingMaster[] = yield call(getBillingMasters);
-    yield put(fetchBillingMasterSuccess(list));
+    const response: AxiosResponse<ApiResponse<BillingMaster[]>> = yield call(fetchBillingMasterAPI);
+    yield put(fetchBillingMasterSuccess(response.data.data));
   } catch (err) {
     const message = err instanceof Error ? err.message : "수납 기준정보 목록 조회에 실패했습니다.";
     yield put(fetchBillingMasterFailure(message));
@@ -33,8 +35,11 @@ function* fetchBillingMasterSaga() {
 
 function* fetchBillingMasterDetailSaga(action: PayloadAction<string>) {
   try {
-    const detail: BillingMaster = yield call(getBillingMasterDetail, action.payload);
-    yield put(fetchBillingMasterDetailSuccess(detail));
+    const response: AxiosResponse<ApiResponse<BillingMaster>> = yield call(
+      fetchBillingMasterDetailAPI,
+      action.payload,
+    );
+    yield put(fetchBillingMasterDetailSuccess(response.data.data));
   } catch (err) {
     const message = err instanceof Error ? err.message : "수납 기준정보 상세 조회에 실패했습니다.";
     yield put(fetchBillingMasterDetailFailure(message));
@@ -43,7 +48,7 @@ function* fetchBillingMasterDetailSaga(action: PayloadAction<string>) {
 
 function* registerBillingMasterSaga(action: PayloadAction<BillingMasterCreateRequest>) {
   try {
-    yield call(createBillingMaster, action.payload);
+    yield call(createBillingMasterAPI, action.payload);
     yield put(registerBillingMasterSuccess());
   } catch (err) {
     const message = err instanceof Error ? err.message : "수납 기준정보 등록에 실패했습니다.";
