@@ -52,3 +52,12 @@ export interface BedAssignmentState {
   updateStatus: Status;
   deleteStatus: Status;
 }
+
+// ----- 병상현황조회(bed) 전용 -----
+
+export interface BedState {
+  list: BedDTO[];
+  detail: BedDTO | null;
+  listStatus: Status;
+  detailStatus: Status;
+}
