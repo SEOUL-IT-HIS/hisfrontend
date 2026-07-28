@@ -10,10 +10,16 @@ import {
   Select,
 } from "@/components/common";
 import { fetchCommonCodeItemRegisterRequest } from "@/features/commonCode/slice/commonCodeItemSlice";
-import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemTypes";
-import type { RootState } from "@/store/store";
+import type {
+  CommonCodeItem,
+  CommonCodeItemRegisterRequest,
+} from "@/features/commonCode/types/commonCodeItemTypes";
+import type { AppDispatch, RootState } from "@/store/store";
 
-type CommonCodeItemRegisterFormState = Pick<CommonCodeItem, "codeName" | "useYn">;
+type CommonCodeItemRegisterFormState = Pick<
+  CommonCodeItem,
+  "codeValue" | "codeName" | "useYn"
+>;
 
 type CommonCodeItemRegisterFormProps = {
   onClose: () => void;
@@ -23,30 +29,32 @@ type CommonCodeItemRegisterFormProps = {
 /**
  * 공통코드 아이템 등록 폼
  * - groupId 는 props 로 받음 (입력칸 없음)
+ * - codeValue 는 DB NOT NULL 이라 필수 입력
  */
 export default function CommonCodeItemRegisterForm({
   onClose,
   groupId,
 }: CommonCodeItemRegisterFormProps) {
   const [form, setForm] = useState<CommonCodeItemRegisterFormState>({
+    codeValue: "",
     codeName: "",
     useYn: "Y",
   });
   const error = useSelector((state: RootState) => state.commonCodeItem.error);
   const loading = useSelector((state: RootState) => state.commonCodeItem.loading);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const waitClose = useRef(false);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     waitClose.current = true;
-    dispatch(
-      fetchCommonCodeItemRegisterRequest({
-        groupId,
-        codeName: form.codeName,
-        useYn: form.useYn,
-      }),
-    );
+    const payload: CommonCodeItemRegisterRequest = {
+      groupId,
+      codeValue: form.codeValue,
+      codeName: form.codeName,
+      useYn: form.useYn,
+    };
+    dispatch(fetchCommonCodeItemRegisterRequest(payload));
   };
 
   useEffect(() => {
@@ -65,6 +73,14 @@ export default function CommonCodeItemRegisterForm({
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       <form onSubmit={onSubmit} className="space-y-4">
+        <FormField label="코드값" required htmlFor="codeValue">
+          <Input
+            id="codeValue"
+            value={form.codeValue}
+            onChange={(e) => setForm({ ...form, codeValue: e.target.value })}
+          />
+        </FormField>
+
         <FormField label="코드명" required htmlFor="codeName">
           <Input
             id="codeName"

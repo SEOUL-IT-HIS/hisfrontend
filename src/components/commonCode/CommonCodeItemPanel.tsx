@@ -58,6 +58,7 @@ export default function CommonCodeItemPanel({ groupId, groupCode }: CommonCodeIt
           <thead className="sticky top-0 border-b border-slate-200 bg-slate-50 text-slate-600">
             <tr>
               <th className="w-24 px-3 py-3 font-medium">코드ID</th>
+              <th className="px-3 py-3 font-medium">코드값</th>
               <th className="px-3 py-3 font-medium">코드명</th>
               <th className="w-24 px-3 py-3 font-medium">사용여부</th>
             </tr>
@@ -65,13 +66,13 @@ export default function CommonCodeItemPanel({ groupId, groupCode }: CommonCodeIt
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={3} className="px-4 py-16 text-center text-slate-400">
+                <td colSpan={4} className="px-4 py-16 text-center text-slate-400">
                   목록을 불러오는 중입니다...
                 </td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-4 py-16 text-center text-slate-400">
+                <td colSpan={4} className="px-4 py-16 text-center text-slate-400">
                   조회된 공통코드 항목이 없습니다.
                 </td>
               </tr>
@@ -82,6 +83,7 @@ export default function CommonCodeItemPanel({ groupId, groupCode }: CommonCodeIt
                   key={item.codeId}
                 >
                   <td className="truncate px-3 py-3 text-slate-800">{item.codeId}</td>
+                  <td className="truncate px-3 py-3 text-slate-800">{item.codeValue}</td>
                   <td className="px-3 py-3">{item.codeName}</td>
                   <td className="w-24 px-3 py-3">{item.useYn}</td>
                 </tr>
