@@ -6,12 +6,11 @@ import type {
 } from "@/features/labimaging/imagingacquisition/types";
 
 /**
- * 영상 오더 접수 API 경로 (백엔드 ImageOrderController @PostMapping("/image-orders"))
+ * 영상 오더 접수 API 경로 (백엔드 ImageOrderController @RequestMapping("/api/lab-imaging/image-orders"))
  *
- * NOTE(리더 확인 필요): next.config rewrite 가 "/api/*" 만 프록시하므로
- *   "/image-orders" 경로 라우팅 설정이 별도로 필요하다. (산출물 리더 요청 목록 참고)
+ * "/api/*" 로 시작하므로 next.config rewrite 가 BE(같은 출처)로 프록시한다.
  */
-const IMAGE_ORDER_PATH = "/image-orders";
+const IMAGE_ORDER_PATH = "/api/lab-imaging/image-orders";
 
 /**
  * 영상 오더를 접수한다. (IMAGE_ORDER + IMAGE_ORDER_ITEM + IMAGE_RECEPTION 동시 생성)
