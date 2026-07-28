@@ -14,6 +14,7 @@ import { combineReducers } from "@reduxjs/toolkit";
 import commonCodeItemReducer from "@/features/commonCode/slice/commonCodeItemSlice";
 import commonCodeGroupReducer from "@/features/commonCode/slice/commonCodeGroupSlice";
 import systemReducer from "@/features/system/slice/menuSlice";
+import patientReducer from "@/features/patient/slice/patientSlice";
 
 /**
  * RootReducer (프론트 리더 관리 영역)
@@ -34,7 +35,7 @@ const rootReducer = combineReducers({
   // admin: adminReducer,
 
   // 환자 (PAT)
-  // patient: patientReducer,
+  patient: patientReducer,
 
   // 접수 (RCP)
   // reception: receptionReducer,

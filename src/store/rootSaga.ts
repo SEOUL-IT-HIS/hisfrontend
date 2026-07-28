@@ -14,6 +14,7 @@ import {all, fork} from "redux-saga/effects";
 import watchCommonCodeItemSaga from "@/features/commonCode/saga/commonCodeItemSaga";
 import watchCommonCodeGroupSaga from "@/features/commonCode/saga/commonCodeGroupSaga";
 import watchMenuSaga from "@/features/system/saga/menuSaga";
+import watchPatientSaga from "@/features/patient/saga/patientSaga";
 
 /**
  * RootSaga (프론트 리더 관리 영역)
@@ -25,7 +26,7 @@ export default function* rootSaga() {
       fork(watchCommonCodeGroupSaga),
       fork(watchCommonCodeItemSaga),
     // fork(adminSaga),
-    // fork(patientSaga),
+    fork(watchPatientSaga),
     // fork(receptionSaga),
     // fork(billingSaga),
     // fork(outpatientSaga),
