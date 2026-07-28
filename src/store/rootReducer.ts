@@ -7,16 +7,17 @@ import { combineReducers } from "@reduxjs/toolkit";
 // import outpatientReducer from "@/features/outpatient/slice";
 // import emergencyReducer from "@/features/emergency/slice";
 import inpatientReducer from "@/features/inpatient/slice";
-// import labImagingReducer from "@/features/labimaging/slice";
+import labImagingReducer from "@/features/labimaging/common/slice";
 // import pharmacyReducer from "@/features/pharmacy/slice";
 // import surgeryReducer from "@/features/surgery/slice";
 // import adminReducer from "@/features/admin/slice";
-// import commonCodeReducer from "@/features/commoncode/slice";
-// import systemReducer from "@/features/system/slice";
+import commonCodeItemReducer from "@/features/commonCode/slice/commonCodeItemSlice";
+import commonCodeGroupReducer from "@/features/commonCode/slice/commonCodeGroupSlice";
+import systemReducer from "@/features/system/slice/menuSlice";
 
 /**
  * RootReducer (프론트 리더 관리 영역)
- * - 담당 영역(auth/admin/commoncode/system) 초기화 — 재구현 후 등록
+ * - 담당 영역(auth/admin/commonCode/system) 초기화 — 재구현 후 등록
  * - combineReducers 는 최소 1개 reducer 필요 → placeholder 유지
  */
 const placeholderReducer = (state: Record<string, never> = {}) => state;
@@ -25,8 +26,9 @@ const rootReducer = combineReducers({
   _bootstrap: placeholderReducer,
 
   // 공통
-  // system: systemReducer,
-  // commoncode: commonCodeReducer,
+  system: systemReducer,
+  commonCodeGroup: commonCodeGroupReducer,
+  commonCodeItem: commonCodeItemReducer,
 
   // 관리자 (ADM)
   // admin: adminReducer,
@@ -50,7 +52,7 @@ const rootReducer = combineReducers({
   inpatient: inpatientReducer,
 
   // 검사/영상 (LAB)
-  // labImaging: labImagingReducer,
+  labImaging: labImagingReducer,
 
   // 약국 (PHM)
   // pharmacy: pharmacyReducer,
