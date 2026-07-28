@@ -3,22 +3,22 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { resolveLabSpecimenMessage } from "@/features/labimaging/labspecimen/messages";
+import { resolveLabOrderMessage } from "@/features/labimaging/laborder/messages";
 import {
   createLabOrderRequest,
   resetLabOrderResult,
   selectLabOrderCreateError,
   selectLabOrderCreating,
   selectLastCreatedLabOrder,
-} from "@/features/labimaging/labspecimen/slice";
+} from "@/features/labimaging/laborder/slice";
 import type {
   LabOrderCreateRequest,
   LabOrderItemRequest,
-} from "@/features/labimaging/labspecimen/types";
+} from "@/features/labimaging/laborder/types";
 import {
   TREAT_TYPE_OPTIONS,
   URGENCY_YN_OPTIONS,
-} from "@/features/labimaging/labspecimen/types";
+} from "@/features/labimaging/laborder/types";
 
 /** 스칼라 입력 필드 초기값 (항목 목록은 별도 state) */
 const initialForm = {
@@ -146,7 +146,7 @@ export default function LabOrderReceptionForm() {
       ) : null}
       {createError ? (
         <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">
-          {resolveLabSpecimenMessage(createError)}
+          {resolveLabOrderMessage(createError)}
         </p>
       ) : null}
 

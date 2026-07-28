@@ -1,5 +1,5 @@
 /**
- * 영상(imagingAcquisition) 오더 접수 타입 (UC-IMG-01 / Jira ZP2-19)
+ * 영상(imageOrder) 오더 접수 타입 (UC-IMG-01 / Jira ZP2-19)
  *
  * 필드명은 백엔드 DTO 를 그대로 미러링한다. (요청서 2.2 최우선 원칙)
  * - ImageOrderCreateRequestDto / ImageOrderItemRequestDto / ImageOrderCreateResponseDto
@@ -52,7 +52,7 @@ export interface ImageOrderCreateResponse {
 }
 
 /** 영상 오더 접수 slice 상태 */
-export interface ImagingAcquisitionState {
+export interface ImageOrderState {
   creating: boolean;
   createError: string;
   lastCreated: ImageOrderCreateResponse | null;

@@ -3,7 +3,7 @@ import type { ApiResponse } from "@/features/labimaging/types";
 import type {
   LabOrderCreateRequest,
   LabOrderCreateResponse,
-} from "@/features/labimaging/labspecimen/types";
+} from "@/features/labimaging/laborder/types";
 
 /**
  * 검사 오더 접수 API 경로 (백엔드 LabOrderController @RequestMapping("/api/lab-imaging/lab-orders"))

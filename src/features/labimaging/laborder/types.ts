@@ -1,5 +1,5 @@
 /**
- * 검사(labSpecimen) 오더 접수 타입 (UC-SPC-01 / Jira ZP2-12)
+ * 검사(labOrder) 오더 접수 타입 (UC-SPC-01 / Jira ZP2-12)
  *
  * 필드명은 백엔드 DTO 를 그대로 미러링한다. (요청서 2.2 최우선 원칙)
  * - LabOrderCreateRequestDto / LabOrderItemRequestDto / LabOrderCreateResponseDto
@@ -54,7 +54,7 @@ export interface LabOrderCreateResponse {
 }
 
 /** 검사 오더 접수 slice 상태 */
-export interface LabSpecimenState {
+export interface LabOrderState {
   /** 접수 생성 진행 중 여부 */
   creating: boolean;
   /** 접수 생성 실패 메시지 (LAB### 코드 또는 문구) */

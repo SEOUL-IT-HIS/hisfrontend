@@ -2,25 +2,25 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   LabOrderCreateRequest,
   LabOrderCreateResponse,
-  LabSpecimenState,
-} from "@/features/labimaging/labspecimen/types";
+  LabOrderState,
+} from "@/features/labimaging/laborder/types";
 
 /**
- * labSpecimen(검사 오더 접수) slice
+ * labOrder(검사 오더 접수) slice
  * - 상태만 관리하고 API 호출은 하지 않는다 → saga 가 담당 (가이드 10.3)
  *
  * Action prefix 는 "labImaging/" 를 유지한다. (가이드 10.2 / 요청서 3.1)
- * createSlice name = "labImaging/labspecimen" →
- *   action type 예: "labImaging/labspecimen/createLabOrderRequest"
+ * createSlice name = "labImaging/laborder" →
+ *   action type 예: "labImaging/laborder/createLabOrderRequest"
  */
-const initialState: LabSpecimenState = {
+const initialState: LabOrderState = {
   creating: false,
   createError: "",
   lastCreated: null,
 };
 
-const labSpecimenSlice = createSlice({
-  name: "labImaging/labspecimen",
+const labOrderSlice = createSlice({
+  name: "labImaging/laborder",
   initialState,
   reducers: {
     /**
@@ -60,18 +60,18 @@ export const {
   createLabOrderSuccess,
   createLabOrderFailure,
   resetLabOrderResult,
-} = labSpecimenSlice.actions;
+} = labOrderSlice.actions;
 
-export default labSpecimenSlice.reducer;
+export default labOrderSlice.reducer;
 
 // ----- Selector (가이드 10.4: 컴포넌트에서 state.xxx.yyy 깊게 접근 금지) -----
-// 등록 전제: rootReducer 에 labImaging: combineReducers({ labspecimen, imagingacquisition })
+// 등록 전제: rootReducer 에 labImaging: combineReducers({ laborder, imagingorder })
 // (리더 등록 요청 목록 참고)
-type LabSpecimenRoot = { labImaging: { labspecimen: LabSpecimenState } };
+type LabOrderRoot = { labImaging: { laborder: LabOrderState } };
 
-export const selectLabOrderCreating = (state: LabSpecimenRoot) =>
-  state.labImaging.labspecimen.creating;
-export const selectLabOrderCreateError = (state: LabSpecimenRoot) =>
-  state.labImaging.labspecimen.createError;
-export const selectLastCreatedLabOrder = (state: LabSpecimenRoot) =>
-  state.labImaging.labspecimen.lastCreated;
+export const selectLabOrderCreating = (state: LabOrderRoot) =>
+  state.labImaging.laborder.creating;
+export const selectLabOrderCreateError = (state: LabOrderRoot) =>
+  state.labImaging.laborder.createError;
+export const selectLastCreatedLabOrder = (state: LabOrderRoot) =>
+  state.labImaging.laborder.lastCreated;

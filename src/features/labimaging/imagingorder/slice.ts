@@ -2,24 +2,24 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   ImageOrderCreateRequest,
   ImageOrderCreateResponse,
-  ImagingAcquisitionState,
-} from "@/features/labimaging/imagingacquisition/types";
+  ImageOrderState,
+} from "@/features/labimaging/imagingorder/types";
 
 /**
- * imagingAcquisition(영상 오더 접수) slice
- * - labspecimen 과 동일 패턴 (상태만 관리, API 는 saga)
+ * imageOrder(영상 오더 접수) slice
+ * - laborder 과 동일 패턴 (상태만 관리, API 는 saga)
  *
  * Action prefix "labImaging/" 유지 (가이드 10.2 / 요청서 3.1)
- * createSlice name = "labImaging/imagingacquisition"
+ * createSlice name = "labImaging/imagingorder"
  */
-const initialState: ImagingAcquisitionState = {
+const initialState: ImageOrderState = {
   creating: false,
   createError: "",
   lastCreated: null,
 };
 
-const imagingAcquisitionSlice = createSlice({
-  name: "labImaging/imagingacquisition",
+const imageOrderSlice = createSlice({
+  name: "labImaging/imagingorder",
   initialState,
   reducers: {
     // payload(요청값)는 saga 가 소비하므로 prepare 로 타입만 실어 보낸다.
@@ -56,19 +56,19 @@ export const {
   createImageOrderSuccess,
   createImageOrderFailure,
   resetImageOrderResult,
-} = imagingAcquisitionSlice.actions;
+} = imageOrderSlice.actions;
 
-export default imagingAcquisitionSlice.reducer;
+export default imageOrderSlice.reducer;
 
 // ----- Selector (가이드 10.4) -----
-// 등록 전제: labImaging: combineReducers({ labspecimen, imagingacquisition })
-type ImagingAcquisitionRoot = {
-  labImaging: { imagingacquisition: ImagingAcquisitionState };
+// 등록 전제: labImaging: combineReducers({ laborder, imagingorder })
+type ImageOrderRoot = {
+  labImaging: { imagingorder: ImageOrderState };
 };
 
-export const selectImageOrderCreating = (state: ImagingAcquisitionRoot) =>
-  state.labImaging.imagingacquisition.creating;
-export const selectImageOrderCreateError = (state: ImagingAcquisitionRoot) =>
-  state.labImaging.imagingacquisition.createError;
-export const selectLastCreatedImageOrder = (state: ImagingAcquisitionRoot) =>
-  state.labImaging.imagingacquisition.lastCreated;
+export const selectImageOrderCreating = (state: ImageOrderRoot) =>
+  state.labImaging.imagingorder.creating;
+export const selectImageOrderCreateError = (state: ImageOrderRoot) =>
+  state.labImaging.imagingorder.createError;
+export const selectLastCreatedImageOrder = (state: ImageOrderRoot) =>
+  state.labImaging.imagingorder.lastCreated;

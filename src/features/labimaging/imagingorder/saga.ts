@@ -1,18 +1,18 @@
 import { call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import { createImageOrder } from "@/features/labimaging/imagingacquisition/api";
+import { createImageOrder } from "@/features/labimaging/imagingorder/api";
 import {
   createImageOrderFailure,
   createImageOrderRequest,
   createImageOrderSuccess,
-} from "@/features/labimaging/imagingacquisition/slice";
+} from "@/features/labimaging/imagingorder/slice";
 import type {
   ImageOrderCreateRequest,
   ImageOrderCreateResponse,
-} from "@/features/labimaging/imagingacquisition/types";
+} from "@/features/labimaging/imagingorder/types";
 
 /**
- * imagingAcquisition saga (labspecimen 과 동일 패턴)
+ * imageOrder saga (laborder 과 동일 패턴)
  * - API 호출은 여기서만 (가이드 10.3)
  * - 흐름: createImageOrderRequest → createImageOrder → Success / Failure
  */
@@ -32,6 +32,6 @@ function* createImageOrderSaga(action: PayloadAction<ImageOrderCreateRequest>) {
 }
 
 /** 영상 오더 접수 요청을 감시한다 (최신 요청만 처리) */
-export default function* imagingAcquisitionSaga() {
+export default function* imageOrderSaga() {
   yield takeLatest(createImageOrderRequest.type, createImageOrderSaga);
 }

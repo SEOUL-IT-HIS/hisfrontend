@@ -3,22 +3,22 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { resolveImagingAcquisitionMessage } from "@/features/labimaging/imagingacquisition/messages";
+import { resolveImageOrderMessage } from "@/features/labimaging/imagingorder/messages";
 import {
   createImageOrderRequest,
   resetImageOrderResult,
   selectImageOrderCreateError,
   selectImageOrderCreating,
   selectLastCreatedImageOrder,
-} from "@/features/labimaging/imagingacquisition/slice";
+} from "@/features/labimaging/imagingorder/slice";
 import type {
   ImageOrderCreateRequest,
   ImageOrderItemRequest,
-} from "@/features/labimaging/imagingacquisition/types";
+} from "@/features/labimaging/imagingorder/types";
 import {
   TREAT_TYPE_OPTIONS,
   URGENCY_YN_OPTIONS,
-} from "@/features/labimaging/imagingacquisition/types";
+} from "@/features/labimaging/imagingorder/types";
 
 /** 스칼라 입력 필드 초기값 (촬영항목 목록은 별도 state) */
 const initialForm = {
@@ -39,7 +39,7 @@ const inputClass =
 
 /**
  * 영상 오더 접수 폼 (UC-IMG-01 / Jira ZP2-19)
- * - labspecimen 과 동일 패턴. 제출 시 createImageOrderRequest 액션만 dispatch (가이드 10.3)
+ * - laborder 과 동일 패턴. 제출 시 createImageOrderRequest 액션만 dispatch (가이드 10.3)
  * TODO: 서버 통신 결과 표시는 공통 Toast 로 이관 예정 (가이드 15.3, 리더 관리 공통 컴포넌트).
  */
 export default function ImageOrderReceptionForm() {
@@ -135,7 +135,7 @@ export default function ImageOrderReceptionForm() {
       ) : null}
       {createError ? (
         <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">
-          {resolveImagingAcquisitionMessage(createError)}
+          {resolveImageOrderMessage(createError)}
         </p>
       ) : null}
 
