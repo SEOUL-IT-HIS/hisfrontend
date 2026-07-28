@@ -3,20 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-
-/** 메뉴 재구현 전까지 Sidebar 가 받는 최소 트리 타입 */
-export type MenuTreeNode = {
-  menuId: number;
-  parentMenuId: number | null;
-  menuCode: string;
-  menuName: string;
-  menuUrl: string | null;
-  sortOrder: number | null;
-  useYn: string | null;
-  areaKey: string | null;
-  serviceCode: string | null;
-  children: MenuTreeNode[];
-};
+import { MenuTreeNode } from "@/features/system/types/menuTypes";
 
 type SidebarProps = {
   menuTree: MenuTreeNode[];
@@ -103,6 +90,7 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
   const [openAreas, setOpenAreas] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpenAreas((prev) => {
       const next = { ...prev };
       let changed = false;
@@ -119,6 +107,7 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
 
   useEffect(() => {
     if (!activeAreaKey) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpenAreas((prev) => {
       if (prev[activeAreaKey]) return prev;
       return { ...prev, [activeAreaKey]: true };
@@ -132,7 +121,7 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
   return (
     <aside
       className={`flex h-full shrink-0 flex-col border-r border-slate-200 bg-[#eef2f6] text-slate-600 transition-[width] ${
-        collapsed ? "w-[96px]" : "w-56"
+        collapsed ? "w-24" : "w-56"
       }`}
     >
       <div className={`flex flex-col gap-1 px-2 pb-3 pt-4 ${collapsed ? "items-center" : "items-start px-3"}`}>
