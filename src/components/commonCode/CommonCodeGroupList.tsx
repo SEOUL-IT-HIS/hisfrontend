@@ -21,8 +21,12 @@ export default function CommonCodeGroupList() {
   const error = useSelector((state: RootState) => state.commonCodeGroup.error);
   const [open, setOpen] = useState(false);
 
-  const [selectedGroupCode, setSelectedGroupCode] = useState<string | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+
+  const selectedGroup =
+    selectedGroupId == null
+      ? null
+      : groups.find((g) => g.groupId === selectedGroupId) ?? null;
 
   useEffect(() => {
     dispatch(fetchCommonCodeGroupRequest());
@@ -71,7 +75,7 @@ export default function CommonCodeGroupList() {
                   </tr>
                 ) : (
                   groups.map((row) => {
-                    const selected = selectedGroupCode === row.groupCode;
+                    const selected = selectedGroupId === row.groupId;
 
                     return (
                       <tr
@@ -87,7 +91,6 @@ export default function CommonCodeGroupList() {
                             type="button"
                             className="font-medium text-sky-700 underline-offset-2 hover:underline"
                             onClick={() => {
-                              setSelectedGroupCode(row.groupCode);
                               setSelectedGroupId(row.groupId);
                             }}
                           >
@@ -125,10 +128,7 @@ export default function CommonCodeGroupList() {
 
         {/* 오른쪽: 항목 상세 */}
         <div className="min-h-0">
-          <CommonCodeItemPanel
-            groupCode={selectedGroupCode}
-            groupId={selectedGroupId}
-          />
+          <CommonCodeItemPanel group={selectedGroup} />
         </div>
       </div>
     </div>

@@ -2,35 +2,89 @@
 
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Alert, Button, Modal, PageHeader } from "@/components/common";
+import {
+  Alert,
+  Button,
+  DataTable,
+  Modal,
+  PageHeader,
+  type DataTableColumn,
+} from "@/components/common";
+import CommonCodeGroupUpdateForm from "@/components/commonCode/CommonCodeGroupUpdateForm";
 import CommonCodeItemRegisterForm from "@/components/commonCode/CommonCodeItemRegisterForm";
+import CommonCodeItemUpdateForm from "@/components/commonCode/CommonCodeItemUpdateForm";
 import { fetchCommonCodeItemRequest } from "@/features/commonCode/slice/commonCodeItemSlice";
+import type { CommonCodeGroup } from "@/features/commonCode/types/commonCodeGroupTypes";
+import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemTypes";
 import type { RootState } from "@/store/store";
 
 type CommonCodeItemPanelProps = {
-  /** 선택한 그룹코드. null이면 미선택 안내만 표시 */
-  groupCode: string | null;
-  groupId: number | null;
+  group: CommonCodeGroup | null;
 };
 
 /**
  * 공통코드 항목 상세 영역
- * - 왼쪽 그룹 패널과 동일한 헤더/테이블 레이아웃
+ * - 헤더 [등록] → 항목 등록 Modal
+ * - 헤더 [수정] → 선택된 그룹(그룹명/사용여부) 수정 Modal
+ * - 행 [수정] → 항목(코드명/사용여부) 수정 Modal
  */
-export default function CommonCodeItemPanel({ groupId, groupCode }: CommonCodeItemPanelProps) {
+export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps) {
   const dispatch = useDispatch();
   const items = useSelector((state: RootState) => state.commonCodeItem.items);
   const error = useSelector((state: RootState) => state.commonCodeItem.error);
   const loading = useSelector((state: RootState) => state.commonCodeItem.loading);
-  const [open, setOpen] = useState(false);
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [groupEditOpen, setGroupEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState<CommonCodeItem | null>(null);
 
   useEffect(() => {
-    if (groupId != null) {
-      dispatch(fetchCommonCodeItemRequest(groupId));
+    if (group != null) {
+      dispatch(fetchCommonCodeItemRequest(group.groupId));
     }
-  }, [dispatch, groupId]);
+  }, [dispatch, group]);
 
-  if (groupId === null) {
+  const columns: DataTableColumn<CommonCodeItem>[] = [
+    {
+      key: "codeValue",
+      header: "코드값",
+      render: (row) => row.codeValue,
+    },
+    {
+      key: "codeName",
+      header: "코드명",
+      render: (row) => row.codeName,
+    },
+    {
+      key: "useYn",
+      header: "사용여부",
+      className: "w-24",
+      render: (row) => (
+        <span
+          className={
+            row.useYn === "Y" ? "font-medium text-sky-600" : "text-slate-400"
+          }
+        >
+          {row.useYn}
+        </span>
+      ),
+    },
+    {
+      key: "edit",
+      header: "",
+      className: "w-16",
+      render: (row) => (
+        <button
+          type="button"
+          className="font-medium text-sky-700 underline-offset-2 hover:underline"
+          onClick={() => setEditItem(row)}
+        >
+          수정
+        </button>
+      ),
+    },
+  ];
+
+  if (group === null) {
     return (
       <div className="flex h-full min-h-0 flex-col gap-2">
         <PageHeader title="공통코드 항목" className="px-3 py-2" />
@@ -44,64 +98,64 @@ export default function CommonCodeItemPanel({ groupId, groupCode }: CommonCodeIt
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
       <PageHeader
-        title={groupCode ? `공통코드 항목 : ${groupCode}` : "공통코드 항목"}
+        title={`공통코드 항목 : ${group.groupCode}`}
         className="px-3 py-2"
         actions={
-          <Button variant="primary" onClick={() => setOpen(true)}>
-            등록
-          </Button>
+          <>
+            <Button variant="primary" onClick={() => setRegisterOpen(true)}>
+              등록
+            </Button>
+            <Button variant="secondary" onClick={() => setGroupEditOpen(true)}>
+              수정
+            </Button>
+          </>
         }
       />
 
       {error ? <Alert variant="error">{error}</Alert> : null}
 
-      <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full min-w-[480px] text-left text-sm">
-          <thead className="sticky top-0 border-b border-slate-200 bg-slate-50 text-slate-600">
-            <tr>
-              <th className="px-3 py-2.5 font-medium">코드값</th>
-              <th className="px-3 py-2.5 font-medium">코드명</th>
-              <th className="w-24 px-3 py-2.5 font-medium">사용여부</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={3} className="px-4 py-16 text-center text-slate-400">
-                  목록을 불러오는 중입니다...
-                </td>
-              </tr>
-            ) : items.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="px-4 py-16 text-center text-slate-400">
-                  조회된 공통코드 항목이 없습니다.
-                </td>
-              </tr>
-            ) : (
-              items.map((item) => (
-                <tr
-                  className="border-t border-slate-100 hover:bg-slate-50/80"
-                  key={item.codeId}
-                >
-                  <td className="truncate px-3 py-2.5 text-slate-800">{item.codeValue}</td>
-                  <td className="px-3 py-2.5">{item.codeName}</td>
-                  <td className="w-24 px-3 py-2.5">{item.useYn}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        rows={items}
+        rowKey={(row) => row.codeId}
+        loading={loading}
+        emptyMessage="조회된 공통코드 항목이 없습니다."
+        minWidthClassName="min-w-[480px]"
+      />
 
       <Modal
-        open={open}
+        open={registerOpen}
         title="공통코드 항목 등록"
-        onClose={() => setOpen(false)}
+        onClose={() => setRegisterOpen(false)}
       >
         <CommonCodeItemRegisterForm
-          groupId={groupId}
-          onClose={() => setOpen(false)}
+          groupId={group.groupId}
+          onClose={() => setRegisterOpen(false)}
         />
+      </Modal>
+
+      <Modal
+        open={groupEditOpen}
+        title="공통코드 그룹 수정"
+        onClose={() => setGroupEditOpen(false)}
+      >
+        <CommonCodeGroupUpdateForm
+          group={group}
+          onClose={() => setGroupEditOpen(false)}
+        />
+      </Modal>
+
+      <Modal
+        open={editItem != null}
+        title="공통코드 항목 수정"
+        onClose={() => setEditItem(null)}
+      >
+        {editItem ? (
+          <CommonCodeItemUpdateForm
+            item={editItem}
+            onClose={() => setEditItem(null)}
+          />
+        ) : null}
       </Modal>
     </div>
   );
