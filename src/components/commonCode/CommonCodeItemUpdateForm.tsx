@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
-  Button,
+  FormActions,
   FormField,
   Input,
   Select,
@@ -27,9 +27,7 @@ type CommonCodeItemUpdateFormProps = {
 };
 
 /**
- * 공통코드 아이템 수정 폼
- * - codeValue: 읽기 전용
- * - codeName, useYn 만 수정
+ * 공통코드 항목 수정 폼
  */
 export default function CommonCodeItemUpdateForm({
   item,
@@ -67,11 +65,15 @@ export default function CommonCodeItemUpdateForm({
   }, [loading, error, onClose]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       <form onSubmit={onSubmit} className="space-y-4">
-        <FormField label="코드값" htmlFor="codeValue">
+        <FormField
+          label="코드값"
+          htmlFor="codeValue"
+          hint="식별키라 변경할 수 없습니다."
+        >
           <Input id="codeValue" value={item.codeValue} disabled />
         </FormField>
 
@@ -79,6 +81,7 @@ export default function CommonCodeItemUpdateForm({
           <Input
             id="codeName"
             value={form.codeName}
+            placeholder="코드명을 입력하세요"
             onChange={(e) => setForm({ ...form, codeName: e.target.value })}
           />
         </FormField>
@@ -89,17 +92,17 @@ export default function CommonCodeItemUpdateForm({
             value={form.useYn}
             onChange={(e) => setForm({ ...form, useYn: e.target.value })}
             options={[
-              { value: "Y", label: "Y" },
-              { value: "N", label: "N" },
+              { value: "Y", label: "사용 (Y)" },
+              { value: "N", label: "미사용 (N)" },
             ]}
           />
         </FormField>
 
-        <div className="flex justify-end gap-2 pt-1">
-          <Button type="submit" variant="primary" disabled={loading}>
-            {loading ? "처리 중…" : "수정"}
-          </Button>
-        </div>
+        <FormActions
+          onCancel={onClose}
+          submitLabel="수정"
+          loading={loading}
+        />
       </form>
     </div>
   );

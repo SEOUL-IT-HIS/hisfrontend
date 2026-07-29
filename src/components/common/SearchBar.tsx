@@ -4,11 +4,9 @@ import type { FormEvent, ReactNode } from "react";
 import Button from "@/components/common/Button";
 
 type SearchBarProps = {
-  /** 검색 조건 입력 UI */
   children: ReactNode;
   onSearch: () => void;
   searchLabel?: string;
-  /** 초기화 버튼이 필요할 때 */
   onReset?: () => void;
   resetLabel?: string;
   className?: string;
@@ -16,7 +14,6 @@ type SearchBarProps = {
 
 /**
  * 공통 검색 영역
- * - 목록 조회 조건 + 조회/초기화 버튼 레이아웃
  */
 export default function SearchBar({
   children,
@@ -34,7 +31,7 @@ export default function SearchBar({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`rounded-xl border border-slate-200 bg-white px-4 py-3 ${className}`}
+      className={`rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] ${className}`}
     >
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex min-w-0 flex-1 flex-wrap gap-3">{children}</div>

@@ -4,21 +4,30 @@ import type { ReactNode } from "react";
 
 type PageHeaderProps = {
   title: string;
-  /** 우측 액션 영역 (등록 버튼 등) */
+  description?: string;
   actions?: ReactNode;
   className?: string;
 };
 
 /**
  * 공통 페이지 헤더
- * - CRUD 목록 화면 상단 제목 + 액션 버튼 영역에 사용
  */
-export default function PageHeader({ title, actions, className = "" }: PageHeaderProps) {
+export default function PageHeader({
+  title,
+  description,
+  actions,
+  className = "",
+}: PageHeaderProps) {
   return (
     <div
-      className={`flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 ${className}`}
+      className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] ${className}`}
     >
-      <h2 className="text-base font-semibold text-slate-800">{title}</h2>
+      <div className="min-w-0">
+        <h2 className="text-base font-semibold tracking-tight text-slate-900">{title}</h2>
+        {description ? (
+          <p className="mt-0.5 text-xs text-slate-400">{description}</p>
+        ) : null}
+      </div>
       {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
     </div>
   );
