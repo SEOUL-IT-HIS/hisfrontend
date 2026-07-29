@@ -11,9 +11,8 @@ import { Alert, Button, Modal, PageHeader } from "@/components/common";
 import CommonCodeGroupRegisterForm from "@/components/commonCode/CommonCodeGroupRegisterForm";
 
 /**
- * 공통코드 그룹 목록 + 항목 상세(UI)
- * - 왼쪽: 그룹 목록
- * - 오른쪽: 그룹코드 클릭 시 항목 패널
+ * 공통코드 그룹 목록 + 항목 상세
+ * - 왼쪽/오른쪽 패널 헤더·테이블 레이아웃을 동일하게 맞춤
  */
 export default function CommonCodeGroupList() {
   const dispatch = useDispatch();
@@ -30,43 +29,43 @@ export default function CommonCodeGroupList() {
   }, [dispatch]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-3">
-      <PageHeader
-          title="공통코드"
-          actions={
-            <Button variant="primary" onClick={() => setOpen(true)}>
-              등록
-            </Button>
-          }
-      />
+    <div className="flex h-full min-h-0 flex-col gap-2 p-3">
+      <h1 className="px-0.5 text-sm font-semibold text-slate-700">공통코드</h1>
 
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
         {/* 왼쪽: 그룹 목록 */}
         <div className="flex min-h-0 flex-col gap-2">
-          <h2 className="text-sm font-medium text-slate-700"></h2>
+          <PageHeader
+            title="공통코드 그룹"
+            className="px-3 py-2"
+            actions={
+              <Button variant="primary" onClick={() => setOpen(true)}>
+                등록
+              </Button>
+            }
+          />
 
           <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-200 bg-white">
             <table className="w-full min-w-120 text-left text-sm">
               <thead className="sticky top-0 border-b border-slate-200 bg-slate-50 text-slate-600">
                 <tr>
-                  <th className="w-24 px-3 py-3 font-medium">그룹ID</th>
-                  <th className="px-3 py-3 font-medium">그룹코드</th>
-                  <th className="px-3 py-3 font-medium">그룹명</th>
-                  <th className="w-24 px-3 py-3 font-medium">사용여부</th>
+                  <th className="px-3 py-2.5 font-medium">그룹코드</th>
+                  <th className="px-3 py-2.5 font-medium">그룹명</th>
+                  <th className="w-24 px-3 py-2.5 font-medium">사용여부</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-16 text-center text-slate-400">
+                    <td colSpan={3} className="px-4 py-16 text-center text-slate-400">
                       목록을 불러오는 중입니다...
                     </td>
                   </tr>
                 ) : groups.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-16 text-center text-slate-400">
+                    <td colSpan={3} className="px-4 py-16 text-center text-slate-400">
                       조회된 공통코드 그룹이 없습니다.
                     </td>
                   </tr>
@@ -83,8 +82,7 @@ export default function CommonCodeGroupList() {
                             : "border-t border-slate-100 hover:bg-slate-50/80"
                         }
                       >
-                        <td className="truncate px-3 py-3 text-slate-800">{row.groupId}</td>
-                        <td className="truncate px-3 py-3">
+                        <td className="truncate px-3 py-2.5">
                           <button
                             type="button"
                             className="font-medium text-sky-700 underline-offset-2 hover:underline"
@@ -96,8 +94,8 @@ export default function CommonCodeGroupList() {
                             {row.groupCode}
                           </button>
                         </td>
-                        <td className="truncate px-3 py-3 text-slate-800">{row.groupName}</td>
-                        <td className="truncate px-3 py-3">
+                        <td className="truncate px-3 py-2.5 text-slate-800">{row.groupName}</td>
+                        <td className="truncate px-3 py-2.5">
                           <span
                             className={
                               row.useYn === "Y"
@@ -115,18 +113,22 @@ export default function CommonCodeGroupList() {
               </tbody>
             </table>
           </div>
+
           <Modal
-              open={open}
-              title="공통코드 그룹 등록"
-              onClose={() => setOpen(false)}
+            open={open}
+            title="공통코드 그룹 등록"
+            onClose={() => setOpen(false)}
           >
-            <CommonCodeGroupRegisterForm onClose={() => setOpen(false)}/>
+            <CommonCodeGroupRegisterForm onClose={() => setOpen(false)} />
           </Modal>
         </div>
 
-        {/* 오른쪽: 항목 상세 (UI만) */}
+        {/* 오른쪽: 항목 상세 */}
         <div className="min-h-0">
-          <CommonCodeItemPanel groupCode={selectedGroupCode} groupId={selectedGroupId}  />
+          <CommonCodeItemPanel
+            groupCode={selectedGroupCode}
+            groupId={selectedGroupId}
+          />
         </div>
       </div>
     </div>
