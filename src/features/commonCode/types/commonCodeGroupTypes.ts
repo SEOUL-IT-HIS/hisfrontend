@@ -13,4 +13,11 @@ export type CommonCodeGroup = {
   useYn: string;
 };
 
+/** PUT /api/commonCodeGroup/update/{groupId} 요청 body */
+export type CommonCodeGroupUpdateRequest = {
+  groupId: number;
+  groupName: string;
+  useYn: string;
+};
+
 export type CommonCodeGroupApiResponse = ApiResponse<CommonCodeGroup[]>;

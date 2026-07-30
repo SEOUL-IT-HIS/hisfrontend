@@ -9,37 +9,48 @@ import {
   Input,
   Select,
 } from "@/components/common";
-import type { CommonCodeGroup } from "@/features/commonCode/types/commonCodeGroupTypes";
-import { fetchCommonCodeGroupRegisterRequest } from "@/features/commonCode/slice/commonCodeGroupSlice";
+import { fetchCommonCodeItemUpdateRequest } from "@/features/commonCode/slice/commonCodeItemSlice";
+import type {
+  CommonCodeItem,
+  CommonCodeItemUpdateRequest,
+} from "@/features/commonCode/types/commonCodeItemTypes";
 import type { AppDispatch, RootState } from "@/store/store";
 
-type CommonCodeGroupRegisterFormState = Pick<
-  CommonCodeGroup,
-  "groupCode" | "groupName" | "useYn"
+type CommonCodeItemUpdateFormState = Pick<
+  CommonCodeItem,
+  "codeName" | "useYn"
 >;
 
-/**
- * 공통코드 그룹 등록 폼
- */
-export default function CommonCodeGroupRegisterForm({
-  onClose,
-}: {
+type CommonCodeItemUpdateFormProps = {
+  item: CommonCodeItem;
   onClose: () => void;
-}) {
-  const [form, setForm] = useState<CommonCodeGroupRegisterFormState>({
-    groupCode: "",
-    groupName: "",
-    useYn: "Y",
+};
+
+/**
+ * 공통코드 항목 수정 폼
+ */
+export default function CommonCodeItemUpdateForm({
+  item,
+  onClose,
+}: CommonCodeItemUpdateFormProps) {
+  const [form, setForm] = useState<CommonCodeItemUpdateFormState>({
+    codeName: item.codeName,
+    useYn: item.useYn,
   });
-  const error = useSelector((state: RootState) => state.commonCodeGroup.error);
-  const loading = useSelector((state: RootState) => state.commonCodeGroup.loading);
+  const error = useSelector((state: RootState) => state.commonCodeItem.error);
+  const loading = useSelector((state: RootState) => state.commonCodeItem.loading);
   const dispatch = useDispatch<AppDispatch>();
   const waitClose = useRef(false);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     waitClose.current = true;
-    dispatch(fetchCommonCodeGroupRegisterRequest(form));
+    const payload: CommonCodeItemUpdateRequest = {
+      codeId: item.codeId,
+      codeName: form.codeName,
+      useYn: form.useYn,
+    };
+    dispatch(fetchCommonCodeItemUpdateRequest(payload));
   };
 
   useEffect(() => {
@@ -59,25 +70,19 @@ export default function CommonCodeGroupRegisterForm({
 
       <form onSubmit={onSubmit} className="space-y-4">
         <FormField
-          label="그룹코드"
-          required
-          htmlFor="groupCode"
-          hint="등록 후 변경할 수 없습니다."
+          label="코드값"
+          htmlFor="codeValue"
+          hint="식별키라 변경할 수 없습니다."
         >
-          <Input
-            id="groupCode"
-            value={form.groupCode}
-            placeholder="예: DEPT"
-            onChange={(e) => setForm({ ...form, groupCode: e.target.value })}
-          />
+          <Input id="codeValue" value={item.codeValue} disabled />
         </FormField>
 
-        <FormField label="그룹명" required htmlFor="groupName">
+        <FormField label="코드명" required htmlFor="codeName">
           <Input
-            id="groupName"
-            value={form.groupName}
-            placeholder="예: 진료과"
-            onChange={(e) => setForm({ ...form, groupName: e.target.value })}
+            id="codeName"
+            value={form.codeName}
+            placeholder="코드명을 입력하세요"
+            onChange={(e) => setForm({ ...form, codeName: e.target.value })}
           />
         </FormField>
 
@@ -95,7 +100,7 @@ export default function CommonCodeGroupRegisterForm({
 
         <FormActions
           onCancel={onClose}
-          submitLabel="등록"
+          submitLabel="수정"
           loading={loading}
         />
       </form>

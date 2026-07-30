@@ -4,7 +4,6 @@ import Button from "@/components/common/Button";
 
 type PaginationProps = {
   page: number;
-  /** 0이면 다음 버튼 비활성 판단에 totalPages 사용 */
   totalPages: number;
   onPageChange: (page: number) => void;
   className?: string;
@@ -12,7 +11,7 @@ type PaginationProps = {
 
 /**
  * 공통 페이지네이션
- * - 목록 페이지 이동에 사용 (page 는 1부터)
+ * - import { Pagination } from "@/components/common"
  */
 export default function Pagination({
   page,
@@ -34,7 +33,7 @@ export default function Pagination({
       >
         이전
       </Button>
-      <span className="min-w-[80px] text-center text-sm text-slate-600">
+      <span className="min-w-[80px] text-center text-sm font-medium text-slate-600">
         {page} / {safeTotal}
       </span>
       <Button

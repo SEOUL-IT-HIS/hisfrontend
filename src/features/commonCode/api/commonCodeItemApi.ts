@@ -4,6 +4,7 @@ import type {
   CommonCodeItem,
   CommonCodeItemApiResponse,
   CommonCodeItemRegisterRequest,
+  CommonCodeItemUpdateRequest,
 } from "../types/commonCodeItemTypes";
 
 /** GET /api/commonCodeItem/list */
@@ -22,6 +23,18 @@ export async function fetchCommonCodeItemRegisterApi(
   const response = await apiClient.post<ApiResponse<CommonCodeItem>>(
     "/api/commonCodeItem/register",
     commonCodeItemData,
+  );
+  return response.data.data;
+}
+
+/** PUT /api/commonCodeItem/update/{codeId} */
+export async function fetchCommonCodeItemUpdateApi(
+  commonCodeItemData: CommonCodeItemUpdateRequest,
+): Promise<CommonCodeItem> {
+  const { codeId, codeName, useYn } = commonCodeItemData;
+  const response = await apiClient.put<ApiResponse<CommonCodeItem>>(
+    `/api/commonCodeItem/update/${codeId}`,
+    { codeName, useYn },
   );
   return response.data.data;
 }

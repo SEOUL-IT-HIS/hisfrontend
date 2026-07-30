@@ -9,27 +9,30 @@ import {
   Input,
   Select,
 } from "@/components/common";
-import type { CommonCodeGroup } from "@/features/commonCode/types/commonCodeGroupTypes";
-import { fetchCommonCodeGroupRegisterRequest } from "@/features/commonCode/slice/commonCodeGroupSlice";
+import { fetchCommonCodeGroupUpdateRequest } from "@/features/commonCode/slice/commonCodeGroupSlice";
+import type {
+  CommonCodeGroup,
+  CommonCodeGroupUpdateRequest,
+} from "@/features/commonCode/types/commonCodeGroupTypes";
 import type { AppDispatch, RootState } from "@/store/store";
 
-type CommonCodeGroupRegisterFormState = Pick<
-  CommonCodeGroup,
-  "groupCode" | "groupName" | "useYn"
->;
+type CommonCodeGroupUpdateFormState = Pick<CommonCodeGroup, "groupName" | "useYn">;
+
+type CommonCodeGroupUpdateFormProps = {
+  group: CommonCodeGroup;
+  onClose: () => void;
+};
 
 /**
- * 공통코드 그룹 등록 폼
+ * 공통코드 그룹 수정 폼
  */
-export default function CommonCodeGroupRegisterForm({
+export default function CommonCodeGroupUpdateForm({
+  group,
   onClose,
-}: {
-  onClose: () => void;
-}) {
-  const [form, setForm] = useState<CommonCodeGroupRegisterFormState>({
-    groupCode: "",
-    groupName: "",
-    useYn: "Y",
+}: CommonCodeGroupUpdateFormProps) {
+  const [form, setForm] = useState<CommonCodeGroupUpdateFormState>({
+    groupName: group.groupName,
+    useYn: group.useYn,
   });
   const error = useSelector((state: RootState) => state.commonCodeGroup.error);
   const loading = useSelector((state: RootState) => state.commonCodeGroup.loading);
@@ -39,7 +42,12 @@ export default function CommonCodeGroupRegisterForm({
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     waitClose.current = true;
-    dispatch(fetchCommonCodeGroupRegisterRequest(form));
+    const payload: CommonCodeGroupUpdateRequest = {
+      groupId: group.groupId,
+      groupName: form.groupName,
+      useYn: form.useYn,
+    };
+    dispatch(fetchCommonCodeGroupUpdateRequest(payload));
   };
 
   useEffect(() => {
@@ -60,23 +68,17 @@ export default function CommonCodeGroupRegisterForm({
       <form onSubmit={onSubmit} className="space-y-4">
         <FormField
           label="그룹코드"
-          required
           htmlFor="groupCode"
-          hint="등록 후 변경할 수 없습니다."
+          hint="식별키라 변경할 수 없습니다."
         >
-          <Input
-            id="groupCode"
-            value={form.groupCode}
-            placeholder="예: DEPT"
-            onChange={(e) => setForm({ ...form, groupCode: e.target.value })}
-          />
+          <Input id="groupCode" value={group.groupCode} disabled />
         </FormField>
 
         <FormField label="그룹명" required htmlFor="groupName">
           <Input
             id="groupName"
             value={form.groupName}
-            placeholder="예: 진료과"
+            placeholder="그룹명을 입력하세요"
             onChange={(e) => setForm({ ...form, groupName: e.target.value })}
           />
         </FormField>
@@ -95,7 +97,7 @@ export default function CommonCodeGroupRegisterForm({
 
         <FormActions
           onCancel={onClose}
-          submitLabel="등록"
+          submitLabel="수정"
           loading={loading}
         />
       </form>
