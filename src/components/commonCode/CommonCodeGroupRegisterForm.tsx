@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * [그룹 등록 폼]
+ * Modal 안에서 사용. 제목은 Modal title.
+ *
+ * 성공 시 모달 닫기:
+ * waitClose ref 로 "이번에 제출한 요청" 인지 구분
+ * → loading false + error 없음 → onClose()
+ */
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -18,9 +26,6 @@ type CommonCodeGroupRegisterFormState = Pick<
   "groupCode" | "groupName" | "useYn"
 >;
 
-/**
- * 공통코드 그룹 등록 폼
- */
 export default function CommonCodeGroupRegisterForm({
   onClose,
 }: {
@@ -34,6 +39,7 @@ export default function CommonCodeGroupRegisterForm({
   const error = useSelector((state: RootState) => state.commonCodeGroup.error);
   const loading = useSelector((state: RootState) => state.commonCodeGroup.loading);
   const dispatch = useDispatch<AppDispatch>();
+  /** true 이면 이번 submit 의 완료를 기다리는 중 */
   const waitClose = useRef(false);
 
   const onSubmit = (e: React.FormEvent) => {
@@ -47,10 +53,10 @@ export default function CommonCodeGroupRegisterForm({
     if (loading) return;
     if (error) {
       waitClose.current = false;
-      return;
+      return; // 실패 → 모달 유지
     }
     waitClose.current = false;
-    onClose();
+    onClose(); // 성공 → 모달 닫기
   }, [loading, error, onClose]);
 
   return (

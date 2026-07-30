@@ -1,8 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+/**
+ * [공통코드 항목 패널]
+ *
+ * props.group:
+ * - null → 그룹 미선택 안내
+ * - 값 있음 → 해당 groupId 로 항목 목록 조회
+ *
+ * 기능:
+ * - 항목 등록 / 항목 수정 / 그룹 수정(헤더 버튼)
+ * - 항목 검색은 프론트 필터 (DB 재조회 없음)
+ */
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Alert, Button, Modal, Panel, StatusBadge } from "@/components/common";
+import {
+  Alert,
+  Button,
+  FormField,
+  Input,
+  Modal,
+  Panel,
+  Select,
+  StatusBadge,
+} from "@/components/common";
 import CommonCodeGroupUpdateForm from "@/components/commonCode/CommonCodeGroupUpdateForm";
 import CommonCodeItemRegisterForm from "@/components/commonCode/CommonCodeItemRegisterForm";
 import CommonCodeItemUpdateForm from "@/components/commonCode/CommonCodeItemUpdateForm";
@@ -12,27 +32,61 @@ import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemT
 import type { RootState } from "@/store/store";
 
 type CommonCodeItemPanelProps = {
+  /** 왼쪽에서 선택한 그룹. null 이면 빈 안내 화면 */
   group: CommonCodeGroup | null;
 };
 
-/**
- * 공통코드 항목 상세 영역
- */
 export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps) {
   const dispatch = useDispatch();
   const items = useSelector((state: RootState) => state.commonCodeItem.items);
   const error = useSelector((state: RootState) => state.commonCodeItem.error);
   const loading = useSelector((state: RootState) => state.commonCodeItem.loading);
+
   const [registerOpen, setRegisterOpen] = useState(false);
   const [groupEditOpen, setGroupEditOpen] = useState(false);
+  /** 행 [수정] 클릭 시 선택한 항목 — 수정 Modal 에 전달 */
   const [editItem, setEditItem] = useState<CommonCodeItem | null>(null);
 
+  // ----- 검색 조건 (프론트 전용) -----
+  const [keyword, setKeyword] = useState("");
+  const [useYnFilter, setUseYnFilter] = useState("");
+
+  /**
+   * 그룹이 바뀌면:
+   * 1) 해당 groupId 항목 목록 API 호출
+   * 2) 이전 그룹의 검색 조건 초기화
+   */
   useEffect(() => {
     if (group != null) {
       dispatch(fetchCommonCodeItemRequest(group.groupId));
+      setKeyword("");
+      setUseYnFilter("");
     }
   }, [dispatch, group]);
 
+  /**
+   * 항목 필터
+   * - items(원본)는 Redux 유지
+   * - codeValue / codeName / useYn 기준
+   */
+  const filteredItems = useMemo(() => {
+    const q = keyword.trim().toLowerCase();
+    return items.filter((item) => {
+      const matchKeyword =
+        q === "" ||
+        item.codeValue.toLowerCase().includes(q) ||
+        item.codeName.toLowerCase().includes(q);
+      const matchUseYn = useYnFilter === "" || item.useYn === useYnFilter;
+      return matchKeyword && matchUseYn;
+    });
+  }, [items, keyword, useYnFilter]);
+
+  function resetItemSearch() {
+    setKeyword("");
+    setUseYnFilter("");
+  }
+
+  // 그룹 미선택
   if (group === null) {
     return (
       <Panel dashed>
@@ -55,6 +109,7 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
 
   return (
     <Panel>
+      {/* 헤더: 선택 그룹 정보 + 그룹 수정 / 항목 등록 */}
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -67,7 +122,9 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
             <StatusBadge value={group.useYn} />
           </div>
           <p className="mt-1 text-xs text-slate-400">
-            항목 {items.length}건 · 그룹 정보와 코드 항목을 이 패널에서 관리합니다
+            항목 {filteredItems.length}
+            {filteredItems.length !== items.length ? ` / ${items.length}` : ""}건
+            · 그룹 정보와 코드 항목을 이 패널에서 관리합니다
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -80,12 +137,46 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
         </div>
       </div>
 
+      {/* 항목 검색 영역 */}
+      <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <FormField
+            label="검색어"
+            htmlFor="itemKeyword"
+            className="min-w-[200px] flex-1"
+          >
+            <Input
+              id="itemKeyword"
+              value={keyword}
+              placeholder="코드값 / 코드명"
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+          </FormField>
+          <FormField label="사용여부" htmlFor="itemUseYn" className="w-36">
+            <Select
+              id="itemUseYn"
+              value={useYnFilter}
+              placeholder="전체"
+              onChange={(e) => setUseYnFilter(e.target.value)}
+              options={[
+                { value: "Y", label: "사용 (Y)" },
+                { value: "N", label: "미사용 (N)" },
+              ]}
+            />
+          </FormField>
+          <Button type="button" variant="secondary" onClick={resetItemSearch}>
+            초기화
+          </Button>
+        </div>
+      </div>
+
       {error ? (
         <div className="px-5 pt-4">
           <Alert variant="error">{error}</Alert>
         </div>
       ) : null}
 
+      {/* 항목 테이블 — filteredItems 기준 */}
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-full min-w-[520px] text-left text-sm">
           <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/95 backdrop-blur">
@@ -103,17 +194,21 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
                   목록을 불러오는 중입니다...
                 </td>
               </tr>
-            ) : items.length === 0 ? (
+            ) : filteredItems.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-5 py-20 text-center">
-                  <p className="text-sm font-medium text-slate-600">항목이 없습니다</p>
+                  <p className="text-sm font-medium text-slate-600">
+                    {items.length === 0 ? "항목이 없습니다" : "검색 조건에 맞는 항목이 없습니다"}
+                  </p>
                   <p className="mt-1 text-xs text-slate-400">
-                    상단의 항목 등록으로 첫 코드를 추가하세요.
+                    {items.length === 0
+                      ? "상단의 항목 등록으로 첫 코드를 추가하세요."
+                      : "검색어나 사용여부를 바꿔 보세요."}
                   </p>
                 </td>
               </tr>
             ) : (
-              items.map((item) => (
+              filteredItems.map((item) => (
                 <tr
                   key={item.codeId}
                   className="border-t border-slate-50 transition-colors hover:bg-slate-50/90"
@@ -143,6 +238,7 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
         </table>
       </div>
 
+      {/* ----- Modals ----- */}
       <Modal
         open={registerOpen}
         title="공통코드 항목 등록"

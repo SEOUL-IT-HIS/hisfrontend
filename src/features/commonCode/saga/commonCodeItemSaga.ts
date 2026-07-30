@@ -1,3 +1,9 @@
+/**
+ * [공통코드 항목 Saga]
+ *
+ * Request → API → Success/Failure
+ * fetchCommonCodeItemRequest.payload = groupId
+ */
 import { call, put, takeLatest } from "redux-saga/effects";
 import {
   fetchCommonCodeItemApi,
@@ -17,6 +23,7 @@ import {
 } from "../slice/commonCodeItemSlice";
 import type { CommonCodeItem } from "../types/commonCodeItemTypes";
 
+/** 목록 — action.payload = groupId */
 function* fetchCommonCodeItemSaga(action: ReturnType<typeof fetchCommonCodeItemRequest>) {
   try {
     const items: CommonCodeItem[] = yield call(fetchCommonCodeItemApi, action.payload);
@@ -28,6 +35,7 @@ function* fetchCommonCodeItemSaga(action: ReturnType<typeof fetchCommonCodeItemR
   }
 }
 
+/** 등록 */
 function* fetchCommonCodeItemRegisterSaga(
   action: ReturnType<typeof fetchCommonCodeItemRegisterRequest>,
 ) {
@@ -41,6 +49,7 @@ function* fetchCommonCodeItemRegisterSaga(
   }
 }
 
+/** 수정 */
 function* fetchCommonCodeItemUpdateSaga(
   action: ReturnType<typeof fetchCommonCodeItemUpdateRequest>,
 ) {

@@ -1,8 +1,8 @@
 import CommonCodeGroupList from "@/components/commonCode/CommonCodeGroupList";
 
-
 /**
- * 공통코드 페이지 (얇은 엔트리)
+ * /admin/commoncode 페이지 엔트리
+ * - 실제 UI/로직은 CommonCodeGroupList 에 있음 (얇은 page)
  */
 export default function Page() {
   return <CommonCodeGroupList />;

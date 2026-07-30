@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * [항목 등록 폼]
+ * - groupId 는 props 로 받음 (입력칸 없음)
+ * - codeValue 는 등록 후 수정 불가
+ */
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -55,6 +60,7 @@ export default function CommonCodeItemRegisterForm({
     dispatch(fetchCommonCodeItemRegisterRequest(payload));
   };
 
+  // 등록 성공 시에만 Modal 닫기
   useEffect(() => {
     if (!waitClose.current) return;
     if (loading) return;
