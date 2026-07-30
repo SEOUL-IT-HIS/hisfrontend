@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
@@ -27,6 +28,8 @@ const initialForm: PatientRegisterRequest = {
 export default function PatientRegisterForm() {
   const [form, setForm] = useState<PatientRegisterRequest>(initialForm);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const {
     registeredPatient,
@@ -39,6 +42,13 @@ export default function PatientRegisterForm() {
   useEffect(() => {
     dispatch(resetPatientRegistration());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (submitted && registeredPatient) {
+      dispatch(resetPatientRegistration());
+      router.push("/reception/patientmanagement");
+    }
+  }, [dispatch, registeredPatient, router, submitted]);
 
   const updateForm = (
     field: keyof PatientRegisterRequest,
@@ -89,6 +99,7 @@ export default function PatientRegisterForm() {
     }
 
     setValidationError(null);
+    setSubmitted(true);
     dispatch(
       registerPatientRequest({
         patientName: form.patientName.trim(),
@@ -102,6 +113,7 @@ export default function PatientRegisterForm() {
   const resetForm = () => {
     setForm(initialForm);
     setValidationError(null);
+    setSubmitted(false);
     dispatch(resetPatientRegistration());
   };
 

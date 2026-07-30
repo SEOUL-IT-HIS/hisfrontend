@@ -2,22 +2,29 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   Patient,
   PatientDuplicateCheckRequest,
+  PatientListItem,
   PatientRegisterRequest,
 } from "../type/patientType";
 
 type PatientState = {
+  patients: PatientListItem[];
   registeredPatient: Patient | null;
   duplicated: boolean | null;
+  listLoading: boolean;
   registerLoading: boolean;
   duplicateCheckLoading: boolean;
+  listError: string | null;
   error: string | null;
 };
 
 const initialState: PatientState = {
+  patients: [],
   registeredPatient: null,
   duplicated: null,
+  listLoading: false,
   registerLoading: false,
   duplicateCheckLoading: false,
+  listError: null,
   error: null,
 };
 
@@ -25,6 +32,21 @@ const patientSlice = createSlice({
   name: "patient",
   initialState,
   reducers: {
+    fetchPatientListRequest(state) {
+      state.listLoading = true;
+      state.listError = null;
+    },
+    fetchPatientListSuccess(
+      state,
+      action: PayloadAction<PatientListItem[]>,
+    ) {
+      state.listLoading = false;
+      state.patients = action.payload;
+    },
+    fetchPatientListFailure(state, action: PayloadAction<string>) {
+      state.listLoading = false;
+      state.listError = action.payload;
+    },
     registerPatientRequest: {
       reducer(state) {
         state.registerLoading = true;
@@ -69,6 +91,9 @@ const patientSlice = createSlice({
 });
 
 export const {
+  fetchPatientListRequest,
+  fetchPatientListSuccess,
+  fetchPatientListFailure,
   registerPatientRequest,
   registerPatientSuccess,
   registerPatientFailure,

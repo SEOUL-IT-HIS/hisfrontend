@@ -3,9 +3,19 @@ import type {
   Patient,
   PatientDuplicateCheckApiResponse,
   PatientDuplicateCheckRequest,
+  PatientListApiResponse,
+  PatientListItem,
   PatientRegisterApiResponse,
   PatientRegisterRequest,
 } from "../type/patientType";
+
+/** GET /api/patient */
+export async function fetchPatientListApi(): Promise<PatientListItem[]> {
+  const response =
+    await apiClient.get<PatientListApiResponse>("/api/patient");
+
+  return response.data.data;
+}
 
 /** POST /api/patient/register */
 export async function registerPatientApi(
