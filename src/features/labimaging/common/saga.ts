@@ -1,6 +1,7 @@
 import { all, fork } from "redux-saga/effects";
-import labSpecimenSaga from "@/features/labimaging/labspecimen/saga";
-import imagingAcquisitionSaga from "@/features/labimaging/imagingacquisition/saga";
+import labOrderSaga from "@/features/labimaging/laborder/saga";
+import imageOrderSaga from "@/features/labimaging/imagingorder/saga";
+import labScheduleSaga from "@/features/labimaging/labschedule/saga";
 
 /**
  * labImaging 도메인 결합 saga
@@ -10,7 +11,8 @@ import imagingAcquisitionSaga from "@/features/labimaging/imagingacquisition/sag
  */
 export default function* labImagingSaga() {
   yield all([
-    fork(labSpecimenSaga),
-    fork(imagingAcquisitionSaga),
+    fork(labOrderSaga),
+    fork(imageOrderSaga),
+    fork(labScheduleSaga),
   ]);
 }
