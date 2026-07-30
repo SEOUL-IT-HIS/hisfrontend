@@ -20,4 +20,11 @@ export type CommonCodeItemRegisterRequest = Pick<
   "groupId" | "codeValue" | "codeName" | "useYn"
 >;
 
+/** PUT /api/commonCodeItem/update/{codeId} 요청 body */
+export type CommonCodeItemUpdateRequest = {
+  codeId: number;
+  codeName: string;
+  useYn: string;
+};
+
 export type CommonCodeItemApiResponse = ApiResponse<CommonCodeItem[]>;

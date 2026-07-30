@@ -7,14 +7,14 @@ type FormFieldProps = {
   required?: boolean;
   htmlFor?: string;
   children: ReactNode;
-  /** 입력 아래 안내 문구 */
   hint?: string;
   className?: string;
 };
 
 /**
- * 공통 폼 필드 (라벨 + 입력 영역)
- * - 등록/수정 모달 폼 레이아웃에 사용
+ * 공통 폼 필드 (라벨 + 입력)
+ * - 등록/수정 Modal 폼에서 사용
+ * - import { FormField } from "@/components/common"
  */
 export default function FormField({
   label,
@@ -25,13 +25,13 @@ export default function FormField({
   className = "",
 }: FormFieldProps) {
   return (
-    <label className={`flex flex-col gap-1 text-sm ${className}`} htmlFor={htmlFor}>
-      <span className="font-medium text-slate-700">
+    <label className={`flex flex-col gap-1.5 text-sm ${className}`} htmlFor={htmlFor}>
+      <span className="font-semibold text-slate-700">
         {label}
         {required ? <span className="text-rose-500"> *</span> : null}
       </span>
       {children}
-      {hint ? <span className="text-xs text-slate-400">{hint}</span> : null}
+      {hint ? <span className="text-xs leading-4 text-slate-400">{hint}</span> : null}
     </label>
   );
 }
