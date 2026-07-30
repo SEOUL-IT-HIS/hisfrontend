@@ -12,7 +12,7 @@ import type {
 /** GET /api/patient */
 export async function fetchPatientListApi(): Promise<PatientListItem[]> {
   const response =
-    await apiClient.get<PatientListApiResponse>("/api/patient");
+    await apiClient.get<PatientListApiResponse>("/api/patient/list");
 
   return response.data.data;
 }
