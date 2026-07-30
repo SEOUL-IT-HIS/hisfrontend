@@ -15,10 +15,15 @@ const patientApiOrigin =
 
 const nextConfig: NextConfig = {
   // LAN IP로 접속할 때 /_next 정적 리소스 403 방지
+  // (다른 PC에서 http://192.168.1.149:3000 접속 시 필요)
   allowedDevOrigins: ["192.168.1.128", "192.168.1.149"],
   async rewrites() {
     return [
       // ---------- patient-service (구체 경로 먼저) ----------
+      {
+        source: "/api/patient",
+        destination: `${patientApiOrigin}/api/patient`,
+      },
       {
         source: "/api/patient/:path*",
         destination: `${patientApiOrigin}/api/patient/:path*`,
