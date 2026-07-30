@@ -1,3 +1,10 @@
+/**
+ * [공통코드 그룹 Saga]
+ *
+ * Request 액션을 가로채 API 호출 후 Success/Failure 를 put
+ *
+ * takeLatest: 같은 요청이 연속이면 마지막만 처리
+ */
 import { call, put, takeLatest } from "redux-saga/effects";
 import {
   fetchCommonCodeGroupApi,
@@ -17,6 +24,7 @@ import {
 } from "../slice/commonCodeGroupSlice";
 import type { CommonCodeGroup } from "../types/commonCodeGroupTypes";
 
+/** 목록 조회 */
 function* fetchCommonCodeGroupSaga() {
   try {
     const groups: CommonCodeGroup[] = yield call(fetchCommonCodeGroupApi);
@@ -28,6 +36,7 @@ function* fetchCommonCodeGroupSaga() {
   }
 }
 
+/** 등록 — action.payload = { groupCode, groupName, useYn } */
 function* fetchCommonCodeGroupRegisterSaga(
   action: ReturnType<typeof fetchCommonCodeGroupRegisterRequest>,
 ) {
@@ -44,6 +53,7 @@ function* fetchCommonCodeGroupRegisterSaga(
   }
 }
 
+/** 수정 — action.payload = { groupId, groupName, useYn } */
 function* fetchCommonCodeGroupUpdateSaga(
   action: ReturnType<typeof fetchCommonCodeGroupUpdateRequest>,
 ) {
@@ -60,6 +70,7 @@ function* fetchCommonCodeGroupUpdateSaga(
   }
 }
 
+/** rootSaga 에서 fork 되는 엔트리 */
 export default function* commonCodeGroupSaga() {
   yield takeLatest(fetchCommonCodeGroupRequest.type, fetchCommonCodeGroupSaga);
   yield takeLatest(

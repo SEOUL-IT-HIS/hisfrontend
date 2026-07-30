@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * [항목 수정 폼]
+ * - codeValue: 읽기 전용 (식별키)
+ * - 수정 가능: codeName, useYn
+ */
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -53,6 +58,7 @@ export default function CommonCodeItemUpdateForm({
     dispatch(fetchCommonCodeItemUpdateRequest(payload));
   };
 
+  // 수정 성공 시에만 Modal 닫기
   useEffect(() => {
     if (!waitClose.current) return;
     if (loading) return;
