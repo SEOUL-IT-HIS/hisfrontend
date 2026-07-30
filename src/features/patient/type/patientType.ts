@@ -20,7 +20,7 @@ export type Patient = PatientRegisterRequest & {
   updatedAt: string;
 };
 
-/** GET /api/patient 응답 데이터 */
+/** GET /api/patient/list 응답 데이터 */
 export type PatientListItem = {
   patientId: number;
   patientName: string;

@@ -11,11 +11,11 @@ import type { NextConfig } from "next";
 const adminApiOrigin =
   process.env.ADMIN_API_ORIGIN ?? "http://192.168.1.128:8080";
 const patientApiOrigin =
-  process.env.PATIENT_API_ORIGIN ?? "http://192.168.219.49:8080";
+  process.env.PATIENT_API_ORIGIN ?? "http://192.168.1.149:8080";
 
 const nextConfig: NextConfig = {
-  // LAN IP(예: 192.168.1.128)로 접속할 때 /_next 정적 리소스 403 방지
-  allowedDevOrigins: ["192.168.1.128"],
+  // LAN IP로 접속할 때 /_next 정적 리소스 403 방지
+  allowedDevOrigins: ["192.168.1.128", "192.168.1.149"],
   async rewrites() {
     return [
       // ---------- patient-service (구체 경로 먼저) ----------

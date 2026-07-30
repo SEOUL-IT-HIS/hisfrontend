@@ -9,7 +9,7 @@ import type {
   PatientRegisterRequest,
 } from "../type/patientType";
 
-/** GET /api/patient */
+/** GET /api/patient/list */
 export async function fetchPatientListApi(): Promise<PatientListItem[]> {
   const response =
     await apiClient.get<PatientListApiResponse>("/api/patient/list");
