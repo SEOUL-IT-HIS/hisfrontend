@@ -9,9 +9,9 @@ import { shallowEqual, useDispatch, useSelector } from "react-redux";
 const EncounterList = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error, list } = useSelector((state: RootState) => ({
-        loading: state.outpatient.listStatus.loading,
-        error: state.outpatient.listStatus.error,
-        list: state.outpatient.list
+        loading: state.outpatient.encounter.listStatus.loading,
+        error: state.outpatient.encounter.listStatus.error,
+        list: state.outpatient.encounter.list
     }), shallowEqual);
 
     useEffect(() => {

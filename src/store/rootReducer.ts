@@ -4,7 +4,7 @@ import { combineReducers } from "@reduxjs/toolkit";
 // import patientReducer from "@/features/patient/slice";
 // import receptionReducer from "@/features/reception/slice";
 // import billingReducer from "@/features/billing/slice";
-// import outpatientReducer from "@/features/outpatient/slice";
+ import outpatientReducer from "@/features/outpatient/common/slice";
 // import emergencyReducer from "@/features/emergency/slice";
 import inpatientReducer from "@/features/inpatient/slice";
 import labImagingReducer from "@/features/labimaging/common/slice";
@@ -44,7 +44,7 @@ const rootReducer = combineReducers({
   // billing: billingReducer,
 
   // 외래 (OPD)
-  // outpatient: outpatientReducer,
+  outpatient: outpatientReducer,
 
   // 응급 (EMG)
   // emergency: emergencyReducer,
