@@ -3,30 +3,33 @@ import type {
   LabOrderCreateRequest,
   LabOrderCreateResponse,
   LabOrderState,
+  LabReceptionSummary,
 } from "@/features/labimaging/laborder/types";
 
 /**
- * labOrder(검사 오더 접수) slice
+ * labOrder(검사 오더 접수 + 접수 조회) slice
  * - 상태만 관리하고 API 호출은 하지 않는다 → saga 가 담당 (가이드 10.3)
- *
- * Action prefix 는 "labImaging/" 를 유지한다. (가이드 10.2 / 요청서 3.1)
- * createSlice name = "labImaging/laborder" →
- *   action type 예: "labImaging/laborder/createLabOrderRequest"
+ * - createSlice name = "labImaging/laborder" (Action prefix "labImaging/" 유지)
  */
 const initialState: LabOrderState = {
   creating: false,
   createError: "",
   lastCreated: null,
+
+  receptions: [],
+  receptionsLoading: false,
+  receptionsError: "",
+
+  selectedReception: null,
+  receptionLoading: false,
+  receptionError: "",
 };
 
 const labOrderSlice = createSlice({
   name: "labImaging/laborder",
   initialState,
   reducers: {
-    /**
-     * 접수 생성 시작 → saga 가 이 action 을 듣고 API 호출.
-     * payload(요청값)는 리듀서가 아니라 saga 가 소비하므로, prepare 로 타입만 실어 보낸다.
-     */
+    // ---------- 접수 생성 ----------
     createLabOrderRequest: {
       reducer(state) {
         state.creating = true;
@@ -36,21 +39,68 @@ const labOrderSlice = createSlice({
         return { payload: request };
       },
     },
-    /** 접수 생성 성공 */
     createLabOrderSuccess(state, action: PayloadAction<LabOrderCreateResponse>) {
       state.creating = false;
       state.createError = "";
       state.lastCreated = action.payload;
     },
-    /** 접수 생성 실패 (payload: LAB### 코드 또는 문구) */
     createLabOrderFailure(state, action: PayloadAction<string>) {
       state.creating = false;
       state.createError = action.payload;
     },
-    /** 화면 이탈/재작성 시 결과 상태 초기화 */
     resetLabOrderResult(state) {
       state.createError = "";
       state.lastCreated = null;
+    },
+
+    // ---------- 접수 목록(미일정) 조회 ----------
+    fetchLabReceptionsRequest(state) {
+      state.receptionsLoading = true;
+      state.receptionsError = "";
+    },
+    fetchLabReceptionsSuccess(
+      state,
+      action: PayloadAction<LabReceptionSummary[]>,
+    ) {
+      state.receptionsLoading = false;
+      state.receptions = action.payload;
+    },
+    fetchLabReceptionsFailure(state, action: PayloadAction<string>) {
+      state.receptionsLoading = false;
+      state.receptionsError = action.payload;
+    },
+
+    // ---------- 접수 단건 조회 ----------
+    fetchLabReceptionByNoRequest: {
+      reducer(state) {
+        state.receptionLoading = true;
+        state.receptionError = "";
+        state.selectedReception = null;
+      },
+      prepare(receptionNo: string) {
+        return { payload: receptionNo };
+      },
+    },
+    fetchLabReceptionByNoSuccess(
+      state,
+      action: PayloadAction<LabReceptionSummary>,
+    ) {
+      state.receptionLoading = false;
+      state.selectedReception = action.payload;
+    },
+    fetchLabReceptionByNoFailure(state, action: PayloadAction<string>) {
+      state.receptionLoading = false;
+      state.receptionError = action.payload;
+    },
+
+    /** 목록에서 클릭으로 고른 접수를 재조회 없이 컨텍스트로 저장 (일정등록 화면 진입용) */
+    selectLabReception(state, action: PayloadAction<LabReceptionSummary>) {
+      state.selectedReception = action.payload;
+      state.receptionError = "";
+    },
+    clearSelectedLabReception(state) {
+      state.selectedReception = null;
+      state.receptionError = "";
     },
   },
 });
@@ -60,18 +110,38 @@ export const {
   createLabOrderSuccess,
   createLabOrderFailure,
   resetLabOrderResult,
+  fetchLabReceptionsRequest,
+  fetchLabReceptionsSuccess,
+  fetchLabReceptionsFailure,
+  fetchLabReceptionByNoRequest,
+  fetchLabReceptionByNoSuccess,
+  fetchLabReceptionByNoFailure,
+  selectLabReception,
+  clearSelectedLabReception,
 } = labOrderSlice.actions;
 
 export default labOrderSlice.reducer;
 
 // ----- Selector (가이드 10.4: 컴포넌트에서 state.xxx.yyy 깊게 접근 금지) -----
-// 등록 전제: rootReducer 에 labImaging: combineReducers({ laborder, imagingorder })
-// (리더 등록 요청 목록 참고)
 type LabOrderRoot = { labImaging: { laborder: LabOrderState } };
 
-export const selectLabOrderCreating = (state: LabOrderRoot) =>
-  state.labImaging.laborder.creating;
-export const selectLabOrderCreateError = (state: LabOrderRoot) =>
-  state.labImaging.laborder.createError;
-export const selectLastCreatedLabOrder = (state: LabOrderRoot) =>
-  state.labImaging.laborder.lastCreated;
+export const selectLabOrderCreating = (s: LabOrderRoot) =>
+  s.labImaging.laborder.creating;
+export const selectLabOrderCreateError = (s: LabOrderRoot) =>
+  s.labImaging.laborder.createError;
+export const selectLastCreatedLabOrder = (s: LabOrderRoot) =>
+  s.labImaging.laborder.lastCreated;
+
+export const selectLabReceptions = (s: LabOrderRoot) =>
+  s.labImaging.laborder.receptions;
+export const selectLabReceptionsLoading = (s: LabOrderRoot) =>
+  s.labImaging.laborder.receptionsLoading;
+export const selectLabReceptionsError = (s: LabOrderRoot) =>
+  s.labImaging.laborder.receptionsError;
+
+export const selectSelectedLabReception = (s: LabOrderRoot) =>
+  s.labImaging.laborder.selectedReception;
+export const selectLabReceptionLoading = (s: LabOrderRoot) =>
+  s.labImaging.laborder.receptionLoading;
+export const selectLabReceptionError = (s: LabOrderRoot) =>
+  s.labImaging.laborder.receptionError;

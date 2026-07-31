@@ -2,6 +2,7 @@ import { combineReducers } from "@reduxjs/toolkit";
 import laborderReducer from "@/features/labimaging/laborder/slice";
 import imagingorderReducer from "@/features/labimaging/imagingorder/slice";
 import labScheduleReducer from "@/features/labimaging/labschedule/slice";
+import imageScheduleReducer from "@/features/labimaging/imagingschedule/slice";
 /**
  * labImaging 도메인 결합 reducer
  * - 하위 기능 slice 들을 하나로 묶어 rootReducer 에 labImaging 키로 등록한다.
@@ -11,8 +12,8 @@ import labScheduleReducer from "@/features/labimaging/labschedule/slice";
 const labImagingReducer = combineReducers({
   laborder: laborderReducer,
   imagingorder: imagingorderReducer,
-  labschedule: labScheduleReducer, 
-  //imagingschedule: imagingScheduleReducer, TODO: imagingschedule slice 작성 후 주석 해제   
+  labschedule: labScheduleReducer,
+  imagingschedule: imageScheduleReducer,
 });
 
 export default labImagingReducer;

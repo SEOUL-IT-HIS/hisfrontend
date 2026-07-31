@@ -3,6 +3,7 @@ import type { ApiResponse } from "@/features/labimaging/types";
 import type {
   ImageOrderCreateRequest,
   ImageOrderCreateResponse,
+  ImageReceptionSummary,
 } from "@/features/labimaging/imagingorder/types";
 
 /**
@@ -23,6 +24,30 @@ export async function createImageOrder(
   const { data } = await apiClient.post<ApiResponse<ImageOrderCreateResponse>>(
     IMAGE_ORDER_PATH,
     request,
+  );
+  return data.data;
+}
+
+/**
+ * 영상 접수 목록(미일정)을 조회한다.
+ * GET /api/lab-imaging/image-orders/receptions → 200 + ImageOrderSummaryDto[]
+ */
+export async function fetchImageReceptions(): Promise<ImageReceptionSummary[]> {
+  const { data } = await apiClient.get<ApiResponse<ImageReceptionSummary[]>>(
+    `${IMAGE_ORDER_PATH}/receptions`,
+  );
+  return data.data;
+}
+
+/**
+ * 영상 접수 단건을 접수번호로 조회한다.
+ * GET /api/lab-imaging/image-orders/receptions/{receptionNo} → 200 + ImageOrderSummaryDto
+ */
+export async function fetchImageReceptionByNo(
+  receptionNo: string,
+): Promise<ImageReceptionSummary> {
+  const { data } = await apiClient.get<ApiResponse<ImageReceptionSummary>>(
+    `${IMAGE_ORDER_PATH}/receptions/${encodeURIComponent(receptionNo)}`,
   );
   return data.data;
 }
