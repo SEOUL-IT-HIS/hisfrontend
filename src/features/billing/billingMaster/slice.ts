@@ -14,7 +14,7 @@ const BillingMasterSlice=createSlice({
     name:"billingMaster",
     initialState,
     reducers:{
-        // 전체조회
+        // 검색후 전체조회 
         fetchBillingMasterRequest:(state)=>{
             state.listStatus={...initialStatus,loading:true};
         },

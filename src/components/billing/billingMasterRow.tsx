@@ -8,11 +8,7 @@ const billingMasterRow = ({ billingMaster }: { billingMaster: BillingMaster }) =
     const router = useRouter();
 
     return (
-
             <div>
-
-
-
             <p>{billingMaster.feeName} ({billingMaster.feeCode})</p>
             <p>가격: {billingMaster.defaultPrice}</p>
             <p>분류: {billingMaster.categoryCode} / 보험유형: {billingMaster.insuranceTypeCode}</p>
