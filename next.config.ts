@@ -12,11 +12,13 @@ const adminApiOrigin =
   process.env.ADMIN_API_ORIGIN ?? "http://192.168.1.128:8080";
 const patientApiOrigin =
   process.env.PATIENT_API_ORIGIN ?? "http://192.168.1.149:8080";
+const labImagingApiOrigin =
+  process.env.LABIMAGING_API_ORIGIN ?? "http://192.168.1.104:8080";
 
 const nextConfig: NextConfig = {
   // LAN IP로 접속할 때 /_next 정적 리소스 403 방지
   // (다른 PC에서 http://192.168.1.149:3000 접속 시 필요)
-  allowedDevOrigins: ["192.168.1.128", "192.168.1.149"],
+  allowedDevOrigins: ["192.168.1.128", "192.168.1.149", "192.168.1.104"],
   async rewrites() {
     return [
       // ---------- patient-service (구체 경로 먼저) ----------
@@ -27,6 +29,16 @@ const nextConfig: NextConfig = {
       {
         source: "/api/patient/:path*",
         destination: `${patientApiOrigin}/api/patient/:path*`,
+      },
+
+            // ---------- lab-imaging-service (구체 경로 먼저) ----------
+      {
+        source: "/api/lab-imaging",
+        destination: `${labImagingApiOrigin}/api/lab-imaging`,
+      },
+      {
+        source: "/api/lab-imaging/:path*",
+        destination: `${labImagingApiOrigin}/api/lab-imaging/:path*`,
       },
 
       // ---------- admin-service (나머지 /api) ----------
