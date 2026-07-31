@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 export type DataTableColumn<T> = {
   key: string;
   header: string;
-  /** 셀 렌더링 */
   render: (row: T) => ReactNode;
   className?: string;
 };
@@ -13,20 +12,17 @@ export type DataTableColumn<T> = {
 type DataTableProps<T> = {
   columns: DataTableColumn<T>[];
   rows: T[];
-  /** 행 고유 키 */
   rowKey: (row: T) => string | number;
   loading?: boolean;
   loadingMessage?: string;
   emptyMessage?: string;
   minWidthClassName?: string;
-  /** true 이면 컬럼 너비를 균등 분할 */
   equalColumns?: boolean;
   className?: string;
 };
 
 /**
  * 공통 데이터 테이블
- * - CRUD 목록(Read) 화면에 사용
  */
 export default function DataTable<T>({
   columns,
@@ -44,18 +40,18 @@ export default function DataTable<T>({
 
   return (
     <div
-      className={`min-h-0 flex-1 overflow-auto rounded-xl border border-slate-200 bg-white ${className}`}
+      className={`min-h-0 flex-1 overflow-auto rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] ${className}`}
     >
       <table
         className={`w-full ${equalColumns ? "table-fixed" : ""} ${minWidthClassName} text-left text-sm`}
       >
-        <thead className="sticky top-0 border-b border-slate-200 bg-slate-50 text-slate-600">
+        <thead className="sticky top-0 border-b border-slate-100 bg-slate-50/95 text-slate-400 backdrop-blur">
           <tr>
             {columns.map((col) => (
               <th
                 key={col.key}
                 style={equalWidth ? { width: equalWidth } : undefined}
-                className={`px-3 py-3 font-medium ${col.className ?? ""}`}
+                className={`px-4 py-3 text-xs font-medium uppercase tracking-wide ${col.className ?? ""}`}
               >
                 {col.header}
               </th>
@@ -77,11 +73,14 @@ export default function DataTable<T>({
             </tr>
           ) : (
             rows.map((row) => (
-              <tr key={rowKey(row)} className="border-t border-slate-100 hover:bg-slate-50/80">
+              <tr
+                key={rowKey(row)}
+                className="border-t border-slate-50 transition-colors hover:bg-slate-50/80"
+              >
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className={`truncate px-3 py-3 text-slate-800 ${col.className ?? ""}`}
+                    className={`truncate px-4 py-3 text-slate-700 ${col.className ?? ""}`}
                   >
                     {col.render(row)}
                   </td>
