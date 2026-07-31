@@ -17,12 +17,18 @@ type BillingDetailState = {
   billingDetails: BillingDetail[];
   loading: boolean;
   error: string;
+
+  detail: BillingDetail | null;
+  detailStatus: { loading: boolean; error: string };
 };
 
 const initialState: BillingDetailState = {
   billingDetails: [],
   loading: false,
   error: "",
+
+  detail: null,
+  detailStatus: { loading: false, error: "" },
 };
 
 const billingDetailSlice = createSlice({
@@ -49,6 +55,21 @@ const billingDetailSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
+
+    /** 진료비 상세조회 단건(환자 상세정보) 조회 시작 */
+    fetchBillingDetailRequest(state, _action: PayloadAction<string>) {
+      state.detailStatus = { loading: true, error: "" };
+    },
+    /** 진료비 상세조회 단건 조회 성공 */
+    fetchBillingDetailSuccess(state, action: PayloadAction<BillingDetail>) {
+      state.detail = action.payload;
+      state.detailStatus = { loading: false, error: "" };
+    },
+    /** 진료비 상세조회 단건 조회 실패 */
+    fetchBillingDetailFailure(state, action: PayloadAction<string>) {
+      state.detail = null;
+      state.detailStatus = { loading: false, error: action.payload };
+    },
   },
 });
 
@@ -56,6 +77,9 @@ export const {
   searchBillingDetailRequest,
   searchBillingDetailSuccess,
   searchBillingDetailFailure,
+  fetchBillingDetailRequest,
+  fetchBillingDetailSuccess,
+  fetchBillingDetailFailure,
 } = billingDetailSlice.actions;
 
 export default billingDetailSlice.reducer;

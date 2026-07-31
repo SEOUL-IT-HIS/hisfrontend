@@ -11,4 +11,5 @@ export type BillingDetail = {
   addr: string;
   itemName: string;
   price: string;
+  gender: string;
 };
