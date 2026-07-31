@@ -4,7 +4,7 @@ import { all, fork } from "redux-saga/effects";
 // import patientSaga from "@/features/patient/saga";
 // import receptionSaga from "@/features/reception/saga";
 // import billingSaga from "@/features/billing/saga";
-// import outpatientSaga from "@/features/outpatient/saga";
+ import outpatientSaga from "@/features/outpatient/common/saga";
 // import emergencySaga from "@/features/emergency/saga";
 import inpatientSaga from "@/features/inpatient/saga";
 import labImagingSaga from "@/features/labimaging/common/saga";
@@ -30,7 +30,7 @@ export default function* rootSaga() {
     fork(watchPatientSaga),
     // fork(receptionSaga),
     // fork(billingSaga),
-    // fork(outpatientSaga),
+     fork(outpatientSaga),
     // fork(emergencySaga),
     fork(inpatientSaga),
     // fork(pharmacySaga),

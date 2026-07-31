@@ -53,7 +53,22 @@ export interface LabOrderCreateResponse {
   receptionStatusCode: string;
 }
 
-/** 검사 오더 접수 slice 상태 */
+/**
+ * 검사 접수 요약 — 백엔드 LabOrderSummaryDto (목록/단건 공용).
+ * - 목록: GET /api/lab-imaging/lab-orders/receptions        (미일정 접수 = 일정등록 대상)
+ * - 단건: GET /api/lab-imaging/lab-orders/receptions/{receptionNo}
+ */
+export interface LabReceptionSummary {
+  labOrderId: string;
+  labOrderNo: string;
+  patientNo: string;
+  orderStatusCode: string;
+  labReceptionId: string;
+  receptionNo: string;
+  receptionStatusCode: string;
+}
+
+/** 검사 오더/접수 slice 상태 */
 export interface LabOrderState {
   /** 접수 생성 진행 중 여부 */
   creating: boolean;
@@ -61,6 +76,16 @@ export interface LabOrderState {
   createError: string;
   /** 마지막 생성 성공 결과 */
   lastCreated: LabOrderCreateResponse | null;
+
+  /** 접수 목록(미일정) 조회 결과 */
+  receptions: LabReceptionSummary[];
+  receptionsLoading: boolean;
+  receptionsError: string;
+
+  /** 접수 단건(상세/일정등록 컨텍스트) */
+  selectedReception: LabReceptionSummary | null;
+  receptionLoading: boolean;
+  receptionError: string;
 }
 
 /**
