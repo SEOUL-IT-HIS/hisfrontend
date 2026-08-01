@@ -16,6 +16,8 @@ const labImagingApiOrigin =
   process.env.LABIMAGING_API_ORIGIN ?? "http://192.168.1.104:8080";
 const outpatientApiOrigin =
     process.env.OUTPATIENT_API_ORIGIN ?? "http://192.168.1.112:8080";
+const emergencyApiOrigin =
+    process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.130:8080";
 
 const nextConfig: NextConfig = {
   // LAN IP로 접속할 때 /_next 정적 리소스 403 방지
@@ -31,6 +33,16 @@ const nextConfig: NextConfig = {
       {
         source: "/api/outpatient/:path*",
         destination: `${outpatientApiOrigin}/api/outpatient/:path*`,
+      },
+
+      // ---------- emergency-service (구체 경로 먼저) ----------
+      {
+        source: "/api/emergency",
+        destination: `${emergencyApiOrigin}/api/emergency`,
+      },
+      {
+        source: "/api/emergency/:path*",
+        destination: `${emergencyApiOrigin}/api/emergency/:path*`,
       },
 
       // ---------- patient-service (구체 경로 먼저) ----------
