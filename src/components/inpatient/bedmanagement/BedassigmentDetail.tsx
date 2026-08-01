@@ -3,7 +3,7 @@
 import { fetchBedAssignmentDetailRequest, updateBedAssignmentRequest, selectBedAssignmentUpdateStatus } from "@/features/inpatient/bedmanagement/slice";
 import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 const BedAssignmentDetail=()=>{
