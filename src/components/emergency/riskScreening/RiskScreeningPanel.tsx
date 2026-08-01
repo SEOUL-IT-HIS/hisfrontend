@@ -13,8 +13,8 @@ import {
   selectRiskScreeningLoading,
   selectRiskScreeningSubmitError,
   selectRiskScreeningSubmitting,
-} from "@/features/emergency/slice";
-import { SCREEN_RESULT_OPTIONS, SCREEN_TYPE_OPTIONS } from "@/features/emergency/types";
+} from "@/features/emergency/riskScreening/slice";
+import { SCREEN_RESULT_OPTIONS, SCREEN_TYPE_OPTIONS } from "@/features/emergency/riskScreening/types";
 import { formatDateTime } from "@/features/emergency/utils";
 
 type RiskScreeningPanelProps = {

@@ -1,4 +1,4 @@
-import EmsInfoPanelPreview from "@/components/emergency/EmsInfoPanelPreview";
+import EmsInfoPanelPreview from "@/components/emergency/emsInfo/EmsInfoPanelPreview";
 
 /**
  * EMS(119) 사전정보 패널 미리보기 (UC-TRI-01 / Jira UD2-8, UD2-47)

@@ -14,8 +14,8 @@ import {
   selectIsolationLoading,
   selectIsolationSubmitError,
   selectIsolationSubmitting,
-} from "@/features/emergency/slice";
-import { ISOLATION_TYPE_OPTIONS } from "@/features/emergency/types";
+} from "@/features/emergency/isolation/slice";
+import { ISOLATION_TYPE_OPTIONS } from "@/features/emergency/isolation/types";
 import { formatDateTime } from "@/features/emergency/utils";
 
 type IsolationPanelProps = {

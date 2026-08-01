@@ -13,7 +13,7 @@ import {
   selectVitalsLoading,
   selectVitalsSubmitError,
   selectVitalsSubmitting,
-} from "@/features/emergency/slice";
+} from "@/features/emergency/vitals/slice";
 import { formatDateTime } from "@/features/emergency/utils";
 
 type VitalsPanelProps = {

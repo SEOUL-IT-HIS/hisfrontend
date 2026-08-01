@@ -11,7 +11,7 @@ import {
   selectEmsInfoItems,
   selectEmsInfoLoading,
   selectEmsInfoSearched,
-} from "@/features/emergency/slice";
+} from "@/features/emergency/emsInfo/slice";
 import { formatDateTime } from "@/features/emergency/utils";
 
 type EmsInfoPanelProps = {

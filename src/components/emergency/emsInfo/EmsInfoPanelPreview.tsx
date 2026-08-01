@@ -2,7 +2,7 @@
 
 import { useState, type ChangeEvent } from "react";
 import { Button, FormField, Input } from "@/components/common";
-import EmsInfoPanel from "@/components/emergency/EmsInfoPanel";
+import EmsInfoPanel from "@/components/emergency/emsInfo/EmsInfoPanel";
 
 /**
  * EmsInfoPanel 미리보기 하네스 (UD2-47)

@@ -14,8 +14,8 @@ import {
   selectKtasLoading,
   selectKtasSubmitError,
   selectKtasSubmitting,
-} from "@/features/emergency/slice";
-import { KTAS_LEVEL_OPTIONS } from "@/features/emergency/types";
+} from "@/features/emergency/ktas/slice";
+import { KTAS_LEVEL_OPTIONS } from "@/features/emergency/ktas/types";
 import { formatDateTime } from "@/features/emergency/utils";
 
 type KtasPanelProps = {
