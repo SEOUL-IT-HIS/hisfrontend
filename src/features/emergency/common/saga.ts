@@ -1,0 +1,18 @@
+import { all, fork } from "redux-saga/effects";
+import emsInfoSaga from "@/features/emergency/emsInfo/saga";
+import ktasSaga from "@/features/emergency/ktas/saga";
+import vitalsSaga from "@/features/emergency/vitals/saga";
+
+/**
+ * emergency 도메인 결합 saga
+ * - 하위 기능 saga 들을 fork 로 묶어 rootSaga 에서 한 번에 실행한다.
+ * - 이 PR 범위: emsInfo(UD2-8) / ktas(UD2-9,43) / vitals(UD2-10) 까지만 포함.
+ *   격리(UD2-11)·위험스크리닝(UD2-12)은 별도 PR에서 추가 예정.
+ */
+export default function* emergencySaga() {
+  yield all([
+    fork(emsInfoSaga),
+    fork(ktasSaga),
+    fork(vitalsSaga),
+  ]);
+}
