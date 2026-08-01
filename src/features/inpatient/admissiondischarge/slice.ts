@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-import { AdmissionDTO, AdmissionState, Status } from "./types";
+import { AdmissionDTO, AdmissionState, Status, RegisterAdmissionRequest, UpdateAdmissionRequest } from "./types";
 
 
 const initialStatus: Status = { loading: false, error: null, success: false };
