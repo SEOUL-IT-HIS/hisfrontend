@@ -51,11 +51,36 @@ export interface ImageOrderCreateResponse {
   receptionStatusCode: string;
 }
 
-/** 영상 오더 접수 slice 상태 */
+/**
+ * 영상 접수 요약 — 백엔드 ImageOrderSummaryDto (목록/단건 공용).
+ * - 목록: GET /api/lab-imaging/image-orders/receptions        (미일정 접수 = 일정등록 대상)
+ * - 단건: GET /api/lab-imaging/image-orders/receptions/{receptionNo}
+ */
+export interface ImageReceptionSummary {
+  imageOrderId: string;
+  imageOrderNo: string;
+  patientNo: string;
+  orderStatusCode: string;
+  imageReceptionId: string;
+  receptionNo: string;
+  receptionStatusCode: string;
+}
+
+/** 영상 오더/접수 slice 상태 */
 export interface ImageOrderState {
   creating: boolean;
   createError: string;
   lastCreated: ImageOrderCreateResponse | null;
+
+  /** 접수 목록(미일정) 조회 결과 */
+  receptions: ImageReceptionSummary[];
+  receptionsLoading: boolean;
+  receptionsError: string;
+
+  /** 접수 단건(상세/일정등록 컨텍스트) */
+  selectedReception: ImageReceptionSummary | null;
+  receptionLoading: boolean;
+  receptionError: string;
 }
 
 /**
