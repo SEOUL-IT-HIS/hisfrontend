@@ -2,7 +2,7 @@
  * [인증 Redux Slice]
  *
  * 상태: user / loading / error
- * UI 에서는 Request 만 dispatch → saga 가 API 호출 (추후 연결)
+ * UI 에서는 Request 만 dispatch → saga 가 API 호출
  */
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { AuthLoginRequest, AuthUser } from "../types/authTypes";

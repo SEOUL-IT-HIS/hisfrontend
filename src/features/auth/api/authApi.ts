@@ -6,23 +6,51 @@
  * - 세션  GET  /api/auth/me
  * - 로그아웃 POST /api/auth/logout
  *
- * TODO: 실제 axios 호출 연결
+ * 세션 쿠키(JSESSIONID)는 apiClient withCredentials 로 전달
  */
-import type { AuthLoginRequest, AuthUser } from "../types/authTypes";
+import apiClient from "@/lib/axios";
+import type { ApiResponse, AuthLoginRequest, AuthUser } from "../types/authTypes";
+
+/** BE AuthDto → 프론트 AuthUser (pwHash 등 제외) */
+function toAuthUser(data: AuthUser): AuthUser {
+  return {
+    accountId: data.accountId,
+    empId: data.empId,
+    loginId: data.loginId,
+    empName: data.empName ?? null,
+    empNo: data.empNo ?? null,
+    deptCode: data.deptCode ?? null,
+    accountStatus: data.accountStatus ?? null,
+  };
+}
 
 /** 로그인 */
 export async function fetchAuthLoginApi(
-  _payload: AuthLoginRequest,
+  payload: AuthLoginRequest,
 ): Promise<AuthUser> {
-  throw new Error("authApi.login 미구현");
+  const response = await apiClient.post<ApiResponse<AuthUser>>(
+    "/api/auth/login",
+    payload,
+  );
+  if (response.data.code !== 200 || !response.data.data) {
+    throw new Error(response.data.message || "로그인에 실패했습니다.");
+  }
+  return toAuthUser(response.data.data);
 }
 
 /** 세션 확인 */
 export async function fetchAuthMeApi(): Promise<AuthUser> {
-  throw new Error("authApi.me 미구현");
+  const response = await apiClient.get<ApiResponse<AuthUser>>("/api/auth/me");
+  if (response.data.code !== 200 || !response.data.data) {
+    throw new Error(response.data.message || "로그인이 필요합니다.");
+  }
+  return toAuthUser(response.data.data);
 }
 
 /** 로그아웃 */
 export async function fetchAuthLogoutApi(): Promise<void> {
-  throw new Error("authApi.logout 미구현");
+  const response = await apiClient.post<ApiResponse<null>>("/api/auth/logout");
+  if (response.data.code !== 200) {
+    throw new Error(response.data.message || "로그아웃에 실패했습니다.");
+  }
 }
