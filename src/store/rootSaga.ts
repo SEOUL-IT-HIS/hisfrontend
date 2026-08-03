@@ -13,6 +13,7 @@ import labImagingSaga from "@/features/labimaging/common/saga";
 // import adminSaga from "@/features/admin/saga";
 import watchCommonCodeItemSaga from "@/features/commonCode/saga/commonCodeItemSaga";
 import watchCommonCodeGroupSaga from "@/features/commonCode/saga/commonCodeGroupSaga";
+import watchAuthSaga from "@/features/auth/saga/authSaga";
 import watchMenuSaga from "@/features/system/saga/menuSaga";
 import watchPatientSaga from "@/features/patient/saga/patientSaga";
 
@@ -23,6 +24,7 @@ import watchPatientSaga from "@/features/patient/saga/patientSaga";
 export default function* rootSaga() {
   yield all([
       fork(watchMenuSaga),
+      fork(watchAuthSaga),
       fork(watchCommonCodeGroupSaga),
       fork(watchCommonCodeItemSaga),
       fork(labImagingSaga),

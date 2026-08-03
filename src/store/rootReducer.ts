@@ -13,6 +13,7 @@ import labImagingReducer from "@/features/labimaging/common/slice";
 // import adminReducer from "@/features/admin/slice";
 import commonCodeItemReducer from "@/features/commonCode/slice/commonCodeItemSlice";
 import commonCodeGroupReducer from "@/features/commonCode/slice/commonCodeGroupSlice";
+import authReducer from "@/features/auth/slice/authSlice";
 import systemReducer from "@/features/system/slice/menuSlice";
 import patientReducer from "@/features/patient/slice/patientSlice";
 
@@ -28,6 +29,7 @@ const rootReducer = combineReducers({
 
   // 공통
   system: systemReducer,
+  auth: authReducer,
   commonCodeGroup: commonCodeGroupReducer,
   commonCodeItem: commonCodeItemReducer,
 
