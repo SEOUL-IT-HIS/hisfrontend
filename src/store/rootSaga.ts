@@ -14,6 +14,7 @@ import labImagingSaga from "@/features/labimaging/common/saga";
 import watchCommonCodeItemSaga from "@/features/commonCode/saga/commonCodeItemSaga";
 import watchCommonCodeGroupSaga from "@/features/commonCode/saga/commonCodeGroupSaga";
 import watchAuthSaga from "@/features/auth/saga/authSaga";
+import watchEmpSaga from "@/features/emp/saga/empSaga";
 import watchMenuSaga from "@/features/system/saga/menuSaga";
 import watchPatientSaga from "@/features/patient/saga/patientSaga";
 
@@ -25,6 +26,7 @@ export default function* rootSaga() {
   yield all([
       fork(watchMenuSaga),
       fork(watchAuthSaga),
+      fork(watchEmpSaga),
       fork(watchCommonCodeGroupSaga),
       fork(watchCommonCodeItemSaga),
       fork(labImagingSaga),
