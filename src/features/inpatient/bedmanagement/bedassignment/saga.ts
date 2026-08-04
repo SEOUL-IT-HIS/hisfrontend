@@ -4,7 +4,7 @@ import type {
   BedAssignmentDTO,
   RegisterBedAssignmentRequest,
   UpdateBedAssignmentRequest,
-} from "./types";
+} from "../types";
 import {
   createBedAssignmentApi,
   deleteBedAssignmentApi,
@@ -30,7 +30,7 @@ function  *fetchBedAssignmentsSaga() {
     }
 }
 
-function* fetchBedAssignmentDetailSaga(action: PayloadAction<string>) {
+function* fetchBedAssignmentDetailSaga(action: PayloadAction<number>) {
   try {
     const bedAssignment: BedAssignmentDTO = yield call(fetchBedAssignmentDetailApi, action.payload);
     yield put({ type: "bedAssignment/fetchBedAssignmentDetailSuccess", payload: bedAssignment });
@@ -57,7 +57,7 @@ function* updateBedAssignmentSaga(action: PayloadAction<UpdateBedAssignmentReque
   }
 }
 
-function* deleteBedAssignmentSaga(action: PayloadAction<string>) {
+function* deleteBedAssignmentSaga(action: PayloadAction<number>) {
   try {
     yield call(deleteBedAssignmentApi, action.payload);
     yield put({ type: "bedAssignment/deleteBedAssignmentSuccess", payload: action.payload });

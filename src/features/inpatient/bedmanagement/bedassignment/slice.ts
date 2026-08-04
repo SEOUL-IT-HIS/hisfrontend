@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RegisterBedAssignmentRequest, Status, BedAssignmentState, UpdateBedAssignmentRequest, BedAssignmentDTO } from "./types";
+import { RegisterBedAssignmentRequest, Status, BedAssignmentState, UpdateBedAssignmentRequest, BedAssignmentDTO } from "../types";
 
 
 const initialStatus: Status = { loading: false, error: null, success: false };
@@ -27,7 +27,7 @@ const bedAssignmentSlice = createSlice({
         fetchBedAssignmentsFailure(state, action: PayloadAction<string>) {
             state.listStatus = { ...initialStatus, error: action.payload };
         },
-        fetchBedAssignmentDetailRequest(state, action: PayloadAction<string>) {
+        fetchBedAssignmentDetailRequest(state, action: PayloadAction<number>) {
             state.detailStatus = { ...initialStatus, loading: true };
         },
         fetchBedAssignmentDetailSuccess(state, action: PayloadAction<BedAssignmentDTO>) {
@@ -60,10 +60,10 @@ const bedAssignmentSlice = createSlice({
         updateBedAssignmentFailure(state, action: PayloadAction<string>) {
             state.updateStatus = { ...initialStatus, error: action.payload };
         },
-        deleteBedAssignmentRequest(state, action: PayloadAction<string>) {
+        deleteBedAssignmentRequest(state, action: PayloadAction<number>) {
             state.deleteStatus = { ...initialStatus, loading: true };
         },
-        deleteBedAssignmentSuccess(state, action: PayloadAction<string>) {
+        deleteBedAssignmentSuccess(state, action: PayloadAction<number>) {
             state.list = state.list.filter((assignment) => assignment.assignmentId !== action.payload);
             state.deleteStatus = { ...initialStatus, success: true };
         },

@@ -1,4 +1,4 @@
-import BedAssignmentDetail from "@/components/inpatient/bedmanagement/BedassigmentDetail";
+import BedAssignmentDetail from "@/components/inpatient/bedmanagement/bedassignment/detail";
 
 const bedAssignmentDetailPage=()=>{
     return(

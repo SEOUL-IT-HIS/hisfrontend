@@ -5,7 +5,7 @@ import { AppDispatch, RootState } from "@/store/store";
 import { useDispatch, useSelector, shallowEqual } from "react-redux";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createBedAssignmentRequest } from "@/features/inpatient/bedmanagement/slice";
+import { createBedAssignmentRequest } from "@/features/inpatient/bedmanagement/bedassignment/slice";
 
 const BedAssignmentRegisterForm = () => {
     const router = useRouter();
@@ -33,7 +33,7 @@ const BedAssignmentRegisterForm = () => {
     };
     useEffect(() => {
         if (success) {
-            router.push("/inpatient/bedmanagement/list");
+            router.push("/inpatient/bedmanagement/bedassignment/list");
         }
     }, [success, router]);
     return (

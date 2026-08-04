@@ -1,7 +1,7 @@
 import { all, call, put, takeLatest } from "redux-saga/effects";
-import { fetchBedApi, fetchBedDetailApi } from "./bedApi";
-import { fetchBedFailure } from "./bedSlice";
-import { BedDTO } from "./types";
+import { fetchBedApi, fetchBedDetailApi } from "./api";
+import { fetchBedFailure } from "./slice";
+import { BedDTO } from "../types";
 import { PayloadAction } from "@reduxjs/toolkit";
 
 function extractErrorMessage(error: unknown): string {

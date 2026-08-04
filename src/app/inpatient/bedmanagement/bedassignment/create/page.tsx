@@ -1,4 +1,4 @@
-import BedAssignmentRegisterForm from "@/components/inpatient/bedmanagement/BedassigmentRegisterForm";
+import BedAssignmentRegisterForm from "@/components/inpatient/bedmanagement/bedassignment/registerForm";
 
 const BedAssignmentRegisterPage = () => {
     return (

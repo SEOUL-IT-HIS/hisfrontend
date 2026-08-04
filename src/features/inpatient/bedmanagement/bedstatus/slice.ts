@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { BedState, BedDTO, Status } from "./types";
+import { BedState, BedDTO, Status } from "../types";
 
 const initialStatus: Status = { loading: false, error: null, success: false };
 
