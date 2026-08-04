@@ -9,7 +9,7 @@ import emergencySaga from "@/features/emergency/common/saga";
 import inpatientSaga from "@/features/inpatient/saga";
 import labImagingSaga from "@/features/labimaging/common/saga";
 // import pharmacySaga from "@/features/pharmacy/saga";
-// import surgerySaga from "@/features/surgery/saga";
+import surgerySaga from "@/features/surgery/saga";
 // import adminSaga from "@/features/admin/saga";
 import watchCommonCodeItemSaga from "@/features/commonCode/saga/commonCodeItemSaga";
 import watchCommonCodeGroupSaga from "@/features/commonCode/saga/commonCodeGroupSaga";
@@ -39,6 +39,6 @@ export default function* rootSaga() {
     fork(emergencySaga),
     fork(inpatientSaga),
     // fork(pharmacySaga),
-    // fork(surgerySaga),
+    fork(surgerySaga),
   ]);
 }

@@ -11,12 +11,13 @@ import {
   selectAvailableRooms,
 } from "@/features/surgery/room/slice";
 import {
+  registerEmergencySurgeryRequest,
   registerSurgeryRequest,
   selectScheduleError,
   selectScheduleSaving,
 } from "@/features/surgery/schedule/slice";
-import { getEmployees } from "@/features/surgery/staff/api";
-import type { Employee } from "@/features/surgery/staff/types";
+import { fetchEmpApi } from "@/features/emp/api/empApi";
+import type { Emp } from "@/features/emp/types/empTypes";
 
 type FieldErrors = {
   patientId?: string;
@@ -28,14 +29,25 @@ const inputClass =
   "h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50";
 
 /**
- * 수술 스케줄 등록 폼 (SL2-36)
+ * 수술 요청 등록 폼 — <b>임시 대행 화면</b> (SL2-36 / SL2-44)
+ *
+ * <p>원래 이 화면은 수술 서비스의 것이 아니다. 일반 수술은 진료가, 응급 수술은 응급실이
+ * 요청해야 한다(§21.1 — 수술은 다른 서비스의 업무를 대신하지 않는다). 다만 features/outpatient
+ * 와 features/emergency 에 아직 요청 화면이 없어, 그때까지 데이터를 만들 수단으로 둔다.
+ * 두 서비스가 각자 화면을 만들면 이 화면은 지우고 배정·진행 관리만 남긴다.</p>
+ *
+ * <p>일반이든 응급이든 '요청접수(00)'로 생성되고, 수술실 담당자가 배정 화면에서 수술실을
+ * 잡아야 '예약(01)'이 된다. 차이는 응급 여부뿐이며 응급 건이 배정 대기 목록 위로 올라온다.</p>
+ *
+ * <p>수술실 선택칸을 남겨둔 이유 — 요청자가 희망 수술실을 적을 수 있게 하되, 확정과
+ * 가용성 검증은 배정 시점에 백엔드가 수행한다.</p>
  *
  * <p>수술실은 사용가능 목록에서, 환자는 환자 서비스 목록에서 선택한다.
  * 프론트가 각 서비스 API 를 직접 호출한다(§2.1 — 수술 백엔드가 대신 조회하면 BFF 가 되어
  * §21.1 위반). 선택 결과는 식별자만 수술 서비스로 보내고 이름은 저장하지 않는다(§14.1).</p>
  *
- * <p>집도의는 admin-service 직원 목록에서 선택한다. 정식 직원 모듈(features/admin)이
- * develop 에 머지되면 features/surgery/staff 를 지우고 그쪽 API 로 교체한다.</p>
+ * <p>집도의는 직원 모듈(features/emp)의 목록에서 선택한다. 직원 데이터는 admin-service
+ * 소유라 수술이 자체 조회를 두지 않는다(§21.1).</p>
  */
 export default function ScheduleRegisterForm() {
   const dispatch = useDispatch<AppDispatch>();
@@ -55,7 +67,7 @@ export default function ScheduleRegisterForm() {
   // (수술 slice 에 타 서비스 상태를 두면 서비스 간 상태 결합이 생긴다 — §10.1)
   const [patients, setPatients] = useState<PatientListItem[]>([]);
   const [patientLoadError, setPatientLoadError] = useState("");
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<Emp[]>([]);
   const [employeeLoadError, setEmployeeLoadError] = useState("");
 
   // 수술실 선택 목록 — 사용가능(01) 상태만 받아온다
@@ -83,7 +95,7 @@ export default function ScheduleRegisterForm() {
   // 집도의 선택 목록 — admin-service 직원 조회
   useEffect(() => {
     let ignore = false;
-    getEmployees()
+    fetchEmpApi()
       .then((list) => {
         if (!ignore) setEmployees(list);
       })
@@ -108,18 +120,22 @@ export default function ScheduleRegisterForm() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
+    const request = {
+      patientId,
+      surgeonId,
+      // <input type="date"> 값이 이미 yyyy-MM-dd 라 그대로 보낸다(§14.2 `_dt`)
+      surgeryDt,
+      emergencyYn: emergency ? ("Y" as const) : ("N" as const),
+      roomCode: roomCode || null,
+      surgeryName: surgeryName.trim() || null,
+    };
+
+    // 상태·응급여부는 보내지 않는다 — 호출한 엔드포인트가 서버에서 결정한다.
+    // (일반 POST 는 emergencyYn=N, /emergency 는 Y 로 강제)
     dispatch(
-      registerSurgeryRequest({
-        patientId,
-        surgeonId,
-        // <input type="date"> 값이 이미 yyyy-MM-dd 라 그대로 보낸다(§14.2 `_dt`)
-        surgeryDt,
-        // SURGERY_STATUS_CD 01=예약
-        statusCd: "01",
-        emergencyYn: emergency ? "Y" : "N",
-        roomCode: roomCode || null,
-        surgeryName: surgeryName.trim() || null,
-      }),
+      emergency
+        ? registerEmergencySurgeryRequest(request)
+        : registerSurgeryRequest(request),
     );
   }
 
@@ -168,7 +184,7 @@ export default function ScheduleRegisterForm() {
           {employees.map((employee) => (
             // admin-service 는 empId 가 number, 수술은 VARCHAR2(36) 문자열이라 변환해 보낸다
             <option key={employee.empId} value={String(employee.empId)}>
-              {employee.name} ({employee.empNo})
+              {employee.empName} ({employee.empNo})
             </option>
           ))}
         </select>

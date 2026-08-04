@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
@@ -28,6 +30,7 @@ const inputClass =
  */
 export default function RoomUpdateForm({ roomCode }: Props) {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const room = useSelector(selectSelectedRoom);
   const loading = useSelector(selectRoomLoading);
   const saving = useSelector(selectRoomSaving);
@@ -36,10 +39,20 @@ export default function RoomUpdateForm({ roomCode }: Props) {
   const [roomName, setRoomName] = useState("");
   const [boundCode, setBoundCode] = useState<string | null>(null);
   const [nameError, setNameError] = useState("");
+  const submitted = useRef(false);
 
   useEffect(() => {
     dispatch(fetchRoomRequest(roomCode));
   }, [dispatch, roomCode]);
+
+  // 수정 성공 시 목록으로 돌아간다(실패면 error 가 채워지므로 머문다)
+  useEffect(() => {
+    if (submitted.current && !saving && !error) {
+      submitted.current = false;
+      router.push("/surgery/room/list");
+    }
+    if (!saving && error) submitted.current = false;
+  }, [saving, error, router]);
 
   // 조회 결과가 도착하면 초기값을 한 번만 채운다.
   // (effect 대신 렌더 중 처리 — 사용자가 수정 중인 값을 덮어쓰지 않도록 코드가 바뀔 때만 반영)
@@ -55,6 +68,7 @@ export default function RoomUpdateForm({ roomCode }: Props) {
       return;
     }
     setNameError("");
+    submitted.current = true;
     dispatch(updateRoomRequest(roomCode, { roomName: roomName.trim() }));
   }
 
@@ -88,13 +102,22 @@ export default function RoomUpdateForm({ roomCode }: Props) {
         <p className="text-sm text-red-600">{resolveSurgeryMessage(error)}</p>
       )}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="h-10 rounded-lg bg-sky-500 px-4 text-white disabled:bg-slate-300"
-      >
-        {saving ? "저장 중…" : "수정"}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="h-10 rounded-lg bg-sky-500 px-4 text-white disabled:bg-slate-300"
+        >
+          {saving ? "저장 중…" : "수정"}
+        </button>
+        {/* 수정하지 않고 나갈 때 */}
+        <Link
+          href="/surgery/room/list"
+          className="flex h-10 items-center rounded-lg border border-slate-200 px-4 text-slate-700"
+        >
+          목록
+        </Link>
+      </div>
     </form>
   );
 }

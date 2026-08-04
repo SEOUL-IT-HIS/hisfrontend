@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
@@ -29,6 +31,7 @@ const inputClass =
  */
 export default function EquipmentUpdateForm({ equipmentId }: Props) {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const equipment = useSelector(selectSelectedEquipment);
   const loading = useSelector(selectRoomLoading);
   const saving = useSelector(selectRoomSaving);
@@ -37,10 +40,20 @@ export default function EquipmentUpdateForm({ equipmentId }: Props) {
   const [equipmentName, setEquipmentName] = useState("");
   const [boundId, setBoundId] = useState<string | null>(null);
   const [nameError, setNameError] = useState("");
+  const submitted = useRef(false);
 
   useEffect(() => {
     dispatch(fetchEquipmentRequest(equipmentId));
   }, [dispatch, equipmentId]);
+
+  // 수정 성공 시 목록으로 돌아간다(실패면 error 가 채워지므로 머문다)
+  useEffect(() => {
+    if (submitted.current && !saving && !error) {
+      submitted.current = false;
+      router.push("/surgery/equipment/list");
+    }
+    if (!saving && error) submitted.current = false;
+  }, [saving, error, router]);
 
   if (equipment && equipment.equipmentId !== boundId) {
     setBoundId(equipment.equipmentId);
@@ -54,6 +67,7 @@ export default function EquipmentUpdateForm({ equipmentId }: Props) {
       return;
     }
     setNameError("");
+    submitted.current = true;
     dispatch(
       updateEquipmentRequest(equipmentId, {
         equipmentName: equipmentName.trim(),
@@ -101,13 +115,22 @@ export default function EquipmentUpdateForm({ equipmentId }: Props) {
         <p className="text-sm text-red-600">{resolveSurgeryMessage(error)}</p>
       )}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="h-10 rounded-lg bg-sky-500 px-4 text-white disabled:bg-slate-300"
-      >
-        {saving ? "저장 중…" : "수정"}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="h-10 rounded-lg bg-sky-500 px-4 text-white disabled:bg-slate-300"
+        >
+          {saving ? "저장 중…" : "수정"}
+        </button>
+        {/* 수정하지 않고 나갈 때 */}
+        <Link
+          href="/surgery/equipment/list"
+          className="flex h-10 items-center rounded-lg border border-slate-200 px-4 text-slate-700"
+        >
+          목록
+        </Link>
+      </div>
     </form>
   );
 }

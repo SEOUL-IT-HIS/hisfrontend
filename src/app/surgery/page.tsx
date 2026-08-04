@@ -18,11 +18,16 @@ const MENUS = [
     label: "수술장비 관리",
     desc: "SL2-9 조회 / SL2-10 등록",
   },
+  {
+    href: "/surgery/schedule/requests",
+    label: "수술 요청 대기",
+    desc: "진료 요청 배정",
+  },
   { href: "/surgery/schedule/list", label: "수술 일정", desc: "SL2-25 조회" },
   {
     href: "/surgery/schedule/register",
-    label: "수술 스케줄 등록",
-    desc: "SL2-36",
+    label: "수술 요청 등록 (임시)",
+    desc: "진료·응급 화면 완성 전 대행",
   },
 ];
 
