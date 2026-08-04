@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { searchBillingDetailRequest } from "@/features/billing/searchBillingDetail/slice";
+import BillingDetailSearchList from "@/components/billing/BillingDetailSearchList";
 
 export default function BillingDetailSearchForm() {
     const dispatch = useDispatch<AppDispatch>();
@@ -25,15 +26,17 @@ export default function BillingDetailSearchForm() {
 
             {loading && <p>조회 중입니다.</p>}
             {error && <p>{error}</p>}
-            {billingDetails.map((detail) => (
-                <div key={detail.billingDetailId}>
-                    <p>환자명: {detail.patientName}</p>
-                    <p>전화번호: {detail.tel}</p>
-                    <p>주소: {detail.addr}</p>
-                    <p>진료비 항목: {detail.itemName}</p>
-                    <p>금액: {detail.price}</p>
-                </div>
-            ))}
+            {!loading && !error && billingDetails.length === 0 && (<p>검색 결과가 없습니다.</p>)}
+            
+            <div>
+                {billingDetails.map((billingDetail)=>(
+                    <BillingDetailSearchList key={billingDetail.billingId}
+                    billingDetail={billingDetail}
+                    />
+                    ))}
+            </div>
+
+
         </div>
     );
 }

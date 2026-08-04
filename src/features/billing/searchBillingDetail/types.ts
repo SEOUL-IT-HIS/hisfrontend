@@ -5,7 +5,7 @@ export type BillingDetailSearchCondition = {
 
 /** 진료비 상세조회 결과 행 */
 export type BillingDetail = {
-  billingDetailId: string;
+  billingId: string;
   patientName: string;
   tel: string;
   addr: string;
