@@ -5,7 +5,7 @@ import {
   fetchBillingMasterAPI,
   fetchBillingMasterDetailAPI,
 } from "@/features/billing/billingMaster/api";
-import type { ApiResponse } from "@/features/admin/types";
+import type { ApiResponse } from "@/features/billing/types";
 import {
   fetchBillingMasterDetailFailure,
   fetchBillingMasterDetailRequest,

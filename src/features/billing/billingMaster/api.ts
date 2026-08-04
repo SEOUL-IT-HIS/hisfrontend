@@ -1,5 +1,5 @@
 import api from "@/lib/axios";
-import type { ApiResponse } from "@/features/admin/types";
+import type { ApiResponse } from "@/features/billing/types";
 import type {
   BillingMaster,
   BillingMasterCreateRequest,
