@@ -33,6 +33,14 @@ type EmpRegisterFormState = {
   deptCode: string;
 };
 
+/** 필드별 인라인 검증 메시지 (§15.3: 검증은 필드 하단 인라인, Toast는 서버 결과에만) */
+type FieldErrors = {
+  empName?: string;
+  empPhone?: string;
+  hireDate?: string;
+  deptCode?: string;
+};
+
 type EmpRegisterFormProps = {
   deptCodes: CommonCodeItem[];
   onClose: () => void;
@@ -49,6 +57,7 @@ export default function EmpRegisterForm({
     hireDate: "",
     deptCode: "",
   });
+  const [errors, setErrors] = useState<FieldErrors>({});
   const error = useSelector((state: RootState) => state.emp.error);
   const loading = useSelector((state: RootState) => state.emp.loading);
   const dispatch = useDispatch<AppDispatch>();
@@ -57,6 +66,15 @@ export default function EmpRegisterForm({
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const nextErrors: FieldErrors = {};
+    if (!form.empName.trim()) nextErrors.empName = "이름을 입력해주세요.";
+    if (!form.empPhone.trim()) nextErrors.empPhone = "연락처를 입력해주세요.";
+    if (!form.hireDate) nextErrors.hireDate = "입사일을 입력해주세요.";
+    if (!form.deptCode.trim()) nextErrors.deptCode = "부서를 선택해주세요.";
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
     waitClose.current = true;
     const payload: EmpRegisterRequest = {
       empName: form.empName.trim(),
@@ -91,6 +109,9 @@ export default function EmpRegisterForm({
             placeholder="이름을 입력하세요"
             onChange={(e) => setForm({ ...form, empName: e.target.value })}
           />
+          {errors.empName && (
+            <p className="text-xs text-red-600">{errors.empName}</p>
+          )}
         </FormField>
 
         <FormField label="이메일" htmlFor="empEmail">
@@ -103,25 +124,31 @@ export default function EmpRegisterForm({
           />
         </FormField>
 
-        <FormField label="연락처" htmlFor="empPhone">
+        <FormField label="연락처" required htmlFor="empPhone">
           <Input
             id="empPhone"
             value={form.empPhone}
             placeholder="예: 010-1234-5678"
             onChange={(e) => setForm({ ...form, empPhone: e.target.value })}
           />
+          {errors.empPhone && (
+            <p className="text-xs text-red-600">{errors.empPhone}</p>
+          )}
         </FormField>
 
-        <FormField label="입사일" htmlFor="hireDate">
+        <FormField label="입사일" required htmlFor="hireDate">
           <Input
             id="hireDate"
             type="date"
             value={form.hireDate}
             onChange={(e) => setForm({ ...form, hireDate: e.target.value })}
           />
+          {errors.hireDate && (
+            <p className="text-xs text-red-600">{errors.hireDate}</p>
+          )}
         </FormField>
 
-        <FormField label="부서" htmlFor="deptCode">
+        <FormField label="부서" required htmlFor="deptCode">
           <Select
             id="deptCode"
             value={form.deptCode}
@@ -129,6 +156,9 @@ export default function EmpRegisterForm({
             onChange={(e) => setForm({ ...form, deptCode: e.target.value })}
             options={toCodeSelectOptions(deptCodes)}
           />
+          {errors.deptCode && (
+            <p className="text-xs text-red-600">{errors.deptCode}</p>
+          )}
         </FormField>
 
         <FormActions onCancel={onClose} submitLabel="등록" loading={loading} />
