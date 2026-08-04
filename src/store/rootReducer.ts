@@ -16,6 +16,8 @@ import commonCodeGroupReducer from "@/features/commonCode/slice/commonCodeGroupS
 import empReducer from "@/features/emp/slice/empSlice";
 import systemReducer from "@/features/system/slice/menuSlice";
 import patientReducer from "@/features/patient/slice/patientSlice";
+import billingDetailReducer from "@/features/billing/searchBillingDetail/slice";
+import billingMasterReducer from "@/features/billing/billingMaster/slice";
 
 /**
  * RootReducer (프론트 리더 관리 영역)
@@ -43,7 +45,8 @@ const rootReducer = combineReducers({
   // reception: receptionReducer,
 
   // 수납/청구 (BIL)
-  // billing: billingReducer,
+  billingDetail: billingDetailReducer,
+  billingMaster: billingMasterReducer,
 
   // 외래 (OPD)
   outpatient: outpatientReducer,
