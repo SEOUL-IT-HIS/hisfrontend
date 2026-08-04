@@ -16,6 +16,8 @@ import watchCommonCodeGroupSaga from "@/features/commonCode/saga/commonCodeGroup
 import watchEmpSaga from "@/features/emp/saga/empSaga";
 import watchMenuSaga from "@/features/system/saga/menuSaga";
 import watchPatientSaga from "@/features/patient/saga/patientSaga";
+import billingDetailSaga from "@/features/billing/searchBillingDetail/saga";
+import billingMasterSaga from "@/features/billing/billingMaster/saga";
 
 /**
  * RootSaga (프론트 리더 관리 영역)
@@ -31,7 +33,8 @@ export default function* rootSaga() {
     // fork(adminSaga),
     fork(watchPatientSaga),
     // fork(receptionSaga),
-    // fork(billingSaga),
+    fork(billingDetailSaga),
+    fork(billingMasterSaga),
      fork(outpatientSaga),
     fork(emergencySaga),
     fork(inpatientSaga),
