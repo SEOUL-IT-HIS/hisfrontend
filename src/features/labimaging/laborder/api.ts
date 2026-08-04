@@ -3,6 +3,7 @@ import type { ApiResponse } from "@/features/labimaging/types";
 import type {
   LabOrderCreateRequest,
   LabOrderCreateResponse,
+  LabReceptionSummary,
 } from "@/features/labimaging/laborder/types";
 
 /**
@@ -25,6 +26,32 @@ export async function createLabOrder(
   const { data } = await apiClient.post<ApiResponse<LabOrderCreateResponse>>(
     LAB_ORDER_PATH,
     request,
+  );
+  return data.data;
+}
+
+/**
+ * 검사 접수 목록(미일정)을 조회한다.
+ * GET /api/lab-imaging/lab-orders/receptions → 200 + LabOrderSummaryDto[]
+ * (백엔드가 latest_yn='Y' 스케줄이 없는 접수만 반환 = 일정등록 대상)
+ */
+export async function fetchLabReceptions(): Promise<LabReceptionSummary[]> {
+  const { data } = await apiClient.get<ApiResponse<LabReceptionSummary[]>>(
+    `${LAB_ORDER_PATH}/receptions`,
+  );
+  return data.data;
+}
+
+/**
+ * 검사 접수 단건을 접수번호로 조회한다.
+ * GET /api/lab-imaging/lab-orders/receptions/{receptionNo} → 200 + LabOrderSummaryDto
+ * (없으면 백엔드 409/400 + LAB013 → interceptor 가 Error 로 reject)
+ */
+export async function fetchLabReceptionByNo(
+  receptionNo: string,
+): Promise<LabReceptionSummary> {
+  const { data } = await apiClient.get<ApiResponse<LabReceptionSummary>>(
+    `${LAB_ORDER_PATH}/receptions/${encodeURIComponent(receptionNo)}`,
   );
   return data.data;
 }

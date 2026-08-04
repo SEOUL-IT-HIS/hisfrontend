@@ -1,6 +1,7 @@
 import { combineReducers } from "@reduxjs/toolkit";
-import bedManagementReducer from "./bedmanagement/slice";
-import bedReducer from "./bedmanagement/bedSlice";
+import bedManagementReducer from "./bedmanagement/bedassignment/slice";
+import bedReducer from "./bedmanagement/bedstatus/slice";
+import bedReservationReducer from "./bedmanagement/bedreservation/slice";
 import admissionReducer from "./admissiondischarge/slice";
 /**
  * inpatient(입원) 서비스 reducer
@@ -10,6 +11,7 @@ import admissionReducer from "./admissiondischarge/slice";
 const inpatientReducer = combineReducers({
   bedmanagement: bedManagementReducer,
   bed: bedReducer,
+  bedreservation: bedReservationReducer,
   admissiondischarge: admissionReducer,
 });
 

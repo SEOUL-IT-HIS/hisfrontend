@@ -8,6 +8,7 @@ import {
   selectAdmissions,
   selectAdmissionListStatus,
 } from "@/features/inpatient/admissiondischarge/slice";
+import Link from "next/link";
 
 const AdmissionList = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -40,7 +41,11 @@ const AdmissionList = () => {
           <tbody>
             {admissions.map((admission) => (
               <tr key={admission.admissionId}>
-                <td>{admission.admissionId}</td>
+                <td>
+                  <Link href={`/inpatient/admissiondischarge/${admission.admissionId}`}>
+                    {admission.admissionId}
+                  </Link>
+                </td>
                 <td>{admission.admissionDeptId}</td>
                 <td>{admission.admissionRoute}</td>
                 <td>{admission.admissionDate}</td>
