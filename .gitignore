@@ -41,3 +41,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local analysis docs only (가이드/브랜치 규칙은 추적)
+/docs/코드분석-*.md
+/docs/* (1).md

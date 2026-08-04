@@ -1,20 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { clearSession } from "@/features/auth/session";
-import {
-  isActivePath,
-  isWorkAreaActive,
-} from "@/features/system/menuTree";
-import type { MenuTreeNode } from "@/features/system/types";
+import { MenuTreeNode } from "@/features/system/types/menuTypes";
 
 type SidebarProps = {
   menuTree: MenuTreeNode[];
   loading?: boolean;
   error?: string;
 };
+
+function matchesPath(pathname: string, href: string | null | undefined) {
+  if (!href) return false;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function isActivePath(pathname: string, href: string | null | undefined) {
+  return matchesPath(pathname, href);
+}
+
+function isWorkAreaActive(pathname: string, item: MenuTreeNode) {
+  if (isActivePath(pathname, item.menuUrl)) return true;
+  return item.children.some((child) => isActivePath(pathname, child.menuUrl));
+}
 
 const workAreaIcons: Record<string, ReactNode> = {
   frontOffice: (
@@ -60,9 +69,11 @@ function areaStateKey(item: MenuTreeNode) {
   return item.areaKey ?? `menu-${item.menuId}`;
 }
 
+/**
+ * 좌측 업무영역 메뉴 — 병원용 밝은 톤
+ */
 export default function Sidebar({ menuTree, loading = false, error = "" }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const activeAreaKey = (() => {
     for (const item of menuTree) {
@@ -73,15 +84,11 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
     return undefined;
   })();
 
-  function handleLogout() {
-    clearSession();
-    router.replace("/login");
-  }
-
   const [collapsed, setCollapsed] = useState(false);
   const [openAreas, setOpenAreas] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpenAreas((prev) => {
       const next = { ...prev };
       let changed = false;
@@ -98,6 +105,7 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
 
   useEffect(() => {
     if (!activeAreaKey) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpenAreas((prev) => {
       if (prev[activeAreaKey]) return prev;
       return { ...prev, [activeAreaKey]: true };
@@ -110,22 +118,27 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
 
   return (
     <aside
-      className={`flex h-full shrink-0 flex-col border-r border-slate-200 bg-[#eef2f6] text-slate-600 transition-[width] ${
-        collapsed ? "w-[96px]" : "w-56"
+      className={`flex h-full shrink-0 flex-col border-r border-sky-100 bg-[#f3f8fc] text-slate-600 transition-[width] ${
+        collapsed ? "w-[88px]" : "w-60"
       }`}
     >
-      <div className={`flex flex-col gap-1 px-2 pb-3 pt-4 ${collapsed ? "items-center" : "items-start px-3"}`}>
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-sky-500 text-sm font-semibold text-white">
+      <div
+        className={`flex flex-col gap-2 border-b border-sky-100/80 px-3 pb-4 pt-5 ${
+          collapsed ? "items-center" : ""
+        }`}
+      >
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500 text-sm font-bold text-white shadow-sm shadow-sky-500/25">
           HIS
         </div>
         {!collapsed ? (
-          <p className="text-xs font-medium text-slate-600">테스트 의원</p>
-        ) : (
-          <p className="text-center text-[10px] leading-tight text-slate-500">테스트 의원</p>
-        )}
+          <div>
+            <p className="text-sm font-semibold text-slate-800">테스트 의원</p>
+            <p className="text-[11px] text-slate-400">Hospital Workspace</p>
+          </div>
+        ) : null}
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2" aria-label="업무영역 메뉴">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-3" aria-label="업무영역 메뉴">
         {loading ? (
           <p className="px-2 py-3 text-xs text-slate-400">메뉴 불러오는 중…</p>
         ) : null}
@@ -148,13 +161,13 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
                 key={item.menuId}
                 href={homeHref}
                 title={item.menuName}
-                className={`flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] transition-colors ${
+                className={`flex flex-col items-center gap-1 rounded-xl px-1 py-2.5 text-[11px] transition-colors ${
                   areaActive
-                    ? "bg-white font-semibold text-sky-600 shadow-sm"
-                    : "hover:bg-white/70 hover:text-slate-800"
+                    ? "bg-white font-semibold text-sky-700 shadow-sm ring-1 ring-sky-100"
+                    : "hover:bg-white/80 hover:text-slate-800"
                 }`}
               >
-                <span className={areaActive ? "text-sky-600" : "text-slate-500"}>
+                <span className={areaActive ? "text-sky-600" : "text-slate-400"}>
                   {areaIcon(item.areaKey)}
                 </span>
                 <span className="text-center leading-tight">{item.menuName}</span>
@@ -163,24 +176,24 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
           }
 
           return (
-            <div key={item.menuId} className="rounded-xl">
+            <div key={item.menuId}>
               <button
                 type="button"
                 onClick={() => toggleArea(key)}
                 aria-expanded={expanded}
-                className={`flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm transition-colors ${
+                className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left text-sm transition-colors ${
                   areaActive
-                    ? "bg-white font-semibold text-sky-600 shadow-sm"
-                    : "hover:bg-white/70 hover:text-slate-800"
+                    ? "bg-white font-semibold text-sky-700 shadow-sm ring-1 ring-sky-100"
+                    : "hover:bg-white/80 hover:text-slate-800"
                 }`}
               >
-                <span className={areaActive ? "text-sky-600" : "text-slate-500"}>
+                <span className={areaActive ? "text-sky-600" : "text-slate-400"}>
                   {areaIcon(item.areaKey)}
                 </span>
                 <span className="flex-1">{item.menuName}</span>
                 <svg
                   viewBox="0 0 20 20"
-                  className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
+                  className={`h-4 w-4 shrink-0 text-slate-300 transition-transform ${
                     expanded ? "rotate-180" : ""
                   }`}
                   fill="none"
@@ -193,15 +206,15 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
               </button>
 
               {expanded ? (
-                <ul className="mt-1 space-y-0.5 pb-1 pl-2">
+                <ul className="mt-1 space-y-0.5 pb-2 pl-3">
                   {item.menuUrl ? (
                     <li>
                       <Link
                         href={item.menuUrl}
                         className={`block rounded-lg px-3 py-1.5 text-sm transition-colors ${
                           pathname === item.menuUrl
-                            ? "bg-sky-50 font-medium text-sky-600"
-                            : "text-slate-600 hover:bg-white/80 hover:text-slate-900"
+                            ? "bg-sky-50 font-medium text-sky-700"
+                            : "text-slate-500 hover:bg-white/90 hover:text-slate-800"
                         }`}
                       >
                         {item.menuName} 홈
@@ -217,8 +230,8 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
                           href={child.menuUrl}
                           className={`block rounded-lg px-3 py-1.5 text-sm transition-colors ${
                             childActive
-                              ? "bg-sky-50 font-medium text-sky-600"
-                              : "text-slate-600 hover:bg-white/80 hover:text-slate-900"
+                              ? "bg-sky-50 font-medium text-sky-700"
+                              : "text-slate-500 hover:bg-white/90 hover:text-slate-800"
                           }`}
                         >
                           {child.menuName}
@@ -234,7 +247,7 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
       </nav>
 
       <div
-        className={`mt-auto flex flex-col gap-1 border-t border-slate-200 px-2 py-3 text-xs text-slate-500 ${
+        className={`mt-auto flex flex-col gap-1 border-t border-sky-100/80 px-2 py-3 text-xs text-slate-400 ${
           collapsed ? "items-center text-[10px]" : ""
         }`}
       >
@@ -242,19 +255,15 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
         <button
           type="button"
           onClick={() => setCollapsed((prev) => !prev)}
-          className="w-full rounded-lg px-2 py-1.5 text-left hover:bg-white/70"
+          className="w-full rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/90 hover:text-slate-600"
         >
-          {collapsed ? "메뉴 펼치기" : "메뉴 접기"}
-        </button>
-        <button type="button" className="w-full rounded-lg px-2 py-1.5 text-left hover:bg-white/70">
-          환경설정
+          {collapsed ? "펼치기" : "메뉴 접기"}
         </button>
         <button
           type="button"
-          onClick={handleLogout}
-          className="w-full rounded-lg px-2 py-1.5 text-left text-rose-500 hover:bg-white/70"
+          className="w-full rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/90 hover:text-slate-600"
         >
-          로그아웃
+          환경설정
         </button>
       </div>
     </aside>

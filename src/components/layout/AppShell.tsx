@@ -1,56 +1,35 @@
 "use client";
 
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/sidebar/Sidebar";
-import {
-  findChildMenuByPath,
-  findWorkAreaMenuByPath,
-} from "@/features/system/menuTree";
-import {
-  fetchMenusRequest,
-  selectMenuError,
-  selectMenuLoading,
-  selectMenuTree,
-} from "@/features/system/slice";
-import type { AppDispatch } from "@/store/store";
-import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchMenuRequest } from "@/features/system/slice/menuSlice";
+import { RootState } from "@/store/store";
 
 type AppShellProps = {
   children: React.ReactNode;
-  title?: string;
 };
 
 /**
- * 화면(Presentation)
- * - API 직접 호출 X
- * - dispatch(Request) 만 하고, 데이터는 selector 로 읽는다
+ * 앱 셸 — Sidebar + Header + Main
  */
-export default function AppShell({ children, title }: AppShellProps) {
-  const pathname = usePathname();
-  const dispatch = useDispatch<AppDispatch>();
-
-  const menuTree = useSelector(selectMenuTree);
-  const menuLoading = useSelector(selectMenuLoading);
-  const menuError = useSelector(selectMenuError);
+export default function AppShell({ children }: AppShellProps) {
+  const dispatch = useDispatch();
+  const items = useSelector((state: RootState) => state.system.items);
+  const loading = useSelector((state: RootState) => state.system.loading);
+  const error = useSelector((state: RootState) => state.system.error);
 
   useEffect(() => {
-    // 메뉴 로드 요청 → saga 가 API 호출
-    dispatch(fetchMenusRequest());
+    dispatch(fetchMenuRequest());
   }, [dispatch]);
 
-  const workAreaMenu = findWorkAreaMenuByPath(menuTree, pathname);
-  const childMenu = findChildMenuByPath(menuTree, pathname);
-  const resolvedTitle =
-    title ?? childMenu?.menuName ?? workAreaMenu?.menuName ?? "HIS";
-
   return (
-    <div className="flex h-full min-h-0 w-full overflow-hidden bg-slate-100">
-      <Sidebar menuTree={menuTree} loading={menuLoading} error={menuError} />
+    <div className="flex h-full min-h-0 w-full overflow-hidden bg-[var(--background)]">
+      <Sidebar menuTree={items} loading={loading} error={error ?? ""} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Header title={resolvedTitle} />
-        <main className="min-h-0 flex-1 overflow-auto p-3">{children}</main>
+        <Header />
+        <main className="min-h-0 flex-1 overflow-auto p-4 md:p-5">{children}</main>
       </div>
     </div>
   );
