@@ -26,7 +26,6 @@ import type { EmpRegisterRequest } from "@/features/emp/types/empTypes";
 import type { AppDispatch, RootState } from "@/store/store";
 
 type EmpRegisterFormState = {
-  empNo: string;
   empName: string;
   empEmail: string;
   empPhone: string;
@@ -44,7 +43,6 @@ export default function EmpRegisterForm({
   onClose,
 }: EmpRegisterFormProps) {
   const [form, setForm] = useState<EmpRegisterFormState>({
-    empNo: "",
     empName: "",
     empEmail: "",
     empPhone: "",
@@ -61,7 +59,6 @@ export default function EmpRegisterForm({
     e.preventDefault();
     waitClose.current = true;
     const payload: EmpRegisterRequest = {
-      empNo: form.empNo.trim(),
       empName: form.empName.trim(),
       empEmail: form.empEmail.trim() || undefined,
       empPhone: form.empPhone.trim() || undefined,
@@ -87,20 +84,6 @@ export default function EmpRegisterForm({
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       <form onSubmit={onSubmit} className="space-y-4">
-        <FormField
-          label="사번"
-          required
-          htmlFor="empNo"
-          hint="등록 후 변경할 수 없습니다."
-        >
-          <Input
-            id="empNo"
-            value={form.empNo}
-            placeholder="예: E2026001"
-            onChange={(e) => setForm({ ...form, empNo: e.target.value })}
-          />
-        </FormField>
-
         <FormField label="이름" required htmlFor="empName">
           <Input
             id="empName"
