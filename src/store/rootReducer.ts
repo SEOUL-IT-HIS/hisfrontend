@@ -4,8 +4,8 @@ import { combineReducers } from "@reduxjs/toolkit";
 // import patientReducer from "@/features/patient/slice";
 // import receptionReducer from "@/features/reception/slice";
 // import billingReducer from "@/features/billing/slice";
-// import outpatientReducer from "@/features/outpatient/slice";
-// import emergencyReducer from "@/features/emergency/slice";
+ import outpatientReducer from "@/features/outpatient/common/slice";
+import emergencyReducer from "@/features/emergency/common/slice";
 import inpatientReducer from "@/features/inpatient/slice";
 import labImagingReducer from "@/features/labimaging/common/slice";
 // import pharmacyReducer from "@/features/pharmacy/slice";
@@ -13,7 +13,9 @@ import labImagingReducer from "@/features/labimaging/common/slice";
 // import adminReducer from "@/features/admin/slice";
 import commonCodeItemReducer from "@/features/commonCode/slice/commonCodeItemSlice";
 import commonCodeGroupReducer from "@/features/commonCode/slice/commonCodeGroupSlice";
+import empReducer from "@/features/emp/slice/empSlice";
 import systemReducer from "@/features/system/slice/menuSlice";
+import patientReducer from "@/features/patient/slice/patientSlice";
 
 /**
  * RootReducer (프론트 리더 관리 영역)
@@ -29,12 +31,13 @@ const rootReducer = combineReducers({
   system: systemReducer,
   commonCodeGroup: commonCodeGroupReducer,
   commonCodeItem: commonCodeItemReducer,
+  emp: empReducer,
 
   // 관리자 (ADM)
   // admin: adminReducer,
 
   // 환자 (PAT)
-  // patient: patientReducer,
+  patient: patientReducer,
 
   // 접수 (RCP)
   // reception: receptionReducer,
@@ -43,10 +46,10 @@ const rootReducer = combineReducers({
   // billing: billingReducer,
 
   // 외래 (OPD)
-  // outpatient: outpatientReducer,
+  outpatient: outpatientReducer,
 
   // 응급 (EMG)
-  // emergency: emergencyReducer,
+  emergency: emergencyReducer,
 
   // 입원 (IPT)
   inpatient: inpatientReducer,

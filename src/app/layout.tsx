@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className="h-full antialiased">
-      <body className="h-full overflow-hidden bg-slate-100 text-slate-800">
+      <body className="h-full overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
         <StoreProvider>
           <AppFrame>{children}</AppFrame>
         </StoreProvider>

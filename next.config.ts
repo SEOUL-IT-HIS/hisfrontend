@@ -15,6 +15,7 @@ const patientApiOrigin =
   process.env.PATIENT_API_ORIGIN ?? "http://192.168.1.149:8080";
 const labImagingApiOrigin =
   process.env.LABIMAGING_API_ORIGIN ?? "http://192.168.1.104:8080";
+<<<<<<< HEAD
 const inpatientApiOrigin =
   process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.165:8080";
 const nextConfig: NextConfig = {
@@ -23,6 +24,39 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["192.168.1.128", "192.168.1.149", "192.168.1.104", "192.168.1.165"],
   async rewrites() {
     return [
+=======
+const outpatientApiOrigin =
+    process.env.OUTPATIENT_API_ORIGIN ?? "http://192.168.1.112:8080";
+const emergencyApiOrigin =
+    process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.130:8080";
+
+const nextConfig: NextConfig = {
+  // LAN IP로 접속할 때 /_next 정적 리소스 403 방지
+  // (다른 PC에서 http://192.168.1.149:3000 접속 시 필요)
+  allowedDevOrigins: ["192.168.1.128", "192.168.1.149", "192.168.1.104" , "192.168.1.112"],
+  async rewrites() {
+    return [
+      // ---------- outpatient-service (구체 경로 먼저) ----------
+      {
+        source: "/api/outpatient",
+        destination: `${outpatientApiOrigin}/api/outpatient`,
+      },
+      {
+        source: "/api/outpatient/:path*",
+        destination: `${outpatientApiOrigin}/api/outpatient/:path*`,
+      },
+
+      // ---------- emergency-service (구체 경로 먼저) ----------
+      {
+        source: "/api/emergency",
+        destination: `${emergencyApiOrigin}/api/emergency`,
+      },
+      {
+        source: "/api/emergency/:path*",
+        destination: `${emergencyApiOrigin}/api/emergency/:path*`,
+      },
+
+>>>>>>> origin/develop
       // ---------- patient-service (구체 경로 먼저) ----------
       {
         source: "/api/patient",
@@ -43,6 +77,7 @@ const nextConfig: NextConfig = {
         destination: `${labImagingApiOrigin}/api/lab-imaging/:path*`,
       },
 
+<<<<<<< HEAD
       // ---------- inpatient-service (구체 경로 먼저) ----------
       {
         source: "/api/inpatient",
@@ -53,6 +88,8 @@ const nextConfig: NextConfig = {
         destination: `${inpatientApiOrigin}/api/inpatient/:path*`,
       },
 
+=======
+>>>>>>> origin/develop
       // ---------- admin-service (나머지 /api) ----------
       {
         source: "/api/:path*",

@@ -4,8 +4,8 @@ import { all, fork } from "redux-saga/effects";
 // import patientSaga from "@/features/patient/saga";
 // import receptionSaga from "@/features/reception/saga";
 // import billingSaga from "@/features/billing/saga";
-// import outpatientSaga from "@/features/outpatient/saga";
-// import emergencySaga from "@/features/emergency/saga";
+import outpatientSaga from "@/features/outpatient/common/saga";
+import emergencySaga from "@/features/emergency/common/saga";
 import inpatientSaga from "@/features/inpatient/saga";
 import labImagingSaga from "@/features/labimaging/common/saga";
 // import pharmacySaga from "@/features/pharmacy/saga";
@@ -13,7 +13,9 @@ import labImagingSaga from "@/features/labimaging/common/saga";
 // import adminSaga from "@/features/admin/saga";
 import watchCommonCodeItemSaga from "@/features/commonCode/saga/commonCodeItemSaga";
 import watchCommonCodeGroupSaga from "@/features/commonCode/saga/commonCodeGroupSaga";
+import watchEmpSaga from "@/features/emp/saga/empSaga";
 import watchMenuSaga from "@/features/system/saga/menuSaga";
+import watchPatientSaga from "@/features/patient/saga/patientSaga";
 
 /**
  * RootSaga (프론트 리더 관리 영역)
@@ -22,15 +24,16 @@ import watchMenuSaga from "@/features/system/saga/menuSaga";
 export default function* rootSaga() {
   yield all([
       fork(watchMenuSaga),
+      fork(watchEmpSaga),
       fork(watchCommonCodeGroupSaga),
       fork(watchCommonCodeItemSaga),
       fork(labImagingSaga),
     // fork(adminSaga),
-    // fork(patientSaga),
+    fork(watchPatientSaga),
     // fork(receptionSaga),
     // fork(billingSaga),
-    // fork(outpatientSaga),
-    // fork(emergencySaga),
+     fork(outpatientSaga),
+    fork(emergencySaga),
     fork(inpatientSaga),
     // fork(pharmacySaga),
     // fork(surgerySaga),

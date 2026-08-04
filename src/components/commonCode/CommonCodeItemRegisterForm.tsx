@@ -1,10 +1,15 @@
 "use client";
 
+/**
+ * [항목 등록 폼]
+ * - groupId 는 props 로 받음 (입력칸 없음)
+ * - codeValue 는 등록 후 수정 불가
+ */
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
-  Button,
+  FormActions,
   FormField,
   Input,
   Select,
@@ -27,9 +32,7 @@ type CommonCodeItemRegisterFormProps = {
 };
 
 /**
- * 공통코드 아이템 등록 폼
- * - groupId 는 props 로 받음 (입력칸 없음)
- * - codeValue 는 DB NOT NULL 이라 필수 입력
+ * 공통코드 항목 등록 폼
  */
 export default function CommonCodeItemRegisterForm({
   onClose,
@@ -57,6 +60,7 @@ export default function CommonCodeItemRegisterForm({
     dispatch(fetchCommonCodeItemRegisterRequest(payload));
   };
 
+  // 등록 성공 시에만 Modal 닫기
   useEffect(() => {
     if (!waitClose.current) return;
     if (loading) return;
@@ -69,14 +73,20 @@ export default function CommonCodeItemRegisterForm({
   }, [loading, error, onClose]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       <form onSubmit={onSubmit} className="space-y-4">
-        <FormField label="코드값" required htmlFor="codeValue">
+        <FormField
+          label="코드값"
+          required
+          htmlFor="codeValue"
+          hint="등록 후 변경할 수 없습니다."
+        >
           <Input
             id="codeValue"
             value={form.codeValue}
+            placeholder="예: 01"
             onChange={(e) => setForm({ ...form, codeValue: e.target.value })}
           />
         </FormField>
@@ -85,6 +95,7 @@ export default function CommonCodeItemRegisterForm({
           <Input
             id="codeName"
             value={form.codeName}
+            placeholder="예: 내과"
             onChange={(e) => setForm({ ...form, codeName: e.target.value })}
           />
         </FormField>
@@ -95,17 +106,17 @@ export default function CommonCodeItemRegisterForm({
             value={form.useYn}
             onChange={(e) => setForm({ ...form, useYn: e.target.value })}
             options={[
-              { value: "Y", label: "Y" },
-              { value: "N", label: "N" },
+              { value: "Y", label: "사용 (Y)" },
+              { value: "N", label: "미사용 (N)" },
             ]}
           />
         </FormField>
 
-        <div className="flex justify-end gap-2 pt-1">
-          <Button type="submit" variant="primary" disabled={loading}>
-            {loading ? "처리 중…" : "등록"}
-          </Button>
-        </div>
+        <FormActions
+          onCancel={onClose}
+          submitLabel="등록"
+          loading={loading}
+        />
       </form>
     </div>
   );
