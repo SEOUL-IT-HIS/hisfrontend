@@ -1,6 +1,6 @@
 import apiClient from "@/lib/axios";
-import type { ApiResponse, BedAssignmentDTO } from "./types";
-import type { RegisterBedAssignmentRequest, UpdateBedAssignmentRequest } from "./types";
+import type { ApiResponse, BedAssignmentDTO } from "../types";
+import type { RegisterBedAssignmentRequest, UpdateBedAssignmentRequest } from "../types";
 
 export async function fetchBedAssignmentApi() {
   const { data } = await apiClient.get<ApiResponse<BedAssignmentDTO[]>>("/api/bedassignment");
@@ -8,7 +8,7 @@ export async function fetchBedAssignmentApi() {
   return data.data;
 }
 
-export const fetchBedAssignmentDetailApi = async (id: string) => {
+export const fetchBedAssignmentDetailApi = async (id: number) => {
   const { data } = await apiClient.get<ApiResponse<BedAssignmentDTO>>(`/api/bedassignment/${id}`);
 
   return data.data;
@@ -24,7 +24,7 @@ export const updateBedAssignmentApi = async (request: UpdateBedAssignmentRequest
   return data.data;
 };
 
-export const deleteBedAssignmentApi = async (id: string) => {
+export const deleteBedAssignmentApi = async (id: number) => {
   const { data } = await apiClient.delete<ApiResponse<void>>(`/api/bedassignment/${id}`);
   return data.data;
 };

@@ -1,6 +1,5 @@
 import apiClient from "@/lib/axios";
-import type { ApiResponse, BedDTO } from "./types";
-import type { RegisterBedRequest, UpdateBedRequest } from "./types";
+import type { ApiResponse, BedDTO } from "../types";
 
 export async function fetchBedApi() {
   const { data } = await apiClient.get<ApiResponse<BedDTO[]>>("/api/bed");

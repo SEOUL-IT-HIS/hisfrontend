@@ -1,6 +1,6 @@
 "use client"
 
-import { fetchBedDetailRequest, selectBedDetail, selectBedDetailStatus } from "@/features/inpatient/bedmanagement/bedSlice";
+import { fetchBedDetailRequest, selectBedDetail, selectBedDetailStatus } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 import type { AppDispatch } from "@/store/store";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";

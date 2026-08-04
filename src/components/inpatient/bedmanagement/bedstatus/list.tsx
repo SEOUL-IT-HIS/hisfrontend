@@ -4,8 +4,8 @@ import React, { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import Link from "next/link";
-import BedAssignmentDetail from "./BedassigmentDetail";
-import { fetchBedRequest, selectBed, selectBedListStatus } from "@/features/inpatient/bedmanagement/bedSlice";
+import BedAssignmentDetail from "../bedassignment/detail";
+import { fetchBedRequest, selectBed, selectBedListStatus } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 
 const BedStatusList = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -46,7 +46,7 @@ const BedStatusList = () => {
         </option>
         ))}
 </select>
-        <Link href="/inpatient/bedmanagement/create">배정 등록</Link>
+        <Link href="/inpatient/bedmanagement/bedassignment/create">배정 등록</Link>
         <table>
           <thead>
             <tr>
@@ -60,7 +60,7 @@ const BedStatusList = () => {
             {filteredBeds.map((bed) => (
               <tr key={bed.bedId}>
                 <td>
-                <Link href={`/inpatient/bedmanagement/status/${bed.bedId}`}>
+                <Link href={`/inpatient/bedmanagement/bedstatus/${bed.bedId}`}>
                     {bed.bedId}
                 </Link>
                 </td>

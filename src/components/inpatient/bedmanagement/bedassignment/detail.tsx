@@ -1,6 +1,6 @@
 "use client"
 
-import { fetchBedAssignmentDetailRequest, updateBedAssignmentRequest, selectBedAssignmentUpdateStatus } from "@/features/inpatient/bedmanagement/slice";
+import { fetchBedAssignmentDetailRequest, updateBedAssignmentRequest, selectBedAssignmentUpdateStatus } from "@/features/inpatient/bedmanagement/bedassignment/slice";
 import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
@@ -8,7 +8,8 @@ import { useDispatch, useSelector } from "react-redux";
 
 const BedAssignmentDetail=()=>{
     const dispatch=useDispatch();
-    const { assignmentId }:{assignmentId:string} = useParams();
+    const { assignmentId: assignmentIdParam }:{assignmentId:string} = useParams();
+    const assignmentId = Number(assignmentIdParam);
     const bedAssignment=useSelector((state:RootState)=>state.inpatient.bedmanagement.detail);
     const updateStatus = useSelector((state: RootState) => state.inpatient.bedmanagement.updateStatus);
     const {loading,error}=useSelector((state:RootState)=>state.inpatient.bedmanagement.detailStatus);

@@ -7,7 +7,7 @@ import {
   fetchBedAssignmentsRequest,
   selectBedAssignments,
   selectBedAssignmentListStatus,
-} from "@/features/inpatient/bedmanagement/slice";
+} from "@/features/inpatient/bedmanagement/bedassignment/slice";
 import Link from "next/link";
 
 const BedAssignmentList = () => {
@@ -25,7 +25,7 @@ const BedAssignmentList = () => {
       {listStatus.error && <p>{listStatus.error}</p>}
       {!listStatus.loading && !listStatus.error && (
         <>
-        <Link href="/inpatient/bedmanagement/create">배정 등록</Link>
+        <Link href="/inpatient/bedmanagement/bedassignment/create">배정 등록</Link>
         <table>
           <thead>
             <tr>
@@ -40,7 +40,7 @@ const BedAssignmentList = () => {
             {bedAssignments.map((bedAssignment) => (
               <tr key={bedAssignment.assignmentId}>
                 <td>
-                <Link href={`/inpatient/bedmanagement/${bedAssignment.assignmentId}`}>
+                <Link href={`/inpatient/bedmanagement/bedassignment/${bedAssignment.assignmentId}`}>
                     {bedAssignment.assignmentId}
                 </Link>
                 </td>

@@ -1,4 +1,4 @@
-import BedStatusDetail from "@/components/inpatient/bedmanagement/BedStatusDetail";
+import BedStatusDetail from "@/components/inpatient/bedmanagement/bedstatus/detail";
 
 const BedStatusDetailPage = () => {
     return (
