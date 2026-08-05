@@ -1,11 +1,11 @@
-
 "use client";
 
 import { AppDispatch, RootState } from "@/store/store";
 import { useDispatch, useSelector, shallowEqual } from "react-redux";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createBedReservationRequest } from "@/features/inpatient/bedmanagement/bedreservation/slice";
+import { fetchBedRequest, selectBed } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 
 const BedReservationRegisterForm = () => {
     const router = useRouter();
@@ -21,10 +21,20 @@ const BedReservationRegisterForm = () => {
         patientId: "",
         reserveAt: "",
         expectedAdmissionAt: "",
-        reservationStatusCd: "",
+        
     });
+      const beds = useSelector(selectBed);
+      useEffect(() => {
+        dispatch(fetchBedRequest());
+      }, [dispatch]);
 
-    const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const emptyBeds = useMemo(
+        () => beds.filter((bed) => bed.bedStatus === "EMPTY"),
+        [beds]
+        );
+
+
+    const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setForm((prevForm) => ({...prevForm, [name]: value }));}
     
@@ -47,7 +57,15 @@ const BedReservationRegisterForm = () => {
 
                 <div>
                     <label htmlFor="bedId">병상ID:</label>
-                    <input type="text" id="bedId" name="bedId" value={form.bedId} onChange={onChange} required />
+                    <select id="bedId" name="bedId" value={form.bedId} onChange={onChange} required>
+                        <option value="">선택하세요</option>
+                            {emptyBeds.map((bed) => (
+                            <option key={bed.bedId} value={bed.bedId}>
+                            {bed.roomNo}호 {bed.bedNo}번
+                        </option>
+                        ))}
+                </select>
+
                 </div>
                 <div>
                     <label htmlFor="patientId">환자ID:</label>
@@ -61,10 +79,7 @@ const BedReservationRegisterForm = () => {
                     <label htmlFor="expectedAdmissionAt">예상입원시각:</label>
                     <input type="datetime-local" id="expectedAdmissionAt" name="expectedAdmissionAt" value={form.expectedAdmissionAt} onChange={onChange} required />
                 </div>
-                <div>
-                    <label htmlFor="reservationStatusCd">예약상태코드:</label>
-                    <input type="text" id="reservationStatusCd" name="reservationStatusCd" value={form.reservationStatusCd} onChange={onChange} required />
-                </div>
+                
                 <button type="submit">등록</button>
             </form>
         </div>

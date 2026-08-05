@@ -76,10 +76,10 @@ export interface BedState {
 
 // ----- 병상예약(bedreservation) 전용 -----
 
-/** 예약 생성 요청 — 서버가 채워주는 필드(bedReservationId/createdAt/updatedAt) 제외 */
+/** 예약 생성 요청 — 서버가 채워주는 필드(bedReservationId/createdAt/updatedAt) 및 서버가 REQUESTED로 강제 지정하는 reservationStatusCd 제외 */
 export type RegisterBedReservationRequest = Omit<
   BedReservationDTO,
-  "bedReservationId" | "createdAt" | "updatedAt"
+  "bedReservationId" | "createdAt" | "updatedAt" | "reservationStatusCd"
 >;
 
 /** 예약 수정 요청 — PUT 경로/바디에 bedReservationId 필요, createdAt/updatedAt은 서버가 관리 */
