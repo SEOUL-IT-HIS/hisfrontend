@@ -32,7 +32,7 @@ export async function fetchEmpDetailApi(empId: number): Promise<Emp> {
   return response.data.data;
 }
 
-/** 직원 등록 — body: empNo, empName, empEmail, empPhone, hireDate, deptCode */
+/** 직원 등록 — body: empName, empEmail, empPhone, hireDate, deptCode (empNo는 서버 자동채번) */
 export async function fetchEmpRegisterApi(
   empData: EmpRegisterRequest,
 ): Promise<Emp> {
