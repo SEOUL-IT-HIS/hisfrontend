@@ -14,6 +14,10 @@ export const SURGERY_MESSAGES = {
   SUR040: "서버 내부 오류가 발생했습니다.",
   SUR042: "해당 수술기록이 존재하지 않습니다.",
   SUR043: "확정된 수술기록은 수정할 수 없습니다.",
+  SUR044: "수술 동의서는 1:1로만 등록할 수 있습니다.",
+  SUR045: "점검중이거나 폐쇄된 수술실은 배정할 수 없습니다.",
+  SUR046: "해당 동의서가 존재하지 않습니다.",
+  SUR047: "수술 동의서가 확인되지 않아 진행할 수 없습니다.",
 } as const;
 
 export type SurgeryMessageCode = keyof typeof SURGERY_MESSAGES;

@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
+  AssignSurgeryRequest,
   CancelSurgeryRequest,
   RegisterSurgeryRequest,
   ScheduleState,
@@ -18,6 +19,7 @@ import type {
 const initialState: ScheduleState = {
   surgeries: [],
   todaySurgeries: [],
+  surgeryRequests: [],
   selectedSurgery: null,
   loading: false,
   saving: false,
@@ -56,6 +58,21 @@ const scheduleSlice = createSlice({
       state.todaySurgeries = action.payload;
     },
     fetchTodaySurgeriesFailure(state, action: PayloadAction<string>) {
+      state.loading = false;
+      state.error = action.payload;
+    },
+
+    // ----- 배정 대기 요청 목록 -----
+    /** 진료가 올린 요청 중 아직 수술실이 안 잡힌 건(status_cd = 00) */
+    fetchSurgeryRequestsRequest(state) {
+      state.loading = true;
+      state.error = "";
+    },
+    fetchSurgeryRequestsSuccess(state, action: PayloadAction<Surgery[]>) {
+      state.loading = false;
+      state.surgeryRequests = action.payload;
+    },
+    fetchSurgeryRequestsFailure(state, action: PayloadAction<string>) {
       state.loading = false;
       state.error = action.payload;
     },
@@ -103,6 +120,17 @@ const scheduleSlice = createSlice({
         state.error = "";
       },
       prepare(surgeryId: string, request: UpdateSurgeryRequest) {
+        return { payload: { surgeryId, request } };
+      },
+    },
+
+    // ----- 배정 (요청접수 → 예약) -----
+    assignSurgeryRequest: {
+      reducer(state) {
+        state.saving = true;
+        state.error = "";
+      },
+      prepare(surgeryId: string, request: AssignSurgeryRequest) {
         return { payload: { surgeryId, request } };
       },
     },
@@ -169,12 +197,16 @@ export const {
   fetchTodaySurgeriesRequest,
   fetchTodaySurgeriesSuccess,
   fetchTodaySurgeriesFailure,
+  fetchSurgeryRequestsRequest,
+  fetchSurgeryRequestsSuccess,
+  fetchSurgeryRequestsFailure,
   fetchSurgeryRequest,
   fetchSurgerySuccess,
   fetchSurgeryFailure,
   registerSurgeryRequest,
   registerEmergencySurgeryRequest,
   updateSurgeryRequest,
+  assignSurgeryRequest,
   cancelSurgeryRequest,
   updateProgressRequest,
   startSurgeryRequest,
@@ -194,6 +226,8 @@ export const selectSurgeries = (state: ScheduleRoot) =>
   state.surgery.schedule.surgeries;
 export const selectTodaySurgeries = (state: ScheduleRoot) =>
   state.surgery.schedule.todaySurgeries;
+export const selectSurgeryRequests = (state: ScheduleRoot) =>
+  state.surgery.schedule.surgeryRequests;
 export const selectSelectedSurgery = (state: ScheduleRoot) =>
   state.surgery.schedule.selectedSurgery;
 export const selectScheduleLoading = (state: ScheduleRoot) =>

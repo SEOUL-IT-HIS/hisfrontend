@@ -1,8 +1,10 @@
 import { call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import {
+  assignSurgery,
   cancelSurgerySchedule,
   endSurgery,
+  getSurgeryRequests,
   getSurgerySchedule,
   getSurgerySchedules,
   getTodaySurgeries,
@@ -13,6 +15,7 @@ import {
   updateSurgerySchedule,
 } from "@/features/surgery/schedule/api";
 import {
+  assignSurgeryRequest,
   cancelSurgeryRequest,
   endSurgeryRequest,
   fetchSurgeriesFailure,
@@ -20,6 +23,9 @@ import {
   fetchSurgeriesSuccess,
   fetchSurgeryFailure,
   fetchSurgeryRequest,
+  fetchSurgeryRequestsFailure,
+  fetchSurgeryRequestsRequest,
+  fetchSurgeryRequestsSuccess,
   fetchSurgerySuccess,
   fetchTodaySurgeriesFailure,
   fetchTodaySurgeriesRequest,
@@ -33,6 +39,7 @@ import {
   updateSurgeryRequest,
 } from "@/features/surgery/schedule/slice";
 import type {
+  AssignSurgeryRequest,
   CancelSurgeryRequest,
   RegisterSurgeryRequest,
   Surgery,
@@ -71,6 +78,17 @@ function* fetchTodaySurgeriesSaga() {
     const message =
       err instanceof Error ? err.message : "금일 수술현황 조회에 실패했습니다.";
     yield put(fetchTodaySurgeriesFailure(message));
+  }
+}
+
+function* fetchSurgeryRequestsSaga() {
+  try {
+    const response: Surgery[] = yield call(getSurgeryRequests);
+    yield put(fetchSurgeryRequestsSuccess(response));
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "수술 요청 목록 조회에 실패했습니다.";
+    yield put(fetchSurgeryRequestsFailure(message));
   }
 }
 
@@ -128,6 +146,24 @@ function* updateSurgerySaga(
   }
 }
 
+// ----- 배정 -----
+
+function* assignSurgerySaga(
+  action: PayloadAction<{ surgeryId: string; request: AssignSurgeryRequest }>,
+) {
+  try {
+    const { surgeryId, request } = action.payload;
+    yield call(assignSurgery, surgeryId, request);
+    yield put(surgeryMutationSuccess());
+    // 배정되면 요청접수 목록에서 빠지므로 대기 목록을 다시 불러온다
+    yield put(fetchSurgeryRequestsRequest());
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "수술 배정에 실패했습니다.";
+    yield put(surgeryMutationFailure(message));
+  }
+}
+
 // ----- 상태 전이 -----
 
 function* cancelSurgerySaga(
@@ -141,6 +177,8 @@ function* cancelSurgerySaga(
     yield call(cancelSurgerySchedule, surgeryId, request);
     yield put(surgeryMutationSuccess());
     yield put(fetchSurgeriesRequest());
+    // 요청접수 건의 취소는 '반려'라 대기 목록에서도 빠져야 한다
+    yield put(fetchSurgeryRequestsRequest());
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "수술 취소에 실패했습니다.";
@@ -192,6 +230,7 @@ function* endSurgerySaga(action: PayloadAction<string>) {
 export default function* scheduleSaga() {
   yield takeLatest(fetchSurgeriesRequest.type, fetchSurgeriesSaga);
   yield takeLatest(fetchTodaySurgeriesRequest.type, fetchTodaySurgeriesSaga);
+  yield takeLatest(fetchSurgeryRequestsRequest.type, fetchSurgeryRequestsSaga);
   yield takeLatest(fetchSurgeryRequest.type, fetchSurgerySaga);
   yield takeLatest(registerSurgeryRequest.type, registerSurgerySaga);
   yield takeLatest(
@@ -199,6 +238,7 @@ export default function* scheduleSaga() {
     registerEmergencySurgerySaga,
   );
   yield takeLatest(updateSurgeryRequest.type, updateSurgerySaga);
+  yield takeLatest(assignSurgeryRequest.type, assignSurgerySaga);
   yield takeLatest(cancelSurgeryRequest.type, cancelSurgerySaga);
   yield takeLatest(updateProgressRequest.type, updateProgressSaga);
   yield takeLatest(startSurgeryRequest.type, startSurgerySaga);

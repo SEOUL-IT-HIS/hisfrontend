@@ -1,7 +1,7 @@
 /**
  * 마취기록 API (SL2-3)
  *
- * <p>백엔드 AnesthesiaRecordController(@RequestMapping("/api/v1/surgery")) 와 1:1 대응.
+ * <p>백엔드 AnesthesiaRecordController(@RequestMapping("/api/surgery")) 와 1:1 대응.
  * 목록·생성은 수술 하위 경로, 단건·활력징후는 마취기록 ID 기준 경로다.</p>
  */
 import apiClient from "@/lib/axios";
@@ -12,7 +12,7 @@ import type {
   CreateAnesthesiaRecordRequest,
 } from "@/features/surgery/anesthesia/types";
 
-const SURGERY_PATH = "/api/v1/surgery";
+const SURGERY_PATH = "/api/surgery";
 
 /** 해당 수술의 마취기록 목록을 조회한다. (SL2-34) */
 export async function getAnesthesiaRecords(

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
@@ -51,6 +52,8 @@ const columns: DataTableColumn<PatientListItem>[] = [
 ];
 
 export default function PatientListForm() {
+  const searchParams = useSearchParams();
+  const registeredPatientId = searchParams.get("registeredPatientId");
   const dispatch = useDispatch<AppDispatch>();
   const { patients, listLoading, listError } = useSelector(
     (state: RootState) => state.patient,
@@ -70,6 +73,12 @@ export default function PatientListForm() {
           </Link>
         }
       />
+
+      {registeredPatientId ? (
+      <Alert variant="success">
+       환자 등록이 완료되었습니다. 환자번호: {registeredPatientId}
+      </Alert>
+      ) : null}
 
       {listError ? <Alert variant="error">{listError}</Alert> : null}
 

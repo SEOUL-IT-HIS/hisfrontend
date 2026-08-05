@@ -9,26 +9,89 @@ import {
   FormField,
   Input,
   PageHeader,
+  Select,
 } from "@/components/common";
 import {
   checkPatientDuplicateRequest,
   registerPatientRequest,
   resetPatientRegistration,
 } from "@/features/patient/slice/patientSlice";
-import type { PatientRegisterRequest } from "@/features/patient/type/patientType";
+import type {
+  PatientRegisterRequest,
+  PatientStatus,
+} from "@/features/patient/type/patientType";
 import type { AppDispatch, RootState } from "@/store/store";
+
+const patientStatusOptions = [
+  {
+    value: "ACTIVE",
+    label: "활성(ACTIVE)",
+  },
+  {
+    value: "INACTIVE",
+    label: "비활성(INACTIVE)",
+  },
+];
+
+function getBirthDateFromResidentRegNo(
+  residentRegNo: string,
+): string | null {
+  if (!/^\d{13}$/.test(residentRegNo)) {
+    return null;
+  }
+
+  const yearPart = Number(residentRegNo.slice(0, 2));
+  const month = Number(residentRegNo.slice(2, 4));
+  const day = Number(residentRegNo.slice(4, 6));
+  const typeCode = residentRegNo.charAt(6);
+
+  const centuryByTypeCode: Record<string, number> = {
+    "1": 1900,
+    "2": 1900,
+    "3": 2000,
+    "4": 2000,
+    "5": 1900,
+    "6": 1900,
+    "7": 2000,
+    "8": 2000,
+  };
+
+  const century = centuryByTypeCode[typeCode];
+
+  if (century === undefined) {
+    return null;
+  }
+
+  const year = century + yearPart;
+  const date = new Date(year, month - 1, day);
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return [
+    year,
+    String(month).padStart(2, "0"),
+    String(day).padStart(2, "0"),
+  ].join("-");
+}
 
 const initialForm: PatientRegisterRequest = {
   patientName: "",
   birthDate: "",
   residentRegNo: "",
-  statusCd: "",
+  statusCd: "ACTIVE",
 };
 
 export default function PatientRegisterForm() {
   const [form, setForm] = useState<PatientRegisterRequest>(initialForm);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [patientNameTouched, setPatientNameTouched] = useState(false);
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const {
@@ -39,22 +102,104 @@ export default function PatientRegisterForm() {
     error,
   } = useSelector((state: RootState) => state.patient);
 
+    const residentRegNoError =
+    form.residentRegNo.length === 0
+      ? null
+      : form.residentRegNo.length < 13
+        ? "주민등록번호 13자리를 입력해 주세요."
+        : getBirthDateFromResidentRegNo(form.residentRegNo) === null
+          ? "올바른 주민등록번호 형식이 아닙니다."
+          : null;
+
+const registrationDisabledReason =
+  registerLoading
+    ? null
+    : duplicateCheckLoading
+      ? "주민등록번호 중복 확인 중입니다."
+      : !form.patientName.trim() ||
+          !form.residentRegNo ||
+          !form.birthDate ||
+          !form.statusCd
+        ? "필수 항목을 모두 입력해 주세요."
+        : form.patientName.trim().length < 2 ||
+            form.patientName.trim().length > 100
+          ? "환자명은 2자 이상 100자 이하로 입력해 주세요."
+          : residentRegNoError
+            ? residentRegNoError
+            : duplicated === null
+              ? "등록하려면 주민등록번호 중복확인을 완료해 주세요."
+              : duplicated
+                ? "이미 등록된 주민등록번호입니다."
+                : null;
+
+  const isRegistrationDisabled =
+    registerLoading || registrationDisabledReason !== null;
+
   useEffect(() => {
     dispatch(resetPatientRegistration());
   }, [dispatch]);
 
+    useEffect(() => {
+    if (form.residentRegNo.length === 6) {
+      document.getElementById("residentRegNoBack")?.focus();
+    }
+  }, [form.residentRegNo]);
+
   useEffect(() => {
     if (submitted && registeredPatient) {
       dispatch(resetPatientRegistration());
-      router.push("/reception/patientmanagement");
+      router.push(
+  `/reception/patientmanagement?registeredPatientId=${registeredPatient.patientId}`,
+);
     }
   }, [dispatch, registeredPatient, router, submitted]);
 
-  const updateForm = (
-    field: keyof PatientRegisterRequest,
-    value: string,
+useEffect(() => {
+  const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    const hasUnsavedChanges =
+      form.patientName.trim() !== "" ||
+      form.residentRegNo !== "" ||
+      form.birthDate !== "" ||
+      form.statusCd !== initialForm.statusCd;
+
+    if (!hasUnsavedChanges || submitted) {
+      return;
+    }
+
+    event.preventDefault();
+    event.returnValue = "";
+  };
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+
+  return () => {
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+  };
+}, [form, submitted]);
+
+  const updateForm = <K extends keyof PatientRegisterRequest>(
+    field: K,
+    value: PatientRegisterRequest[K],
   ) => {
-    setForm((previous) => ({ ...previous, [field]: value }));
+    setForm((previous) => {
+      if (field === "residentRegNo") {
+        const residentRegNo = value as string;
+        const birthDate =
+          getBirthDateFromResidentRegNo(residentRegNo) ?? "";
+
+        return {
+          ...previous,
+          residentRegNo,
+          birthDate,
+        };
+      }
+
+      return {
+        ...previous,
+        [field]: value,
+      };
+    });
+
     setValidationError(null);
 
     if (field === "residentRegNo") {
@@ -62,15 +207,33 @@ export default function PatientRegisterForm() {
     }
   };
 
+  const updateResidentRegNoFront = (value: string) => {
+    const front = value.replace(/[^0-9]/g, "").slice(0, 6);
+
+    updateForm("residentRegNo", front);
+  };
+
+  const updateResidentRegNoBack = (value: string) => {
+    const front = form.residentRegNo.slice(0, 6);
+    const back = value.replace(/[^0-9]/g, "").slice(0, 7);
+
+    updateForm("residentRegNo", `${front}${back}`);
+  };
+
   const checkDuplicate = () => {
-    if (!form.residentRegNo.trim()) {
-      setValidationError("주민등록번호를 입력해 주세요.");
+    if (form.residentRegNo.length !== 13) {
+      setValidationError("주민등록번호 13자리를 입력해 주세요.");
+      return;
+    }
+
+    if (getBirthDateFromResidentRegNo(form.residentRegNo) === null) {
+      setValidationError("올바른 주민등록번호 형식이 아닙니다.");
       return;
     }
 
     dispatch(
       checkPatientDuplicateRequest({
-        residentRegNo: form.residentRegNo.trim(),
+        residentRegNo: form.residentRegNo,
       }),
     );
   };
@@ -87,6 +250,15 @@ export default function PatientRegisterForm() {
       setValidationError("모든 필수 항목을 입력해 주세요.");
       return;
     }
+
+if (
+  form.patientName.trim().length < 2 ||
+  form.patientName.trim().length > 100
+) {
+  setPatientNameTouched(true);
+  setValidationError("환자명은 2자 이상 100자 이하로 입력해 주세요.");
+  return;
+}
 
     if (duplicated === null) {
       setValidationError("주민등록번호 중복 확인을 먼저 진행해 주세요.");
@@ -105,16 +277,51 @@ export default function PatientRegisterForm() {
         patientName: form.patientName.trim(),
         birthDate: form.birthDate,
         residentRegNo: form.residentRegNo.trim(),
-        statusCd: form.statusCd.trim(),
+        statusCd: form.statusCd,
       }),
     );
   };
 
-  const resetForm = () => {
-    setForm(initialForm);
-    setValidationError(null);
-    setSubmitted(false);
-    dispatch(resetPatientRegistration());
+  const cancelForm = () => {
+    const hasUnsavedChanges =
+      form.patientName.trim() !== "" ||
+      form.residentRegNo !== "" ||
+      form.birthDate !== "" ||
+      form.statusCd !== initialForm.statusCd;
+
+    if (
+      hasUnsavedChanges &&
+      !window.confirm(
+        "작성 중인 내용이 사라집니다. 이동하시겠습니까?",
+      )
+    ) {
+      return;
+    }
+
+    router.push("/reception/patientmanagement");
+  };
+
+    const resetForm = () => {
+    const hasUnsavedChanges =
+      form.patientName.trim() !== "" ||
+      form.residentRegNo !== "" ||
+      form.birthDate !== "" ||
+      form.statusCd !== initialForm.statusCd;
+
+    if (
+      hasUnsavedChanges &&
+      !window.confirm(
+        "입력한 내용을 모두 초기화하시겠습니까?",
+      )
+    ) {
+      return;
+    }
+
+     setForm(initialForm);
+     setPatientNameTouched(false);
+     setValidationError(null);
+     setSubmitted(false);
+     dispatch(resetPatientRegistration());
   };
 
   return (
@@ -139,68 +346,137 @@ export default function PatientRegisterForm() {
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <form onSubmit={submitPatient} className="space-y-4">
-          <FormField label="환자명" required htmlFor="patientName">
-            <Input
-              id="patientName"
-              value={form.patientName}
-              onChange={(event) =>
-                updateForm("patientName", event.target.value)
-              }
-              disabled={registerLoading}
-              autoComplete="name"
-            />
-          </FormField>
+        <FormField label="환자명" required htmlFor="patientName">
+        <Input
+          id="patientName"
+          value={form.patientName}
+          onChange={(event) =>
+          updateForm("patientName", event.target.value)
+          }
+          onBlur={() => setPatientNameTouched(true)}
+          disabled={registerLoading}
+          autoComplete="name"
+          />
 
-          <FormField label="생년월일" required htmlFor="birthDate">
-            <Input
-              id="birthDate"
-              type="date"
-              value={form.birthDate}
-              onChange={(event) => updateForm("birthDate", event.target.value)}
-              disabled={registerLoading}
-            />
-          </FormField>
+  {patientNameTouched && !form.patientName.trim() ? (
+    <p className="text-sm text-red-600">
+      환자명을 입력해 주세요.
+    </p>
+  ) : patientNameTouched &&
+    (form.patientName.trim().length < 2 ||
+      form.patientName.trim().length > 100) ? (
+    <p className="text-sm text-red-600">
+      환자명은 2자 이상 100자 이하로 입력해 주세요.
+    </p>
+  ) : null}
+</FormField>
 
           <FormField label="주민등록번호" required htmlFor="residentRegNo">
             <div className="flex gap-2">
-              <Input
+               <Input
                 id="residentRegNo"
-                value={form.residentRegNo}
+                value={form.residentRegNo.slice(0, 6)}
                 onChange={(event) =>
-                  updateForm(
-                    "residentRegNo",
-                    event.target.value.replace(/[^0-9]/g, "").slice(0, 13),
-                  )
+                  updateResidentRegNoFront(event.target.value)
                 }
                 disabled={duplicateCheckLoading || registerLoading}
                 inputMode="numeric"
-                maxLength={13}
-                placeholder="'-' 없이 숫자만 입력"
+                maxLength={6}
+                placeholder="앞 6자리"
                 autoComplete="off"
+                className="min-w-0"
               />
+
+              <span className="self-center text-slate-400">-</span>
+
+              <Input
+                id="residentRegNoBack"
+                value={form.residentRegNo.slice(6)}
+                onChange={(event) =>
+                  updateResidentRegNoBack(event.target.value)
+                }
+                disabled={
+                  form.residentRegNo.length < 6 ||
+                  duplicateCheckLoading ||
+                  registerLoading
+                }
+                type="password"
+                inputMode="numeric"
+                maxLength={7}
+                placeholder="뒤 7자리"
+                autoComplete="off"
+                className="min-w-0"
+              />
+
               <Button
                 type="button"
                 variant="secondary"
                 onClick={checkDuplicate}
-                disabled={duplicateCheckLoading || registerLoading}
+                disabled={
+                  getBirthDateFromResidentRegNo(form.residentRegNo) === null ||
+                  duplicateCheckLoading ||
+                  registerLoading
+                }
                 className="shrink-0"
               >
                 {duplicateCheckLoading ? "확인 중…" : "중복 확인"}
               </Button>
             </div>
+              {residentRegNoError ? (
+              <span className="text-xs text-rose-600" role="alert">
+                {residentRegNoError}
+              </span>
+            ) : null}
           </FormField>
 
-          <FormField label="환자 상태 코드" required htmlFor="statusCd">
+         <FormField
+          label="생년월일"
+          required
+          htmlFor="birthDate"
+          hint={form.birthDate
+          ? "주민등록번호에서 자동으로 계산되었습니다."
+          : "주민등록번호를 입력하면 자동으로 계산됩니다."
+          }
+          >
             <Input
-              id="statusCd"
-              value={form.statusCd}
-              onChange={(event) => updateForm("statusCd", event.target.value)}
+              id="birthDate"
+              type="date"
+              value={form.birthDate}
+              readOnly
               disabled={registerLoading}
-              placeholder="환자 상태 코드를 입력"
             />
           </FormField>
 
+<FormField label="환자상태관리코드" required htmlFor="statusCd">
+  <Select
+    id="statusCd"
+    value={form.statusCd}
+    options={patientStatusOptions}
+    onChange={(event) =>
+      updateForm(
+        "statusCd",
+        event.target.value as PatientStatus,
+      )
+    }
+    disabled={registerLoading}
+  />
+</FormField>
+          {registrationDisabledReason ? (
+            <p className="text-right text-xs text-slate-500" role="status">
+              {registrationDisabledReason}
+            </p>
+          ) : null}
           <div className="flex justify-end gap-2 pt-1">
+
+              <Button
+              type="button"
+              variant="secondary"
+              onClick={cancelForm}
+              disabled={registerLoading}
+            >
+              취소
+            </Button>
+
             <Button
               type="button"
               variant="secondary"
@@ -212,11 +488,7 @@ export default function PatientRegisterForm() {
             <Button
               type="submit"
               variant="primary"
-              disabled={
-                registerLoading ||
-                duplicateCheckLoading ||
-                duplicated !== false
-              }
+              disabled={isRegistrationDisabled}
             >
               {registerLoading ? "등록 중…" : "등록"}
             </Button>

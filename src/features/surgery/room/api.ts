@@ -1,8 +1,8 @@
 /**
  * 수술실/수술장비 마스터 API (SL2-1)
  *
- * <p>백엔드 SurgeryRoomController(@RequestMapping("/api/v1/surgery/rooms")) /
- * SurgicalEquipmentController(@RequestMapping("/api/v1/surgery/equipment")) 와 1:1 대응.
+ * <p>백엔드 SurgeryRoomController(@RequestMapping("/api/surgery/rooms")) /
+ * SurgicalEquipmentController(@RequestMapping("/api/surgery/equipment")) 와 1:1 대응.
  * 하드코딩 전체 URL 은 쓰지 않고 상대 경로 상수로 둔다(§11.1).
  * "/api/*" 로 시작하므로 next.config rewrite 가 BE(같은 출처)로 프록시한다.</p>
  *
@@ -28,8 +28,8 @@ import type {
   UpdateRoomRequest,
 } from "@/features/surgery/room/types";
 
-const ROOM_PATH = "/api/v1/surgery/rooms";
-const EQUIPMENT_PATH = "/api/v1/surgery/equipment";
+const ROOM_PATH = "/api/surgery/rooms";
+const EQUIPMENT_PATH = "/api/surgery/equipment";
 
 // ---------------------------------------------------------------------------
 // 수술실 (SL2-6 조회 / SL2-7 등록 / SL2-30 수정 / SL2-8 상태변경 / SL2-50 턴오버)
