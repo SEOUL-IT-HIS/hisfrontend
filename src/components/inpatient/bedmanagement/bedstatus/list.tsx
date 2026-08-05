@@ -18,6 +18,8 @@ const BedStatusList = () => {
     {id:3, name: 'RESERVED', description: '예약된 병상'},
     {id:4, name: 'MAINTENANCE', description: '유지보수 중인 병상'},
   ];
+
+
   const [searchStatus, setSearchStatus] = React.useState<string>('');
   const filteredBeds = useMemo(() => {
   // searchStatus가 빈 문자열이면 bedAssignments 그대로 return

@@ -32,9 +32,9 @@ export type Emp = {
 /**
  * 직원 등록 요청
  * - createEmp 가 실제 사용하는 필드만
+ * - empNo 는 서버에서 자동채번 (연도별 리셋) 되므로 요청에 포함하지 않음
  */
 export type EmpRegisterRequest = {
-  empNo: string;
   empName: string;
   empEmail?: string;
   empPhone?: string;
