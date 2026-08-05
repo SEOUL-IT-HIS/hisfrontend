@@ -19,11 +19,18 @@ const formatDateTime = (value: string) =>
   value.replace("T", " ").slice(0, 19);
 
 const columns: DataTableColumn<PatientListItem>[] = [
-  {
-    key: "patientName",
-    header: "환자명",
-    render: (patient) => patient.patientName,
-  },
+ {
+  key: "patientName",
+  header: "환자명",
+  render: (patient) => (
+    <Link
+      href={`/patient/${patient.patientId}`}
+      className="font-medium text-blue-600 hover:underline"
+    >
+      {patient.patientName}
+    </Link>
+  ),
+},
   {
     key: "residentRegNo",
     header: "주민등록번호",

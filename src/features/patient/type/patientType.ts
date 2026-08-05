@@ -36,6 +36,17 @@ export type PatientListItem = {
   updatedAt: string;
 };
 
+/** GET /api/patient/{patientId} 응답 데이터 */
+export type PatientDetail = {
+  patientId: number;
+  patientName: string;
+  residentRegNo: string;
+  birthDate: string;
+  statusCd: PatientStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
 /** POST /api/patient/duplicate-check 요청 */
 export type PatientDuplicateCheckRequest = {
   residentRegNo: string;
@@ -47,3 +58,5 @@ export type PatientRegisterApiResponse = ApiResponse<Patient>;
 export type PatientDuplicateCheckApiResponse = ApiResponse<boolean>;
 
 export type PatientListApiResponse = ApiResponse<PatientListItem[]>;
+
+export type PatientDetailApiResponse = ApiResponse<PatientDetail>;

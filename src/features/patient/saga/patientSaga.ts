@@ -2,6 +2,7 @@ import { call, put, takeLatest } from "redux-saga/effects";
 import { isAxiosError } from "axios";
 import {
   checkPatientDuplicateApi,
+  fetchPatientDetailApi,
   fetchPatientListApi,
   registerPatientApi,
 } from "../api/patientApi";
@@ -9,6 +10,9 @@ import {
   checkPatientDuplicateFailure,
   checkPatientDuplicateRequest,
   checkPatientDuplicateSuccess,
+  fetchPatientDetailFailure,
+  fetchPatientDetailRequest,
+  fetchPatientDetailSuccess,
   fetchPatientListFailure,
   fetchPatientListRequest,
   fetchPatientListSuccess,
@@ -16,7 +20,11 @@ import {
   registerPatientRequest,
   registerPatientSuccess,
 } from "../slice/patientSlice";
-import type { Patient, PatientListItem } from "../type/patientType";
+import type {
+  Patient,
+  PatientDetail,
+  PatientListItem,
+} from "../type/patientType";
 
 type PatientErrorResponse = {
   message?: string;
@@ -65,6 +73,26 @@ function* fetchPatientListSaga() {
   }
 }
 
+function* fetchPatientDetailSaga(
+  action: ReturnType<typeof fetchPatientDetailRequest>,
+) {
+  try {
+    const patient: PatientDetail = yield call(
+      fetchPatientDetailApi,
+      action.payload,
+    );
+
+    yield put(fetchPatientDetailSuccess(patient));
+  } catch (error) {
+    const message = getPatientErrorMessage(
+      error,
+      "환자 상세 정보를 불러오지 못했습니다.",
+    );
+
+    yield put(fetchPatientDetailFailure(message));
+  }
+}
+
 function* registerPatientSaga(
   action: ReturnType<typeof registerPatientRequest>,
 ) {
@@ -100,7 +128,14 @@ function* checkPatientDuplicateSaga(
 
 export default function* patientSaga() {
   yield takeLatest(fetchPatientListRequest.type, fetchPatientListSaga);
+
+  yield takeLatest(
+    fetchPatientDetailRequest.type,
+    fetchPatientDetailSaga,
+  );
+
   yield takeLatest(registerPatientRequest.type, registerPatientSaga);
+
   yield takeLatest(
     checkPatientDuplicateRequest.type,
     checkPatientDuplicateSaga,
