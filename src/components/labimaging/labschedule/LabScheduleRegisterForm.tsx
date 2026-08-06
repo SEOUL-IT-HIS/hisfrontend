@@ -13,10 +13,7 @@ import {
   selectLabScheduleCreateError,
   selectLastCreatedLabSchedule,
 } from "@/features/labimaging/labschedule/slice";
-import {
-  SCHEDULE_TYPE_OPTIONS,
-  RESERVATION_YN_OPTIONS,
-} from "@/features/labimaging/labschedule/types";
+import { RESERVATION_YN_OPTIONS } from "@/features/labimaging/labschedule/types";
 import { selectSelectedLabReception } from "@/features/labimaging/laborder/slice";
 
 /**
@@ -24,8 +21,8 @@ import { selectSelectedLabReception } from "@/features/labimaging/laborder/slice
  * - labReceptionId 는 경로변수(useParams)로 받는다. (등록/재등록의 대상 접수)
  * - 대상 접수 상세는 목록/상세에서 넘어온 store 컨텍스트(selectedReception)로 표시한다(없으면 ID만).
  * - 구분(신규/재등록)에 따라 dispatch 하는 액션이 달라진다.
- *   · 신규: createLabScheduleRequest({ labReceptionId, scheduleTypeCode, ... })
- *   · 재등록: rescheduleLabScheduleRequest(labReceptionId, { ... })  (scheduleTypeCode 없음)
+ *   · 신규: createLabScheduleRequest({ labReceptionId, ... })
+ *   · 재등록: rescheduleLabScheduleRequest(labReceptionId, { ... })
  *   ※ 재등록은 이미 latest 일정이 있는 접수 대상이다. 미일정 접수에 재등록하면 백엔드가 LAB014 로 실패.
  */
 
@@ -33,7 +30,6 @@ const inputClass =
   "h-10 rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50";
 
 const initialForm = {
-  scheduleTypeCode: "GENERAL",
   scheduledAt: "",
   reservationYn: "N" as "Y" | "N",
   guidanceNote: "",
@@ -85,9 +81,7 @@ export default function LabScheduleRegisterForm() {
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (mode === "create" && !form.scheduleTypeCode)
-      next.scheduleTypeCode = "일정구분을 선택해주세요.";
-    if (!form.scheduledAt) next.scheduledAt = "확정일시는 필수입니다.";
+    if (!form.scheduledAt) next.scheduledAt = "검사 예정일시는 필수입니다.";
     if (!form.confirmedById.trim())
       next.confirmedById = "확정담당자ID는 필수입니다.";
     return next;
@@ -104,7 +98,6 @@ export default function LabScheduleRegisterForm() {
       dispatch(
         createLabScheduleRequest({
           labReceptionId,
-          scheduleTypeCode: form.scheduleTypeCode,
           scheduledAt: form.scheduledAt,
           reservationYn: form.reservationYn,
           guidanceNote: form.guidanceNote.trim() || undefined,
@@ -169,33 +162,9 @@ export default function LabScheduleRegisterForm() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {mode === "create" ? (
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">
-              일정구분 <span className="text-rose-500">*</span>
-            </span>
-            <select
-              name="scheduleTypeCode"
-              value={form.scheduleTypeCode}
-              onChange={handleChange}
-              disabled={creating}
-              className={inputClass}
-            >
-              {SCHEDULE_TYPE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            {errors.scheduleTypeCode ? (
-              <span className="text-xs text-rose-500">{errors.scheduleTypeCode}</span>
-            ) : null}
-          </label>
-        ) : null}
-
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-slate-700">
-            확정일시 <span className="text-rose-500">*</span>
+            검사 예정일시 <span className="text-rose-500">*</span>
           </span>
           <input
             type="datetime-local"
@@ -205,6 +174,9 @@ export default function LabScheduleRegisterForm() {
             disabled={creating}
             className={inputClass}
           />
+          <span className="text-xs text-slate-500">
+            검사를 시행할 날짜와 시각입니다. 확정한 시각은 자동 기록됩니다.
+          </span>
           {errors.scheduledAt ? (
             <span className="text-xs text-rose-500">{errors.scheduledAt}</span>
           ) : null}
