@@ -1,23 +1,22 @@
 "use client"
 
 import { useRouter } from "next/navigation";
-import { BillingDetail } from "@/features/billing/searchBillingDetail/types";
+import { SearchPatientResult } from "@/features/billing/searchBillingDetail/types";
 
-    const  billingDetailSearchList = ({ billingDetail }: { billingDetail: BillingDetail }) => {
+    const  billingDetailSearchList = ({ patient }: { patient : SearchPatientResult }) => {
     const router = useRouter();
 
-    const onMove=()=>{
-        router.push(`api/billing/detail/${billingDetail.billingId}`)
-    } 
+    const onMove = () => {
+        router.push(`api/billing/detail/${patient.patientId}`)
+    }
 
     return (
             <div>
-            <p>환자 ID :  {billingDetail.billingId}</p>
-            <p>환자명  : {billingDetail.patientName}</p>
-            <p>전화번호 : {billingDetail.tel} </p>
-            <p>주소: {billingDetail.addr} </p>
-            <p>항목명: {billingDetail.itemName} </p>
-            <p>단가: {billingDetail.price} </p>
+            <p>환자 ID :  {patient.patientId}</p>
+            <p>환자명  : {patient.patientName}</p>
+            <p>전화번호 : {patient.tel} </p>
+            <p>주소: {patient.addr} </p>
+            <p>항목명: {patient.itemName} </p>
             <button onClick={onMove}>
                     상세보기
                 </button>
