@@ -28,19 +28,31 @@ export default function LoginForm() {
     loginId: "",
     password: "",
   });
+  const [fieldErrors, setFieldErrors] = useState<{
+    loginId?: string;
+    password?: string;
+  }>({});
 
   /** true 이면 이번 submit 의 완료를 기다리는 중 */
   const waitRedirect = useRef(false);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    const loginId = form.loginId.trim();
+    const password = form.password.trim();
+    const nextFieldErrors: { loginId?: string; password?: string } = {};
+    if (!loginId) nextFieldErrors.loginId = "아이디를 입력하세요.";
+    if (!password) nextFieldErrors.password = "비밀번호를 입력하세요.";
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      return;
+    }
+    setFieldErrors({});
+
     waitRedirect.current = true;
-    dispatch(
-      fetchAuthLoginRequest({
-        loginId: form.loginId,
-        password: form.password,
-      }),
-    );
+    dispatch(fetchAuthLoginRequest({ loginId, password }));
   }
 
   useEffect(() => {
@@ -84,8 +96,14 @@ export default function LoginForm() {
             placeholder="로그인 아이디"
             autoComplete="username"
             disabled={loading}
-            onChange={(e) => setForm({ ...form, loginId: e.target.value })}
+            onChange={(e) => {
+              setForm({ ...form, loginId: e.target.value });
+              setFieldErrors((prev) => ({ ...prev, loginId: undefined }));
+            }}
           />
+          {fieldErrors.loginId ? (
+            <span className="text-xs text-rose-500">{fieldErrors.loginId}</span>
+          ) : null}
         </FormField>
 
         <FormField label="비밀번호" required htmlFor="password">
@@ -96,8 +114,14 @@ export default function LoginForm() {
             placeholder="비밀번호"
             autoComplete="current-password"
             disabled={loading}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            onChange={(e) => {
+              setForm({ ...form, password: e.target.value });
+              setFieldErrors((prev) => ({ ...prev, password: undefined }));
+            }}
           />
+          {fieldErrors.password ? (
+            <span className="text-xs text-rose-500">{fieldErrors.password}</span>
+          ) : null}
         </FormField>
 
         <div className="pt-2">
