@@ -94,11 +94,11 @@ const MedicalRecordList = () => {
                         <tr>
                             <th className="w-[120px] p-3 font-semibold">환자번호</th>
                             <th className="w-[120px] p-3 font-semibold">환자명</th>
-                            <th className="w-[130px] p-3 font-semibold">담당의</th>
-                            <th className="w-[180px] p-3 font-semibold">주호소</th>
-                            <th className="w-[100px] p-3 font-semibold">상태</th>
-                            <th className="w-[160px] p-3 font-semibold">작성일시</th>
-                            <th className="w-[100px] p-3 font-semibold">관리</th>
+                            <th className="w-[120px] p-3 font-semibold">담당의</th>
+                            <th className="w-[120px] p-3 font-semibold">주호소</th>
+                            <th className="w-[120px] p-3 font-semibold">상태</th>
+                            <th className="w-[120px] p-3 font-semibold">작성일시</th>
+                            <th className="w-[120px] p-3 font-semibold">관리</th>
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 text-slate-800">
