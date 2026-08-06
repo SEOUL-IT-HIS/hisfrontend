@@ -28,21 +28,46 @@ export default function LoginForm() {
     loginId: "",
     password: "",
   });
+  const [fieldErrors, setFieldErrors] = useState<{
+    loginId?: string;
+    password?: string;
+  }>({});
 
-  /** true 이면 이번 submit 의 완료를 기다리는 중 */
+  /**
+   * true 이면 "방금 로그인 버튼을 눌러서 결과를 기다리는 중" 이라는 뜻.
+   * state 로 안 만들고 ref 로 만든 이유: 이 값이 바뀐다고 화면을 다시 그릴 필요는 없고,
+   * 아래 useEffect 안에서 "이번 제출에 대한 반응인지"만 판단하면 되기 때문.
+   * (그냥 loading/error/user 만 보면, 페이지에 처음 들어왔을 때도 조건이 우연히 맞아
+   * 버릴 수 있어서 "제출을 실제로 했는가"를 별도로 기억해둔다.)
+   */
   const waitRedirect = useRef(false);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // 빈 값이면 서버까지 안 가고 여기서 바로 막는다 (불필요한 API 호출/네트워크 대기 방지)
+    const loginId = form.loginId.trim();
+    const password = form.password.trim();
+    const nextFieldErrors: { loginId?: string; password?: string } = {};
+    if (!loginId) nextFieldErrors.loginId = "아이디를 입력하세요.";
+    if (!password) nextFieldErrors.password = "비밀번호를 입력하세요.";
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      return;
+    }
+    setFieldErrors({});
+
     waitRedirect.current = true;
-    dispatch(
-      fetchAuthLoginRequest({
-        loginId: form.loginId,
-        password: form.password,
-      }),
-    );
+    dispatch(fetchAuthLoginRequest({ loginId, password }));
   }
 
+  /**
+   * dispatch(fetchAuthLoginRequest) 는 결과를 바로 안 돌려준다 (redux-saga가 비동기로 API를 호출하고,
+   * 끝나면 store 의 loading/error/user 를 갱신할 뿐). 그래서 "제출 → 결과" 는 여기서 store 값이
+   * 바뀔 때마다 감시하는 방식으로 처리한다: 로딩 중이면 대기, 실패면 에러만 보여주고 종료,
+   * 성공(user 채워짐)이면 목록 화면으로 이동.
+   */
   useEffect(() => {
     if (!waitRedirect.current) return;
     if (loading) return;
@@ -84,8 +109,14 @@ export default function LoginForm() {
             placeholder="로그인 아이디"
             autoComplete="username"
             disabled={loading}
-            onChange={(e) => setForm({ ...form, loginId: e.target.value })}
+            onChange={(e) => {
+              setForm({ ...form, loginId: e.target.value });
+              setFieldErrors((prev) => ({ ...prev, loginId: undefined }));
+            }}
           />
+          {fieldErrors.loginId ? (
+            <span className="text-xs text-rose-500">{fieldErrors.loginId}</span>
+          ) : null}
         </FormField>
 
         <FormField label="비밀번호" required htmlFor="password">
@@ -96,8 +127,14 @@ export default function LoginForm() {
             placeholder="비밀번호"
             autoComplete="current-password"
             disabled={loading}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            onChange={(e) => {
+              setForm({ ...form, password: e.target.value });
+              setFieldErrors((prev) => ({ ...prev, password: undefined }));
+            }}
           />
+          {fieldErrors.password ? (
+            <span className="text-xs text-rose-500">{fieldErrors.password}</span>
+          ) : null}
         </FormField>
 
         <div className="pt-2">

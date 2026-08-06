@@ -6,6 +6,10 @@ import Link from "next/link";
  * <p>경로: /surgery (§8.1 app/{service}/page.tsx)
  * 백엔드가 구현된 기능만 링크한다. 동의서·체크리스트·간호기록 등은 백엔드가 아직
  * 빈 스텁이라 화면을 두지 않는다.</p>
+ *
+ * <p>수술 요청 '등록' 화면이 없는 이유 — 일반 수술은 진료가, 응급 수술은 응급실이
+ * 요청한다. 수술은 요청을 받아 배정·진행을 관리할 뿐 등록 화면을 갖지 않는다(§21.1).
+ * 그래서 이 목록의 시작은 '수술 요청 대기'다.</p>
  */
 const MENUS = [
   {
@@ -24,11 +28,6 @@ const MENUS = [
     desc: "진료 요청 배정",
   },
   { href: "/surgery/schedule/list", label: "수술 일정", desc: "SL2-25 조회" },
-  {
-    href: "/surgery/schedule/register",
-    label: "수술 요청 등록 (임시)",
-    desc: "진료·응급 화면 완성 전 대행",
-  },
 ];
 
 export default function Page() {

@@ -67,7 +67,16 @@ export async function getSurgerySchedule(surgeryId: string): Promise<Surgery> {
   return data.data;
 }
 
-/** 수술 스케줄을 등록한다. (SL2-36) */
+/**
+ * 수술 요청을 등록한다. (SL2-36)
+ *
+ * <p><b>수술 화면에서는 호출하지 않는다.</b> 일반 수술 요청은 진료가 보낸다(§21.1).
+ * 이 함수와 아래 응급 등록이 남아 있는 이유는 계약을 기록해두기 위해서다 —
+ * 두 엔드포인트 모두 patientId·surgeonId·surgeryDt 를 받고, statusCd·emergencyYn 은
+ * 보내도 무시한다(서버가 요청접수 00 으로 강제).</p>
+ *
+ * <p>진료·응급이 각자 features 에서 직접 호출하게 되면 이쪽은 지워도 된다.</p>
+ */
 export async function registerSurgerySchedule(
   request: RegisterSurgeryRequest,
 ): Promise<Surgery> {
@@ -78,7 +87,7 @@ export async function registerSurgerySchedule(
   return data.data;
 }
 
-/** 긴급 수술을 등록한다. (SL2-44) */
+/** 응급 수술 요청을 등록한다. (SL2-44) — 응급실이 보낸다. 위 주석 참고. */
 export async function registerEmergencySurgery(
   request: RegisterSurgeryRequest,
 ): Promise<Surgery> {
