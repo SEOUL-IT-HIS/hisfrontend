@@ -71,6 +71,14 @@ const appReducer = combineReducers({
   surgery: surgeryReducer,
 });
 
+/**
+ * Redux의 각 slice(reducer)는 보통 `function xxxReducer(state = 초기값, action)` 형태로 되어 있어서,
+ * state 자리에 undefined 를 넘기면 그 slice가 자기 초기값으로 돌아가는 성질이 있다.
+ * 그래서 appReducer(undefined, action) 을 호출하면 auth 뿐 아니라 emp/patient 등
+ * store 전체가 로그인 전 초기 상태로 리셋된다 — 로그아웃했는데 이전 사용자가 조회했던
+ * 데이터가 화면에 남아있는 걸 막기 위한 용도.
+ * (그 외 액션은 원래 상태(state)를 그대로 넘겨서 평소처럼 동작한다.)
+ */
 function rootReducer(
   state: ReturnType<typeof appReducer> | undefined,
   action: UnknownAction,

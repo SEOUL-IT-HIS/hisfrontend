@@ -93,12 +93,18 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  // 이 컴포넌트는 위에서 props로 받는 loading/error(메뉴 트리 로딩 상태)와
+  // 별개로 로그인 상태(auth)도 다뤄야 해서, 이름이 겹치지 않게 auth 접두사를 붙였다.
   const authLoading = useSelector((state: RootState) => state.auth.loading);
   const authError = useSelector((state: RootState) => state.auth.error);
   const authUser = useSelector((state: RootState) => state.auth.user);
 
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
-  /** true 이면 로그아웃 요청 결과를 기다리는 중 */
+  /**
+   * true 이면 "로그아웃 확인을 눌러서 결과를 기다리는 중" 이라는 뜻.
+   * LoginForm 의 waitRedirect 와 같은 이유로 ref 를 쓴다 — 렌더링을 유발할 필요 없이
+   * 아래 useEffect에서 "이번 로그아웃 시도에 대한 반응인지"만 구분하면 되기 때문.
+   */
   const waitLogout = useRef(false);
 
   function handleLogoutClick() {
@@ -115,6 +121,11 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
     dispatch(fetchAuthLogoutRequest());
   }
 
+  /**
+   * fetchAuthLogoutRequest 도 로그인과 마찬가지로 결과를 바로 안 주고,
+   * saga가 로그아웃 API를 호출한 뒤 store(auth.loading/error/user)를 갱신하는 걸 기다려야 한다.
+   * 성공하면(user가 비워지면) rootReducer가 전체 상태를 리셋하고 나서 /login 으로 보낸다.
+   */
   useEffect(() => {
     if (!waitLogout.current) return;
     if (authLoading) return;
