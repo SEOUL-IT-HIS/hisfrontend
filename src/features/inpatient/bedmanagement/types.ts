@@ -87,7 +87,10 @@ export type UpdateBedReservationRequest = Omit<
   BedReservationDTO,
   "createdAt" | "updatedAt"
 >;
-
+export type UpdateBedReservationScheduleRequest = Pick<
+  BedReservationDTO,
+  "reserveAt" | "expectedAdmissionAt"
+>;
 export interface BedReservationState {
   list: BedReservationDTO[];
   detail: BedReservationDTO | null;
@@ -96,4 +99,5 @@ export interface BedReservationState {
   createStatus: Status;
   updateStatus: Status;
   deleteStatus: Status;
+  scheduleUpdateStatus: Status;
 }
