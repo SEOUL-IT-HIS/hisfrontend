@@ -1,0 +1,54 @@
+import Link from "next/link";
+
+/**
+ * 수술관리 서비스 진입 페이지
+ *
+ * <p>경로: /surgery (§8.1 app/{service}/page.tsx)
+ * 백엔드가 구현된 기능만 링크한다. 동의서·체크리스트·간호기록 등은 백엔드가 아직
+ * 빈 스텁이라 화면을 두지 않는다.</p>
+ *
+ * <p>수술 요청 '등록' 화면이 없는 이유 — 일반 수술은 진료가, 응급 수술은 응급실이
+ * 요청한다. 수술은 요청을 받아 배정·진행을 관리할 뿐 등록 화면을 갖지 않는다(§21.1).
+ * 그래서 이 목록의 시작은 '수술 요청 대기'다.</p>
+ */
+const MENUS = [
+  {
+    href: "/surgery/room/list",
+    label: "수술실 관리",
+    desc: "SL2-6 조회 / SL2-7 등록",
+  },
+  {
+    href: "/surgery/equipment/list",
+    label: "수술장비 관리",
+    desc: "SL2-9 조회 / SL2-10 등록",
+  },
+  {
+    href: "/surgery/schedule/requests",
+    label: "수술 요청 대기",
+    desc: "진료 요청 배정",
+  },
+  { href: "/surgery/schedule/list", label: "수술 일정", desc: "SL2-25 조회" },
+];
+
+export default function Page() {
+  return (
+    <div className="mx-auto w-full max-w-3xl p-6">
+      <h1 className="mb-6 text-lg font-semibold text-slate-800">수술관리</h1>
+      <ul className="flex flex-col gap-3">
+        {MENUS.map((menu) => (
+          <li key={menu.href}>
+            <Link
+              href={menu.href}
+              className="block rounded-lg border border-slate-200 p-4 hover:border-sky-400"
+            >
+              <span className="text-sm font-medium text-slate-800">
+                {menu.label}
+              </span>
+              <span className="ml-2 text-xs text-slate-500">{menu.desc}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
