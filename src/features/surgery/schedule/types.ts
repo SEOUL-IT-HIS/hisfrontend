@@ -25,7 +25,7 @@ export type Surgery = {
   roomCode: string | null;
   /** DATE — yyyy-MM-dd (§14.2 `_dt`) */
   surgeryDt: string;
-  /** SURGERY_STATUS_CD: 01예약/02진행중/03완료/04취소 */
+  /** SURGERY_STATUS_CD: 00요청접수/01예약/02진행중/03완료/04취소 */
   statusCd: CodeValue;
   /** SURG_PROGRESS_CD — 당일 실시간 진행상태(status_cd 와 별개 트랙) */
   progressCd: CodeValue | null;
@@ -40,13 +40,20 @@ export type Surgery = {
   updatedAt: string;
 };
 
-/** 수술 스케줄 등록 (SL2-36) */
+/**
+ * 수술 요청 등록 (SL2-36)
+ *
+ * <p>진료가 "이 환자를 이렇게 집도하겠다"고 올리는 요청이다. 환자·집도의·희망일은
+ * 진료가 확정하고, 수술실·마취의·간호사는 수술실 담당자가 배정 단계에서 채운다.</p>
+ *
+ * <p>statusCd 를 보내지 않는 이유 — 상태는 서버가 정한다. 진료 요청은 '요청접수(00)',
+ * 응급 등록은 '예약(01)'로 생성되며, 클라이언트 값은 백엔드가 무시한다.</p>
+ */
 export type RegisterSurgeryRequest = {
   patientId: string;
   surgeonId: string;
-  /** yyyy-MM-dd */
+  /** yyyy-MM-dd — 진료가 올리는 희망일. 배정 때 조정될 수 있다 */
   surgeryDt: string;
-  statusCd: CodeValue;
   emergencyYn: YnFlag;
   roomCode?: string | null;
   anesthesiologistId?: string | null;
@@ -55,8 +62,25 @@ export type RegisterSurgeryRequest = {
   surgeryName?: string | null;
 };
 
-/** 수술 스케줄 수정 (SL2-37) — 전체 교체(PUT) */
+/** 수술 스케줄 수정 (SL2-37) — 전체 교체(PUT). statusCd 는 전이 API 로만 바뀐다 */
 export type UpdateSurgeryRequest = RegisterSurgeryRequest;
+
+/**
+ * 수술 배정 (요청접수 → 예약)
+ *
+ * <p>수술실은 필수, 마취의·간호사는 나중에 채워도 된다. surgeryDt 를 함께 보내면
+ * 진료가 올린 희망일을 수술실 사정에 맞춰 조정한다(미지정이면 요청일 유지).</p>
+ *
+ * <p>환자·집도의가 없는 이유 — 진료가 확정한 값이라 배정에서 바꾸지 않는다.
+ * 집도의를 바꿔야 하면 배정 후 수정(PUT)으로 처리한다.</p>
+ */
+export type AssignSurgeryRequest = {
+  roomCode: string;
+  anesthesiologistId?: string | null;
+  nurseId?: string | null;
+  /** yyyy-MM-dd */
+  surgeryDt?: string;
+};
 
 /**
  * 수술 스케줄 취소 (SL2-33)
@@ -91,6 +115,8 @@ export type SurgeryListParams = {
 export type ScheduleState = {
   surgeries: Surgery[];
   todaySurgeries: Surgery[];
+  /** 진료가 요청했으나 아직 수술실이 안 잡힌 건(status_cd = 00) — 배정 화면 전용 */
+  surgeryRequests: Surgery[];
   selectedSurgery: Surgery | null;
   loading: boolean;
   saving: boolean;

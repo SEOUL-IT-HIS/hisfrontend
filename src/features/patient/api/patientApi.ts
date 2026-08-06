@@ -1,6 +1,8 @@
 import apiClient from "@/lib/axios";
 import type {
   Patient,
+  PatientDetail,
+  PatientDetailApiResponse,
   PatientDuplicateCheckApiResponse,
   PatientDuplicateCheckRequest,
   PatientListApiResponse,
@@ -16,6 +18,18 @@ export async function fetchPatientListApi(): Promise<PatientListItem[]> {
 
   return response.data.data;
 }
+
+/** GET /api/patient/{patientId} */
+export async function fetchPatientDetailApi(
+  patientId: number,
+): Promise<PatientDetail> {
+  const response = await apiClient.get<PatientDetailApiResponse>(
+    `/api/patient/${patientId}`,
+  );
+
+  return response.data.data;
+}
+
 
 /** POST /api/patient/register */
 export async function registerPatientApi(

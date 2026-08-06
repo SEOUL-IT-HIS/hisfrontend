@@ -1,7 +1,7 @@
 /**
  * 수술기록지 API (SL2-51)
  *
- * <p>백엔드 OperativeRecordController(@RequestMapping("/api/v1/surgery")) 와 1:1 대응.
+ * <p>백엔드 OperativeRecordController(@RequestMapping("/api/surgery")) 와 1:1 대응.
  * 경로가 단수형(operative-record)인 것은 백엔드 계약을 그대로 따른 것이다.</p>
  */
 import apiClient from "@/lib/axios";
@@ -12,7 +12,7 @@ import type {
   UpdateOperativeRecordRequest,
 } from "@/features/surgery/operativeRecord/types";
 
-const SURGERY_PATH = "/api/v1/surgery";
+const SURGERY_PATH = "/api/surgery";
 
 /** 해당 수술의 수술기록지 목록을 조회한다. (SL2-57) */
 export async function getOperativeRecords(

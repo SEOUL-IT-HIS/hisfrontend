@@ -7,6 +7,7 @@
  * - 수정 PUT  /api/commonCodeItem/update/{codeId}
  */
 import apiClient from "@/lib/axios";
+import { fetchCommonCodeGroupApi } from "./commonCodeGroupApi";
 import type {
   ApiResponse,
   CommonCodeItem,
@@ -22,6 +23,22 @@ export async function fetchCommonCodeItemApi(groupId: number): Promise<CommonCod
     { params: { groupId } },
   );
   return response.data.data ?? [];
+}
+
+/**
+ * 그룹코드(예: DEPT_CD)로 항목 목록 조회
+ * 1) 그룹 목록에서 groupCode 찾기
+ * 2) 해당 groupId 로 항목 조회
+ * 3) 사용중(Y) 만 반환
+ */
+export async function fetchCommonCodeItemsByGroupCode(
+  groupCode: string,
+): Promise<CommonCodeItem[]> {
+  const groups = await fetchCommonCodeGroupApi();
+  const group = groups.find((g) => g.groupCode === groupCode);
+  if (!group) return [];
+  const items = await fetchCommonCodeItemApi(group.groupId);
+  return items.filter((item) => item.useYn === "Y");
 }
 
 /** 항목 등록 — body: groupId, codeValue, codeName, useYn */

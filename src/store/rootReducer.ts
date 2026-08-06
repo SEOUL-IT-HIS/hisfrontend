@@ -5,16 +5,20 @@ import { combineReducers } from "@reduxjs/toolkit";
 // import receptionReducer from "@/features/reception/slice";
 // import billingReducer from "@/features/billing/slice";
  import outpatientReducer from "@/features/outpatient/common/slice";
-// import emergencyReducer from "@/features/emergency/slice";
+import emergencyReducer from "@/features/emergency/common/slice";
 import inpatientReducer from "@/features/inpatient/slice";
 import labImagingReducer from "@/features/labimaging/common/slice";
 // import pharmacyReducer from "@/features/pharmacy/slice";
-// import surgeryReducer from "@/features/surgery/slice";
+import surgeryReducer from "@/features/surgery/slice";
 // import adminReducer from "@/features/admin/slice";
 import commonCodeItemReducer from "@/features/commonCode/slice/commonCodeItemSlice";
 import commonCodeGroupReducer from "@/features/commonCode/slice/commonCodeGroupSlice";
+import authReducer from "@/features/auth/slice/authSlice";
+import empReducer from "@/features/emp/slice/empSlice";
 import systemReducer from "@/features/system/slice/menuSlice";
 import patientReducer from "@/features/patient/slice/patientSlice";
+import billingDetailReducer from "@/features/billing/searchBillingDetail/slice";
+import billingMasterReducer from "@/features/billing/billingMaster/slice";
 
 /**
  * RootReducer (프론트 리더 관리 영역)
@@ -28,8 +32,10 @@ const rootReducer = combineReducers({
 
   // 공통
   system: systemReducer,
+  auth: authReducer,
   commonCodeGroup: commonCodeGroupReducer,
   commonCodeItem: commonCodeItemReducer,
+  emp: empReducer,
 
   // 관리자 (ADM)
   // admin: adminReducer,
@@ -41,13 +47,14 @@ const rootReducer = combineReducers({
   // reception: receptionReducer,
 
   // 수납/청구 (BIL)
-  // billing: billingReducer,
+  billingDetail: billingDetailReducer,
+  billingMaster: billingMasterReducer,
 
   // 외래 (OPD)
   outpatient: outpatientReducer,
 
   // 응급 (EMG)
-  // emergency: emergencyReducer,
+  emergency: emergencyReducer,
 
   // 입원 (IPT)
   inpatient: inpatientReducer,
@@ -59,7 +66,7 @@ const rootReducer = combineReducers({
   // pharmacy: pharmacyReducer,
 
   // 수술 (SUR)
-  // surgery: surgeryReducer,
+  surgery: surgeryReducer,
 });
 
 export default rootReducer;

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
@@ -18,11 +19,18 @@ const formatDateTime = (value: string) =>
   value.replace("T", " ").slice(0, 19);
 
 const columns: DataTableColumn<PatientListItem>[] = [
-  {
-    key: "patientName",
-    header: "환자명",
-    render: (patient) => patient.patientName,
-  },
+ {
+  key: "patientName",
+  header: "환자명",
+  render: (patient) => (
+    <Link
+      href={`/patient/${patient.patientId}`}
+      className="font-medium text-blue-600 hover:underline"
+    >
+      {patient.patientName}
+    </Link>
+  ),
+},
   {
     key: "residentRegNo",
     header: "주민등록번호",
@@ -51,6 +59,8 @@ const columns: DataTableColumn<PatientListItem>[] = [
 ];
 
 export default function PatientListForm() {
+  const searchParams = useSearchParams();
+  const registeredPatientId = searchParams.get("registeredPatientId");
   const dispatch = useDispatch<AppDispatch>();
   const { patients, listLoading, listError } = useSelector(
     (state: RootState) => state.patient,
@@ -70,6 +80,12 @@ export default function PatientListForm() {
           </Link>
         }
       />
+
+      {registeredPatientId ? (
+      <Alert variant="success">
+       환자 등록이 완료되었습니다. 환자번호: {registeredPatientId}
+      </Alert>
+      ) : null}
 
       {listError ? <Alert variant="error">{listError}</Alert> : null}
 

@@ -32,7 +32,7 @@ const AdmissionDetail=()=>{
             <p>Status: {admission.status}</p>
             <p>CreatedAt: {admission.createdAt}</p>
             <p>UpdatedAt: {admission.updatedAt}</p>
-            <div>
+            <div>                      
   <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
     <option value="">상태 선택</option>
     <option value="요청">요청</option>

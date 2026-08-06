@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   Patient,
+  PatientDetail,
   PatientDuplicateCheckRequest,
   PatientListItem,
   PatientRegisterRequest,
@@ -8,23 +9,29 @@ import type {
 
 type PatientState = {
   patients: PatientListItem[];
+  patientDetail: PatientDetail | null;
   registeredPatient: Patient | null;
   duplicated: boolean | null;
   listLoading: boolean;
+  detailLoading: boolean;
   registerLoading: boolean;
   duplicateCheckLoading: boolean;
   listError: string | null;
+  detailError: string | null;
   error: string | null;
 };
 
 const initialState: PatientState = {
   patients: [],
+  patientDetail: null,
   registeredPatient: null,
   duplicated: null,
   listLoading: false,
+  detailLoading: false,
   registerLoading: false,
   duplicateCheckLoading: false,
   listError: null,
+  detailError: null,
   error: null,
 };
 
@@ -47,6 +54,34 @@ const patientSlice = createSlice({
       state.listLoading = false;
       state.listError = action.payload;
     },
+
+    fetchPatientDetailRequest(
+  state,
+  action: PayloadAction<number>,
+) {
+  void action;
+
+  state.detailLoading = true;
+  state.detailError = null;
+  state.patientDetail = null;
+},
+
+fetchPatientDetailSuccess(
+  state,
+  action: PayloadAction<PatientDetail>,
+) {
+  state.detailLoading = false;
+  state.patientDetail = action.payload;
+},
+
+fetchPatientDetailFailure(
+  state,
+  action: PayloadAction<string>,
+) {
+  state.detailLoading = false;
+  state.detailError = action.payload;
+},
+
     registerPatientRequest: {
       reducer(state) {
         state.registerLoading = true;
@@ -94,6 +129,9 @@ export const {
   fetchPatientListRequest,
   fetchPatientListSuccess,
   fetchPatientListFailure,
+  fetchPatientDetailRequest,
+  fetchPatientDetailSuccess,
+  fetchPatientDetailFailure,
   registerPatientRequest,
   registerPatientSuccess,
   registerPatientFailure,
