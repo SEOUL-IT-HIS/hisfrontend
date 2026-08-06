@@ -24,6 +24,11 @@ export const updateBedReservationApi = async (request: UpdateBedReservationReque
   return data.data;
 };
 
+export const updateBedReservationScheduleApi = async (id: string, request: { reserveAt: string; expectedAdmissionAt: string }) => {
+  const { data } = await apiClient.patch<ApiResponse<BedReservationDTO>>(`/api/bedreservation/${id}`, request);
+  return data.data;
+}
+
 export const deleteBedReservationApi = async (id: string) => {
   const { data } = await apiClient.delete<ApiResponse<void>>(`/api/bedreservation/${id}`);
   return data.data;
