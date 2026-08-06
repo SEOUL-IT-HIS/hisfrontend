@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { searchBillingDetailRequest } from "@/features/billing/searchBillingDetail/slice";
-import BillingDetailSearchList from "@/components/billing/BillingDetailSearchList";
+import BillingDetailSearchList from "@/components/billing/detail/BillingDetailSearchList";
 
 export default function BillingDetailSearchForm() {
     const dispatch = useDispatch<AppDispatch>();
