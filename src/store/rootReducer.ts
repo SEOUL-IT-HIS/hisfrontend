@@ -1,4 +1,5 @@
-import { combineReducers } from "@reduxjs/toolkit";
+import { combineReducers, type UnknownAction } from "@reduxjs/toolkit";
+import { fetchAuthLogoutSuccess } from "@/features/auth/slice/authSlice";
 
 // ----- 서비스별 reducer (담당자 slice 준비되면 import 후 아래에 등록) -----
 // import patientReducer from "@/features/patient/slice";
@@ -24,10 +25,11 @@ import billingMasterReducer from "@/features/billing/billingMaster/slice";
  * RootReducer (프론트 리더 관리 영역)
  * - 담당 영역(auth/admin/commonCode/system) 초기화 — 재구현 후 등록
  * - combineReducers 는 최소 1개 reducer 필요 → placeholder 유지
+ * - 로그아웃 성공(fetchAuthLogoutSuccess) 시 전체 상태를 초기값으로 리셋한다 (로그아웃 후 잔여 상태 방지)
  */
 const placeholderReducer = (state: Record<string, never> = {}) => state;
 
-const rootReducer = combineReducers({
+const appReducer = combineReducers({
   _bootstrap: placeholderReducer,
 
   // 공통
@@ -68,5 +70,15 @@ const rootReducer = combineReducers({
   // 수술 (SUR)
   surgery: surgeryReducer,
 });
+
+function rootReducer(
+  state: ReturnType<typeof appReducer> | undefined,
+  action: UnknownAction,
+) {
+  if (action.type === fetchAuthLogoutSuccess.type) {
+    return appReducer(undefined, action);
+  }
+  return appReducer(state, action);
+}
 
 export default rootReducer;
