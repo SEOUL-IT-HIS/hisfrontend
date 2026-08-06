@@ -1,10 +1,8 @@
-import EmpList from "@/components/emp/EmpList";
+import { redirect } from "next/navigation";
 
 /**
- * /admin/user 페이지 엔트리
- * - MENU.ADM_USER.menuUrl = /admin/user
- * - 실제 UI/로직은 EmpList 에 있음 (얇은 page)
+ * /admin/user → 실제 경로(/admin/emp) 로 통일
  */
 export default function Page() {
-  return <EmpList />;
+  redirect("/admin/emp");
 }
