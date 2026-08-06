@@ -10,7 +10,6 @@ import {
 import type { AppDispatch, RootState } from "@/store/store";
 
 type MedicalRecordDetailProps = {
-    /** 상세 조회할 진료기록 ID. null이면 모달을 닫힌 상태로 렌더링한다 */
     recordId: string | null;
     onClose: () => void;
 };
@@ -36,7 +35,6 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
         if (recordId) {
             dispatch(fetchRecordDetailRequest(recordId));
         }
-        // 모달을 닫거나 다른 기록을 열기 전에 이전 상세 데이터를 비워, 다음 조회 시 잠깐이라도 이전 내용이 보이지 않게 한다
         return () => {
             dispatch(clearSelectedRecord());
         };
@@ -63,21 +61,28 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                         <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-600 border border-slate-200">
                             {record.patientNo ?? "-"}
                         </span>
+                        {record.departmentName && (
+                            <span className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">
+                                {record.departmentName}
+                            </span>
+                        )}
                         <span className="ml-auto text-xs text-slate-500">
                             작성일시: {formatDateTime(record.createdAt)}
                         </span>
                     </div>
 
-                    {/* 기본 정보 (상태, 작성자 ID) */}
+                    {/* 기본 정보 (상태, 담당의) */}
                     <div className="grid grid-cols-2 gap-3">
                         <FormField label="기록 상태">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 font-medium">
                                 {record.status}
                             </div>
                         </FormField>
-                        <FormField label="작성자 ID">
+                        <FormField label="담당의">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
-                                {record.authorId}
+                                {record.doctorName
+                                    ? `${record.doctorName} (${record.doctorId})`
+                                    : record.doctorId}
                             </div>
                         </FormField>
                     </div>

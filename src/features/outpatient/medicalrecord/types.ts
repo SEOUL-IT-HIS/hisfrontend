@@ -9,12 +9,14 @@ export interface MedicalRecordDto {
     assessmentNote: string | null;
     planNote: string | null;
     status: string;
-    authorId: string;
-    createdAt: string;           // ISO String 형태로 전달됨 (예: "2026-08-04T15:38:01")
-    updatedAt: string | null;    // 수정된 적 없으면 null일 수 있음
+    doctorId: string;            // 의사 ID
+    doctorName?: string | null;   // 의사명
+    departmentName?: string | null; // 진료과명
+    createdAt: string;
+    updatedAt: string | null;
 }
 
 // 진료기록 목록 조회 파라미터
 export interface MedicalRecordSearchParams {
-    encounterId: string;         // 백엔드 @RequestParam 필수값
+    keyword?: string; // 환자명, 환자번호, 주호소 등 통합 검색어
 }

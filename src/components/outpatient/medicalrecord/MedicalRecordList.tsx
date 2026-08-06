@@ -14,9 +14,11 @@ const MedicalRecordList = () => {
     const dispatch = useDispatch<AppDispatch>();
 
     const searchParams = useSearchParams();
-    const initialEncounterId = searchParams.get("encounterId") ?? "";
+    // 1. URL 쿼리 파라미터를 keyword로 변경 (기존 encounterId -> keyword)
+    const initialKeyword = searchParams.get("keyword") ?? searchParams.get("patientName") ?? "";
 
-    const [encounterIdInput, setEncounterIdInput] = useState(initialEncounterId);
+    // 2. 검색어 상태관리 변수명 변경
+    const [keywordInput, setKeywordInput] = useState(initialKeyword);
     const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
 
     const { loading, error, list } = useSelector(
@@ -28,24 +30,32 @@ const MedicalRecordList = () => {
         shallowEqual
     );
 
+    // 3. 초기 로딩 시 keyword 전달
     useEffect(() => {
         dispatch(
-            fetchRecordListRequest({ encounterId: initialEncounterId })
+            fetchRecordListRequest({ keyword: initialKeyword })
         );
-    }, [dispatch, initialEncounterId]);
+    }, [dispatch, initialKeyword]);
 
+    // 4. 검색 버튼 클릭 시 keyword 전달
     function handleSearch() {
-        const encounterId = encounterIdInput.trim();
+        const keyword = keywordInput.trim();
         setSelectedRecordId(null);
-        // 빈값일 때는 encounterId: "" 전송
-        dispatch(fetchRecordListRequest({ encounterId }));
+        dispatch(fetchRecordListRequest({ keyword }));
     }
 
+    // 5. 엔터키 누를 때도 검색 가능하도록 처리
+    function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+        if (e.key === "Enter") {
+            handleSearch();
+        }
+    }
+
+    // 6. 초기화 버튼 클릭 시 검색어 비우기
     function handleReset() {
-        setEncounterIdInput("");
+        setKeywordInput("");
         setSelectedRecordId(null);
-        // 초기화 시 빈 문자열 전송
-        dispatch(fetchRecordListRequest({ encounterId: "" }));
+        dispatch(fetchRecordListRequest({ keyword: "" }));
     }
 
     return (
@@ -55,11 +65,13 @@ const MedicalRecordList = () => {
 
                 <div className="flex items-center gap-2">
                     <div className="flex-1">
+                        {/* UI 플레이스홀더 및 상태변수 변경 */}
                         <Input
-                            id="encounterId"
-                            value={encounterIdInput}
-                            placeholder="진료ID 입력"
-                            onChange={(e) => setEncounterIdInput(e.target.value)}
+                            id="keyword"
+                            value={keywordInput}
+                            placeholder="환자명, 환자번호, 주호소 입력"
+                            onChange={(e) => setKeywordInput(e.target.value)}
+                            onKeyDown={handleKeyDown}
                         />
                     </div>
                     <Button variant="secondary" onClick={handleReset}>
@@ -80,12 +92,13 @@ const MedicalRecordList = () => {
                     <table className="w-full table-fixed text-left border-collapse text-sm">
                         <thead className="bg-slate-100 border-b border-slate-200 text-slate-700">
                         <tr>
-                            <th className="w-[150px] p-3 font-semibold">환자번호</th>
-                            <th className="w-[150px] p-3 font-semibold">환자명</th>
-                            <th className="w-[150px] p-3 font-semibold">주호소</th>
-                            <th className="w-[150px] p-3 font-semibold">상태</th>
-                            <th className="w-[150px] p-3 font-semibold">작성일시</th>
-                            <th className="w-[150px] p-3 font-semibold ">관리</th>
+                            <th className="w-[120px] p-3 font-semibold">환자번호</th>
+                            <th className="w-[120px] p-3 font-semibold">환자명</th>
+                            <th className="w-[130px] p-3 font-semibold">담당의</th>
+                            <th className="w-[180px] p-3 font-semibold">주호소</th>
+                            <th className="w-[100px] p-3 font-semibold">상태</th>
+                            <th className="w-[160px] p-3 font-semibold">작성일시</th>
+                            <th className="w-[100px] p-3 font-semibold">관리</th>
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -94,10 +107,13 @@ const MedicalRecordList = () => {
                                 <tr key={record.recordId} className="hover:bg-slate-50 transition">
                                     <td className="p-3">{record.patientNo ?? "-"}</td>
                                     <td className="p-3">{record.patientName ?? "미상"}</td>
-                                    <td className="p-3">{record.chiefComplaint ?? "-"}</td>
+                                    <td className="p-3">
+                                        {record.doctorName ? `${record.doctorName}` : (record.doctorId ?? "-")}
+                                    </td>
+                                    <td className="p-3 truncate">{record.chiefComplaint ?? "-"}</td>
                                     <td className="p-3">{record.status}</td>
                                     <td className="p-3">{formatDateTime(record.createdAt)}</td>
-                                    <td className="p-3 ">
+                                    <td className="p-3">
                                         <Button
                                             variant="secondary"
                                             onClick={() => setSelectedRecordId(record.recordId)}
@@ -109,7 +125,7 @@ const MedicalRecordList = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={6} className="p-6 text-center text-slate-500">
+                                <td colSpan={7} className="p-6 text-center text-slate-500">
                                     조회된 진료 기록이 없습니다.
                                 </td>
                             </tr>

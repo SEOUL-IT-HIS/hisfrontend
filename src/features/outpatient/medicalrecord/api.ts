@@ -5,7 +5,11 @@ import { MedicalRecordDto, MedicalRecordSearchParams } from "./types";
 export const fetchMedicalRecordList = async (
     params?: MedicalRecordSearchParams
 ): Promise<MedicalRecordDto[]> => {
-    const response = await axios.get("/api/outpatient/records", { params });
+    const response = await axios.get("/api/outpatient/records", {
+        params: {
+            keyword: params?.keyword
+        }
+    });
     return response.data.data;
 };
 
