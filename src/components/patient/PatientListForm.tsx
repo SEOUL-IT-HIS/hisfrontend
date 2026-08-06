@@ -24,7 +24,7 @@ const columns: DataTableColumn<PatientListItem>[] = [
   header: "환자명",
   render: (patient) => (
     <Link
-      href={`/patient/${patient.patientId}`}
+      href={`/reception/patientmanagement/${patient.patientId}`}
       className="font-medium text-blue-600 hover:underline"
     >
       {patient.patientName}
@@ -75,7 +75,7 @@ export default function PatientListForm() {
       <PageHeader
         title="환자관리"
         actions={
-          <Link href="/patient/register">
+          <Link href="/reception/patientmanagement/register">
             <Button variant="primary">환자등록</Button>
           </Link>
         }
