@@ -22,6 +22,7 @@ import {
   fetchAuthMeSuccess,
 } from "../slice/authSlice";
 import type { AuthUser } from "../types/authTypes";
+import { resetStore } from "@/store/resetStoreAction";
 
 const USER_INFO_KEY = "userInfo";
 
@@ -57,6 +58,8 @@ function* fetchAuthLogoutSaga() {
     yield call(fetchAuthLogoutApi);
     localStorage.removeItem(USER_INFO_KEY);
     yield put(fetchAuthLogoutSuccess());
+    // store 전체를 초기 상태로 되돌린다 (rootReducer.ts 참고 — 잔여 상태 방지)
+    yield put(resetStore());
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "로그아웃에 실패했습니다.";

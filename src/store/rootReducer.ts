@@ -1,5 +1,5 @@
 import { combineReducers, type UnknownAction } from "@reduxjs/toolkit";
-import { fetchAuthLogoutSuccess } from "@/features/auth/slice/authSlice";
+import { RESET_STORE } from "@/store/resetStoreAction";
 
 // ----- 서비스별 reducer (담당자 slice 준비되면 import 후 아래에 등록) -----
 // import patientReducer from "@/features/patient/slice";
@@ -25,7 +25,8 @@ import billingMasterReducer from "@/features/billing/billingMaster/slice";
  * RootReducer (프론트 리더 관리 영역)
  * - 담당 영역(auth/admin/commonCode/system) 초기화 — 재구현 후 등록
  * - combineReducers 는 최소 1개 reducer 필요 → placeholder 유지
- * - 로그아웃 성공(fetchAuthLogoutSuccess) 시 전체 상태를 초기값으로 리셋한다 (로그아웃 후 잔여 상태 방지)
+ * - RESET_STORE(store 자체 소유 액션) 수신 시 전체 상태를 초기값으로 리셋한다 (로그아웃 후 잔여 상태 방지)
+ *   rootReducer는 "무엇 때문에(auth 로그아웃 등)" 리셋하는지 몰라도 되게, 특정 feature의 액션을 직접 import하지 않는다.
  */
 const placeholderReducer = (state: Record<string, never> = {}) => state;
 
@@ -83,7 +84,7 @@ function rootReducer(
   state: ReturnType<typeof appReducer> | undefined,
   action: UnknownAction,
 ) {
-  if (action.type === fetchAuthLogoutSuccess.type) {
+  if (action.type === RESET_STORE) {
     return appReducer(undefined, action);
   }
   return appReducer(state, action);
