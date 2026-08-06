@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { MenuTreeNode } from "@/features/system/types/menuTypes";
+import { Alert, ConfirmDialog } from "@/components/common";
+import { fetchAuthLogoutRequest } from "@/features/auth/slice/authSlice";
+import type { AppDispatch, RootState } from "@/store/store";
 
 type SidebarProps = {
   menuTree: MenuTreeNode[];
@@ -86,6 +90,43 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
 
   const [collapsed, setCollapsed] = useState(false);
   const [openAreas, setOpenAreas] = useState<Record<string, boolean>>({});
+
+  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+  const authLoading = useSelector((state: RootState) => state.auth.loading);
+  const authError = useSelector((state: RootState) => state.auth.error);
+  const authUser = useSelector((state: RootState) => state.auth.user);
+
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  /** true 이면 로그아웃 요청 결과를 기다리는 중 */
+  const waitLogout = useRef(false);
+
+  function handleLogoutClick() {
+    setLogoutConfirmOpen(true);
+  }
+
+  function handleLogoutCancel() {
+    if (authLoading) return;
+    setLogoutConfirmOpen(false);
+  }
+
+  function handleLogoutConfirm() {
+    waitLogout.current = true;
+    dispatch(fetchAuthLogoutRequest());
+  }
+
+  useEffect(() => {
+    if (!waitLogout.current) return;
+    if (authLoading) return;
+    if (authError) {
+      waitLogout.current = false;
+      return;
+    }
+    if (!authUser) {
+      waitLogout.current = false;
+      router.replace("/login");
+    }
+  }, [authLoading, authError, authUser, router]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -265,7 +306,30 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
         >
           환경설정
         </button>
+        <button
+          type="button"
+          onClick={handleLogoutClick}
+          className="w-full rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/90 hover:text-slate-600"
+        >
+          로그아웃
+        </button>
+        {authError ? (
+          <Alert variant="error" className="mt-1">
+            {authError}
+          </Alert>
+        ) : null}
       </div>
+
+      <ConfirmDialog
+        open={logoutConfirmOpen}
+        title="로그아웃"
+        message="정말 로그아웃하시겠습니까?"
+        confirmLabel="로그아웃"
+        cancelLabel="취소"
+        submitting={authLoading}
+        onConfirm={handleLogoutConfirm}
+        onCancel={handleLogoutCancel}
+      />
     </aside>
   );
 }
