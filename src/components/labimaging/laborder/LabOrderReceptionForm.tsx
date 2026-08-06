@@ -15,10 +15,8 @@ import type {
   LabOrderCreateRequest,
   LabOrderItemRequest,
 } from "@/features/labimaging/laborder/types";
-import {
-  TREAT_TYPE_OPTIONS,
-  URGENCY_YN_OPTIONS,
-} from "@/features/labimaging/laborder/types";
+import { URGENCY_YN_OPTIONS } from "@/features/labimaging/laborder/types";
+import CommonCodeSelect from "@/components/commonCode/CommonCodeSelect";
 
 /** 스칼라 입력 필드 초기값 (항목 목록은 별도 state) */
 const initialForm = {
@@ -173,13 +171,12 @@ export default function LabOrderReceptionForm() {
           <span className="font-medium text-slate-700">
             시스템코드 <span className="text-rose-500">*</span>
           </span>
-          <input
+          <CommonCodeSelect
+            groupCode="SYSTEM_SOURCE_CD"
             name="systemCode"
             value={form.systemCode}
             onChange={handleChange}
-            maxLength={10}
             disabled={creating}
-            placeholder="예: GR2"
             className={inputClass}
           />
           {errors.systemCode ? (
@@ -222,20 +219,14 @@ export default function LabOrderReceptionForm() {
           <span className="font-medium text-slate-700">
             진료유형 <span className="text-rose-500">*</span>
           </span>
-          <select
+          <CommonCodeSelect
+            groupCode="RCPT_TYPE_CD"
             name="treatTypeCode"
             value={form.treatTypeCode}
             onChange={handleChange}
             disabled={creating}
             className={inputClass}
-          >
-            <option value="">선택</option>
-            {TREAT_TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          />
           {errors.treatTypeCode ? (
             <span className="text-xs text-rose-500">{errors.treatTypeCode}</span>
           ) : null}
@@ -295,14 +286,16 @@ export default function LabOrderReceptionForm() {
 
         {items.map((item, index) => (
           <div key={index} className="flex items-center gap-2">
-            <input
-              value={item.labItemCode}
-              onChange={(e) => handleItemChange(index, e.target.value)}
-              maxLength={20}
-              disabled={creating}
-              placeholder="검사항목코드 (예: CBC)"
-              className={`${inputClass} flex-1`}
-            />
+            <div className="flex flex-1 flex-col gap-1">
+              <CommonCodeSelect
+                groupCode="TEST_TYPE_CD"
+                value={item.labItemCode}
+                onChange={(e) => handleItemChange(index, e.target.value)}
+                disabled={creating}
+                placeholder="검사항목 선택"
+                className={inputClass}
+              />
+            </div>
             <button
               type="button"
               onClick={() => removeItemRow(index)}

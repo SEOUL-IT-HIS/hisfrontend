@@ -15,6 +15,7 @@ import {
 } from "@/features/labimaging/imagingschedule/slice";
 import { RESERVATION_YN_OPTIONS } from "@/features/labimaging/imagingschedule/types";
 import { selectSelectedImageReception } from "@/features/labimaging/imagingorder/slice";
+import CommonCodeSelect from "@/components/commonCode/CommonCodeSelect";
 
 /**
  * 영상 일정 등록/재등록 폼. (labschedule 폼과 동일 구조, 영상 필드)
@@ -82,7 +83,7 @@ export default function ImageScheduleRegisterForm() {
     const next: FieldErrors = {};
     if (!form.roomCode.trim()) next.roomCode = "촬영실코드는 필수입니다.";
     if (!form.equipmentCode.trim()) next.equipmentCode = "촬영장비코드는 필수입니다.";
-    if (!form.scheduledAt) next.scheduledAt = "확정일시는 필수입니다.";
+    if (!form.scheduledAt) next.scheduledAt = "촬영 예정일시는 필수입니다.";
     if (!form.contraindicationCheckCode.trim())
       next.contraindicationCheckCode = "금기확인결과코드는 필수입니다.";
     if (!form.confirmedById.trim())
@@ -162,13 +163,12 @@ export default function ImageScheduleRegisterForm() {
           <span className="font-medium text-slate-700">
             촬영실코드 <span className="text-rose-500">*</span>
           </span>
-          <input
+          <CommonCodeSelect
+            groupCode="EXAM_ROOM_CD"
             name="roomCode"
             value={form.roomCode}
             onChange={handleChange}
-            maxLength={10}
             disabled={creating}
-            placeholder="공통코드"
             className={inputClass}
           />
           {errors.roomCode ? (
@@ -180,13 +180,12 @@ export default function ImageScheduleRegisterForm() {
           <span className="font-medium text-slate-700">
             촬영장비코드 <span className="text-rose-500">*</span>
           </span>
-          <input
+          <CommonCodeSelect
+            groupCode="EQUIPMENT_CD"
             name="equipmentCode"
             value={form.equipmentCode}
             onChange={handleChange}
-            maxLength={10}
             disabled={creating}
-            placeholder="공통코드"
             className={inputClass}
           />
           {errors.equipmentCode ? (
@@ -196,7 +195,7 @@ export default function ImageScheduleRegisterForm() {
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-slate-700">
-            확정일시 <span className="text-rose-500">*</span>
+            촬영 예정일시 <span className="text-rose-500">*</span>
           </span>
           <input
             type="datetime-local"
@@ -206,6 +205,9 @@ export default function ImageScheduleRegisterForm() {
             disabled={creating}
             className={inputClass}
           />
+          <span className="text-xs text-slate-500">
+            촬영을 시행할 날짜와 시각입니다. 확정한 시각은 자동 기록됩니다.
+          </span>
           {errors.scheduledAt ? (
             <span className="text-xs text-rose-500">{errors.scheduledAt}</span>
           ) : null}
@@ -232,13 +234,12 @@ export default function ImageScheduleRegisterForm() {
           <span className="font-medium text-slate-700">
             금기확인결과코드 <span className="text-rose-500">*</span>
           </span>
-          <input
+          <CommonCodeSelect
+            groupCode="CONTRAINDICATION_CD"
             name="contraindicationCheckCode"
             value={form.contraindicationCheckCode}
             onChange={handleChange}
-            maxLength={10}
             disabled={creating}
-            placeholder="공통코드"
             className={inputClass}
           />
           {errors.contraindicationCheckCode ? (

@@ -89,16 +89,14 @@ export interface LabOrderState {
 }
 
 /**
- * 진료구분 표시용 임시 옵션.
- * TODO: admin-service 공통코드 조회 API 연동 전 임시값. 연동 후 상수 제거하고 API 로 대체.
+ * ⚠ TREAT_TYPE_OPTIONS 하드코딩 상수는 제거했다. (2026-08-04)
+ *   admin 에 등록된 RCPT_TYPE_CD 의 실제 코드값은 "01"/"02"/"03"/"04" 인데
+ *   여기 있던 임시값은 "OUTPATIENT"/"INPATIENT"/"EMERGENCY" 라 서버 검증(LAB017)에 걸린다.
+ *   이제 CommonCodeSelect(groupCode="RCPT_TYPE_CD") 으로 admin 에서 직접 불러온다.
+ *
+ * 응급여부 표시용 옵션 (계약상 "Y"/"N")
+ * — 이쪽은 공통코드가 아니라 API 계약상 고정값이라 상수로 유지한다.
  */
-export const TREAT_TYPE_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
-  { value: "OUTPATIENT", label: "외래" },
-  { value: "INPATIENT", label: "입원" },
-  { value: "EMERGENCY", label: "응급" },
-];
-
-/** 응급여부 표시용 옵션 (계약상 "Y"/"N") */
 export const URGENCY_YN_OPTIONS: ReadonlyArray<{ value: "Y" | "N"; label: string }> = [
   { value: "N", label: "일반" },
   { value: "Y", label: "긴급" },
