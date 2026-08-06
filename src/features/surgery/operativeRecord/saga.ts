@@ -23,6 +23,7 @@ import type {
   OperativeRecord,
   UpdateOperativeRecordRequest,
 } from "@/features/surgery/operativeRecord/types";
+import { getSurgeryErrorMessage } from "@/features/surgery/errorMessage";
 
 /**
  * 수술기록지 saga (SL2-51)
@@ -39,9 +40,11 @@ function* fetchOperativeRecordsSaga(action: PayloadAction<string>) {
     );
     yield put(fetchOperativeRecordsSuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술기록 조회에 실패했습니다.";
-    yield put(fetchOperativeRecordsFailure(message));
+    yield put(
+      fetchOperativeRecordsFailure(
+        getSurgeryErrorMessage(err, "수술기록 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -53,9 +56,11 @@ function* fetchOperativeRecordSaga(action: PayloadAction<string>) {
     );
     yield put(fetchOperativeRecordSuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술기록 조회에 실패했습니다.";
-    yield put(fetchOperativeRecordFailure(message));
+    yield put(
+      fetchOperativeRecordFailure(
+        getSurgeryErrorMessage(err, "수술기록 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -71,9 +76,11 @@ function* createOperativeRecordSaga(
     yield put(operativeRecordMutationSuccess());
     yield put(fetchOperativeRecordsRequest(surgeryId));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술기록 작성에 실패했습니다.";
-    yield put(operativeRecordMutationFailure(message));
+    yield put(
+      operativeRecordMutationFailure(
+        getSurgeryErrorMessage(err, "수술기록 작성에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -91,9 +98,11 @@ function* updateOperativeRecordSaga(
     yield put(fetchOperativeRecordsRequest(surgeryId));
   } catch (err) {
     // 확정된 기록 수정 시도는 SUR043 으로 내려온다
-    const message =
-      err instanceof Error ? err.message : "수술기록 수정에 실패했습니다.";
-    yield put(operativeRecordMutationFailure(message));
+    yield put(
+      operativeRecordMutationFailure(
+        getSurgeryErrorMessage(err, "수술기록 수정에 실패했습니다."),
+      ),
+    );
   }
 }
 

@@ -47,6 +47,7 @@ import type {
   UpdateProgressRequest,
   UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
+import { getSurgeryErrorMessage } from "@/features/surgery/errorMessage";
 
 /**
  * 수술 스케줄링 saga (SL2-2)
@@ -64,9 +65,11 @@ function* fetchSurgeriesSaga(
     const response: Surgery[] = yield call(getSurgerySchedules, action.payload);
     yield put(fetchSurgeriesSuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 일정 조회에 실패했습니다.";
-    yield put(fetchSurgeriesFailure(message));
+    yield put(
+      fetchSurgeriesFailure(
+        getSurgeryErrorMessage(err, "수술 일정 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -75,9 +78,11 @@ function* fetchTodaySurgeriesSaga() {
     const response: Surgery[] = yield call(getTodaySurgeries);
     yield put(fetchTodaySurgeriesSuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "금일 수술현황 조회에 실패했습니다.";
-    yield put(fetchTodaySurgeriesFailure(message));
+    yield put(
+      fetchTodaySurgeriesFailure(
+        getSurgeryErrorMessage(err, "금일 수술현황 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -86,9 +91,11 @@ function* fetchSurgeryRequestsSaga() {
     const response: Surgery[] = yield call(getSurgeryRequests);
     yield put(fetchSurgeryRequestsSuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 요청 목록 조회에 실패했습니다.";
-    yield put(fetchSurgeryRequestsFailure(message));
+    yield put(
+      fetchSurgeryRequestsFailure(
+        getSurgeryErrorMessage(err, "수술 요청 목록 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -97,9 +104,11 @@ function* fetchSurgerySaga(action: PayloadAction<string>) {
     const response: Surgery = yield call(getSurgerySchedule, action.payload);
     yield put(fetchSurgerySuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 정보 조회에 실패했습니다.";
-    yield put(fetchSurgeryFailure(message));
+    yield put(
+      fetchSurgeryFailure(
+        getSurgeryErrorMessage(err, "수술 정보 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -111,9 +120,11 @@ function* registerSurgerySaga(action: PayloadAction<RegisterSurgeryRequest>) {
     yield put(surgeryMutationSuccess());
     yield put(fetchSurgeriesRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 스케줄 등록에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "수술 스케줄 등록에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -125,9 +136,11 @@ function* registerEmergencySurgerySaga(
     yield put(surgeryMutationSuccess());
     yield put(fetchSurgeriesRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "긴급 수술 등록에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "긴급 수술 등록에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -140,9 +153,11 @@ function* updateSurgerySaga(
     yield put(surgeryMutationSuccess());
     yield put(fetchSurgeriesRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 스케줄 수정에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "수술 스케줄 수정에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -158,9 +173,11 @@ function* assignSurgerySaga(
     // 배정되면 요청접수 목록에서 빠지므로 대기 목록을 다시 불러온다
     yield put(fetchSurgeryRequestsRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 배정에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "수술 배정에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -180,9 +197,11 @@ function* cancelSurgerySaga(
     // 요청접수 건의 취소는 '반려'라 대기 목록에서도 빠져야 한다
     yield put(fetchSurgeryRequestsRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 취소에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "수술 취소에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -196,9 +215,11 @@ function* updateProgressSaga(
     // 진행상태 변경은 모니터링 화면에서 쓰므로 금일 현황을 갱신한다
     yield put(fetchTodaySurgeriesRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "진행상태 변경에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "진행상태 변경에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -208,9 +229,11 @@ function* startSurgerySaga(action: PayloadAction<string>) {
     yield put(surgeryMutationSuccess());
     yield put(fetchTodaySurgeriesRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 시작 처리에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "수술 시작 처리에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -220,9 +243,11 @@ function* endSurgerySaga(action: PayloadAction<string>) {
     yield put(surgeryMutationSuccess());
     yield put(fetchTodaySurgeriesRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 종료 처리에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "수술 종료 처리에 실패했습니다."),
+      ),
+    );
   }
 }
 

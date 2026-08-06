@@ -20,6 +20,7 @@ import type {
   Consent,
   CreateConsentRequest,
 } from "@/features/surgery/consent/types";
+import { getSurgeryErrorMessage } from "@/features/surgery/errorMessage";
 
 /**
  * 수술 동의서 saga (SL2-42)
@@ -33,20 +34,27 @@ function* fetchConsentsSaga(action: PayloadAction<string>) {
     const response: Consent[] = yield call(getConsents, action.payload);
     yield put(fetchConsentsSuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "동의서 조회에 실패했습니다.";
-    yield put(fetchConsentsFailure(message));
+    yield put(
+      fetchConsentsFailure(
+        getSurgeryErrorMessage(err, "동의서 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
 function* fetchPatientConsentsSaga(action: PayloadAction<string>) {
   try {
-    const response: Consent[] = yield call(getConsentsByPatient, action.payload);
+    const response: Consent[] = yield call(
+      getConsentsByPatient,
+      action.payload,
+    );
     yield put(fetchPatientConsentsSuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "동의서 이력 조회에 실패했습니다.";
-    yield put(fetchPatientConsentsFailure(message));
+    yield put(
+      fetchPatientConsentsFailure(
+        getSurgeryErrorMessage(err, "동의서 이력 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -60,9 +68,11 @@ function* createConsentSaga(
     // 등록 직후 해당 수술의 목록을 다시 읽어 방금 남긴 동의를 반영한다
     yield put(fetchConsentsRequest(surgeryId));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "동의 확인 기록에 실패했습니다.";
-    yield put(consentMutationFailure(message));
+    yield put(
+      consentMutationFailure(
+        getSurgeryErrorMessage(err, "동의 확인 기록에 실패했습니다."),
+      ),
+    );
   }
 }
 

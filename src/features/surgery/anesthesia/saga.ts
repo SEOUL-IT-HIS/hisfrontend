@@ -23,6 +23,7 @@ import type {
   AppendVitalSignsRequest,
   CreateAnesthesiaRecordRequest,
 } from "@/features/surgery/anesthesia/types";
+import { getSurgeryErrorMessage } from "@/features/surgery/errorMessage";
 
 /**
  * 마취기록 saga (SL2-3)
@@ -38,9 +39,11 @@ function* fetchAnesthesiaRecordsSaga(action: PayloadAction<string>) {
     );
     yield put(fetchAnesthesiaRecordsSuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "마취기록 조회에 실패했습니다.";
-    yield put(fetchAnesthesiaRecordsFailure(message));
+    yield put(
+      fetchAnesthesiaRecordsFailure(
+        getSurgeryErrorMessage(err, "마취기록 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -52,9 +55,11 @@ function* fetchAnesthesiaRecordSaga(action: PayloadAction<string>) {
     );
     yield put(fetchAnesthesiaRecordSuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "마취기록 조회에 실패했습니다.";
-    yield put(fetchAnesthesiaRecordFailure(message));
+    yield put(
+      fetchAnesthesiaRecordFailure(
+        getSurgeryErrorMessage(err, "마취기록 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -70,9 +75,11 @@ function* createAnesthesiaRecordSaga(
     yield put(anesthesiaMutationSuccess());
     yield put(fetchAnesthesiaRecordsRequest(surgeryId));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "마취기록 등록에 실패했습니다.";
-    yield put(anesthesiaMutationFailure(message));
+    yield put(
+      anesthesiaMutationFailure(
+        getSurgeryErrorMessage(err, "마취기록 등록에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -94,9 +101,11 @@ function* appendVitalSignsSaga(
     yield put(anesthesiaMutationSuccess());
     yield put(fetchAnesthesiaRecordsRequest(surgeryId));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "활력징후 기록에 실패했습니다.";
-    yield put(anesthesiaMutationFailure(message));
+    yield put(
+      anesthesiaMutationFailure(
+        getSurgeryErrorMessage(err, "활력징후 기록에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -106,7 +115,10 @@ export default function* anesthesiaSaga() {
     fetchAnesthesiaRecordsRequest.type,
     fetchAnesthesiaRecordsSaga,
   );
-  yield takeLatest(fetchAnesthesiaRecordRequest.type, fetchAnesthesiaRecordSaga);
+  yield takeLatest(
+    fetchAnesthesiaRecordRequest.type,
+    fetchAnesthesiaRecordSaga,
+  );
   yield takeLatest(
     createAnesthesiaRecordRequest.type,
     createAnesthesiaRecordSaga,

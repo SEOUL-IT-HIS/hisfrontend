@@ -21,7 +21,7 @@ export async function getAnesthesiaRecords(
   const { data } = await apiClient.get<ApiResponse<AnesthesiaRecord[]>>(
     `${SURGERY_PATH}/${surgeryId}/anesthesia-records`,
   );
-  return data.data;
+  return data.data ?? [];
 }
 
 /** 마취기록 단건을 조회한다. */

@@ -277,6 +277,7 @@ export const selectEquipments = (state: RoomRoot) =>
   state.surgery.room.equipments;
 export const selectSelectedEquipment = (state: RoomRoot) =>
   state.surgery.room.selectedEquipment;
-export const selectRoomLoading = (state: RoomRoot) => state.surgery.room.loading;
+export const selectRoomLoading = (state: RoomRoot) =>
+  state.surgery.room.loading;
 export const selectRoomSaving = (state: RoomRoot) => state.surgery.room.saving;
 export const selectRoomError = (state: RoomRoot) => state.surgery.room.error;
