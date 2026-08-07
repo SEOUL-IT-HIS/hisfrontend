@@ -2,7 +2,8 @@ import { call, put, takeLatest } from "redux-saga/effects";
 import { searchPatientApi,
          fetchBillingDetailApi,
          admissionBillingDetailApi,
-         visitBillingDetailApi
+         visitBillingDetailApi,
+         updateBillingStatusApi
  } from "@/features/billing/searchBillingDetail/api";
 import {
   admissionBillingDetailFailure,
@@ -17,6 +18,9 @@ import {
   visitBillingDetailFailure,
   visitBillingDetailRequest,
   visitBillingDetailSuccess,
+  updateBillingStatusRequest,
+  updateBillingStatusSuccess,
+  updateBillingStatusFailure
 } from "@/features/billing/searchBillingDetail/slice";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { BillingDetail,
@@ -61,9 +65,22 @@ function* visitBillingDetailSaga(action: PayloadAction<string>) {
     yield put(visitBillingDetailFailure(message));
   }
 }
+
+function* updateBillingStatusSaga(action: PayloadAction<string>){
+  try{
+    yield call(updateBillingStatusApi, action.payload);
+    yield put(updateBillingStatusSuccess());
+
+  }catch(err){
+    const message = err instanceof Error ? err.message : "결제 처리 실패했습니다.";
+    yield put(updateBillingStatusFailure(message));
+  }
+}
+
 export default function* billingDetailSaga() {
   yield takeLatest(searchBillingDetailRequest.type, searchBillingDetailSaga);
   yield takeLatest(fetchBillingDetailRequest.type, fetchBillingDetailSaga);
   yield takeLatest(admissionBillingDetailRequest.type, admissionBillingDetailSaga);
   yield takeLatest(visitBillingDetailRequest.type, visitBillingDetailSaga);
+  yield takeLatest(updateBillingStatusRequest.type, updateBillingStatusSaga);
 }

@@ -6,10 +6,11 @@ import { SearchPatientResult } from "@/features/billing/searchBillingDetail/type
     const  billingDetailSearchList = ({ patient }: { patient : SearchPatientResult }) => {
     const router = useRouter();
 
-    const onMove = () => {
+    const onDetail = () => {
         router.push(`api/billing/detail/${patient.patientId}`)
     }
 
+    
     return (
             <div>
             <p>환자 ID :  {patient.patientId}</p>
@@ -17,7 +18,7 @@ import { SearchPatientResult } from "@/features/billing/searchBillingDetail/type
             <p>전화번호 : {patient.tel} </p>
             <p>주소: {patient.addr} </p>
             <p>항목명: {patient.itemName} </p>
-            <button onClick={onMove}>
+            <button onClick={onDetail}>
                     상세보기
                 </button>
         </div>
