@@ -12,6 +12,7 @@ import {
   type DataTableColumn,
 } from "@/components/common";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
+import { getGenderLabel } from "@/features/patient/util/genderCode";
 import type { PatientListItem } from "@/features/patient/type/patientType";
 import type { AppDispatch, RootState } from "@/store/store";
 
@@ -31,19 +32,24 @@ const columns: DataTableColumn<PatientListItem>[] = [
     </Link>
   ),
 },
-  {
-    key: "residentRegNo",
-    header: "주민등록번호",
-    render: (patient) => patient.residentRegNo,
-  },
-  {
-    key: "birthDate",
-    header: "생년월일",
-    render: (patient) => patient.birthDate,
-  },
+{
+  key: "residentRegNo",
+  header: "주민등록번호",
+  render: (patient) => patient.residentRegNo,
+},
+{
+  key: "genderCd",
+  header: "성별",
+  render: (patient) => getGenderLabel(patient.genderCd),
+},
+{
+  key: "birthDate",
+  header: "생년월일",
+  render: (patient) => patient.birthDate,
+},
   {
     key: "statusCd",
-    header: "상태",
+    header: "환자관리상태코드",
     render: (patient) => patient.statusCd,
   },
   {
@@ -83,7 +89,7 @@ export default function PatientListForm() {
 
       {registeredPatientId ? (
       <Alert variant="success">
-       환자 등록이 완료되었습니다. 환자번호: {registeredPatientId}
+       환자 등록이 완료되었습니다. 환자 ID: {registeredPatientId}
       </Alert>
       ) : null}
 

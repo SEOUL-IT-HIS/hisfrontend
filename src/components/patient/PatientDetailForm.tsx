@@ -11,6 +11,7 @@ import {
   StatusBadge,
 } from "@/components/common";
 import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice";
+import { getGenderLabel } from "@/features/patient/util/genderCode";
 import type { AppDispatch, RootState } from "@/store/store";
 
 type PatientDetailFormProps = {
@@ -64,7 +65,7 @@ export default function PatientDetailForm({
 
           <dl className="grid grid-cols-1 gap-x-8 gap-y-5 p-5 sm:grid-cols-2 lg:grid-cols-3">
             <DetailItem
-              label="환자번호"
+              label="환자 ID"
               value={String(patientDetail.patientId)}
             />
 
@@ -75,7 +76,7 @@ export default function PatientDetailForm({
 
             <div>
               <dt className="text-xs font-medium text-slate-400">
-                상태
+                환자관리상태코드
               </dt>
 
               <dd className="mt-1">
@@ -94,6 +95,11 @@ export default function PatientDetailForm({
             <DetailItem
               label="주민등록번호"
               value={patientDetail.residentRegNo}
+            />
+
+            <DetailItem
+              label="성별"
+              value={getGenderLabel(patientDetail.genderCd)}
             />
 
             <DetailItem
