@@ -12,7 +12,7 @@ export type ApiResponse<T> = {
 
 /** 그룹 한 행 (목록/등록 응답) */
 export type CommonCodeGroup = {
-  groupId: number;
+  groupId: string;
   groupCode: string;
   groupName: string;
   useYn: string; // "Y" | "N"
@@ -23,7 +23,7 @@ export type CommonCodeGroup = {
  * - groupCode 는 식별키라 수정 API body 에 넣지 않음
  */
 export type CommonCodeGroupUpdateRequest = {
-  groupId: number;
+  groupId: string;
   groupName: string;
   useYn: string;
 };

@@ -28,7 +28,7 @@ type CommonCodeItemRegisterFormState = Pick<
 
 type CommonCodeItemRegisterFormProps = {
   onClose: () => void;
-  groupId: number;
+  groupId: string;
 };
 
 /**

@@ -18,8 +18,8 @@ export type AuthLoginRequest = {
 
 /** 로그인 / me 응답 사용자 */
 export type AuthUser = {
-  accountId: number;
-  empId: number;
+  accountId: string;
+  empId: string;
   loginId: string;
   empName: string | null;
   empNo: string | null;
