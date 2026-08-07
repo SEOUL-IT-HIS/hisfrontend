@@ -54,7 +54,7 @@ const empSlice = createSlice({
     },
 
     // ----- 상세 조회 -----
-    fetchEmpDetailRequest(state, _action: PayloadAction<number>) {
+    fetchEmpDetailRequest(state, _action: PayloadAction<string>) {
       state.detailLoading = true;
       state.error = null;
     },
