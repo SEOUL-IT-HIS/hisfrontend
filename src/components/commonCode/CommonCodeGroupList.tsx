@@ -37,7 +37,7 @@ export default function CommonCodeGroupList() {
 
   const [registerOpen, setRegisterOpen] = useState(false);
   /** 왼쪽에서 선택한 그룹 PK — 오른쪽 항목 패널에 전달 */
-  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
   // ----- 검색 조건 (프론트 전용, API 파라미터 아님) -----
   const [keyword, setKeyword] = useState("");

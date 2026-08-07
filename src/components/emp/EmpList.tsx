@@ -49,7 +49,7 @@ export default function EmpList() {
 
   const [registerOpen, setRegisterOpen] = useState(false);
   /** 왼쪽에서 선택한 직원 PK — 오른쪽 상세 패널에 전달 */
-  const [selectedEmpId, setSelectedEmpId] = useState<number | null>(null);
+  const [selectedEmpId, setSelectedEmpId] = useState<string | null>(null);
 
   /** 공통코드: DEPT_CD / EMP_STATUS_CD */
   const [deptCodes, setDeptCodes] = useState<CommonCodeItem[]>([]);

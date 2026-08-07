@@ -12,6 +12,8 @@ import {
   selectConsentSaving,
   selectConsents,
 } from "@/features/surgery/consent/slice";
+import { fetchCommonCodeItemsByGroupCode } from "@/features/commonCode/api/commonCodeItemApi";
+import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemTypes";
 
 type Props = { surgeryId: string };
 
@@ -26,20 +28,22 @@ type Props = { surgeryId: string };
  * SUR044 로 거절하므로, 이미 기록된 종류는 선택지에서 빼 둔다.</p>
  */
 
-/** SURG_CONSENT_CD: 01수술/02마취/03비용견적 */
+/**
+ * 동의 종류 — 임시 하드코딩
+ *
+ * <p>admin-service 에 CONSENT_TYPE_CD(동의서유형코드) 그룹이 이미 있으나, 검사·영상이
+ * CONTRAST/INVASIVE 처럼 <b>영문 코드값</b>으로 쓰고 있어 수술의 01/02/03 과 체계가 다르다.
+ * 한 그룹에 두 체계를 섞을 수 없으므로, 합류할지 SURG_CONSENT_CD 를 신설할지
+ * 검사·영상 담당자와 합의한 뒤 공통코드 조회로 교체한다(§21.4).</p>
+ */
 const CONSENT_TYPE_OPTIONS = [
   { value: "01", label: "01 수술 동의서" },
   { value: "02", label: "02 마취 동의서" },
   { value: "03", label: "03 비용견적 동의서" },
 ];
 
-/** SIGNER_RELATION_CD: 01본인/02법정대리인/03배우자/04기타 */
-const SIGNER_RELATION_OPTIONS = [
-  { value: "01", label: "01 본인" },
-  { value: "02", label: "02 법정대리인" },
-  { value: "03", label: "03 배우자" },
-  { value: "04", label: "04 기타" },
-];
+/** 서명자 관계 공통코드 그룹 — admin-service 소유(§21.4). 보호자 관계는 전사 공용이라 재사용한다. */
+const RELATION_GROUP_CODE = "RELATION_CD";
 
 const inputClass =
   "h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50";
@@ -64,9 +68,41 @@ export default function ConsentPanel({ surgeryId }: Props) {
   const [signedDt, setSignedDt] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
 
+  // 서명자 관계는 admin-service 가 소유한 공통코드다. 화면에 목록을 박아두면
+  // 관리자가 코드를 고쳐도 여기만 옛 값으로 남는다(§21.4).
+  // slice 를 거치지 않는 이유 — 타 서비스 데이터를 수술 상태에 담으면 서비스 간 결합이 생긴다.
+  const [relationItems, setRelationItems] = useState<CommonCodeItem[]>([]);
+  const [relationLoadError, setRelationLoadError] = useState("");
+
   useEffect(() => {
     dispatch(fetchConsentsRequest(surgeryId));
   }, [dispatch, surgeryId]);
+
+  useEffect(() => {
+    let ignore = false;
+    fetchCommonCodeItemsByGroupCode(RELATION_GROUP_CODE)
+      .then((items) => {
+        if (!ignore) setRelationItems(items);
+      })
+      .catch((err: unknown) => {
+        if (ignore) return;
+        setRelationLoadError(
+          err instanceof Error ? err.message : "서명자 관계 코드 조회에 실패했습니다.",
+        );
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  /** 코드값 → 코드명. 목록에 없으면 원본 값을 그대로 돌려준다(코드가 지워졌을 때 추적용). */
+  function toRelationLabel(codeValue: string | null | undefined): string {
+    if (!codeValue) return "-";
+    return (
+      relationItems.find((item) => item.codeValue === codeValue)?.codeName ??
+      codeValue
+    );
+  }
 
   // 이미 기록된 동의 종류는 다시 고를 수 없다(백엔드 중복 차단과 같은 규칙)
   const recordedTypes = consents.map((consent) => consent.consentTypeCd);
@@ -127,7 +163,11 @@ export default function ConsentPanel({ surgeryId }: Props) {
                 >
                   <td className="px-3 py-2">{consent.consentTypeCd}</td>
                   <td className="px-3 py-2">{consent.signedBy}</td>
-                  <td className="px-3 py-2">{consent.signerRelationCd}</td>
+                  {/* 저장된 값은 코드(01)이고 화면에는 코드명(배우자)을 보여준다.
+                      코드가 목록에 없으면 원본을 그대로 노출해 무엇이 저장됐는지 감춘다. */}
+                  <td className="px-3 py-2">
+                    {toRelationLabel(consent.signerRelationCd)}
+                  </td>
                   <td className="px-3 py-2">{consent.signedDt}</td>
                 </tr>
               ))}
@@ -183,12 +223,15 @@ export default function ConsentPanel({ surgeryId }: Props) {
               disabled={saving}
             >
               <option value="">선택</option>
-              {SIGNER_RELATION_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+              {relationItems.map((item) => (
+                <option key={item.codeId} value={item.codeValue}>
+                  {item.codeName}
                 </option>
               ))}
             </select>
+            {relationLoadError && (
+              <p className="text-xs text-red-600">{relationLoadError}</p>
+            )}
             {errors.signerRelationCd && (
               <p className="text-xs text-red-600">{errors.signerRelationCd}</p>
             )}

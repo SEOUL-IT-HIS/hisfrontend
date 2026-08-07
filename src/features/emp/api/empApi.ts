@@ -25,7 +25,7 @@ export async function fetchEmpApi(): Promise<Emp[]> {
 }
 
 /** 직원 상세 조회 */
-export async function fetchEmpDetailApi(empId: number): Promise<Emp> {
+export async function fetchEmpDetailApi(empId: string): Promise<Emp> {
   const response = await apiClient.get<ApiResponse<Emp>>(
     `/api/emp/detail/${empId}`,
   );

@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import type { AppDispatch, RootState } from "@/store/store";
 import { fetchBillingMasterRequest } from "@/features/billing/billingMaster/slice";
-import BillingMasterRow from "@/components/billing/BillingMasterRow";
+import BillingMasterRow from "@/components/billing/master/BillingMasterRow";
 
 export default function BillingMasterList() {
     const router = useRouter();

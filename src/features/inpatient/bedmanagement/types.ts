@@ -9,6 +9,7 @@ export interface BedAssignmentDTO {
 }
 
 export interface BedDTO {
+  patientId: string | null;
   bedId: string;
   roomNo: string;
   bedNo: string;
@@ -20,7 +21,7 @@ export interface BedDTO {
 export interface BedReservationDTO {
   bedReservationId: number;
   bedId: string;
-  patientId: string;
+  patientId: string | null;
   reserveAt: string;
   expectedAdmissionAt: string;
   reservationStatusCd: string;
@@ -87,7 +88,10 @@ export type UpdateBedReservationRequest = Omit<
   BedReservationDTO,
   "createdAt" | "updatedAt"
 >;
-
+export type UpdateBedReservationScheduleRequest = Pick<
+  BedReservationDTO,
+  "reserveAt" | "expectedAdmissionAt"
+>;
 export interface BedReservationState {
   list: BedReservationDTO[];
   detail: BedReservationDTO | null;
@@ -96,4 +100,5 @@ export interface BedReservationState {
   createStatus: Status;
   updateStatus: Status;
   deleteStatus: Status;
+  scheduleUpdateStatus: Status;
 }
