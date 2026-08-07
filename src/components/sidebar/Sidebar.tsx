@@ -124,7 +124,7 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
   /**
    * fetchAuthLogoutRequest 도 로그인과 마찬가지로 결과를 바로 안 주고,
    * saga가 로그아웃 API를 호출한 뒤 store(auth.loading/error/user)를 갱신하는 걸 기다려야 한다.
-   * 성공하면(user가 비워지면) rootReducer가 전체 상태를 리셋하고 나서 /login 으로 보낸다.
+   * 성공하면(user가 비워지면) /login 으로 보낸다. (전체 상태 리셋은 하지 않음 — rootReducer.ts는 순수 combineReducers)
    */
   useEffect(() => {
     if (!waitLogout.current) return;
