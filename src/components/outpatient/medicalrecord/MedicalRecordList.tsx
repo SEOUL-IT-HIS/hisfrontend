@@ -8,6 +8,20 @@ import MedicalRecordDetail from "@/components/outpatient/medicalrecord/MedicalRe
 import { fetchRecordListRequest } from "@/features/outpatient/medicalrecord/slice";
 import type { AppDispatch, RootState } from "@/store/store";
 
+const getStatusText = (status: string) => {
+    switch (status) {
+        case 'WAITING':
+        case 'PENDING':
+            return '대기중';
+        case 'IN_PROGRESS':
+            return '진료중';
+        case 'COMPLETED':
+            return '진료완료';
+        default:
+            return status; // 정의되지 않은 값이면 원본 출력
+    }
+};
+
 const formatDateTime = (value: string) => (value ? value.replace("T", " ").slice(0, 19) : "-");
 
 const MedicalRecordList = () => {
@@ -111,7 +125,7 @@ const MedicalRecordList = () => {
                                         {record.doctorName ? `${record.doctorName}` : (record.doctorId ?? "-")}
                                     </td>
                                     <td className="p-3 truncate">{record.chiefComplaint ?? "-"}</td>
-                                    <td className="p-3">{record.status}</td>
+                                    <td className="p-3">{getStatusText(record.status)}</td>
                                     <td className="p-3">{formatDateTime(record.createdAt)}</td>
                                     <td className="p-3">
                                         <Button

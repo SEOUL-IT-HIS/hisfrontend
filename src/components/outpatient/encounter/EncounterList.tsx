@@ -1,11 +1,26 @@
 "use client";
 
 import { fetchEncounterListRequest } from "@/features/outpatient/encounter/slice";
+import type { EncounterDto } from "@/features/outpatient/encounter/types";
 import { AppDispatch, RootState } from "@/store/store";
 import { useEffect, useState } from "react";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { Alert, Button } from "@/components/common";
 import MedicalRecordList from "../medicalrecord/MedicalRecordList"; // 프로젝트 경로 확인 필요
+
+const getStatusText = (status: string) => {
+    switch (status) {
+        case 'WAITING':
+        case 'PENDING':
+            return '대기중';
+        case 'IN_PROGRESS':
+            return '진료중';
+        case 'COMPLETED':
+            return '진료완료';
+        default:
+            return status;
+    }
+};
 
 const EncounterList = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -16,7 +31,7 @@ const EncounterList = () => {
     }), shallowEqual);
 
     // 1. 현재 선택된 환자(Encounter) 상태 관리
-    const [selectedEncounter, setSelectedEncounter] = useState<any | null>(null);
+    const [selectedEncounter, setSelectedEncounter] = useState<EncounterDto | null>(null);
 
     // 2. 우측 화면 탭 상태 ('FORM': 오늘 진료 작성, 'HISTORY': 과거 진료기록 조회)
     const [activeTab, setActiveTab] = useState<'FORM' | 'HISTORY'>('FORM');
@@ -30,11 +45,11 @@ const EncounterList = () => {
     }, [dispatch]);
 
     // 환자 선택 핸들러
-    const handleSelectPatient = (enc: any) => {
+    const handleSelectPatient = (enc: EncounterDto) => {
         setSelectedEncounter(enc);
-        setActiveTab('FORM'); // 환자 선택 시 기본 탭을 오늘 진료 작성으로 설정
-        setChiefComplaint("");
-        setSoapNote("");
+        setActiveTab('FORM'); // 'value:' 제거
+        setChiefComplaint(''); // 'value:' 제거
+        setSoapNote('');       // 'value:' 제거
     };
 
     // 오늘 진료 저장 핸들러
@@ -56,7 +71,7 @@ const EncounterList = () => {
             <div className="flex flex-1 gap-4 overflow-hidden min-h-[600px]">
 
                 {/* [좌측] 당일 외래 환자 목록 (너비 약 40%) */}
-                <div className="w-5/12 flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <div className="w-3/12 flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
                     <div className="bg-slate-100 p-3 border-b border-slate-200 font-semibold text-slate-700">
                         당일 외래 환자 목록
                     </div>
@@ -67,7 +82,6 @@ const EncounterList = () => {
                             <table className="w-full text-left border-collapse text-sm">
                                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 sticky top-0">
                                 <tr>
-                                    <th className="w-[100px] p-3 font-semibold">환자번호</th>
                                     <th className="w-[100px] p-3 font-semibold">환자명</th>
                                     <th className="w-[100px] p-3 font-semibold">진료과</th>
                                     <th className="w-[100px] p-3 font-semibold">상태</th>
@@ -76,19 +90,18 @@ const EncounterList = () => {
                                 <tbody className="divide-y divide-slate-200 text-slate-800">
                                 {list && list.length > 0 ? (
                                     list.map((enc) => {
-                                        const isSelected = selectedEncounter?.encounterId === enc.encounterId;
+                                        const isSelected = selectedEncounter?.receptionId === enc.receptionId;
                                         return (
                                             <tr
-                                                key={enc.encounterId}
+                                                key={enc.receptionId}
                                                 onClick={() => handleSelectPatient(enc)}
                                                 className={`cursor-pointer transition hover:bg-blue-50 ${isSelected ? 'bg-blue-100 font-medium' : ''}`}
                                             >
-                                                <td className="p-3">{enc.patientNo}</td>
                                                 <td className="p-3">{enc.patientName}</td>
                                                 <td className="p-3">{enc.departmentCode}</td>
                                                 <td className="p-3">
                                                     <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600 border border-slate-200">
-                                                        {enc.status}
+                                                        {getStatusText(enc.status)}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -108,7 +121,7 @@ const EncounterList = () => {
                 </div>
 
                 {/* [우측] 환자 상세 및 진료 작성 / 과거 기록 영역 (너비 약 60%) */}
-                <div className="w-7/12 flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm p-4 overflow-y-auto">
+                <div className="w-9/12 flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm p-4 overflow-y-auto">
 
                     {/* 1. 우측 상단 탭 메뉴 (항상 노출) */}
                     <div className="flex border-b border-slate-200 gap-2 mb-4">
