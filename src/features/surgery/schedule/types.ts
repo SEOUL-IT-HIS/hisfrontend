@@ -7,6 +7,32 @@
 import type { CodeValue, YnFlag } from "@/features/surgery/types";
 
 /**
+ * 수술 상태 코드 (SURGERY_STATUS_CD)
+ *
+ * <p>백엔드 {@code schedule/type/SurgeryStatus.java} 와 짝을 이룬다. 값이 바뀌면 양쪽을 함께 고친다.</p>
+ *
+ * <p>화면 로직에서 {@code statusCd === "01"} 처럼 문자열을 직접 비교하면 오타를 컴파일러가
+ * 잡지 못한다. 상수로 두면 잡힌다.</p>
+ *
+ * <p>표시할 <b>이름</b>은 여기서 갖지 않는다 — 코드명은 admin-service 소유라
+ * 공통코드 조회로 가져와야 한다(§21.4). 이 상수는 <b>비교용 값</b>일 뿐이다.</p>
+ *
+ * <pre>
+ *   00 요청접수 → 01 예약 → 02 진행중 → 03 완료
+ *                └─────────┴→ 04 취소 (요청접수·예약에서만)
+ * </pre>
+ */
+export const SURGERY_STATUS = {
+  /** 진료·응급실이 요청했고 아직 수술실이 배정되지 않은 상태 */
+  REQUESTED: "00",
+  /** 배정 완료 */
+  SCHEDULED: "01",
+  IN_PROGRESS: "02",
+  COMPLETED: "03",
+  CANCELLED: "04",
+} as const;
+
+/**
  * 수술 (SURGERY)
  *
  * <p>patientId/surgeonId 등은 타 서비스(환자·직원)가 소유한 데이터의 참조 식별자만
