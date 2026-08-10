@@ -24,6 +24,7 @@ const BedStatusDetail=()=>{
           
                
             <div>
+            <p>환자ID: {bed.patientId ?? '없음'}</p>
             <p>BedId: {bed.bedId}</p>
             <p>roomNo: {bed.roomNo}</p>
             <p>bedNo: {bed.bedNo}</p>

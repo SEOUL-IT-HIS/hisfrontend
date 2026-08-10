@@ -9,6 +9,7 @@ export interface BedAssignmentDTO {
 }
 
 export interface BedDTO {
+  patientId: string | null;
   bedId: string;
   roomNo: string;
   bedNo: string;
@@ -20,7 +21,7 @@ export interface BedDTO {
 export interface BedReservationDTO {
   bedReservationId: number;
   bedId: string;
-  patientId: string;
+  patientId: string | null;
   reserveAt: string;
   expectedAdmissionAt: string;
   reservationStatusCd: string;
