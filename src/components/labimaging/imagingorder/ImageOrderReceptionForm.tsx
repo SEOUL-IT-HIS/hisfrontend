@@ -23,7 +23,9 @@ const initialForm = {
   imageOrderNo: "",
   systemCode: "",
   patientNo: "",
+  patientId: "",
   physicianNo: "",
+  physicianId: "",
   treatTypeCode: "",
   urgencyYn: "N" as "Y" | "N",
   receivedById: "",
@@ -92,6 +94,7 @@ export default function ImageOrderReceptionForm() {
     if (!form.imageOrderNo.trim()) next.imageOrderNo = "오더번호는 필수입니다.";
     if (!form.systemCode.trim()) next.systemCode = "시스템코드는 필수입니다.";
     if (!form.patientNo.trim()) next.patientNo = "환자번호는 필수입니다.";
+    if (!form.patientId.trim()) next.patientId = "환자ID는 필수입니다.";
     if (!form.treatTypeCode) next.treatTypeCode = "진료유형을 선택해주세요.";
     if (!form.receivedById.trim()) next.receivedById = "접수자ID는 필수입니다.";
     if (items.every((item) => !item.imageItemCode.trim())) {
@@ -112,7 +115,9 @@ export default function ImageOrderReceptionForm() {
       imageOrderNo: form.imageOrderNo.trim(),
       systemCode: form.systemCode.trim(),
       patientNo: form.patientNo.trim(),
+      patientId: form.patientId.trim(),
       physicianNo: form.physicianNo.trim() || undefined,
+      physicianId: form.physicianId.trim() || undefined,
       treatTypeCode: form.treatTypeCode,
       urgencyYn: form.urgencyYn,
       receivedById: form.receivedById.trim(),
@@ -191,6 +196,26 @@ export default function ImageOrderReceptionForm() {
           ) : null}
         </label>
 
+        {/* ⚠ 처방 연동 전까지 접수 담당자가 직접 입력하는 임시 필드.
+            연동 완료 시 이 입력칸은 없어지고 POST 바디로 자동 채워진다. */}
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium text-slate-700">
+            환자ID <span className="text-rose-500">*</span>
+          </span>
+          <input
+            name="patientId"
+            value={form.patientId}
+            onChange={handleChange}
+            maxLength={36}
+            disabled={creating}
+            placeholder="예: 3f7b1a20-6c2e-4e7a-9e2a-8b1f2c3d4e5f"
+            className={inputClass}
+          />
+          {errors.patientId ? (
+            <span className="text-xs text-rose-500">{errors.patientId}</span>
+          ) : null}
+        </label>
+
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-slate-700">처방의번호</span>
           <input
@@ -198,6 +223,19 @@ export default function ImageOrderReceptionForm() {
             value={form.physicianNo}
             onChange={handleChange}
             maxLength={20}
+            disabled={creating}
+            placeholder="선택 입력"
+            className={inputClass}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium text-slate-700">처방의ID</span>
+          <input
+            name="physicianId"
+            value={form.physicianId}
+            onChange={handleChange}
+            maxLength={36}
             disabled={creating}
             placeholder="선택 입력"
             className={inputClass}
