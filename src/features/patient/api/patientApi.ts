@@ -21,10 +21,10 @@ export async function fetchPatientListApi(): Promise<PatientListItem[]> {
 
 /** GET /api/patient/{patientId} */
 export async function fetchPatientDetailApi(
-  patientId: number,
+  patientId: string,
 ): Promise<PatientDetail> {
   const response = await apiClient.get<PatientDetailApiResponse>(
-    `/api/patient/${patientId}`,
+    `/api/patient/${encodeURIComponent(patientId)}`,
   );
 
   return response.data.data;

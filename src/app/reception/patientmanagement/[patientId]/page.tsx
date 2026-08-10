@@ -10,10 +10,11 @@ type PatientDetailPageProps = {
 export default async function PatientDetailPage({
   params,
 }: PatientDetailPageProps) {
-  const { patientId: patientIdParam } = await params;
-  const patientId = Number(patientIdParam);
+  const { patientId } = await params;
+  const uuidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  if (!Number.isSafeInteger(patientId) || patientId <= 0) {
+  if (!uuidPattern.test(patientId)) {
     notFound();
   }
 

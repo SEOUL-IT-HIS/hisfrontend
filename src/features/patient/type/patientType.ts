@@ -19,7 +19,7 @@ export type PatientRegisterRequest = {
 
 /** POST /api/patient/register 응답 데이터 */
 export type Patient = {
-  patientId: number;
+  patientId: string;
   patientName: string;
   birthDate: string;
   genderCd: GenderCd;
@@ -29,7 +29,7 @@ export type Patient = {
 
 /** GET /api/patient/list 응답 데이터 */
 export type PatientListItem = {
-  patientId: number;
+  patientId: string;
   patientName: string;
    /** 마스킹된 주민등록번호 (예: 000813-4******) */
   residentRegNo: string;
@@ -42,7 +42,7 @@ export type PatientListItem = {
 
 /** GET /api/patient/{patientId} 응답 데이터 */
 export type PatientDetail = {
-  patientId: number;
+  patientId: string;
   patientName: string;
   residentRegNo: string;
   birthDate: string;

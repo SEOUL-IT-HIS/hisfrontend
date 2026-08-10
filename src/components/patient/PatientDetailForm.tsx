@@ -15,7 +15,7 @@ import { getGenderLabel } from "@/features/patient/util/genderCode";
 import type { AppDispatch, RootState } from "@/store/store";
 
 type PatientDetailFormProps = {
-  patientId: number;
+  patientId: string;
 };
 
 const formatDateTime = (value: string) =>
