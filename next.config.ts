@@ -15,7 +15,7 @@ const patientApiOrigin =
 const labImagingApiOrigin =
   process.env.LABIMAGING_API_ORIGIN ?? "http://192.168.1.104:8080";
 const inpatientApiOrigin =
-  process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.165:8080";
+  process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.125:8080";
 const outpatientApiOrigin =
   process.env.OUTPATIENT_API_ORIGIN ?? "http://192.168.1.112:8080";
 const emergencyApiOrigin =
@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
     "192.168.1.128",
     "192.168.1.149",
     "192.168.1.104",
-    "192.168.1.165",
+    "192.168.1.125",
     "192.168.1.112",
     "192.168.1.130",
     "192.168.1.120",
