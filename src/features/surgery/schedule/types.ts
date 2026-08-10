@@ -27,10 +27,12 @@ export type Surgery = {
   surgeryDt: string;
   /** SURGERY_STATUS_CD: 00요청접수/01예약/02진행중/03완료/04취소 */
   statusCd: CodeValue;
-  /** SURG_PROGRESS_CD — 당일 실시간 진행상태(status_cd 와 별개 트랙) */
+  /** SURGERY_PROGRESS_CD — 당일 실시간 진행상태(status_cd 와 별개 트랙) */
   progressCd: CodeValue | null;
+  /** SURGERY_CANCEL_CD */
   cancelReasonCd: CodeValue | null;
-  surgTypeCd: CodeValue | null;
+  /** SURGERY_TYPE_CD — 값 정의 미확정. 백엔드 Surgery 엔티티 주석 참고 */
+  surgeryTypeCd: CodeValue | null;
   /** 수술 서비스가 직접 입력받아 소유하는 원본 데이터라 저장한다(스냅샷 아님) */
   surgeryName: string | null;
   emergencyYn: YnFlag;
@@ -58,7 +60,7 @@ export type RegisterSurgeryRequest = {
   roomCode?: string | null;
   anesthesiologistId?: string | null;
   nurseId?: string | null;
-  surgTypeCd?: CodeValue | null;
+  surgeryTypeCd?: CodeValue | null;
   surgeryName?: string | null;
 };
 
