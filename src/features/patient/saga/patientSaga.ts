@@ -60,15 +60,22 @@ function getPatientErrorMessage(error: unknown, fallbackMessage: string) {
 return fallbackMessage;
 }
 
-function* fetchPatientListSaga() {
+function* fetchPatientListSaga(
+  action: ReturnType<typeof fetchPatientListRequest>,
+) {
   try {
-    const patients: PatientListItem[] = yield call(fetchPatientListApi);
+    const patients: PatientListItem[] = yield call(
+      fetchPatientListApi,
+      action.payload,
+    );
+
     yield put(fetchPatientListSuccess(patients));
   } catch (error) {
     const message = getPatientErrorMessage(
-  error,
-  "환자 목록 조회에 실패했습니다.",
-);
+      error,
+      "환자 목록 조회에 실패했습니다.",
+    );
+
     yield put(fetchPatientListFailure(message));
   }
 }
