@@ -64,6 +64,12 @@ export type PatientDuplicateCheckRequest = {
   residentRegNo: string;
 };
 
+/** PATCH /api/patient/{patientId} 요청 */
+export type PatientUpdateRequest = {
+  patientId: string;
+  patientName: string;
+};
+
 
 export type PatientRegisterApiResponse = ApiResponse<Patient>;
 
@@ -72,3 +78,6 @@ export type PatientDuplicateCheckApiResponse = ApiResponse<boolean>;
 export type PatientListApiResponse = ApiResponse<PatientListItem[]>;
 
 export type PatientDetailApiResponse = ApiResponse<PatientDetail>;
+
+/** PATCH /api/patient/{patientId} 응답 */
+export type PatientUpdateApiResponse = ApiResponse<PatientDetail>;

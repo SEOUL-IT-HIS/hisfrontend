@@ -10,6 +10,8 @@ import type {
   PatientRegisterApiResponse,
   PatientRegisterRequest,
   PatientSearchCondition,
+  PatientUpdateApiResponse,
+  PatientUpdateRequest,
 } from "../type/patientType";
 
 /** GET /api/patient/list */
@@ -36,6 +38,20 @@ export async function fetchPatientDetailApi(
 ): Promise<PatientDetail> {
   const response = await apiClient.get<PatientDetailApiResponse>(
     `/api/patient/${encodeURIComponent(patientId)}`,
+  );
+
+  return response.data.data;
+}
+
+/** PATCH /api/patient/{patientId} */
+export async function updatePatientApi(
+  request: PatientUpdateRequest,
+): Promise<PatientDetail> {
+  const response = await apiClient.patch<PatientUpdateApiResponse>(
+    `/api/patient/${encodeURIComponent(request.patientId)}`,
+    {
+      patientName: request.patientName.trim(),
+    },
   );
 
   return response.data.data;
