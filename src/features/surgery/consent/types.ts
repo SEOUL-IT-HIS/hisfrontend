@@ -11,8 +11,14 @@ import type { CodeValue } from "@/features/surgery/types";
 export type Consent = {
   consentId: string;
   surgeryId: string;
-  /** 직원(병원관리) 서비스 소유 — 식별자만 보유한다(§21.9) */
-  authorStaffIdFk: string | null;
+  /**
+   * 직원(병원관리) 서비스 소유 — 식별자만 보유한다(§21.9)
+   *
+   * authorStaffIdFk 였던 것을 바꿨다(2026-08-10). 컬럼명 author_staff_id_fk 를 그대로
+   * 옮긴 이름이었는데, 그 컬럼 자체가 §14.1 FK 규칙(`{참조테이블명}_id`)에서 벗어난
+   * 것이라 백엔드에서 author_staff_id 로 정리했다. API 키는 §13 대로 camelCase 다.
+   */
+  authorStaffId: string | null;
   /** SURG_CONSENT_CD: 01수술/02마취/03비용견적 */
   consentTypeCd: CodeValue;
   /** 서명자 성명 — 이 화면에서 직접 입력받는 원본이라 저장한다(§14.1 예외) */
@@ -38,7 +44,8 @@ export type CreateConsentRequest = {
   signedBy: string;
   /** yyyy-MM-dd */
   signedDt: string;
-  authorStaffIdFk?: string | null;
+  /** 선택 — 안 보내면 백엔드가 null 로 둔다(§21.9) */
+  authorStaffId?: string | null;
 };
 
 // ---------------------------------------------------------------------------

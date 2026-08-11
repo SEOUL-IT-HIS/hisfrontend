@@ -1,5 +1,6 @@
 import { all, fork } from "redux-saga/effects";
 import anesthesiaSaga from "@/features/surgery/anesthesia/saga";
+import checklistSaga from "@/features/surgery/checklist/saga";
 import consentSaga from "@/features/surgery/consent/saga";
 import operativeRecordSaga from "@/features/surgery/operativeRecord/saga";
 import roomSaga from "@/features/surgery/room/saga";
@@ -17,5 +18,6 @@ export default function* surgerySaga() {
     fork(anesthesiaSaga),
     fork(operativeRecordSaga),
     fork(consentSaga),
+    fork(checklistSaga),
   ]);
 }
