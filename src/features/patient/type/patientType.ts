@@ -8,6 +8,13 @@ export type ApiResponse<T> = {
 export type PatientStatus = "ACTIVE" | "INACTIVE";
 export type GenderCd = "01" | "02" | "03" | "04";
 
+/** GET /api/patient/list 검색조건 */
+export type PatientSearchCondition = {
+  patientName?: string;
+  birthDate?: string;
+  statusCd?: PatientStatus;
+};
+
 /** POST /api/patient/register 요청 */
 export type PatientRegisterRequest = {
   patientName: string;

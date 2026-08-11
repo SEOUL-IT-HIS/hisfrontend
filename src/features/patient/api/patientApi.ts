@@ -9,12 +9,23 @@ import type {
   PatientListItem,
   PatientRegisterApiResponse,
   PatientRegisterRequest,
+  PatientSearchCondition,
 } from "../type/patientType";
 
 /** GET /api/patient/list */
-export async function fetchPatientListApi(): Promise<PatientListItem[]> {
-  const response =
-    await apiClient.get<PatientListApiResponse>("/api/patient/list");
+export async function fetchPatientListApi(
+  condition: PatientSearchCondition,
+): Promise<PatientListItem[]> {
+  const response = await apiClient.get<PatientListApiResponse>(
+    "/api/patient/list",
+    {
+      params: {
+        patientName: condition.patientName?.trim() || undefined,
+        birthDate: condition.birthDate || undefined,
+        statusCd: condition.statusCd || undefined,
+      },
+    },
+  );
 
   return response.data.data;
 }

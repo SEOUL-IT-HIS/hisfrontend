@@ -5,6 +5,7 @@ import type {
   PatientDuplicateCheckRequest,
   PatientListItem,
   PatientRegisterRequest,
+  PatientSearchCondition,
 } from "../type/patientType";
 
 type PatientState = {
@@ -39,9 +40,12 @@ const patientSlice = createSlice({
   name: "patient",
   initialState,
   reducers: {
-    fetchPatientListRequest(state) {
-      state.listLoading = true;
-      state.listError = null;
+    fetchPatientListRequest(
+     state,
+    _action: PayloadAction<PatientSearchCondition>,
+    ) {
+     state.listLoading = true;
+     state.listError = null;
     },
     fetchPatientListSuccess(
       state,
