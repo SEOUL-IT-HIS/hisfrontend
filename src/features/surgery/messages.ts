@@ -24,6 +24,7 @@ export const SURGERY_MESSAGES = {
   SUR051: "이전 단계 체크리스트가 완료되지 않았습니다.",
   SUR052: "요청한 자료를 찾을 수 없습니다.",
   SUR053: "허용되지 않는 요청 방식입니다.",
+  SUR054: "지원하지 않는 요청 형식입니다.",
 } as const;
 
 export type SurgeryMessageCode = keyof typeof SURGERY_MESSAGES;
