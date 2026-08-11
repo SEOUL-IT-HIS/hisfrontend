@@ -87,6 +87,46 @@ const nextConfig: NextConfig = {
         source: "/api/inpatient/:path*",
         destination: `${inpatientApiOrigin}/api/inpatient/:path*`,
       },
+      {
+        source: "/api/bed",
+        destination: `${inpatientApiOrigin}/api/bed`,
+      },
+      {
+        source: "/api/bed/:path*",
+        destination: `${inpatientApiOrigin}/api/bed/:path*`,
+      },
+      {
+        source: "/api/bedassignment",
+        destination: `${inpatientApiOrigin}/api/bedassignment`,
+      },
+      {
+        source: "/api/bedassignment/:path*",
+        destination: `${inpatientApiOrigin}/api/bedassignment/:path*`,
+      },
+      {
+        source: "/api/bedreservation",
+        destination: `${inpatientApiOrigin}/api/bedreservation`,
+      },
+      {
+        source: "/api/bedreservation/:path*",
+        destination: `${inpatientApiOrigin}/api/bedreservation/:path*`,
+      },
+      {
+        source: "/api/admission",
+        destination: `${inpatientApiOrigin}/api/admission`,
+      },
+      {
+        source: "/api/admission/:path*",
+        destination: `${inpatientApiOrigin}/api/admission/:path*`,
+      },
+      {
+        source: "/api/vitalsign",
+        destination: `${inpatientApiOrigin}/api/vitalsign`,
+      },
+      {
+        source: "/api/vitalsign/:path*",
+        destination: `${inpatientApiOrigin}/api/vitalsign/:path*`,
+      },
 
       // ---------- surgery-service (구체 경로 먼저) ----------
       {
