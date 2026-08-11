@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   createConsentRequest,
@@ -31,18 +32,19 @@ type Props = { surgeryId: string };
  */
 
 /**
- * 동의 종류 — 임시 하드코딩
+ * 수술이 다루는 동의서 종류.
  *
- * <p>admin-service 에 CONSENT_TYPE_CD(동의서유형코드) 그룹이 이미 있으나, 검사·영상이
- * CONTRAST/INVASIVE 처럼 <b>영문 코드값</b>으로 쓰고 있어 수술의 01/02/03 과 체계가 다르다.
- * 한 그룹에 두 체계를 섞을 수 없으므로, 합류할지 SURG_CONSENT_CD 를 신설할지
- * 검사·영상 담당자와 합의한 뒤 공통코드 조회로 교체한다(§21.4).</p>
+ * <p>CONSENT_TYPE_CD 는 <b>병원 공통 그룹</b>이라 검사·영상의 CONTRAST(조영제사용동의)·
+ * INVASIVE(침습적검사동의)도 같이 들어 있다. 그대로 내려받으면 수술 화면에 남의 동의서가
+ * 섞여 보이므로, 여기 적힌 것만 골라 쓴다.</p>
+ *
+ * <p><b>정규식으로 "숫자면 우리 것"이라 거르지 않는 이유</b> — 검사·영상이 나중에 숫자 코드를
+ * 추가하면 조용히 새어 들어온다. 우리가 처리하는 목록을 눈에 보이게 적어두는 편이 안전하다.</p>
+ *
+ * <p>이 배열의 <b>순서가 곧 화면 표시 순서</b>다. admin 의 sortOrder 가 비어 있어 응답 순서를
+ * 믿을 수 없기 때문이며, sortOrder 가 채워지면 이 정렬은 없애도 된다.</p>
  */
-const CONSENT_TYPE_OPTIONS = [
-  { value: "01", label: "01 수술 동의서" },
-  { value: "02", label: "02 마취 동의서" },
-  { value: "03", label: "03 비용견적 동의서" },
-];
+const SURGERY_CONSENT_CODES = ["01", "02", "03"];
 
 const inputClass =
   "h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50";
@@ -65,13 +67,20 @@ export default function ConsentPanel({ surgeryId }: Props) {
   const [signedDt, setSignedDt] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
 
+  const { options: codeOptions } = useCommonCodeOptions("CONSENT_TYPE_CD");
+
   useEffect(() => {
     dispatch(fetchConsentsRequest(surgeryId));
   }, [dispatch, surgeryId]);
 
+  // 공통 그룹에서 수술이 다루는 것만 골라 SURGERY_CONSENT_CODES 순서로 세운다
+  const consentTypeOptions = SURGERY_CONSENT_CODES.map((code) =>
+    codeOptions.find((option) => option.value === code),
+  ).filter((option): option is (typeof codeOptions)[number] => Boolean(option));
+
   // 이미 기록된 동의 종류는 다시 고를 수 없다(백엔드 중복 차단과 같은 규칙)
   const recordedTypes = consents.map((consent) => consent.consentTypeCd);
-  const availableTypes = CONSENT_TYPE_OPTIONS.filter(
+  const availableTypes = consentTypeOptions.filter(
     (option) => !recordedTypes.includes(option.value),
   );
 
@@ -122,7 +131,12 @@ export default function ConsentPanel({ surgeryId }: Props) {
                   key={consent.consentId}
                   className="border-t border-slate-100"
                 >
-                  <td className="px-3 py-2">{consent.consentTypeCd}</td>
+                  {/* 코드값 그대로가 아니라 이름으로 보여준다. 아직 못 받았거나
+                      목록에 없는 코드면 값을 그대로 두어 빈칸이 되지 않게 한다 */}
+                  <td className="px-3 py-2">
+                    {codeOptions.find((o) => o.value === consent.consentTypeCd)
+                      ?.label ?? consent.consentTypeCd}
+                  </td>
                   <td className="px-3 py-2">{consent.signedBy}</td>
                   <td className="px-3 py-2">{consent.signedDt}</td>
                 </tr>
