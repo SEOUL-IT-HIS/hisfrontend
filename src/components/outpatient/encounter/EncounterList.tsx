@@ -2,8 +2,9 @@
 
 import { fetchEncounterListRequest } from "@/features/outpatient/encounter/slice";
 import type { EncounterDto } from "@/features/outpatient/encounter/types";
+import { createRecordRequest } from "@/features/outpatient/medicalrecord/slice";
 import { AppDispatch, RootState } from "@/store/store";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { Alert, Button } from "@/components/common";
 import MedicalRecordList from "../medicalrecord/MedicalRecordList"; // 프로젝트 경로 확인 필요
@@ -30,33 +31,63 @@ const EncounterList = () => {
         list: state.outpatient.encounter.list
     }), shallowEqual);
 
+    const { createLoading, createError } = useSelector((state: RootState) => ({
+        createLoading: state.outpatient.medicalrecord.createStatus.loading,
+        createError: state.outpatient.medicalrecord.createStatus.error,
+    }), shallowEqual);
+
     // 1. 현재 선택된 환자(Encounter) 상태 관리
     const [selectedEncounter, setSelectedEncounter] = useState<EncounterDto | null>(null);
 
     // 2. 우측 화면 탭 상태 ('FORM': 오늘 진료 작성, 'HISTORY': 과거 진료기록 조회)
     const [activeTab, setActiveTab] = useState<'FORM' | 'HISTORY'>('FORM');
 
-    // 3. 오늘 진료 작성 폼 상태
+    // 3. 오늘 진료 작성 폼 상태 (MedicalRecordCreateDto와 동일한 4개 필드)
     const [chiefComplaint, setChiefComplaint] = useState("");
-    const [soapNote, setSoapNote] = useState("");
+    const [examinationNote, setExaminationNote] = useState("");
+    const [assessmentNote, setAssessmentNote] = useState("");
+    const [planNote, setPlanNote] = useState("");
+    const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
     useEffect(() => {
         dispatch(fetchEncounterListRequest({}));
     }, [dispatch]);
 
+    // 저장 요청이 막 끝났고(loading true -> false) 에러가 없으면 성공으로 보고 폼을 비운다
+    const prevCreateLoading = useRef(false);
+    useEffect(() => {
+        if (prevCreateLoading.current && !createLoading && !createError) {
+            setChiefComplaint("");
+            setExaminationNote("");
+            setAssessmentNote("");
+            setPlanNote("");
+            setSaveMessage("진료 기록이 저장되었습니다.");
+        }
+        prevCreateLoading.current = createLoading;
+    }, [createLoading, createError]);
+
     // 환자 선택 핸들러
     const handleSelectPatient = (enc: EncounterDto) => {
         setSelectedEncounter(enc);
-        setActiveTab('FORM'); // 'value:' 제거
-        setChiefComplaint(''); // 'value:' 제거
-        setSoapNote('');       // 'value:' 제거
+        setActiveTab('FORM');
+        setChiefComplaint('');
+        setExaminationNote('');
+        setAssessmentNote('');
+        setPlanNote('');
+        setSaveMessage(null);
     };
 
     // 오늘 진료 저장 핸들러
     const handleSaveChart = () => {
         if (!selectedEncounter) return;
-        alert(`${selectedEncounter.patientName} 님의 진료 기록이 저장되었습니다.`);
-        // TODO: dispatch(createMedicalRecordRequest({ encounterId: selectedEncounter.encounterId, chiefComplaint, soapNote }))
+        setSaveMessage(null);
+        dispatch(createRecordRequest({
+            encounterId: selectedEncounter.encounterId,
+            chiefComplaint,
+            examinationNote,
+            assessmentNote,
+            planNote,
+        }));
     };
 
     return (
@@ -178,24 +209,51 @@ const EncounterList = () => {
                                     />
                                 </div>
 
-                                <div className="flex-1 flex flex-col">
+                                <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                        진단 및 SOAP 노트
+                                        진찰내용
                                     </label>
                                     <textarea
-                                        value={soapNote}
-                                        onChange={(e) => setSoapNote(e.target.value)}
-                                        placeholder="진단명, 소견 및 처방 내역을 작성해 주세요."
-                                        className="w-full flex-1 rounded-md border border-slate-300 p-2 text-sm min-h-[150px] focus:border-blue-500 focus:outline-none"
+                                        value={examinationNote}
+                                        onChange={(e) => setExaminationNote(e.target.value)}
+                                        placeholder="진찰 소견, 신체검진 결과 등을 작성해 주세요."
+                                        className="w-full rounded-md border border-slate-300 p-2 text-sm min-h-[80px] focus:border-blue-500 focus:outline-none"
                                     />
                                 </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                        진료소견
+                                    </label>
+                                    <textarea
+                                        value={assessmentNote}
+                                        onChange={(e) => setAssessmentNote(e.target.value)}
+                                        placeholder="진단명 및 평가 소견을 작성해 주세요."
+                                        className="w-full rounded-md border border-slate-300 p-2 text-sm min-h-[80px] focus:border-blue-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                <div className="flex-1 flex flex-col">
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                        치료계획
+                                    </label>
+                                    <textarea
+                                        value={planNote}
+                                        onChange={(e) => setPlanNote(e.target.value)}
+                                        placeholder="처방 및 향후 치료 계획을 작성해 주세요."
+                                        className="w-full flex-1 rounded-md border border-slate-300 p-2 text-sm min-h-[80px] focus:border-blue-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                {createError && <Alert variant="error">{createError}</Alert>}
+                                {saveMessage && <Alert variant="success">{saveMessage}</Alert>}
 
                                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
                                     <Button variant="secondary" onClick={() => setActiveTab('HISTORY')}>
                                         과거 진료기록 확인
                                     </Button>
-                                    <Button variant="primary" onClick={handleSaveChart}>
-                                        진료 저장 및 완료
+                                    <Button variant="primary" onClick={handleSaveChart} disabled={createLoading}>
+                                        {createLoading ? "저장 중..." : "진료 저장 및 완료"}
                                     </Button>
                                 </div>
                             </div>

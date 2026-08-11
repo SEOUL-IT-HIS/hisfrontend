@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Alert, Button, FormField, Modal } from "@/components/common";
+import { useEffect, useRef, useState } from "react";
+import { shallowEqual, useDispatch, useSelector } from "react-redux";
+import { Alert, Button, ConfirmDialog, FormField, Input, Modal } from "@/components/common";
 import {
     clearSelectedRecord,
+    deactivateRecordRequest,
     fetchRecordDetailRequest,
+    updateRecordRequest,
 } from "@/features/outpatient/medicalrecord/slice";
 import type { AppDispatch, RootState } from "@/store/store";
 
@@ -30,6 +32,29 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
     const { loading, error } = useSelector(
         (state: RootState) => state.outpatient.medicalrecord.detailStatus
     );
+    const { updateLoading, updateError } = useSelector((state: RootState) => ({
+        updateLoading: state.outpatient.medicalrecord.updateStatus.loading,
+        updateError: state.outpatient.medicalrecord.updateStatus.error,
+    }), shallowEqual);
+    const { deactivateLoading, deactivateError } = useSelector((state: RootState) => ({
+        deactivateLoading: state.outpatient.medicalrecord.deactivateStatus.loading,
+        deactivateError: state.outpatient.medicalrecord.deactivateStatus.error,
+    }), shallowEqual);
+    const currentUserId = useSelector((state: RootState) => state.auth.user?.loginId ?? "UNKNOWN");
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [editChiefComplaint, setEditChiefComplaint] = useState("");
+    const [editExaminationNote, setEditExaminationNote] = useState("");
+    const [editAssessmentNote, setEditAssessmentNote] = useState("");
+    const [editPlanNote, setEditPlanNote] = useState("");
+    const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+
+    // 다른 기록을 열거나 모달을 닫을 때는 항상 조회 모드로 돌아간다 (렌더링 중 prop 변화 감지 - effect 아님)
+    const [prevRecordId, setPrevRecordId] = useState(recordId);
+    if (recordId !== prevRecordId) {
+        setPrevRecordId(recordId);
+        setIsEditing(false);
+    }
 
     useEffect(() => {
         if (recordId) {
@@ -40,11 +65,65 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
         };
     }, [dispatch, recordId]);
 
+    // 수정 요청(loading true -> false) 에러가 없으면 성공으로 보고 조회 모드로 돌아간다
+    const prevUpdateLoading = useRef(false);
+    useEffect(() => {
+        if (prevUpdateLoading.current && !updateLoading && !updateError) {
+            setIsEditing(false);
+        }
+        prevUpdateLoading.current = updateLoading;
+    }, [updateLoading, updateError]);
+
+    // 비활성화 성공하면 더 이상 조회할 수 없는 기록이라 모달을 닫는다
+    const prevDeactivateLoading = useRef(false);
+    useEffect(() => {
+        if (prevDeactivateLoading.current && !deactivateLoading && !deactivateError) {
+            onClose();
+        }
+        prevDeactivateLoading.current = deactivateLoading;
+    }, [deactivateLoading, deactivateError, onClose]);
+
+    function handleStartEdit() {
+        if (!record) return;
+        setEditChiefComplaint(record.chiefComplaint ?? "");
+        setEditExaminationNote(record.examinationNote ?? "");
+        setEditAssessmentNote(record.assessmentNote ?? "");
+        setEditPlanNote(record.planNote ?? "");
+        setIsEditing(true);
+    }
+
+    function handleCancelEdit() {
+        setIsEditing(false);
+    }
+
+    function handleSaveEdit() {
+        if (!recordId) return;
+        dispatch(
+            updateRecordRequest({
+                recordId,
+                params: {
+                    chiefComplaint: editChiefComplaint,
+                    examinationNote: editExaminationNote,
+                    assessmentNote: editAssessmentNote,
+                    planNote: editPlanNote,
+                },
+            })
+        );
+    }
+
+    function handleDeactivate() {
+        if (!recordId) return;
+        dispatch(deactivateRecordRequest({ recordId, userId: currentUserId }));
+        setShowDeactivateConfirm(false);
+    }
+
     return (
+        <>
         <Modal
             open={recordId != null}
-            title="진료기록 상세"
+            title={isEditing ? "진료기록 수정" : "진료기록 상세"}
             onClose={onClose}
+            closeDisabled={updateLoading}
             maxWidthClassName="max-w-2xl"
         >
             {loading ? (
@@ -71,7 +150,7 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                         </span>
                     </div>
 
-                    {/* 기본 정보 (상태, 담당의) */}
+                    {/* 기본 정보 (상태, 담당의) - 수정 화면에서도 변경 불가 */}
                     <div className="grid grid-cols-2 gap-3">
                         <FormField label="기록 상태">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 font-medium">
@@ -88,32 +167,126 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                     </div>
 
                     {/* 진료 노트 영역 */}
-                    <div className="space-y-3">
-                        {noteFields.map(({ label, key }) => (
-                            <FormField key={key} label={label}>
-                                <div className="min-h-[2.5rem] whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-slate-800">
-                                    {record[key] ?? "-"}
-                                </div>
+                    {isEditing ? (
+                        <div className="space-y-3">
+                            <FormField label="주호소">
+                                <Input
+                                    value={editChiefComplaint}
+                                    onChange={(e) => setEditChiefComplaint(e.target.value)}
+                                />
                             </FormField>
-                        ))}
-                    </div>
+                            <FormField label="진찰내용">
+                                <textarea
+                                    value={editExaminationNote}
+                                    onChange={(e) => setEditExaminationNote(e.target.value)}
+                                    className="w-full min-h-[80px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                />
+                            </FormField>
+                            <FormField label="진료소견">
+                                <textarea
+                                    value={editAssessmentNote}
+                                    onChange={(e) => setEditAssessmentNote(e.target.value)}
+                                    className="w-full min-h-[80px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                />
+                            </FormField>
+                            <FormField label="치료계획">
+                                <textarea
+                                    value={editPlanNote}
+                                    onChange={(e) => setEditPlanNote(e.target.value)}
+                                    className="w-full min-h-[80px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                />
+                            </FormField>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {noteFields.map(({ label, key }) => (
+                                <FormField key={key} label={label}>
+                                    <div className="min-h-[2.5rem] whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-slate-800">
+                                        {record[key] ?? "-"}
+                                    </div>
+                                </FormField>
+                            ))}
+                        </div>
+                    )}
 
-                    {/* 하단 수정일시 및 닫기 버튼 */}
+                    {updateError && <Alert variant="error">{updateError}</Alert>}
+                    {deactivateError && <Alert variant="error">{deactivateError}</Alert>}
+
+                    {/* 하단 수정일시 및 액션 버튼 */}
                     <div className="pt-2 border-t border-slate-200">
                         {record.updatedAt && (
                             <p className="text-right text-xs text-slate-400 mb-3">
                                 수정일시: {formatDateTime(record.updatedAt)}
                             </p>
                         )}
-                        <div className="flex justify-end">
-                            <Button variant="secondary" onClick={onClose}>
-                                닫기
-                            </Button>
+                        <div className="flex justify-end gap-2">
+                            {isEditing ? (
+                                <>
+                                    <Button variant="secondary" onClick={handleCancelEdit} disabled={updateLoading}>
+                                        취소
+                                    </Button>
+                                    <Button variant="primary" onClick={handleSaveEdit} disabled={updateLoading}>
+                                        {updateLoading ? "저장 중..." : "저장"}
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Button
+                                        variant="danger"
+                                        onClick={() => setShowDeactivateConfirm(true)}
+                                        disabled={deactivateLoading}
+                                        className="mr-auto"
+                                    >
+                                        비활성화
+                                    </Button>
+                                    <Button variant="secondary" onClick={onClose}>
+                                        닫기
+                                    </Button>
+                                    <Button variant="primary" onClick={handleStartEdit}>
+                                        수정
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
             ) : null}
         </Modal>
+            <Modal
+                open={showDeactivateConfirm}
+                title="진료기록 비활성화"
+                onClose={() => setShowDeactivateConfirm(false)}
+                maxWidthClassName="max-w-md"
+            >
+                <div className="space-y-4">
+                    <div className="space-y-2 text-sm text-slate-600">
+                        <p className="font-medium text-red-600">
+                            비활성화하면 목록과 조회에서 더 이상 보이지 않습니다.
+                        </p>
+                        <p className="text-slate-800">
+                            이 진료기록을 비활성화하시겠습니까?
+                        </p>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                        <Button
+                            variant="secondary"
+                            onClick={() => setShowDeactivateConfirm(false)}
+                            disabled={deactivateLoading}
+                        >
+                            취소
+                        </Button>
+                        <Button
+                            variant="danger"
+                            onClick={handleDeactivate}
+                            disabled={deactivateLoading}
+                        >
+                            {deactivateLoading ? "비활성화 중..." : "비활성화"}
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+        </>
     );
 };
 

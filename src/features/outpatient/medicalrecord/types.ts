@@ -20,3 +20,20 @@ export interface MedicalRecordDto {
 export interface MedicalRecordSearchParams {
     keyword?: string; // 환자명, 환자번호, 주호소 등 통합 검색어
 }
+
+// 진료기록 등록 파라미터
+export interface MedicalRecordCreateParams {
+    encounterId: string;
+    chiefComplaint?: string;
+    examinationNote?: string;
+    assessmentNote?: string;
+    planNote?: string;
+}
+
+// 진료기록 수정 파라미터
+export interface MedicalRecordUpdateParams {
+    chiefComplaint?: string;
+    examinationNote?: string;
+    assessmentNote?: string;
+    planNote?: string;
+}
