@@ -22,7 +22,7 @@ import type {
   PatientStatus,
 } from "@/features/patient/type/patientType";
 import type { AppDispatch, RootState } from "@/store/store";
-import CommonCodeSelect from "@/components/commonCode/CommonCodeSelect";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 
 const patientStatusOptions = [
   {
@@ -98,6 +98,7 @@ const initialForm: PatientRegisterFormState = {
 };
 
 export default function PatientRegisterForm() {
+  const genderCodes = useCommonCodeOptions("GENDER_CD");
   const [form, setForm] =
   useState<PatientRegisterFormState>(initialForm);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -465,20 +466,24 @@ if (
                     </FormField>
 
           <FormField label="성별" required>
-            <CommonCodeSelect
-              groupCode="GENDER_CD"
-              name="genderCd"
-              value={form.genderCd}
-              onChange={(event) =>
-                updateForm(
-                  "genderCd",
-                  event.target.value as GenderCd | "",
-                )
-              }
-              disabled={registerLoading}
-              placeholder="성별 선택"
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-sky-400 focus:ring-2 focus:ring-sky-100 disabled:bg-slate-50 disabled:text-slate-500"
+          <Select
+          name="genderCd"
+          value={form.genderCd}
+          onChange={(event) =>
+          updateForm(
+          "genderCd",
+           event.target.value as GenderCd | "",
+           )
+           }
+           options={genderCodes.options}
+           placeholder="성별 선택"
+           disabled={registerLoading || genderCodes.loading}
             />
+           {genderCodes.error ? (
+           <span className="text-xs text-rose-500">
+          {genderCodes.error}
+          </span>
+          ) : null}
           </FormField>
 
 <FormField label="환자상태관리코드" required htmlFor="statusCd">
