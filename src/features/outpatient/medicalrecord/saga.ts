@@ -50,8 +50,16 @@ function* fetchRecordDetailSaga(action: ReturnType<typeof fetchRecordDetailReque
 // 등록
 function* createRecordSaga(action: ReturnType<typeof createRecordRequest>) {
     try {
+        // 기존처럼 서버에 진료기록 데이터(JSON) 전송
         const created = (yield call(createMedicalRecord, action.payload)) as MedicalRecordDto;
-        yield put(createRecordSuccess(created));
+
+        // 백엔드는 파일을 모르므로, 프론트가 보낸 fileNames가 있다면 강제로 붙여줌 (가라 데이터 시뮬레이션)
+        const mockCreatedWithFiles: MedicalRecordDto = {
+            ...created,
+            fileNames: action.payload.fileNames || []
+        };
+
+        yield put(createRecordSuccess(mockCreatedWithFiles));
     } catch (error) {
         const message = error instanceof Error ? error.message : "Medical record create failed";
         yield put(createRecordFailure(message));
@@ -66,7 +74,14 @@ function* updateRecordSaga(action: ReturnType<typeof updateRecordRequest>) {
             action.payload.recordId,
             action.payload.params
         )) as MedicalRecordDto;
-        yield put(updateRecordSuccess(updated));
+
+        // 수정 시에도 fileNames 유지 처리
+        const mockUpdatedWithFiles: MedicalRecordDto = {
+            ...updated,
+            fileNames: action.payload.params.fileNames || []
+        };
+
+        yield put(updateRecordSuccess(mockUpdatedWithFiles));
     } catch (error) {
         const message = error instanceof Error ? error.message : "Medical record update failed";
         yield put(updateRecordFailure(message));

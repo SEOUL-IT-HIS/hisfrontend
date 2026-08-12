@@ -14,6 +14,7 @@ export interface MedicalRecordDto {
     departmentName?: string | null; // 진료과명
     createdAt: string;
     updatedAt: string | null;
+    fileNames?: string[];       //파일
 }
 
 // 진료기록 목록 조회 파라미터
@@ -28,6 +29,7 @@ export interface MedicalRecordCreateParams {
     examinationNote?: string;
     assessmentNote?: string;
     planNote?: string;
+    fileNames?: string[];       //파일
 }
 
 // 진료기록 수정 파라미터
@@ -36,4 +38,5 @@ export interface MedicalRecordUpdateParams {
     examinationNote?: string;
     assessmentNote?: string;
     planNote?: string;
+    fileNames?: string[];       //파일
 }
