@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import { Alert, FormField, Select } from "@/components/common";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   fetchSurgeriesRequest,
@@ -31,6 +32,12 @@ type Props = {
  *
  * <p>수술 상세 화면({@code /surgery/schedule/detail/{id}})은 셋을 한 번에 보여준다.
  * 이쪽은 메뉴에서 바로 들어올 때 쓰는 경로이고, 실제 기록 작업은 상세 화면이 더 편하다.</p>
+ *
+ * <p><b>여기서 수술을 반드시 고르게 하는 것이 중요해졌다</b> — 백엔드가 없는 수술의
+ * 하위 목록에 404 를 돌려주도록 바뀌었기 때문이다(SL2-223). 빈 surgeryId 로는
+ * 조회 자체를 하지 않으므로 그 404 를 사용자가 볼 일이 없다.</p>
+ *
+ * <p>라벨·셀렉트·오류문구는 components/common 을 쓴다(§12.1).</p>
  */
 export default function SurgeryScopedPanel({ description, children }: Props) {
   const dispatch = useDispatch<AppDispatch>();
@@ -44,47 +51,45 @@ export default function SurgeryScopedPanel({ description, children }: Props) {
     dispatch(fetchSurgeriesRequest());
   }, [dispatch]);
 
+  const surgeryOptions = surgeries.map((surgery) => ({
+    value: surgery.surgeryId,
+    label: `${surgery.surgeryDt} · ${surgery.surgeryName ?? "수술명 미입력"} · 환자 ${
+      surgery.patientId
+    }${surgery.emergencyYn === "Y" ? " · 응급" : ""}`,
+  }));
+
   return (
     <div className="flex flex-col gap-6">
-      {description && <p className="text-sm text-slate-600">{description}</p>}
+      {description ? (
+        <p className="text-sm text-slate-600">{description}</p>
+      ) : null}
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="surgeryId" className="text-sm text-slate-700">
-          수술 선택
-        </label>
-        <select
+      <FormField label="수술 선택" htmlFor="surgeryId">
+        <Select
           id="surgeryId"
-          className="h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400"
+          placeholder={loading ? "불러오는 중…" : "수술을 선택하세요"}
+          options={surgeryOptions}
           value={surgeryId}
           onChange={(e) => setSurgeryId(e.target.value)}
           disabled={loading}
-        >
-          <option value="">
-            {loading ? "불러오는 중…" : "수술을 선택하세요"}
-          </option>
-          {surgeries.map((surgery) => (
-            <option key={surgery.surgeryId} value={surgery.surgeryId}>
-              {surgery.surgeryDt} · {surgery.surgeryName ?? "수술명 미입력"} ·
-              환자 {surgery.patientId}
-              {surgery.emergencyYn === "Y" ? " · 응급" : ""}
-            </option>
-          ))}
-        </select>
-        {error && (
-          <p className="text-xs text-red-600">{resolveSurgeryMessage(error)}</p>
-        )}
-      </div>
+        />
+      </FormField>
+
+      {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
       {/* 수술이 없으면 고를 것도 없으므로 어디서 만드는지 알려준다 */}
-      {!loading && surgeries.length === 0 && (
+      {!loading && surgeries.length === 0 ? (
         <p className="text-sm text-slate-500">
           등록된 수술이 없습니다. 진료·응급실이 수술을 요청하면{" "}
-          <Link href="/surgery/schedule/requests" className="text-sky-600 underline">
+          <Link
+            href="/surgery/schedule/requests"
+            className="text-sky-600 underline"
+          >
             수술 요청 대기
           </Link>{" "}
           에서 배정할 수 있습니다.
         </p>
-      )}
+      ) : null}
 
       {surgeryId ? (
         <div className="border-t border-slate-200 pt-6">

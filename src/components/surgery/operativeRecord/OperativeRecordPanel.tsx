@@ -3,6 +3,15 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import {
+  Alert,
+  DataTable,
+  FormActions,
+  FormField,
+  Input,
+  Panel,
+  type DataTableColumn,
+} from "@/components/common";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   createOperativeRecordRequest,
@@ -16,9 +25,6 @@ import {
 type Props = {
   surgeryId: string;
 };
-
-const inputClass =
-  "h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50";
 
 /** OP_STATUS_CD 02 = 확정 — 확정 후에는 수정할 수 없다(백엔드 SUR043) */
 const STATUS_FIXED = "02";
@@ -58,6 +64,17 @@ export default function OperativeRecordPanel({ surgeryId }: Props) {
     dispatch(fetchOperativeRecordsRequest(surgeryId));
   }, [dispatch, surgeryId]);
 
+  const columns: DataTableColumn<(typeof records)[number]>[] = [
+    { key: "procedureName", header: "술식명", render: (r) => r.procedureName },
+    { key: "procedureCd", header: "술식 코드", render: (r) => r.procedureCd ?? "-" },
+    {
+      key: "opStatusCd",
+      header: "상태",
+      render: (r) =>
+        r.opStatusCd === STATUS_FIXED ? "확정" : (r.opStatusCd ?? "작성중"),
+    },
+  ];
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -80,82 +97,55 @@ export default function OperativeRecordPanel({ surgeryId }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-3 rounded-lg border border-slate-200 p-4"
-      >
-        <h3 className="text-sm font-medium text-slate-700">수술기록지 작성</h3>
+      <Panel className="p-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <h3 className="text-sm font-medium text-slate-700">수술기록지 작성</h3>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="procedureName" className="text-xs text-slate-600">
-            술식명
-          </label>
-          <input
-            id="procedureName"
-            className={inputClass}
-            value={procedureName}
-            onChange={(e) => setProcedureName(e.target.value)}
-            disabled={saving}
+          <FormField label="술식명" required htmlFor="procedureName">
+            <Input
+              id="procedureName"
+              value={procedureName}
+              onChange={(e) => setProcedureName(e.target.value)}
+              disabled={saving}
+            />
+            {nameError ? (
+              <span className="text-xs text-rose-600">{nameError}</span>
+            ) : null}
+          </FormField>
+
+          <FormField label="술식 코드" htmlFor="procedureCd" hint="선택 항목입니다.">
+            <Input
+              id="procedureCd"
+              value={procedureCd}
+              onChange={(e) => setProcedureCd(e.target.value)}
+              disabled={saving}
+            />
+          </FormField>
+
+          <FormActions
+            onCancel={() => {
+              setProcedureName("");
+              setProcedureCd("");
+              setNameError("");
+            }}
+            cancelLabel="초기화"
+            submitLabel="작성"
+            loading={saving}
+            loadingLabel="저장 중…"
           />
-          {nameError && <p className="text-xs text-red-600">{nameError}</p>}
-        </div>
+        </form>
+      </Panel>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="procedureCd" className="text-xs text-slate-600">
-            술식 코드 (선택)
-          </label>
-          <input
-            id="procedureCd"
-            className={inputClass}
-            value={procedureCd}
-            onChange={(e) => setProcedureCd(e.target.value)}
-            disabled={saving}
-          />
-        </div>
+      {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="h-10 rounded-lg bg-sky-500 px-4 text-white disabled:bg-slate-300"
-        >
-          {saving ? "저장 중…" : "작성"}
-        </button>
-      </form>
-
-      {error && (
-        <p className="text-sm text-red-600">{resolveSurgeryMessage(error)}</p>
-      )}
-
-      {loading && <p className="text-sm text-slate-500">불러오는 중입니다…</p>}
-
-      {!loading && records.length === 0 && (
-        <p className="text-sm text-slate-500">작성된 수술기록이 없습니다.</p>
-      )}
-
-      {records.length > 0 && (
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-slate-600">
-            <tr>
-              <th className="px-3 py-2">술식명</th>
-              <th className="px-3 py-2">술식 코드</th>
-              <th className="px-3 py-2">상태</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.map((record) => (
-              <tr key={record.recordId} className="border-t border-slate-100">
-                <td className="px-3 py-2">{record.procedureName}</td>
-                <td className="px-3 py-2">{record.procedureCd ?? "-"}</td>
-                <td className="px-3 py-2">
-                  {record.opStatusCd === STATUS_FIXED
-                    ? "확정"
-                    : (record.opStatusCd ?? "작성중")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <DataTable
+        columns={columns}
+        rows={records}
+        rowKey={(r) => r.recordId}
+        loading={loading}
+        emptyMessage="작성된 수술기록이 없습니다."
+        minWidthClassName="min-w-[480px]"
+      />
     </div>
   );
 }

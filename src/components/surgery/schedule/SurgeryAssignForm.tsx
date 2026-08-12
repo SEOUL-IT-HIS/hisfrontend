@@ -4,6 +4,14 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import {
+  Alert,
+  FormActions,
+  FormField,
+  Input,
+  Panel,
+  Select,
+} from "@/components/common";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   fetchAvailableRoomsRequest,
@@ -21,9 +29,6 @@ import type { Emp } from "@/features/emp/types/empTypes";
 
 type Props = { surgeryId: string };
 
-const inputClass =
-  "h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50";
-
 /**
  * 수술 배정 폼 (요청접수 00 → 예약 01)
  *
@@ -33,6 +38,8 @@ const inputClass =
  *
  * <p>수술실 목록은 사용가능(01) 상태만 받아온다. 점검중·폐쇄 수술실은 백엔드도
  * 배정을 거부하므로(SUR045) 선택지에 올리지 않는다.</p>
+ *
+ * <p>입력·셀렉트·버튼·패널은 components/common 을 쓴다(§12.1).</p>
  */
 export default function SurgeryAssignForm({ surgeryId }: Props) {
   const dispatch = useDispatch<AppDispatch>();
@@ -91,6 +98,17 @@ export default function SurgeryAssignForm({ surgeryId }: Props) {
     if (!saving && error) submitted.current = false;
   }, [saving, error, router]);
 
+  const roomOptions = availableRooms.map((room) => ({
+    value: room.roomCode,
+    label: `${room.roomName} (${room.roomCode})`,
+  }));
+
+  // admin-service 는 empId 가 number, 수술은 VARCHAR2(36) 문자열이라 변환해 보낸다
+  const employeeOptions = employees.map((employee) => ({
+    value: String(employee.empId),
+    label: `${employee.empName} (${employee.empNo})`,
+  }));
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!roomCode) {
@@ -125,107 +143,77 @@ export default function SurgeryAssignForm({ surgeryId }: Props) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {/* 진료가 확정한 값 — 읽기 전용 */}
-      <dl className="grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-3 text-sm">
-        <dt className="text-slate-500">환자ID</dt>
-        <dd>{surgery.patientId}</dd>
-        <dt className="text-slate-500">집도의ID</dt>
-        <dd>{surgery.surgeonId}</dd>
-        <dt className="text-slate-500">수술명</dt>
-        <dd>{surgery.surgeryName ?? "-"}</dd>
-        <dt className="text-slate-500">희망 수술일</dt>
-        <dd>{surgery.surgeryDt}</dd>
-      </dl>
+      <Panel className="p-3">
+        <dl className="grid grid-cols-2 gap-2 text-sm">
+          <dt className="text-slate-500">환자ID</dt>
+          <dd>{surgery.patientId}</dd>
+          <dt className="text-slate-500">집도의ID</dt>
+          <dd>{surgery.surgeonId}</dd>
+          <dt className="text-slate-500">수술명</dt>
+          <dd>{surgery.surgeryName ?? "-"}</dd>
+          <dt className="text-slate-500">희망 수술일</dt>
+          <dd>{surgery.surgeryDt}</dd>
+        </dl>
+      </Panel>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="roomCode" className="text-sm text-slate-700">
-          수술실
-        </label>
-        <select
+      <FormField label="수술실" required htmlFor="roomCode">
+        <Select
           id="roomCode"
-          className={inputClass}
+          placeholder="수술실 선택"
+          options={roomOptions}
           value={roomCode}
           onChange={(e) => setRoomCode(e.target.value)}
           disabled={saving}
-        >
-          <option value="">수술실 선택</option>
-          {availableRooms.map((room) => (
-            <option key={room.roomCode} value={room.roomCode}>
-              {room.roomName} ({room.roomCode})
-            </option>
-          ))}
-        </select>
-        {roomError && <p className="text-xs text-red-600">{roomError}</p>}
-      </div>
+        />
+        {roomError ? (
+          <span className="text-xs text-rose-600">{roomError}</span>
+        ) : null}
+      </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="surgeryDt" className="text-sm text-slate-700">
-          확정 수술일
-        </label>
-        <input
+      <FormField label="확정 수술일" htmlFor="surgeryDt">
+        <Input
           id="surgeryDt"
           type="date"
-          className={inputClass}
           value={surgeryDt}
           onChange={(e) => setSurgeryDt(e.target.value)}
           disabled={saving}
         />
-      </div>
+      </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="anesthesiologistId" className="text-sm text-slate-700">
-          마취의
-        </label>
-        <select
+      <FormField label="마취의" htmlFor="anesthesiologistId">
+        <Select
           id="anesthesiologistId"
-          className={inputClass}
+          placeholder="나중에 배정"
+          options={employeeOptions}
           value={anesthesiologistId}
           onChange={(e) => setAnesthesiologistId(e.target.value)}
           disabled={saving}
-        >
-          <option value="">나중에 배정</option>
-          {employees.map((employee) => (
-            // admin-service 는 empId 가 number, 수술은 VARCHAR2(36) 문자열이라 변환해 보낸다
-            <option key={employee.empId} value={String(employee.empId)}>
-              {employee.empName} ({employee.empNo})
-            </option>
-          ))}
-        </select>
-        {employeeLoadError && (
-          <p className="text-xs text-red-600">{employeeLoadError}</p>
-        )}
-      </div>
+        />
+        {employeeLoadError ? (
+          <span className="text-xs text-rose-600">{employeeLoadError}</span>
+        ) : null}
+      </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="nurseId" className="text-sm text-slate-700">
-          간호사
-        </label>
-        <select
+      <FormField label="간호사" htmlFor="nurseId">
+        <Select
           id="nurseId"
-          className={inputClass}
+          placeholder="나중에 배정"
+          options={employeeOptions}
           value={nurseId}
           onChange={(e) => setNurseId(e.target.value)}
           disabled={saving}
-        >
-          <option value="">나중에 배정</option>
-          {employees.map((employee) => (
-            <option key={employee.empId} value={String(employee.empId)}>
-              {employee.empName} ({employee.empNo})
-            </option>
-          ))}
-        </select>
-      </div>
+        />
+      </FormField>
 
-      {error && (
-        <p className="text-sm text-red-600">{resolveSurgeryMessage(error)}</p>
-      )}
+      {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="h-10 rounded-lg bg-sky-500 px-4 text-white disabled:bg-slate-300"
-      >
-        {saving ? "배정 중…" : "배정 확정"}
-      </button>
+      <FormActions
+        onCancel={() => router.push("/surgery/schedule/requests")}
+        cancelLabel="대기 목록"
+        submitLabel="배정 확정"
+        loading={saving}
+        loadingLabel="배정 중…"
+      />
     </form>
   );
 }
