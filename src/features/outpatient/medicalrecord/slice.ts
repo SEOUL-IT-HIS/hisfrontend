@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { MedicalRecordDto, MedicalRecordSearchParams } from "./types";
+import { MedicalRecordCreateParams, MedicalRecordDto, MedicalRecordSearchParams, MedicalRecordUpdateParams } from "./types";
 
 interface MedicalRecordState {
     // 목록 조회 상태
@@ -9,13 +9,25 @@ interface MedicalRecordState {
     // 상세 조회 상태
     detailStatus: { loading: boolean; error: string | null };
     selectedRecord: MedicalRecordDto | null;
+
+    // 등록 상태
+    createStatus: { loading: boolean; error: string | null };
+
+    // 수정 상태
+    updateStatus: { loading: boolean; error: string | null };
+
+    // 비활성화 상태
+    deactivateStatus: { loading: boolean; error: string | null };
 }
 
 const initialState: MedicalRecordState = {
     listStatus: { loading: false, error: null },
     list: [],
     detailStatus: { loading: false, error: null },
-    selectedRecord: null
+    selectedRecord: null,
+    createStatus: { loading: false, error: null },
+    updateStatus: { loading: false, error: null },
+    deactivateStatus: { loading: false, error: null }
 };
 
 const medicalRecordSlice = createSlice({
@@ -54,6 +66,60 @@ const medicalRecordSlice = createSlice({
         clearSelectedRecord: (state) => {
             state.selectedRecord = null;
             state.detailStatus = { loading: false, error: null };
+        },
+
+        // 진료기록 등록
+        createRecordRequest: (state, _action: PayloadAction<MedicalRecordCreateParams>) => {
+            state.createStatus.loading = true;
+            state.createStatus.error = null;
+        },
+        createRecordSuccess: (state, action: PayloadAction<MedicalRecordDto>) => {
+            state.createStatus.loading = false;
+            state.list = [action.payload, ...state.list];
+        },
+        createRecordFailure: (state, action: PayloadAction<string>) => {
+            state.createStatus.loading = false;
+            state.createStatus.error = action.payload;
+        },
+
+        // 진료기록 수정
+        updateRecordRequest: (
+            state,
+            _action: PayloadAction<{ recordId: string; params: MedicalRecordUpdateParams }>
+        ) => {
+            state.updateStatus.loading = true;
+            state.updateStatus.error = null;
+        },
+        updateRecordSuccess: (state, action: PayloadAction<MedicalRecordDto>) => {
+            state.updateStatus.loading = false;
+            state.selectedRecord = action.payload;
+            state.list = state.list.map((r) =>
+                r.recordId === action.payload.recordId ? action.payload : r
+            );
+        },
+        updateRecordFailure: (state, action: PayloadAction<string>) => {
+            state.updateStatus.loading = false;
+            state.updateStatus.error = action.payload;
+        },
+
+        // 진료기록 비활성화
+        deactivateRecordRequest: (
+            state,
+            _action: PayloadAction<{ recordId: string; userId: string }>
+        ) => {
+            state.deactivateStatus.loading = true;
+            state.deactivateStatus.error = null;
+        },
+        deactivateRecordSuccess: (state, action: PayloadAction<string>) => { // action.payload = recordId
+            state.deactivateStatus.loading = false;
+            state.list = state.list.filter((r) => r.recordId !== action.payload);
+            if (state.selectedRecord?.recordId === action.payload) {
+                state.selectedRecord = null;
+            }
+        },
+        deactivateRecordFailure: (state, action: PayloadAction<string>) => {
+            state.deactivateStatus.loading = false;
+            state.deactivateStatus.error = action.payload;
         }
     }
 });
@@ -65,7 +131,16 @@ export const {
     fetchRecordDetailRequest,
     fetchRecordDetailSuccess,
     fetchRecordDetailFailure,
-    clearSelectedRecord
+    clearSelectedRecord,
+    createRecordRequest,
+    createRecordSuccess,
+    createRecordFailure,
+    updateRecordRequest,
+    updateRecordSuccess,
+    updateRecordFailure,
+    deactivateRecordRequest,
+    deactivateRecordSuccess,
+    deactivateRecordFailure
 } = medicalRecordSlice.actions;
 
 export default medicalRecordSlice.reducer;
