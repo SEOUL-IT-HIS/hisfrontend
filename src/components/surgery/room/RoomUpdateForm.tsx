@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import { Alert, FormActions, FormField, Input } from "@/components/common";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   fetchRoomRequest,
@@ -19,14 +19,14 @@ type Props = {
   roomCode: string;
 };
 
-const inputClass =
-  "h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50";
-
 /**
  * 수술실 정보 수정 폼 (SL2-30)
  *
  * <p>진입 시 단건 조회로 기존 값을 폼 초기값에 바인딩한다(SL2-115).
  * 백엔드 PUT /rooms/{roomCode} 는 이름만 교체하므로 코드는 읽기 전용으로 보여준다.</p>
+ *
+ * <p>취소가 &lt;Link&gt; 에서 router.push 로 바뀌었다 — FormActions 가 onCancel 콜백을
+ * 받는 형태라서다. 이동 대상은 그대로 목록이다(§12.1).</p>
  */
 export default function RoomUpdateForm({ roomCode }: Props) {
   const dispatch = useDispatch<AppDispatch>();
@@ -78,46 +78,32 @@ export default function RoomUpdateForm({ roomCode }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-slate-700">수술실 코드</label>
+      <FormField label="수술실 코드" hint="코드는 수정할 수 없습니다.">
         {/* PK 라 수정 대상이 아니다 */}
-        <input className={inputClass} value={roomCode} readOnly disabled />
-      </div>
+        <Input value={roomCode} readOnly disabled />
+      </FormField>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="roomName" className="text-sm text-slate-700">
-          수술실명
-        </label>
-        <input
+      <FormField label="수술실명" required htmlFor="roomName">
+        <Input
           id="roomName"
-          className={inputClass}
           value={roomName}
           onChange={(e) => setRoomName(e.target.value)}
           disabled={saving}
         />
-        {nameError && <p className="text-xs text-red-600">{nameError}</p>}
-      </div>
+        {nameError ? (
+          <span className="text-xs text-rose-600">{nameError}</span>
+        ) : null}
+      </FormField>
 
-      {error && (
-        <p className="text-sm text-red-600">{resolveSurgeryMessage(error)}</p>
-      )}
+      {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={saving}
-          className="h-10 rounded-lg bg-sky-500 px-4 text-white disabled:bg-slate-300"
-        >
-          {saving ? "저장 중…" : "수정"}
-        </button>
-        {/* 수정하지 않고 나갈 때 */}
-        <Link
-          href="/surgery/room/list"
-          className="flex h-10 items-center rounded-lg border border-slate-200 px-4 text-slate-700"
-        >
-          목록
-        </Link>
-      </div>
+      <FormActions
+        onCancel={() => router.push("/surgery/room/list")}
+        cancelLabel="목록"
+        submitLabel="수정"
+        loading={saving}
+        loadingLabel="저장 중…"
+      />
     </form>
   );
 }

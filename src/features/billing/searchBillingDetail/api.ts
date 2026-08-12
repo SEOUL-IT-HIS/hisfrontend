@@ -5,7 +5,7 @@ import type {
   BillingDetailAdmission,
   BillingDetailVisit,
   SearchPatient,
-  SearchPatientResult,
+  SearchPatientResult
 } from "@/features/billing/searchBillingDetail/types";
 
 const BILLING_DETAIL_PATH = "/api/billing/detail";
@@ -40,4 +40,9 @@ export async function visitBillingDetailApi(visitId: string): Promise<BillingDet
     `${BILLING_DETAIL_PATH}/preview/visit/{visitId}`,
   );
   return data.data;
+}
+
+/** 수납 상태를 READY -> SUCCESS 로 변경 */
+export async function updateBillingStatusApi(billingId: string): Promise<void> {
+  await apiClient.patch(`${BILLING_DETAIL_PATH}/${billingId}/billing-status`);
 }

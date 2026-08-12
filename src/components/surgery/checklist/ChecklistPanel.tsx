@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import { Alert, Button, Panel, StatusBadge } from "@/components/common";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   createChecklistRequest,
@@ -35,6 +36,10 @@ type Props = { surgeryId: string };
  *
  * <p><b>완료를 되돌릴 수 있게 둔 이유</b> — 잘못 눌렀을 때 지울 방법이 없으면 행을 삭제하게
  * 된다. 체크리스트는 안전 확인 기록이라 지우지 않고 상태로 되돌린다(§21.6).</p>
+ *
+ * <p>카드·버튼·배지·오류문구는 components/common 을 쓴다(§12.1). 단계별 배경색만
+ * Panel 의 className 으로 얹는다 — 완료/잠김을 색으로 구분하는 것은 이 화면만의 규칙이라
+ * 공통 컴포넌트에 넣을 일이 아니다.</p>
  */
 
 const YES = "Y";
@@ -110,11 +115,7 @@ export default function ChecklistPanel({ surgeryId }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
-      {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-          {resolveSurgeryMessage(error)}
-        </p>
-      )}
+      {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
       {loading ? (
         <p className="text-sm text-slate-500">불러오는 중입니다…</p>
@@ -125,15 +126,10 @@ export default function ChecklistPanel({ surgeryId }: Props) {
           const unlocked = isUnlocked(index);
 
           return (
-            <section
+            <Panel
               key={phase.code}
-              className={`rounded-lg border p-4 ${
-                completed
-                  ? "border-emerald-200 bg-emerald-50/40"
-                  : unlocked
-                    ? "border-slate-200"
-                    : "border-slate-100 bg-slate-50"
-              }`}
+              dashed={!unlocked}
+              className={`p-4 ${completed ? "bg-emerald-50/40" : ""}`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -142,20 +138,19 @@ export default function ChecklistPanel({ surgeryId }: Props) {
                       {phase.code}
                     </span>
                     {phase.label}
-                    {completed && (
-                      <span className="rounded bg-emerald-500 px-2 py-0.5 text-xs text-white">
-                        완료
-                      </span>
-                    )}
+                    {completed ? (
+                      <StatusBadge value="Y" activeLabel="완료" />
+                    ) : null}
                   </p>
                   <p className="text-xs text-slate-500">{phase.timing}</p>
                 </div>
 
                 {/* 잠긴 단계에는 버튼을 아예 두지 않는다 — 누를 수 없는 버튼보다 사유가 명확하다 */}
                 {unlocked ? (
-                  <button
-                    type="button"
+                  <Button
+                    variant={completed ? "secondary" : "primary"}
                     disabled={saving}
+                    className="shrink-0"
                     onClick={() => {
                       if (!item) {
                         // 첫 작성 — 확인을 마쳤다는 뜻이므로 완료(Y)로 등록한다
@@ -173,14 +168,9 @@ export default function ChecklistPanel({ surgeryId }: Props) {
                         }),
                       );
                     }}
-                    className={`h-9 shrink-0 rounded-lg px-3 text-sm ${
-                      completed
-                        ? "border border-slate-300 text-slate-600"
-                        : "bg-sky-500 text-white"
-                    } disabled:opacity-50`}
                   >
                     {completed ? "완료 취소" : "확인 완료"}
-                  </button>
+                  </Button>
                 ) : (
                   <span className="shrink-0 text-xs text-slate-400">
                     이전 단계 완료 후 진행
@@ -202,7 +192,7 @@ export default function ChecklistPanel({ surgeryId }: Props) {
                   최종 변경 {item.updatedAt?.slice(0, 16).replace("T", " ")}
                 </p>
               )}
-            </section>
+            </Panel>
           );
         })
       )}

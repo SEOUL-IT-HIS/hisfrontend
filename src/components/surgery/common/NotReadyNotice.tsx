@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Alert, PageHeader, Panel } from "@/components/common";
 
 type Props = {
   /** 이 화면이 다루려는 업무 */
@@ -20,19 +21,21 @@ type Props = {
  *
  * <p>백엔드 API 경로를 적어두는 이유 — 화면이 없을 뿐 서버는 이미 동작하므로,
  * Swagger 나 curl 로 먼저 확인할 수 있다는 걸 알리기 위해서다.</p>
+ *
+ * <p>헤더·안내문·카드는 components/common 을 쓴다(§12.1). 안내 상자가 amber 에서
+ * Alert 의 info(하늘색)로 바뀐다 — Alert 에 amber 변형이 없고, 색을 추가하려면
+ * 공통 컴포넌트를 고쳐야 하는데 그건 리더 승인 사항이다(§5.5).</p>
  */
 export default function NotReadyNotice({ title, jira, apis, reason }: Props) {
   return (
-    <div className="mx-auto w-full max-w-3xl p-6">
-      <h1 className="mb-1 text-lg font-semibold text-slate-800">{title}</h1>
-      <p className="mb-6 text-xs text-slate-500">{jira}</p>
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
+      <PageHeader title={title} description={jira} />
 
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-        <p className="text-sm font-medium text-amber-900">화면 준비 중입니다</p>
-        <p className="mt-1 text-sm text-amber-800">{reason}</p>
-      </div>
+      <Alert variant="info">
+        <span className="font-medium">화면 준비 중입니다</span> — {reason}
+      </Alert>
 
-      <section className="mt-8">
+      <Panel className="p-4">
         <h2 className="mb-2 text-sm font-medium text-slate-700">
           백엔드는 이미 동작합니다
         </h2>
@@ -51,7 +54,7 @@ export default function NotReadyNotice({ title, jira, apis, reason }: Props) {
         </ul>
         <p className="mt-3 text-xs text-slate-500">
           <a
-            href="http://localhost:8383/swagger-ui.html"
+            href="http://localhost:8383/swagger-ui/index.html"
             target="_blank"
             rel="noreferrer"
             className="text-sky-600 underline"
@@ -60,9 +63,9 @@ export default function NotReadyNotice({ title, jira, apis, reason }: Props) {
           </a>{" "}
           (백엔드 실행 중일 때)
         </p>
-      </section>
+      </Panel>
 
-      <p className="mt-10 text-xs text-slate-500">
+      <p className="text-xs text-slate-500">
         <Link href="/surgery" className="text-sky-600 underline">
           수술관리 홈
         </Link>
