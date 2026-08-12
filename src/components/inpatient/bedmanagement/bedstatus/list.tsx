@@ -52,6 +52,7 @@ const BedStatusList = () => {
         <table>
           <thead>
             <tr>
+              <th>환자ID</th>
               <th>병상ID</th>
               <th>병실번호</th>
               <th>병상번호</th>
@@ -61,6 +62,7 @@ const BedStatusList = () => {
           <tbody>
             {filteredBeds.map((bed) => (
               <tr key={bed.bedId}>
+                 <td>{bed.patientId ?? '없음'}</td>
                 <td>
                 <Link href={`/inpatient/bedmanagement/bedstatus/${bed.bedId}`}>
                     {bed.bedId}

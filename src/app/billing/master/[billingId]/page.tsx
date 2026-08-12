@@ -1,4 +1,4 @@
-import BillingMasterDetail from "@/components/billing/BillingMasterDetail";
+import BillingMasterDetail from "@/components/billing/master/BillingMasterDetail";
 
 export default function BillingMasterDetailPage() {
   return <BillingMasterDetail />;

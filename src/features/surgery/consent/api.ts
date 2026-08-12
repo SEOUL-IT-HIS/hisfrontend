@@ -20,7 +20,7 @@ export async function getConsents(surgeryId: string): Promise<Consent[]> {
   const { data } = await apiClient.get<ApiResponse<Consent[]>>(
     `${SURGERY_PATH}/${surgeryId}/consents`,
   );
-  return data.data;
+  return data.data ?? [];
 }
 
 /** 환자별 동의서 이력을 조회한다. (SL2-222) */
@@ -31,7 +31,7 @@ export async function getConsentsByPatient(
     `${SURGERY_PATH}/consents`,
     { params: { patientId } },
   );
-  return data.data;
+  return data.data ?? [];
 }
 
 /** 동의서 단건을 조회한다. */

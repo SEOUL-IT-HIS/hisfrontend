@@ -18,6 +18,13 @@ export const SURGERY_MESSAGES = {
   SUR045: "점검중이거나 폐쇄된 수술실은 배정할 수 없습니다.",
   SUR046: "해당 동의서가 존재하지 않습니다.",
   SUR047: "수술 동의서가 확인되지 않아 진행할 수 없습니다.",
+  SUR048: "해당 마취기록이 존재하지 않습니다.",
+  SUR049: "해당 체크리스트 항목이 존재하지 않습니다.",
+  SUR050: "해당 예정 자원이 존재하지 않습니다.",
+  SUR051: "이전 단계 체크리스트가 완료되지 않았습니다.",
+  SUR052: "요청한 자료를 찾을 수 없습니다.",
+  SUR053: "허용되지 않는 요청 방식입니다.",
+  SUR054: "지원하지 않는 요청 형식입니다.",
 } as const;
 
 export type SurgeryMessageCode = keyof typeof SURGERY_MESSAGES;

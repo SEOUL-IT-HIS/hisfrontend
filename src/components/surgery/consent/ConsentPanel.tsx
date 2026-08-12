@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   createConsentRequest,
@@ -22,31 +23,34 @@ type Props = { surgeryId: string };
  * 수정 기능이 없는 이유는 동의서가 서명 시점의 사실 기록이기 때문이다 — 내용이 바뀌면
  * 새로 동의를 받아 다른 행으로 남긴다(§21.6).</p>
  *
+ * <p>서명자 관계는 2026-08-10 제거했다. 프로젝트 범위를 "동의 여부 확인"으로 축소하기로
+ * 정해졌고, admin 의 RELATION_CD 코드그룹도 함께 내려갔다. 본인/법정대리인 구분은
+ * 종이 동의서에서 관리한다.</p>
+ *
  * <p>같은 수술에 같은 종류의 동의서는 한 번만 남길 수 있다. 두 번 등록하면 백엔드가
  * SUR044 로 거절하므로, 이미 기록된 종류는 선택지에서 빼 둔다.</p>
  */
 
-/** SURG_CONSENT_CD: 01수술/02마취/03비용견적 */
-const CONSENT_TYPE_OPTIONS = [
-  { value: "01", label: "01 수술 동의서" },
-  { value: "02", label: "02 마취 동의서" },
-  { value: "03", label: "03 비용견적 동의서" },
-];
-
-/** SIGNER_RELATION_CD: 01본인/02법정대리인/03배우자/04기타 */
-const SIGNER_RELATION_OPTIONS = [
-  { value: "01", label: "01 본인" },
-  { value: "02", label: "02 법정대리인" },
-  { value: "03", label: "03 배우자" },
-  { value: "04", label: "04 기타" },
-];
+/**
+ * 수술이 다루는 동의서 종류.
+ *
+ * <p>CONSENT_TYPE_CD 는 <b>병원 공통 그룹</b>이라 검사·영상의 CONTRAST(조영제사용동의)·
+ * INVASIVE(침습적검사동의)도 같이 들어 있다. 그대로 내려받으면 수술 화면에 남의 동의서가
+ * 섞여 보이므로, 여기 적힌 것만 골라 쓴다.</p>
+ *
+ * <p><b>정규식으로 "숫자면 우리 것"이라 거르지 않는 이유</b> — 검사·영상이 나중에 숫자 코드를
+ * 추가하면 조용히 새어 들어온다. 우리가 처리하는 목록을 눈에 보이게 적어두는 편이 안전하다.</p>
+ *
+ * <p>이 배열의 <b>순서가 곧 화면 표시 순서</b>다. admin 의 sortOrder 가 비어 있어 응답 순서를
+ * 믿을 수 없기 때문이며, sortOrder 가 채워지면 이 정렬은 없애도 된다.</p>
+ */
+const SURGERY_CONSENT_CODES = ["01", "02", "03"];
 
 const inputClass =
   "h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50";
 
 type FieldErrors = {
   consentTypeCd?: string;
-  signerRelationCd?: string;
   signedBy?: string;
   signedDt?: string;
 };
@@ -59,18 +63,24 @@ export default function ConsentPanel({ surgeryId }: Props) {
   const error = useSelector(selectConsentError);
 
   const [consentTypeCd, setConsentTypeCd] = useState("");
-  const [signerRelationCd, setSignerRelationCd] = useState("");
   const [signedBy, setSignedBy] = useState("");
   const [signedDt, setSignedDt] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
+
+  const { options: codeOptions } = useCommonCodeOptions("CONSENT_TYPE_CD");
 
   useEffect(() => {
     dispatch(fetchConsentsRequest(surgeryId));
   }, [dispatch, surgeryId]);
 
+  // 공통 그룹에서 수술이 다루는 것만 골라 SURGERY_CONSENT_CODES 순서로 세운다
+  const consentTypeOptions = SURGERY_CONSENT_CODES.map((code) =>
+    codeOptions.find((option) => option.value === code),
+  ).filter((option): option is (typeof codeOptions)[number] => Boolean(option));
+
   // 이미 기록된 동의 종류는 다시 고를 수 없다(백엔드 중복 차단과 같은 규칙)
   const recordedTypes = consents.map((consent) => consent.consentTypeCd);
-  const availableTypes = CONSENT_TYPE_OPTIONS.filter(
+  const availableTypes = consentTypeOptions.filter(
     (option) => !recordedTypes.includes(option.value),
   );
 
@@ -80,7 +90,6 @@ export default function ConsentPanel({ surgeryId }: Props) {
     // 백엔드 @NotBlank/@NotNull 과 같은 항목을 화면에서 먼저 잡는다(§15.3)
     const nextErrors: FieldErrors = {};
     if (!consentTypeCd) nextErrors.consentTypeCd = "동의 종류를 선택해주세요.";
-    if (!signerRelationCd) nextErrors.signerRelationCd = "서명자 관계를 선택해주세요.";
     if (!signedBy.trim()) nextErrors.signedBy = "서명자 성명을 입력해주세요.";
     if (!signedDt) nextErrors.signedDt = "서명일을 선택해주세요.";
     setErrors(nextErrors);
@@ -89,14 +98,12 @@ export default function ConsentPanel({ surgeryId }: Props) {
     dispatch(
       createConsentRequest(surgeryId, {
         consentTypeCd,
-        signerRelationCd,
         signedBy: signedBy.trim(),
         // <input type="date"> 값이 이미 yyyy-MM-dd 라 그대로 보낸다(§14.2 `_dt`)
         signedDt,
       }),
     );
     setConsentTypeCd("");
-    setSignerRelationCd("");
     setSignedBy("");
     setSignedDt("");
   }
@@ -115,7 +122,6 @@ export default function ConsentPanel({ surgeryId }: Props) {
               <tr>
                 <th className="px-3 py-2">동의 종류</th>
                 <th className="px-3 py-2">서명자</th>
-                <th className="px-3 py-2">관계</th>
                 <th className="px-3 py-2">서명일</th>
               </tr>
             </thead>
@@ -125,9 +131,13 @@ export default function ConsentPanel({ surgeryId }: Props) {
                   key={consent.consentId}
                   className="border-t border-slate-100"
                 >
-                  <td className="px-3 py-2">{consent.consentTypeCd}</td>
+                  {/* 코드값 그대로가 아니라 이름으로 보여준다. 아직 못 받았거나
+                      목록에 없는 코드면 값을 그대로 두어 빈칸이 되지 않게 한다 */}
+                  <td className="px-3 py-2">
+                    {codeOptions.find((o) => o.value === consent.consentTypeCd)
+                      ?.label ?? consent.consentTypeCd}
+                  </td>
                   <td className="px-3 py-2">{consent.signedBy}</td>
-                  <td className="px-3 py-2">{consent.signerRelationCd}</td>
                   <td className="px-3 py-2">{consent.signedDt}</td>
                 </tr>
               ))}
@@ -168,29 +178,6 @@ export default function ConsentPanel({ surgeryId }: Props) {
             </select>
             {errors.consentTypeCd && (
               <p className="text-xs text-red-600">{errors.consentTypeCd}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label htmlFor="signerRelationCd" className="text-sm text-slate-700">
-              서명자 관계
-            </label>
-            <select
-              id="signerRelationCd"
-              className={inputClass}
-              value={signerRelationCd}
-              onChange={(e) => setSignerRelationCd(e.target.value)}
-              disabled={saving}
-            >
-              <option value="">선택</option>
-              {SIGNER_RELATION_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {errors.signerRelationCd && (
-              <p className="text-xs text-red-600">{errors.signerRelationCd}</p>
             )}
           </div>
 

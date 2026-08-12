@@ -23,7 +23,7 @@ export async function getSurgeryRequests(): Promise<Surgery[]> {
   const { data } = await apiClient.get<ApiResponse<Surgery[]>>(
     `${SCHEDULE_PATH}/requests`,
   );
-  return data.data;
+  return data.data ?? [];
 }
 
 /**
@@ -49,7 +49,7 @@ export async function getSurgerySchedules(
   const { data } = await apiClient.get<ApiResponse<Surgery[]>>(SCHEDULE_PATH, {
     params,
   });
-  return data.data;
+  return data.data ?? [];
 }
 
 /** 금일 수술 현황을 조회한다. (SL2-40 모니터링) */
@@ -57,7 +57,7 @@ export async function getTodaySurgeries(): Promise<Surgery[]> {
   const { data } = await apiClient.get<ApiResponse<Surgery[]>>(
     `${SCHEDULE_PATH}/today`,
   );
-  return data.data;
+  return data.data ?? [];
 }
 
 export async function getSurgerySchedule(surgeryId: string): Promise<Surgery> {

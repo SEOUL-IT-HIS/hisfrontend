@@ -4,7 +4,7 @@ import { fetchBedReservationDetailRequest,deleteBedReservationRequest } from "@/
 
 import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 const BedReservationDetail=()=>{
@@ -14,7 +14,17 @@ const BedReservationDetail=()=>{
     const bedReservation=useSelector((state:RootState)=>state.inpatient.bedreservation.detail);
     const updateStatus = useSelector((state: RootState) => state.inpatient.bedreservation.updateStatus);
     const deleteStatus = useSelector((state: RootState) => state.inpatient.bedreservation.deleteStatus);
+    const scheduleUpdateStatus = useSelector((state: RootState) => state.inpatient.bedreservation.scheduleUpdateStatus);
+    const [scheduleForm, setScheduleForm] = useState({ reserveAt: "", expectedAdmissionAt: "" });
     const {loading,error}=useSelector((state:RootState)=>state.inpatient.bedreservation.detailStatus);
+    
+    useEffect(() => {  
+        if (scheduleUpdateStatus.success && bedReservationId) {
+            dispatch(fetchBedReservationDetailRequest(bedReservationId));
+        }
+    }, [scheduleUpdateStatus.success, bedReservationId]);
+
+    
     useEffect(()=>{
         if (!bedReservationId) return;
         dispatch(fetchBedReservationDetailRequest(bedReservationId));
@@ -26,9 +36,30 @@ const BedReservationDetail=()=>{
         }
     }, [updateStatus.success, bedReservationId]);
 
-    const handleDelete = () => {
+    useEffect(() =>{
+        if(bedReservation){
+            setScheduleForm({
+                reserveAt: bedReservation.reserveAt,
+                expectedAdmissionAt: bedReservation.expectedAdmissionAt,
+            });
+        }
+    },[bedReservation]);
+
+    const onScheduleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setScheduleForm((prevForm) => ({ ...prevForm, [name]: value }));
+    };
+
+    function handleDelete() {
         if (!bedReservationId) return;
         dispatch(deleteBedReservationRequest(bedReservationId));
+    }
+    function handleUpdateSchedule(reserveAt: string, expectedAdmissionAt: string) {
+        if (!bedReservationId) return;
+        dispatch({
+            type: "bedReservation/updateBedReservationScheduleRequest",
+            payload: { id: bedReservationId, reserveAt, expectedAdmissionAt }
+        });
     }
     return(
         <div>
@@ -44,6 +75,29 @@ const BedReservationDetail=()=>{
             <p>ReservationStatusCd: {bedReservation.reservationStatusCd}</p>
             <button onClick={handleDelete} disabled={deleteStatus.loading}>
                 {deleteStatus.loading ? "삭제중..." : "삭제"}
+            </button>
+            <div>
+                <label htmlFor="reserveAt">예약시각:</label>
+                <input
+                    type="datetime-local"
+                    id="reserveAt"
+                    name="reserveAt"
+                    value={scheduleForm.reserveAt}
+                    onChange={onScheduleChange}
+                />
+            </div>
+            <div>
+                <label htmlFor="expectedAdmissionAt">예상입원시각:</label>
+                <input
+                    type="datetime-local"
+                    id="expectedAdmissionAt"
+                    name="expectedAdmissionAt"
+                    value={scheduleForm.expectedAdmissionAt}
+                    onChange={onScheduleChange}
+                />
+            </div>
+            <button onClick={() => handleUpdateSchedule(scheduleForm.reserveAt, scheduleForm.expectedAdmissionAt)} disabled={scheduleUpdateStatus.loading}>
+                {scheduleUpdateStatus.loading ? "일정 업데이트중..." : "일정 업데이트"}
             </button>
             </div>
             }

@@ -12,6 +12,7 @@ const initialState: BedReservationState = {
     createStatus: { ...initialStatus },
     updateStatus: { ...initialStatus },
     deleteStatus: { ...initialStatus },
+    scheduleUpdateStatus: { ...initialStatus },
 };
 const bedReservationSlice = createSlice({
     name: "bedReservation",
@@ -60,6 +61,19 @@ const bedReservationSlice = createSlice({
         updateBedReservationFailure(state, action: PayloadAction<string>) {
             state.updateStatus = { ...initialStatus, error: action.payload };
         },
+        updateBedReservationScheduleRequest(state, action: PayloadAction<{ id: string; reserveAt: string; expectedAdmissionAt: string }>) {
+            state.scheduleUpdateStatus = { ...initialStatus, loading: true };
+        },
+        updateBedReservationScheduleSuccess(state, action: PayloadAction<BedReservationDTO>) {
+            const index = state.list.findIndex((reservation) => reservation.bedReservationId === action.payload.bedReservationId);
+            if (index !== -1) {
+                state.list[index] = action.payload;
+            }
+            state.scheduleUpdateStatus = { ...initialStatus, success: true };
+        },
+        updateBedReservationScheduleFailure(state, action: PayloadAction<string>) {
+            state.scheduleUpdateStatus = { ...initialStatus, error: action.payload };
+        },
         deleteBedReservationRequest(state, action: PayloadAction<number>) {
             state.deleteStatus = { ...initialStatus, loading: true };
         },
@@ -80,6 +94,7 @@ export const { fetchBedReservationsRequest, fetchBedReservationsSuccess, fetchBe
     fetchBedReservationDetailRequest, fetchBedReservationDetailSuccess, fetchBedReservationDetailFailure,
     createBedReservationRequest, createBedReservationSuccess, createBedReservationFailure,
     updateBedReservationRequest, updateBedReservationSuccess, updateBedReservationFailure,
+    updateBedReservationScheduleRequest, updateBedReservationScheduleSuccess, updateBedReservationScheduleFailure,
     deleteBedReservationRequest, deleteBedReservationSuccess, deleteBedReservationFailure,
     clearBedReservationState } = bedReservationSlice.actions;
 export default bedReservationSlice.reducer;
@@ -100,5 +115,7 @@ export const selectBedReservationCreateStatus = (state: BedReservationRoot) =>
   state.inpatient.bedreservation.createStatus;
 export const selectBedReservationUpdateStatus = (state: BedReservationRoot) =>
   state.inpatient.bedreservation.updateStatus;
+export const selectBedReservationScheduleUpdateStatus = (state: BedReservationRoot) =>
+  state.inpatient.bedreservation.scheduleUpdateStatus;
 export const selectBedReservationDeleteStatus = (state: BedReservationRoot) =>
   state.inpatient.bedreservation.deleteStatus;

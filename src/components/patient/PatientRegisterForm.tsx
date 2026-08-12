@@ -17,10 +17,12 @@ import {
   resetPatientRegistration,
 } from "@/features/patient/slice/patientSlice";
 import type {
+  GenderCd,
   PatientRegisterRequest,
   PatientStatus,
 } from "@/features/patient/type/patientType";
 import type { AppDispatch, RootState } from "@/store/store";
+import CommonCodeSelect from "@/components/commonCode/CommonCodeSelect";
 
 const patientStatusOptions = [
   {
@@ -32,6 +34,13 @@ const patientStatusOptions = [
     label: "비활성(INACTIVE)",
   },
 ];
+
+type PatientRegisterFormState = Omit<
+  PatientRegisterRequest,
+  "genderCd"
+> & {
+  genderCd: GenderCd | "";
+};
 
 function getBirthDateFromResidentRegNo(
   residentRegNo: string,
@@ -80,15 +89,17 @@ function getBirthDateFromResidentRegNo(
   ].join("-");
 }
 
-const initialForm: PatientRegisterRequest = {
+const initialForm: PatientRegisterFormState = {
   patientName: "",
   birthDate: "",
   residentRegNo: "",
+  genderCd: "",
   statusCd: "ACTIVE",
 };
 
 export default function PatientRegisterForm() {
-  const [form, setForm] = useState<PatientRegisterRequest>(initialForm);
+  const [form, setForm] =
+  useState<PatientRegisterFormState>(initialForm);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [patientNameTouched, setPatientNameTouched] = useState(false);
@@ -119,6 +130,7 @@ const registrationDisabledReason =
       : !form.patientName.trim() ||
           !form.residentRegNo ||
           !form.birthDate ||
+          !form.genderCd ||
           !form.statusCd
         ? "필수 항목을 모두 입력해 주세요."
         : form.patientName.trim().length < 2 ||
@@ -160,6 +172,7 @@ useEffect(() => {
       form.patientName.trim() !== "" ||
       form.residentRegNo !== "" ||
       form.birthDate !== "" ||
+      form.genderCd !== "" ||
       form.statusCd !== initialForm.statusCd;
 
     if (!hasUnsavedChanges || submitted) {
@@ -177,10 +190,10 @@ useEffect(() => {
   };
 }, [form, submitted]);
 
-  const updateForm = <K extends keyof PatientRegisterRequest>(
-    field: K,
-    value: PatientRegisterRequest[K],
-  ) => {
+const updateForm = <K extends keyof PatientRegisterFormState>(
+  field: K,
+  value: PatientRegisterFormState[K],
+) => {
     setForm((previous) => {
       if (field === "residentRegNo") {
         const residentRegNo = value as string;
@@ -245,6 +258,7 @@ useEffect(() => {
       !form.patientName.trim() ||
       !form.birthDate ||
       !form.residentRegNo.trim() ||
+      !form.genderCd ||
       !form.statusCd.trim()
     ) {
       setValidationError("모든 필수 항목을 입력해 주세요.");
@@ -277,17 +291,19 @@ if (
         patientName: form.patientName.trim(),
         birthDate: form.birthDate,
         residentRegNo: form.residentRegNo.trim(),
+        genderCd: form.genderCd as GenderCd,
         statusCd: form.statusCd,
       }),
     );
   };
 
   const cancelForm = () => {
-    const hasUnsavedChanges =
-      form.patientName.trim() !== "" ||
-      form.residentRegNo !== "" ||
-      form.birthDate !== "" ||
-      form.statusCd !== initialForm.statusCd;
+  const hasUnsavedChanges =
+  form.patientName.trim() !== "" ||
+  form.residentRegNo !== "" ||
+  form.birthDate !== "" ||
+  form.genderCd !== "" ||
+  form.statusCd !== initialForm.statusCd;  
 
     if (
       hasUnsavedChanges &&
@@ -302,11 +318,12 @@ if (
   };
 
     const resetForm = () => {
-    const hasUnsavedChanges =
-      form.patientName.trim() !== "" ||
-      form.residentRegNo !== "" ||
-      form.birthDate !== "" ||
-      form.statusCd !== initialForm.statusCd;
+  const hasUnsavedChanges =
+  form.patientName.trim() !== "" ||
+  form.residentRegNo !== "" ||
+  form.birthDate !== "" ||
+  form.genderCd !== "" ||
+  form.statusCd !== initialForm.statusCd;
 
     if (
       hasUnsavedChanges &&
@@ -340,7 +357,7 @@ if (
       ) : null}
       {registeredPatient ? (
         <Alert variant="success">
-          환자 등록이 완료되었습니다. 환자번호: {registeredPatient.patientId}
+          환자 등록이 완료되었습니다. 환자 ID : {registeredPatient.patientId}
         </Alert>
       ) : null}
 
@@ -444,6 +461,23 @@ if (
               value={form.birthDate}
               readOnly
               disabled={registerLoading}
+            />
+                    </FormField>
+
+          <FormField label="성별" required>
+            <CommonCodeSelect
+              groupCode="GENDER_CD"
+              name="genderCd"
+              value={form.genderCd}
+              onChange={(event) =>
+                updateForm(
+                  "genderCd",
+                  event.target.value as GenderCd | "",
+                )
+              }
+              disabled={registerLoading}
+              placeholder="성별 선택"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-sky-400 focus:ring-2 focus:ring-sky-100 disabled:bg-slate-50 disabled:text-slate-500"
             />
           </FormField>
 

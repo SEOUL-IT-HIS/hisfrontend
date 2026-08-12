@@ -2,7 +2,7 @@ import type { MenuRow, MenuTreeNode } from "../types/menuTypes";
 
 export function toMenuTree(flatRows: MenuRow[]): MenuTreeNode[] {
   // id로 메뉴를 바로 찾기 위한 저장소 (예: menuById[1] → "관리" 메뉴)
-  const menuById: Record<number, MenuTreeNode & { children: MenuTreeNode[] }> = {};
+  const menuById: Record<string, MenuTreeNode & { children: MenuTreeNode[] }> = {};
 
   // parentMenuId가 null인 메뉴만 모음 → sidebar.tsx에서 items.map()의 시작점
   const topMenus: MenuTreeNode[] = [];

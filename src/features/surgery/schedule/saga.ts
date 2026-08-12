@@ -1,3 +1,35 @@
+/**
+ * 수술 스케줄링 saga (SL2-2)
+ *
+ * <p>saga 는 <b>순서가 있는 부수효과</b>를 맡는다. reducer 는 순수 함수여야 해서 API 호출을
+ * 넣을 수 없고, 컴포넌트에 넣으면 화면마다 같은 코드를 반복하게 된다. 그래서 중간층을 둔다 —
+ * 백엔드에서 컨트롤러가 아니라 서비스에 업무 규칙을 두는 것과 같은 이유다.</p>
+ *
+ * <p><b>기본 골격</b> — 이 파일의 사가는 전부 같은 모양이다.</p>
+ * <pre>
+ *   try {
+ *     yield call(api함수, 인자)     // 응답이 올 때까지 기다린다
+ *     yield put(성공액션(결과))      // slice 에 결과를 넣는다
+ *     yield put(재조회액션())        // (변경 작업일 때) 목록을 다시 불러온다
+ *   } catch (err) {
+ *     yield put(실패액션(getSurgeryErrorMessage(err, "기본 문구")))
+ *   }
+ * </pre>
+ *
+ * <p><b>call / put</b> — call 은 함수를 부르고 끝날 때까지 기다린다. put 은 액션을 흘려보낸다
+ * (컴포넌트의 dispatch 와 같다). api.ts 안에서는 async/await 를 쓰지만 saga 안에서는 yield 를
+ * 쓴다. 하는 일은 같고, 제너레이터 함수라 문법이 다를 뿐이다.</p>
+ *
+ * <p><b>takeLatest 를 쓰는 이유</b> — 같은 액션이 연달아 오면 <b>이전 것을 취소하고 마지막만</b>
+ * 처리한다. 사용자가 버튼을 빠르게 두 번 눌러도 응답이 뒤섞이지 않는다.
+ * 모두 처리해야 하는 경우에는 takeEvery 를 쓰지만, 조회·저장에는 takeLatest 가 맞다.</p>
+ *
+ * <p><b>변경 후 목록을 다시 부르는 이유</b> — 서버가 최종 상태를 갖고 있어서다. 화면에서
+ * 짐작해 상태를 고치면 다른 사람이 동시에 바꾼 내용과 어긋난다. 한 번 더 조회하는 편이 안전하다.</p>
+ *
+ * <p>맨 아래 default export 가 이 도메인의 watcher 다. features/surgery/saga.ts 가 이들을
+ * 묶고, store/rootSaga.ts 는 수술 전체를 한 줄로만 등록한다(§5.4 공용 파일 최소 수정).</p>
+ */
 import { call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import {
@@ -47,6 +79,7 @@ import type {
   UpdateProgressRequest,
   UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
+import { getSurgeryErrorMessage } from "@/features/surgery/errorMessage";
 
 /**
  * 수술 스케줄링 saga (SL2-2)
@@ -64,9 +97,11 @@ function* fetchSurgeriesSaga(
     const response: Surgery[] = yield call(getSurgerySchedules, action.payload);
     yield put(fetchSurgeriesSuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 일정 조회에 실패했습니다.";
-    yield put(fetchSurgeriesFailure(message));
+    yield put(
+      fetchSurgeriesFailure(
+        getSurgeryErrorMessage(err, "수술 일정 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -75,9 +110,11 @@ function* fetchTodaySurgeriesSaga() {
     const response: Surgery[] = yield call(getTodaySurgeries);
     yield put(fetchTodaySurgeriesSuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "금일 수술현황 조회에 실패했습니다.";
-    yield put(fetchTodaySurgeriesFailure(message));
+    yield put(
+      fetchTodaySurgeriesFailure(
+        getSurgeryErrorMessage(err, "금일 수술현황 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -86,9 +123,11 @@ function* fetchSurgeryRequestsSaga() {
     const response: Surgery[] = yield call(getSurgeryRequests);
     yield put(fetchSurgeryRequestsSuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 요청 목록 조회에 실패했습니다.";
-    yield put(fetchSurgeryRequestsFailure(message));
+    yield put(
+      fetchSurgeryRequestsFailure(
+        getSurgeryErrorMessage(err, "수술 요청 목록 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -97,9 +136,11 @@ function* fetchSurgerySaga(action: PayloadAction<string>) {
     const response: Surgery = yield call(getSurgerySchedule, action.payload);
     yield put(fetchSurgerySuccess(response));
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 정보 조회에 실패했습니다.";
-    yield put(fetchSurgeryFailure(message));
+    yield put(
+      fetchSurgeryFailure(
+        getSurgeryErrorMessage(err, "수술 정보 조회에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -111,9 +152,11 @@ function* registerSurgerySaga(action: PayloadAction<RegisterSurgeryRequest>) {
     yield put(surgeryMutationSuccess());
     yield put(fetchSurgeriesRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 스케줄 등록에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "수술 스케줄 등록에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -125,9 +168,11 @@ function* registerEmergencySurgerySaga(
     yield put(surgeryMutationSuccess());
     yield put(fetchSurgeriesRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "긴급 수술 등록에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "긴급 수술 등록에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -140,9 +185,11 @@ function* updateSurgerySaga(
     yield put(surgeryMutationSuccess());
     yield put(fetchSurgeriesRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 스케줄 수정에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "수술 스케줄 수정에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -158,9 +205,11 @@ function* assignSurgerySaga(
     // 배정되면 요청접수 목록에서 빠지므로 대기 목록을 다시 불러온다
     yield put(fetchSurgeryRequestsRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 배정에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "수술 배정에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -180,9 +229,11 @@ function* cancelSurgerySaga(
     // 요청접수 건의 취소는 '반려'라 대기 목록에서도 빠져야 한다
     yield put(fetchSurgeryRequestsRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 취소에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "수술 취소에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -196,9 +247,11 @@ function* updateProgressSaga(
     // 진행상태 변경은 모니터링 화면에서 쓰므로 금일 현황을 갱신한다
     yield put(fetchTodaySurgeriesRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "진행상태 변경에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "진행상태 변경에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -208,9 +261,11 @@ function* startSurgerySaga(action: PayloadAction<string>) {
     yield put(surgeryMutationSuccess());
     yield put(fetchTodaySurgeriesRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 시작 처리에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "수술 시작 처리에 실패했습니다."),
+      ),
+    );
   }
 }
 
@@ -220,9 +275,11 @@ function* endSurgerySaga(action: PayloadAction<string>) {
     yield put(surgeryMutationSuccess());
     yield put(fetchTodaySurgeriesRequest());
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "수술 종료 처리에 실패했습니다.";
-    yield put(surgeryMutationFailure(message));
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "수술 종료 처리에 실패했습니다."),
+      ),
+    );
   }
 }
 

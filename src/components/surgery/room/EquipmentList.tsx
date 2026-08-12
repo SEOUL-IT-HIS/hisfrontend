@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   changeEquipmentInoutRequest,
@@ -21,26 +22,13 @@ import {
  * <p>제거된 장비도 목록에 남는다. 물리 삭제가 아니라 상태 전이로 처리하기 때문이며
  * (§21.6), 과거 수술기록이 장비를 참조하므로 행을 지우면 이력이 깨진다.
  * 백엔드에 DELETE 엔드포인트 자체가 없다.</p>
- */
-
-/**
- * OR_EQUIP_STATUS_CD: 01사용가능/02사용중/03점검중/04고장
  *
- * <p>"폐기" 코드는 아직 admin-service 공통코드에 없다. 등록되면 여기에 추가하고
- * 제거 동작을 그 코드로 전이시킨다(§21.4 — 코드 추가는 admin 소관).</p>
+ * <p>상태·출고반입 선택지는 admin-service 공통코드에서 가져온다(§21.4). RoomList 와 같은
+ * 이유로 훅을 컴포넌트 맨 위에서 한 번만 부른다 — 행마다 부르면 장비 수만큼 호출이 늘어난다.</p>
+ *
+ * <p>"폐기" 코드는 아직 OR_EQUIP_STATUS_CD 에 없다. admin 에 추가되면 이 화면은 손대지 않아도
+ * 선택지에 자동으로 나타난다 — 하드코딩을 걷어낸 이득이 여기서 드러난다.</p>
  */
-const EQUIPMENT_STATUS_OPTIONS = [
-  { value: "01", label: "01 사용가능" },
-  { value: "02", label: "02 사용중" },
-  { value: "03", label: "03 점검중" },
-  { value: "04", label: "04 고장" },
-];
-
-/** EQUIP_INOUT_CD: 01출고/02반입 */
-const INOUT_OPTIONS = [
-  { value: "01", label: "01 출고" },
-  { value: "02", label: "02 반입" },
-];
 
 const selectClass =
   "h-8 rounded-md border border-slate-200 px-2 text-xs outline-none focus:border-sky-400 disabled:bg-slate-50";
@@ -51,6 +39,9 @@ export default function EquipmentList() {
   const loading = useSelector(selectRoomLoading);
   const saving = useSelector(selectRoomSaving);
   const error = useSelector(selectRoomError);
+
+  const { options: statusOptions } = useCommonCodeOptions("OR_EQUIP_STATUS_CD");
+  const { options: inoutOptions } = useCommonCodeOptions("EQUIP_INOUT_CD");
 
   useEffect(() => {
     dispatch(fetchEquipmentsRequest());
@@ -111,7 +102,7 @@ export default function EquipmentList() {
                   <option value="" disabled>
                     미지정
                   </option>
-                  {EQUIPMENT_STATUS_OPTIONS.map((option) => (
+                  {statusOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -135,7 +126,7 @@ export default function EquipmentList() {
                   <option value="" disabled>
                     미지정
                   </option>
-                  {INOUT_OPTIONS.map((option) => (
+                  {inoutOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>

@@ -26,6 +26,20 @@ const inputClass =
  *
  * <p>소속 수술실은 목록에서 선택한다. room_code 는 DDL 상 NOT NULL 이라 필수다.
  * 여기서는 전체 수술실을 보여준다 — 점검중인 방에도 장비는 배치될 수 있기 때문이다.</p>
+ *
+ * <p><b>컴포넌트가 하는 일</b> — 상태를 읽고 액션을 던지는 것뿐이다.
+ * API 주소도, 성공하면 무엇을 해야 하는지도 모른다. 그건 saga 의 몫이다.</p>
+ * <pre>
+ *   useSelector(...)      slice 에 담긴 상태를 읽는다
+ *   dispatch(...Request)  "이걸 해달라"고 알린다. 실제 호출은 saga 가 한다
+ *   useEffect(...)        화면이 처음 뜰 때 조회 액션을 한 번 던진다
+ *   disabled={saving}     저장 중 중복 클릭을 막는다. saving 도 slice 가 관리한다
+ * </pre>
+ *
+ * <p><b>화면에서도 입력값을 검사하는 이유</b> — 백엔드에도 @Valid 가 걸려 있지만,
+ * 서버까지 갔다 와야 알 수 있다. 뻔한 실수는 화면에서 먼저 잡아 왕복을 줄인다(§15.3).
+ * 화면 검사는 사용자 편의고, <b>진짜 방어선은 백엔드</b>다 — API 를 직접 호출하면
+ * 화면 검사는 건너뛰어지기 때문이다.</p>
  */
 export default function EquipmentRegisterForm() {
   const dispatch = useDispatch<AppDispatch>();
@@ -43,8 +57,10 @@ export default function EquipmentRegisterForm() {
   }, [dispatch]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    // 폼 기본 동작(페이지 새로고침)을 막는다. 없으면 화면이 통째로 다시 뜬다.
     event.preventDefault();
 
+    // 오류를 모아서 한 번에 보여준다 — 첫 항목에서 멈추면 사용자가 여러 번 시도하게 된다.
     const nextErrors: FieldErrors = {};
     if (!equipmentId.trim()) nextErrors.equipmentId = "장비 ID를 입력해주세요.";
     if (!roomCode) nextErrors.roomCode = "소속 수술실을 선택해주세요.";
