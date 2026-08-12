@@ -3,6 +3,7 @@ import type { ApiResponse } from "@/features/labimaging/types";
 import type {
   LabOrderCreateRequest,
   LabOrderCreateResponse,
+  LabReceptionDetail,
   LabReceptionSummary,
 } from "@/features/labimaging/laborder/types";
 
@@ -31,13 +32,18 @@ export async function createLabOrder(
 }
 
 /**
- * 검사 접수 목록(미일정)을 조회한다.
- * GET /api/lab-imaging/lab-orders/receptions → 200 + LabOrderSummaryDto[]
- * (백엔드가 latest_yn='Y' 스케줄이 없는 접수만 반환 = 일정등록 대상)
+ * 검사 접수 목록을 조회한다.
+ * GET /api/lab-imaging/lab-orders/receptions[?scheduledYn=Y|N] → 200 + LabOrderSummaryDto[]
+ *
+ * @param scheduledYn "N"=일정 미등록(일정등록 대상), "Y"=일정 등록됨(재조정 대상).
+ *                    생략하면 파라미터를 보내지 않아 백엔드가 전체를 반환한다.
  */
-export async function fetchLabReceptions(): Promise<LabReceptionSummary[]> {
+export async function fetchLabReceptions(
+  scheduledYn?: "Y" | "N",
+): Promise<LabReceptionSummary[]> {
   const { data } = await apiClient.get<ApiResponse<LabReceptionSummary[]>>(
     `${LAB_ORDER_PATH}/receptions`,
+    { params: scheduledYn ? { scheduledYn } : undefined },
   );
   return data.data;
 }
@@ -49,8 +55,8 @@ export async function fetchLabReceptions(): Promise<LabReceptionSummary[]> {
  */
 export async function fetchLabReceptionByNo(
   receptionNo: string,
-): Promise<LabReceptionSummary> {
-  const { data } = await apiClient.get<ApiResponse<LabReceptionSummary>>(
+): Promise<LabReceptionDetail> {
+  const { data } = await apiClient.get<ApiResponse<LabReceptionDetail>>(
     `${LAB_ORDER_PATH}/receptions/${encodeURIComponent(receptionNo)}`,
   );
   return data.data;

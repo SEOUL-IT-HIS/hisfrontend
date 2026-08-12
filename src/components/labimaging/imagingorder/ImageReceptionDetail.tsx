@@ -6,24 +6,51 @@ import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, Panel } from "@/components/common";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
+import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import {
   fetchImageReceptionByNoRequest,
-  selectSelectedImageReception,
+  selectImageReceptionDetail,
   selectImageReceptionLoading,
   selectImageReceptionError,
   selectImageReception,
 } from "@/features/labimaging/imagingorder/slice";
+import {
+  ORDER_STATUS_LABELS,
+  RECEPTION_STATUS_LABELS,
+  toStatusLabel,
+} from "@/features/labimaging/laborder/types";
 
-/** 영상 접수 단건 상세 — 경로변수 receptionNo 로 조회. (laborder 상세와 동일 패턴) */
+/** 공통코드값 → 코드명. 아직 못 불러왔거나 사전에 없는 값이면 코드값을 그대로 보여준다. */
+function toCodeLabel(options: CommonCodeOption[], code?: string) {
+  if (!code) return "-";
+  return options.find((opt) => opt.value === code)?.label ?? code;
+}
+
+/** ISO 문자열 → "YYYY-MM-DD HH:mm" */
+function formatDateTime(value?: string) {
+  if (!value) return "-";
+  return value.replace("T", " ").slice(0, 16);
+}
+
+/**
+ * 영상 접수 단건 상세 — 경로변수 receptionNo 로 조회. (laborder 상세와 동일 패턴)
+ *
+ * ⚠ 상태코드 라벨 사전은 laborder/types.ts 것을 그대로 쓴다.
+ *   오더상태/접수상태는 common/status 의 같은 Enum 을 검사·영상이 공유하기 때문이다.
+ */
 export default function ImageReceptionDetail() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const params = useParams<{ receptionNo: string }>();
   const receptionNo = params?.receptionNo ? decodeURIComponent(params.receptionNo) : "";
 
-  const reception = useSelector(selectSelectedImageReception);
+  const reception = useSelector(selectImageReceptionDetail);
   const loading = useSelector(selectImageReceptionLoading);
   const error = useSelector(selectImageReceptionError);
+
+  const treatTypes = useCommonCodeOptions("RCPT_TYPE_CD");
+  const imageItems = useCommonCodeOptions("IMG_ITEM_CD");
 
   useEffect(() => {
     if (receptionNo) dispatch(fetchImageReceptionByNoRequest(receptionNo));
@@ -33,14 +60,23 @@ export default function ImageReceptionDetail() {
   if (error) return <Alert>{error}</Alert>;
   if (!reception) return <p className="text-sm text-slate-400">접수 정보가 없습니다.</p>;
 
+  const items = reception.imageItemCodes
+    .map((code) => toCodeLabel(imageItems.options, code))
+    .join(", ");
+
   const rows: Array<[string, string]> = [
     ["접수번호", reception.receptionNo],
-    ["접수ID", reception.imageReceptionId],
     ["오더번호", reception.imageOrderNo],
-    ["오더ID", reception.imageOrderId],
+    ["진료구분", toCodeLabel(treatTypes.options, reception.treatTypeCode)],
+    ["긴급여부", reception.urgencyYn === "Y" ? "긴급" : "일반"],
     ["환자번호", reception.patientNo],
-    ["오더상태코드", reception.orderStatusCode],
-    ["접수상태코드", reception.receptionStatusCode],
+    ["처방의번호", reception.physicianNo || "-"],
+    ["촬영항목", items || "-"],
+    ["접수일시", formatDateTime(reception.receivedAt)],
+    ["촬영 예정일시", reception.scheduledAt ? formatDateTime(reception.scheduledAt) : "미등록"],
+    ["오더상태", toStatusLabel(ORDER_STATUS_LABELS, reception.orderStatusCode)],
+    ["접수상태", toStatusLabel(RECEPTION_STATUS_LABELS, reception.receptionStatusCode)],
+    ["접수담당자", reception.receivedById],
   ];
 
   return (
@@ -64,11 +100,12 @@ export default function ImageReceptionDetail() {
         </Link>
         <Button
           onClick={() => {
+            // 일정 화면이 쓸 컨텍스트만 넘긴다. (ImageReceptionContext)
             dispatch(selectImageReception(reception));
             router.push(`/labimaging/imagingschedule/register/${reception.imageReceptionId}`);
           }}
         >
-          일정 등록
+          {reception.scheduledAt ? "일정 재등록" : "일정 등록"}
         </Button>
       </div>
     </div>

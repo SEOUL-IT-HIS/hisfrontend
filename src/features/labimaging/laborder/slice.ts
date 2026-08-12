@@ -3,7 +3,10 @@ import type {
   LabOrderCreateRequest,
   LabOrderCreateResponse,
   LabOrderState,
+  LabReceptionContext,
+  LabReceptionDetail,
   LabReceptionSummary,
+  ReceptionScheduledFilter,
 } from "@/features/labimaging/laborder/types";
 
 /**
@@ -21,6 +24,7 @@ const initialState: LabOrderState = {
   receptionsError: "",
 
   selectedReception: null,
+  receptionDetail: null,
   receptionLoading: false,
   receptionError: "",
 };
@@ -54,7 +58,11 @@ const labOrderSlice = createSlice({
     },
 
     // ---------- 접수 목록(미일정) 조회 ----------
-    fetchLabReceptionsRequest(state) {
+    // payload = 필터("ALL"/"Y"/"N"). saga 가 읽어 API 파라미터로 넘긴다.
+    fetchLabReceptionsRequest(
+      state,
+      _action: PayloadAction<ReceptionScheduledFilter | undefined>,
+    ) {
       state.receptionsLoading = true;
       state.receptionsError = "";
     },
@@ -75,7 +83,7 @@ const labOrderSlice = createSlice({
       reducer(state) {
         state.receptionLoading = true;
         state.receptionError = "";
-        state.selectedReception = null;
+        state.receptionDetail = null;
       },
       prepare(receptionNo: string) {
         return { payload: receptionNo };
@@ -83,10 +91,10 @@ const labOrderSlice = createSlice({
     },
     fetchLabReceptionByNoSuccess(
       state,
-      action: PayloadAction<LabReceptionSummary>,
+      action: PayloadAction<LabReceptionDetail>,
     ) {
       state.receptionLoading = false;
-      state.selectedReception = action.payload;
+      state.receptionDetail = action.payload;
     },
     fetchLabReceptionByNoFailure(state, action: PayloadAction<string>) {
       state.receptionLoading = false;
@@ -94,7 +102,7 @@ const labOrderSlice = createSlice({
     },
 
     /** 목록에서 클릭으로 고른 접수를 재조회 없이 컨텍스트로 저장 (일정등록 화면 진입용) */
-    selectLabReception(state, action: PayloadAction<LabReceptionSummary>) {
+    selectLabReception(state, action: PayloadAction<LabReceptionContext>) {
       state.selectedReception = action.payload;
       state.receptionError = "";
     },
@@ -145,3 +153,6 @@ export const selectLabReceptionLoading = (s: LabOrderRoot) =>
   s.labImaging.laborder.receptionLoading;
 export const selectLabReceptionError = (s: LabOrderRoot) =>
   s.labImaging.laborder.receptionError;
+
+export const selectLabReceptionDetail = (s: LabOrderRoot) =>
+  s.labImaging.laborder.receptionDetail;

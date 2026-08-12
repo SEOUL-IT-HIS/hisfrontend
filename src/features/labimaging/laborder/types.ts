@@ -62,7 +62,7 @@ export interface LabOrderCreateResponse {
  * - 목록: GET /api/lab-imaging/lab-orders/receptions        (미일정 접수 = 일정등록 대상)
  * - 단건: GET /api/lab-imaging/lab-orders/receptions/{receptionNo}
  */
-export interface LabReceptionSummary {
+export interface LabReceptionSummary extends LabReceptionContext {
   labOrderId: string;
   labOrderNo: string;
   patientNo: string;
@@ -70,6 +70,8 @@ export interface LabReceptionSummary {
   labReceptionId: string;
   receptionNo: string;
   receptionStatusCode: string;
+  /** 최종 일정의 검사 예정일시. 일정 미등록이면 없음(undefined) */
+  scheduledAt?: string;
 }
 
 /** 검사 오더/접수 slice 상태 */
@@ -86,8 +88,14 @@ export interface LabOrderState {
   receptionsLoading: boolean;
   receptionsError: string;
 
-  /** 접수 단건(상세/일정등록 컨텍스트) */
-  selectedReception: LabReceptionSummary | null;
+  /**
+   * 일정 화면으로 넘길 컨텍스트. 목록|상세에서 고른 접수를 재조회 없이 들고 있는다.
+   * 표시에 필요한 최소 정보만 담는다.
+   */
+  selectedReception: LabReceptionContext | null;
+
+  /** 접수 상세 조회 결과 (검사항목 포함) */
+  receptionDetail: LabReceptionDetail | null;
   receptionLoading: boolean;
   receptionError: string;
 }
@@ -105,3 +113,80 @@ export const URGENCY_YN_OPTIONS: ReadonlyArray<{ value: "Y" | "N"; label: string
   { value: "N", label: "일반" },
   { value: "Y", label: "긴급" },
 ];
+
+/**
+ * 접수 목록 필터. 백엔드 GET /receptions?scheduledYn= 파라미터와 대응한다.
+ * - "N": 일정 미등록 (일정등록 대상)
+ * - "Y": 일정 등록됨 (재조정 대상)
+ * - "ALL": 전체 (파라미터를 보내지 않음)
+ */
+export type ReceptionScheduledFilter = "ALL" | "Y" | "N";
+
+/** 접수 목록 필터 버튼 옵션 */
+export const RECEPTION_FILTER_OPTIONS: ReadonlyArray<{
+  value: ReceptionScheduledFilter;
+  label: string;
+}> = [
+  { value: "N", label: "일정 미등록" },
+  { value: "Y", label: "일정 등록됨" },
+  { value: "ALL", label: "전체" },
+];
+
+/**
+ * 일정 화면으로 넘길 접수 컨텍스트.
+ * 목록(Summary)에서 고르든 상세(Detail)에서 고르든 이 세 값이면 충분해서,
+ * 두 타입이 공통으로 확장한다. (selectLabReception 액션의 payload 타입)
+ */
+export interface LabReceptionContext {
+  labReceptionId: string;
+  receptionNo: string;
+  patientNo: string;
+}
+
+/**
+ * 검사 접수 상세 — 백엔드 LabReceptionDetailDto
+ * 목록(LabReceptionSummary)과 달리 검사항목(labItemCodes)을 담는다.
+ */
+export interface LabReceptionDetail extends LabReceptionContext {
+  labOrderNo: string;
+  /** 진료구분코드 (공통코드 RCPT_TYPE_CD) */
+  treatTypeCode: string;
+  urgencyYn: "Y" | "N";
+  physicianNo?: string;
+  /** 검사항목코드 목록 (공통코드 TEST_TYPE_CD) */
+  labItemCodes: string[];
+  receivedAt: string;
+  /** 검사 예정일시. 일정 미등록이면 없음 */
+  scheduledAt?: string;
+  /** 오더상태코드 — 서비스 내부 Enum (ORDER_STATUS_LABELS 로 한글 변환) */
+  orderStatusCode: string;
+  /** 접수상태코드 — 서비스 내부 Enum (RECEPTION_STATUS_LABELS 로 한글 변환) */
+  receptionStatusCode: string;
+  receivedById: string;
+}
+
+/**
+ * 오더상태코드 한글 표시.
+ * 백엔드 common/status/OrderStatus enum 과 값을 맞춘다. (RECEIVED / COMPLETED / ERROR)
+ *
+ * ⚠ 공통코드가 아니라 서비스 내부 Enum 이라 admin 조회로는 못 가져온다.
+ *   백엔드 enum 에 값이 추가되면 여기도 같이 추가해야 한다.
+ */
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+  RECEIVED: "수신",
+  COMPLETED: "처리완료",
+  ERROR: "오류",
+};
+
+/**
+ * 접수상태코드 한글 표시.
+ * 백엔드 common/status/ReceptionStatus enum 과 값을 맞춘다. (ACCEPTED)
+ */
+export const RECEPTION_STATUS_LABELS: Record<string, string> = {
+  ACCEPTED: "접수완료",
+};
+
+/** 코드값을 한글 라벨로. 사전에 없으면 원본 코드를 그대로 보여준다(누락을 숨기지 않기 위함). */
+export function toStatusLabel(labels: Record<string, string>, code: string) {
+  return labels[code] ?? code;
+}

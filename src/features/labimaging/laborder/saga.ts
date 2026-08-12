@@ -19,7 +19,9 @@ import {
 import type {
   LabOrderCreateRequest,
   LabOrderCreateResponse,
+  LabReceptionDetail,
   LabReceptionSummary,
+  ReceptionScheduledFilter,
 } from "@/features/labimaging/laborder/types";
 
 /**
@@ -40,9 +42,15 @@ function* createLabOrderSaga(action: PayloadAction<LabOrderCreateRequest>) {
   }
 }
 
-function* fetchLabReceptionsSaga() {
+function* fetchLabReceptionsSaga(
+  action: PayloadAction<ReceptionScheduledFilter | undefined>,
+) {
   try {
-    const list: LabReceptionSummary[] = yield call(fetchLabReceptions);
+    // "ALL"(또는 미지정)이면 파라미터를 보내지 않아 백엔드가 전체를 반환한다.
+    const filter = action.payload;
+    const scheduledYn = filter && filter !== "ALL" ? filter : undefined;
+
+    const list: LabReceptionSummary[] = yield call(fetchLabReceptions, scheduledYn);
     yield put(fetchLabReceptionsSuccess(list));
   } catch (err) {
     const message =
@@ -53,7 +61,7 @@ function* fetchLabReceptionsSaga() {
 
 function* fetchLabReceptionByNoSaga(action: PayloadAction<string>) {
   try {
-    const reception: LabReceptionSummary = yield call(
+    const reception: LabReceptionDetail = yield call(
       fetchLabReceptionByNo,
       action.payload,
     );
