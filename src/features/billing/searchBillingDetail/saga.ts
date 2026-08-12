@@ -17,10 +17,7 @@ import {
   searchBillingDetailSuccess,
   visitBillingDetailFailure,
   visitBillingDetailRequest,
-  visitBillingDetailSuccess,
-  updateBillingStatusRequest,
-  updateBillingStatusSuccess,
-  updateBillingStatusFailure
+  visitBillingDetailSuccess
 } from "@/features/billing/searchBillingDetail/slice";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { BillingDetail,
@@ -66,21 +63,9 @@ function* visitBillingDetailSaga(action: PayloadAction<string>) {
   }
 }
 
-function* updateBillingStatusSaga(action: PayloadAction<string>){
-  try{
-    yield call(updateBillingStatusApi, action.payload);
-    yield put(updateBillingStatusSuccess());
-
-  }catch(err){
-    const message = err instanceof Error ? err.message : "결제 처리 실패했습니다.";
-    yield put(updateBillingStatusFailure(message));
-  }
-}
-
 export default function* billingDetailSaga() {
   yield takeLatest(searchBillingDetailRequest.type, searchBillingDetailSaga);
   yield takeLatest(fetchBillingDetailRequest.type, fetchBillingDetailSaga);
   yield takeLatest(admissionBillingDetailRequest.type, admissionBillingDetailSaga);
   yield takeLatest(visitBillingDetailRequest.type, visitBillingDetailSaga);
-  yield takeLatest(updateBillingStatusRequest.type, updateBillingStatusSaga);
 }
