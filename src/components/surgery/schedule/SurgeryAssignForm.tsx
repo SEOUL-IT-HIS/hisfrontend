@@ -53,6 +53,8 @@ export default function SurgeryAssignForm({ surgeryId }: Props) {
   const [anesthesiologistId, setAnesthesiologistId] = useState("");
   const [nurseId, setNurseId] = useState("");
   const [surgeryDt, setSurgeryDt] = useState("");
+  // 희망일을 이미 채워 넣은 수술의 식별자. 같은 수술이면 두 번 채우지 않는다.
+  const [boundSurgeryId, setBoundSurgeryId] = useState<string | null>(null);
   const [roomError, setRoomError] = useState("");
   const [employees, setEmployees] = useState<Emp[]>([]);
   const [employeeLoadError, setEmployeeLoadError] = useState("");
@@ -82,13 +84,6 @@ export default function SurgeryAssignForm({ surgeryId }: Props) {
     };
   }, []);
 
-  // 진료가 올린 희망일을 초기값으로 채운다. 수술실 사정에 맞춰 바꿀 수 있다.
-  useEffect(() => {
-    if (surgery?.surgeryId === surgeryId && surgery.surgeryDt) {
-      setSurgeryDt(surgery.surgeryDt);
-    }
-  }, [surgery, surgeryId]);
-
   // 배정 성공 시 대기 목록으로 돌아간다(실패면 error 가 채워지므로 머문다)
   useEffect(() => {
     if (submitted.current && !saving && !error) {
@@ -97,6 +92,24 @@ export default function SurgeryAssignForm({ surgeryId }: Props) {
     }
     if (!saving && error) submitted.current = false;
   }, [saving, error, router]);
+
+  // 진료가 올린 희망일을 초기값으로 채운다. 수술실 사정에 맞춰 바꿀 수 있다.
+  //
+  // effect 가 아니라 렌더 중에 처리하는 이유는 두 가지다.
+  //   1) effect 안에서 setState 를 부르면 렌더가 한 번 더 도는 연쇄가 생긴다
+  //      (react-hooks/set-state-in-effect).
+  //   2) 더 중요한 것 — 예전 코드는 surgery 가 바뀔 때마다 무조건 덮어써서,
+  //      사용자가 날짜를 고쳐둔 뒤 조회 응답이 늦게 도착하면 입력값이 되돌아갔다.
+  //      "아직 안 채운 수술일 때만" 채우도록 조건을 바꿔 그 사고를 막는다.
+  //
+  // 같은 폴더의 RoomUpdateForm·EquipmentUpdateForm 이 쓰는 방식과 같다.
+  if (
+    surgery?.surgeryId === surgeryId &&
+    surgery.surgeryId !== boundSurgeryId
+  ) {
+    setBoundSurgeryId(surgery.surgeryId);
+    setSurgeryDt(surgery.surgeryDt ?? "");
+  }
 
   const roomOptions = availableRooms.map((room) => ({
     value: room.roomCode,
