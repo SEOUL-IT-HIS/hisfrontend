@@ -6,6 +6,7 @@ import {
   fetchPatientListApi,
   registerPatientApi,
   updatePatientApi,
+  deactivatePatientApi,
 } from "../api/patientApi";
 import {
   checkPatientDuplicateFailure,
@@ -23,6 +24,9 @@ import {
   updatePatientFailure,
   updatePatientRequest,
   updatePatientSuccess,
+  deactivatePatientFailure,
+  deactivatePatientRequest,
+  deactivatePatientSuccess,
 } from "../slice/patientSlice";
 import type {
   Patient,
@@ -51,17 +55,17 @@ function getPatientErrorMessage(error: unknown, fallbackMessage: string) {
     }
   }
 
- if (error instanceof Error) {
-  const isTechnicalMessage =
-    error.message === "Network Error" ||
-    error.message.startsWith("Request failed with status code");
+  if (error instanceof Error) {
+    const isTechnicalMessage =
+      error.message === "Network Error" ||
+      error.message.startsWith("Request failed with status code");
 
-  return isTechnicalMessage
-    ? "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."
-    : error.message;
-}
+    return isTechnicalMessage
+      ? "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."
+      : error.message;
+  }
 
-return fallbackMessage;
+  return fallbackMessage;
 }
 
 function* fetchPatientListSaga(
@@ -104,14 +108,9 @@ function* fetchPatientDetailSaga(
   }
 }
 
-function* updatePatientSaga(
-  action: ReturnType<typeof updatePatientRequest>,
-) {
+function* updatePatientSaga(action: ReturnType<typeof updatePatientRequest>) {
   try {
-    const patient: PatientDetail = yield call(
-      updatePatientApi,
-      action.payload,
-    );
+    const patient: PatientDetail = yield call(updatePatientApi, action.payload);
 
     yield put(updatePatientSuccess(patient));
   } catch (error) {
@@ -124,19 +123,36 @@ function* updatePatientSaga(
   }
 }
 
+function* deactivatePatientSaga(
+  action: ReturnType<typeof deactivatePatientRequest>,
+) {
+  try {
+    const patient: PatientDetail = yield call(
+      deactivatePatientApi,
+      action.payload,
+    );
+
+    yield put(deactivatePatientSuccess(patient));
+  } catch (error) {
+    const message = getPatientErrorMessage(
+      error,
+      "환자 비활성화에 실패했습니다.",
+    );
+
+    yield put(deactivatePatientFailure(message));
+  }
+}
+
 function* registerPatientSaga(
   action: ReturnType<typeof registerPatientRequest>,
 ) {
   try {
     const patient: Patient = yield call(registerPatientApi, action.payload);
     yield put(registerPatientSuccess(patient));
-} catch (error) {
-  const message = getPatientErrorMessage(
-    error,
-    "환자 등록에 실패했습니다.",
-  );
-  yield put(registerPatientFailure(message));
-}
+  } catch (error) {
+    const message = getPatientErrorMessage(error, "환자 등록에 실패했습니다.");
+    yield put(registerPatientFailure(message));
+  }
 }
 
 function* checkPatientDuplicateSaga(
@@ -149,10 +165,10 @@ function* checkPatientDuplicateSaga(
     );
     yield put(checkPatientDuplicateSuccess(duplicated));
   } catch (error) {
-   const message = getPatientErrorMessage(
-  error,
-  "환자 중복 확인에 실패했습니다.",
-);
+    const message = getPatientErrorMessage(
+      error,
+      "환자 중복 확인에 실패했습니다.",
+    );
     yield put(checkPatientDuplicateFailure(message));
   }
 }
@@ -160,15 +176,11 @@ function* checkPatientDuplicateSaga(
 export default function* patientSaga() {
   yield takeLatest(fetchPatientListRequest.type, fetchPatientListSaga);
 
-  yield takeLatest(
-    fetchPatientDetailRequest.type,
-    fetchPatientDetailSaga,
-  );
+  yield takeLatest(fetchPatientDetailRequest.type, fetchPatientDetailSaga);
 
-  yield takeLatest(
-  updatePatientRequest.type,
-  updatePatientSaga,
-);
+  yield takeLatest(updatePatientRequest.type, updatePatientSaga);
+
+  yield takeLatest(deactivatePatientRequest.type, deactivatePatientSaga);
 
   yield takeLatest(registerPatientRequest.type, registerPatientSaga);
 

@@ -29,37 +29,36 @@ const initialSearchCondition: PatientSearchCondition = {
   statusCd: undefined,
 };
 
-const formatDateTime = (value: string) =>
-  value.replace("T", " ").slice(0, 19);
+const formatDateTime = (value: string) => value.replace("T", " ").slice(0, 19);
 
 const columns: DataTableColumn<PatientListItem>[] = [
- {
-  key: "patientName",
-  header: "환자명",
-  render: (patient) => (
-    <Link
-      href={`/reception/patientmanagement/${patient.patientId}`}
-      className="font-medium text-blue-600 hover:underline"
-    >
-      {patient.patientName}
-    </Link>
-  ),
-},
-{
-  key: "residentRegNo",
-  header: "주민등록번호",
-  render: (patient) => patient.residentRegNo,
-},
-{
-  key: "genderCd",
-  header: "성별",
-  render: (patient) => getGenderLabel(patient.genderCd),
-},
-{
-  key: "birthDate",
-  header: "생년월일",
-  render: (patient) => patient.birthDate,
-},
+  {
+    key: "patientName",
+    header: "환자명",
+    render: (patient) => (
+      <Link
+        href={`/reception/patientmanagement/${patient.patientId}`}
+        className="font-medium text-blue-600 hover:underline"
+      >
+        {patient.patientName}
+      </Link>
+    ),
+  },
+  {
+    key: "residentRegNo",
+    header: "주민등록번호",
+    render: (patient) => patient.residentRegNo,
+  },
+  {
+    key: "genderCd",
+    header: "성별",
+    render: (patient) => getGenderLabel(patient.genderCd),
+  },
+  {
+    key: "birthDate",
+    header: "생년월일",
+    render: (patient) => patient.birthDate,
+  },
   {
     key: "statusCd",
     header: "환자관리상태코드",
@@ -82,23 +81,23 @@ export default function PatientListForm() {
   const registeredPatientId = searchParams.get("registeredPatientId");
   const dispatch = useDispatch<AppDispatch>();
   const [searchCondition, setSearchCondition] =
-  useState<PatientSearchCondition>(initialSearchCondition);
+    useState<PatientSearchCondition>(initialSearchCondition);
   const { patients, listLoading, listError } = useSelector(
     (state: RootState) => state.patient,
   );
 
-useEffect(() => {
-  dispatch(fetchPatientListRequest({}));
-}, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchPatientListRequest({}));
+  }, [dispatch]);
 
-const handleSearch = () => {
-  dispatch(fetchPatientListRequest(searchCondition));
-};
+  const handleSearch = () => {
+    dispatch(fetchPatientListRequest(searchCondition));
+  };
 
-const handleReset = () => {
-  setSearchCondition(initialSearchCondition);
-  dispatch(fetchPatientListRequest({}));
-};
+  const handleReset = () => {
+    setSearchCondition(initialSearchCondition);
+    dispatch(fetchPatientListRequest({}));
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-3">
@@ -112,74 +111,74 @@ const handleReset = () => {
       />
 
       <SearchBar
-  onSearch={handleSearch}
-  onReset={handleReset}
-  searchLabel="검색"
-  resetLabel="초기화"
->
-  <div className="w-52">
-    <label className="mb-1 block text-sm font-medium text-slate-700">
-      환자명
-    </label>
+        onSearch={handleSearch}
+        onReset={handleReset}
+        searchLabel="검색"
+        resetLabel="초기화"
+      >
+        <div className="w-52">
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            환자명
+          </label>
 
-    <Input
-      value={searchCondition.patientName ?? ""}
-      placeholder="환자명 입력"
-      onChange={(event) =>
-        setSearchCondition((previous) => ({
-          ...previous,
-          patientName: event.target.value,
-        }))
-      }
-    />
-  </div>
+          <Input
+            value={searchCondition.patientName ?? ""}
+            placeholder="환자명 입력"
+            onChange={(event) =>
+              setSearchCondition((previous) => ({
+                ...previous,
+                patientName: event.target.value,
+              }))
+            }
+          />
+        </div>
 
-  <div className="w-44">
-    <label className="mb-1 block text-sm font-medium text-slate-700">
-      생년월일
-    </label>
+        <div className="w-44">
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            생년월일
+          </label>
 
-    <Input
-      type="date"
-      value={searchCondition.birthDate ?? ""}
-      onChange={(event) =>
-        setSearchCondition((previous) => ({
-          ...previous,
-          birthDate: event.target.value,
-        }))
-      }
-    />
-  </div>
+          <Input
+            type="date"
+            value={searchCondition.birthDate ?? ""}
+            onChange={(event) =>
+              setSearchCondition((previous) => ({
+                ...previous,
+                birthDate: event.target.value,
+              }))
+            }
+          />
+        </div>
 
-  <div className="w-36">
-    <label className="mb-1 block text-sm font-medium text-slate-700">
-      환자 상태
-    </label>
+        <div className="w-36">
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            환자 상태
+          </label>
 
-    <Select
-      value={searchCondition.statusCd ?? ""}
-      placeholder="전체"
-      options={[
-        { value: "ACTIVE", label: "활성" },
-        { value: "INACTIVE", label: "비활성" },
-      ]}
-      onChange={(event) =>
-        setSearchCondition((previous) => ({
-          ...previous,
-          statusCd:
-            event.target.value === ""
-              ? undefined
-              : (event.target.value as PatientStatus),
-        }))
-      }
-    />
-  </div>
-</SearchBar>
+          <Select
+            value={searchCondition.statusCd ?? ""}
+            placeholder="전체"
+            options={[
+              { value: "ACTIVE", label: "활성" },
+              { value: "INACTIVE", label: "비활성" },
+            ]}
+            onChange={(event) =>
+              setSearchCondition((previous) => ({
+                ...previous,
+                statusCd:
+                  event.target.value === ""
+                    ? undefined
+                    : (event.target.value as PatientStatus),
+              }))
+            }
+          />
+        </div>
+      </SearchBar>
 
       {registeredPatientId ? (
-      <Alert variant="success">
-       환자 등록이 완료되었습니다. 환자 ID: {registeredPatientId}
-      </Alert>
+        <Alert variant="success">
+          환자 등록이 완료되었습니다. 환자 ID: {registeredPatientId}
+        </Alert>
       ) : null}
 
       {listError ? <Alert variant="error">{listError}</Alert> : null}

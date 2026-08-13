@@ -35,16 +35,11 @@ const patientStatusOptions = [
   },
 ];
 
-type PatientRegisterFormState = Omit<
-  PatientRegisterRequest,
-  "genderCd"
-> & {
+type PatientRegisterFormState = Omit<PatientRegisterRequest, "genderCd"> & {
   genderCd: GenderCd | "";
 };
 
-function getBirthDateFromResidentRegNo(
-  residentRegNo: string,
-): string | null {
+function getBirthDateFromResidentRegNo(residentRegNo: string): string | null {
   if (!/^\d{13}$/.test(residentRegNo)) {
     return null;
   }
@@ -99,8 +94,7 @@ const initialForm: PatientRegisterFormState = {
 
 export default function PatientRegisterForm() {
   const genderCodes = useCommonCodeOptions("GENDER_CD");
-  const [form, setForm] =
-  useState<PatientRegisterFormState>(initialForm);
+  const [form, setForm] = useState<PatientRegisterFormState>(initialForm);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [patientNameTouched, setPatientNameTouched] = useState(false);
@@ -114,7 +108,7 @@ export default function PatientRegisterForm() {
     error,
   } = useSelector((state: RootState) => state.patient);
 
-    const residentRegNoError =
+  const residentRegNoError =
     form.residentRegNo.length === 0
       ? null
       : form.residentRegNo.length < 13
@@ -123,8 +117,7 @@ export default function PatientRegisterForm() {
           ? "올바른 주민등록번호 형식이 아닙니다."
           : null;
 
-const registrationDisabledReason =
-  registerLoading
+  const registrationDisabledReason = registerLoading
     ? null
     : duplicateCheckLoading
       ? "주민등록번호 중복 확인 중입니다."
@@ -152,7 +145,7 @@ const registrationDisabledReason =
     dispatch(resetPatientRegistration());
   }, [dispatch]);
 
-    useEffect(() => {
+  useEffect(() => {
     if (form.residentRegNo.length === 6) {
       document.getElementById("residentRegNoBack")?.focus();
     }
@@ -162,44 +155,43 @@ const registrationDisabledReason =
     if (submitted && registeredPatient) {
       dispatch(resetPatientRegistration());
       router.push(
-  `/reception/patientmanagement?registeredPatientId=${registeredPatient.patientId}`,
-);
+        `/reception/patientmanagement?registeredPatientId=${registeredPatient.patientId}`,
+      );
     }
   }, [dispatch, registeredPatient, router, submitted]);
 
-useEffect(() => {
-  const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-    const hasUnsavedChanges =
-      form.patientName.trim() !== "" ||
-      form.residentRegNo !== "" ||
-      form.birthDate !== "" ||
-      form.genderCd !== "" ||
-      form.statusCd !== initialForm.statusCd;
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      const hasUnsavedChanges =
+        form.patientName.trim() !== "" ||
+        form.residentRegNo !== "" ||
+        form.birthDate !== "" ||
+        form.genderCd !== "" ||
+        form.statusCd !== initialForm.statusCd;
 
-    if (!hasUnsavedChanges || submitted) {
-      return;
-    }
+      if (!hasUnsavedChanges || submitted) {
+        return;
+      }
 
-    event.preventDefault();
-    event.returnValue = "";
-  };
+      event.preventDefault();
+      event.returnValue = "";
+    };
 
-  window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
-  return () => {
-    window.removeEventListener("beforeunload", handleBeforeUnload);
-  };
-}, [form, submitted]);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [form, submitted]);
 
-const updateForm = <K extends keyof PatientRegisterFormState>(
-  field: K,
-  value: PatientRegisterFormState[K],
-) => {
+  const updateForm = <K extends keyof PatientRegisterFormState>(
+    field: K,
+    value: PatientRegisterFormState[K],
+  ) => {
     setForm((previous) => {
       if (field === "residentRegNo") {
         const residentRegNo = value as string;
-        const birthDate =
-          getBirthDateFromResidentRegNo(residentRegNo) ?? "";
+        const birthDate = getBirthDateFromResidentRegNo(residentRegNo) ?? "";
 
         return {
           ...previous,
@@ -266,14 +258,14 @@ const updateForm = <K extends keyof PatientRegisterFormState>(
       return;
     }
 
-if (
-  form.patientName.trim().length < 2 ||
-  form.patientName.trim().length > 100
-) {
-  setPatientNameTouched(true);
-  setValidationError("환자명은 2자 이상 100자 이하로 입력해 주세요.");
-  return;
-}
+    if (
+      form.patientName.trim().length < 2 ||
+      form.patientName.trim().length > 100
+    ) {
+      setPatientNameTouched(true);
+      setValidationError("환자명은 2자 이상 100자 이하로 입력해 주세요.");
+      return;
+    }
 
     if (duplicated === null) {
       setValidationError("주민등록번호 중복 확인을 먼저 진행해 주세요.");
@@ -299,18 +291,16 @@ if (
   };
 
   const cancelForm = () => {
-  const hasUnsavedChanges =
-  form.patientName.trim() !== "" ||
-  form.residentRegNo !== "" ||
-  form.birthDate !== "" ||
-  form.genderCd !== "" ||
-  form.statusCd !== initialForm.statusCd;  
+    const hasUnsavedChanges =
+      form.patientName.trim() !== "" ||
+      form.residentRegNo !== "" ||
+      form.birthDate !== "" ||
+      form.genderCd !== "" ||
+      form.statusCd !== initialForm.statusCd;
 
     if (
       hasUnsavedChanges &&
-      !window.confirm(
-        "작성 중인 내용이 사라집니다. 이동하시겠습니까?",
-      )
+      !window.confirm("작성 중인 내용이 사라집니다. 이동하시겠습니까?")
     ) {
       return;
     }
@@ -318,28 +308,26 @@ if (
     router.push("/reception/patientmanagement");
   };
 
-    const resetForm = () => {
-  const hasUnsavedChanges =
-  form.patientName.trim() !== "" ||
-  form.residentRegNo !== "" ||
-  form.birthDate !== "" ||
-  form.genderCd !== "" ||
-  form.statusCd !== initialForm.statusCd;
+  const resetForm = () => {
+    const hasUnsavedChanges =
+      form.patientName.trim() !== "" ||
+      form.residentRegNo !== "" ||
+      form.birthDate !== "" ||
+      form.genderCd !== "" ||
+      form.statusCd !== initialForm.statusCd;
 
     if (
       hasUnsavedChanges &&
-      !window.confirm(
-        "입력한 내용을 모두 초기화하시겠습니까?",
-      )
+      !window.confirm("입력한 내용을 모두 초기화하시겠습니까?")
     ) {
       return;
     }
 
-     setForm(initialForm);
-     setPatientNameTouched(false);
-     setValidationError(null);
-     setSubmitted(false);
-     dispatch(resetPatientRegistration());
+    setForm(initialForm);
+    setPatientNameTouched(false);
+    setValidationError(null);
+    setSubmitted(false);
+    dispatch(resetPatientRegistration());
   };
 
   return (
@@ -364,34 +352,32 @@ if (
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <form onSubmit={submitPatient} className="space-y-4">
-        <FormField label="환자명" required htmlFor="patientName">
-        <Input
-          id="patientName"
-          value={form.patientName}
-          onChange={(event) =>
-          updateForm("patientName", event.target.value)
-          }
-          onBlur={() => setPatientNameTouched(true)}
-          disabled={registerLoading}
-          autoComplete="name"
-          />
+          <FormField label="환자명" required htmlFor="patientName">
+            <Input
+              id="patientName"
+              value={form.patientName}
+              onChange={(event) =>
+                updateForm("patientName", event.target.value)
+              }
+              onBlur={() => setPatientNameTouched(true)}
+              disabled={registerLoading}
+              autoComplete="name"
+            />
 
-  {patientNameTouched && !form.patientName.trim() ? (
-    <p className="text-sm text-red-600">
-      환자명을 입력해 주세요.
-    </p>
-  ) : patientNameTouched &&
-    (form.patientName.trim().length < 2 ||
-      form.patientName.trim().length > 100) ? (
-    <p className="text-sm text-red-600">
-      환자명은 2자 이상 100자 이하로 입력해 주세요.
-    </p>
-  ) : null}
-</FormField>
+            {patientNameTouched && !form.patientName.trim() ? (
+              <p className="text-sm text-red-600">환자명을 입력해 주세요.</p>
+            ) : patientNameTouched &&
+              (form.patientName.trim().length < 2 ||
+                form.patientName.trim().length > 100) ? (
+              <p className="text-sm text-red-600">
+                환자명은 2자 이상 100자 이하로 입력해 주세요.
+              </p>
+            ) : null}
+          </FormField>
 
           <FormField label="주민등록번호" required htmlFor="residentRegNo">
             <div className="flex gap-2">
-               <Input
+              <Input
                 id="residentRegNo"
                 value={form.residentRegNo.slice(0, 6)}
                 onChange={(event) =>
@@ -440,21 +426,22 @@ if (
                 {duplicateCheckLoading ? "확인 중…" : "중복 확인"}
               </Button>
             </div>
-              {residentRegNoError ? (
+            {residentRegNoError ? (
               <span className="text-xs text-rose-600" role="alert">
                 {residentRegNoError}
               </span>
             ) : null}
           </FormField>
 
-         <FormField
-          label="생년월일"
-          required
-          htmlFor="birthDate"
-          hint={form.birthDate
-          ? "주민등록번호에서 자동으로 계산되었습니다."
-          : "주민등록번호를 입력하면 자동으로 계산됩니다."
-          }
+          <FormField
+            label="생년월일"
+            required
+            htmlFor="birthDate"
+            hint={
+              form.birthDate
+                ? "주민등록번호에서 자동으로 계산되었습니다."
+                : "주민등록번호를 입력하면 자동으로 계산됩니다."
+            }
           >
             <Input
               id="birthDate"
@@ -463,51 +450,42 @@ if (
               readOnly
               disabled={registerLoading}
             />
-                    </FormField>
-
-          <FormField label="성별" required>
-          <Select
-          name="genderCd"
-          value={form.genderCd}
-          onChange={(event) =>
-          updateForm(
-          "genderCd",
-           event.target.value as GenderCd | "",
-           )
-           }
-           options={genderCodes.options}
-           placeholder="성별 선택"
-           disabled={registerLoading || genderCodes.loading}
-            />
-           {genderCodes.error ? (
-           <span className="text-xs text-rose-500">
-          {genderCodes.error}
-          </span>
-          ) : null}
           </FormField>
 
-<FormField label="환자상태관리코드" required htmlFor="statusCd">
-  <Select
-    id="statusCd"
-    value={form.statusCd}
-    options={patientStatusOptions}
-    onChange={(event) =>
-      updateForm(
-        "statusCd",
-        event.target.value as PatientStatus,
-      )
-    }
-    disabled={registerLoading}
-  />
-</FormField>
+          <FormField label="성별" required>
+            <Select
+              name="genderCd"
+              value={form.genderCd}
+              onChange={(event) =>
+                updateForm("genderCd", event.target.value as GenderCd | "")
+              }
+              options={genderCodes.options}
+              placeholder="성별 선택"
+              disabled={registerLoading || genderCodes.loading}
+            />
+            {genderCodes.error ? (
+              <span className="text-xs text-rose-500">{genderCodes.error}</span>
+            ) : null}
+          </FormField>
+
+          <FormField label="환자상태관리코드" required htmlFor="statusCd">
+            <Select
+              id="statusCd"
+              value={form.statusCd}
+              options={patientStatusOptions}
+              onChange={(event) =>
+                updateForm("statusCd", event.target.value as PatientStatus)
+              }
+              disabled={registerLoading}
+            />
+          </FormField>
           {registrationDisabledReason ? (
             <p className="text-right text-xs text-slate-500" role="status">
               {registrationDisabledReason}
             </p>
           ) : null}
           <div className="flex justify-end gap-2 pt-1">
-
-              <Button
+            <Button
               type="button"
               variant="secondary"
               onClick={cancelForm}

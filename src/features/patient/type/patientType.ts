@@ -38,7 +38,7 @@ export type Patient = {
 export type PatientListItem = {
   patientId: string;
   patientName: string;
-   /** 마스킹된 주민등록번호 (예: 000813-4******) */
+  /** 마스킹된 주민등록번호 (예: 000813-4******) */
   residentRegNo: string;
   birthDate: string;
   genderCd: GenderCd;
@@ -70,6 +70,10 @@ export type PatientUpdateRequest = {
   patientName: string;
 };
 
+/** PATCH /api/patient/{patientId}/deactivate 요청 */
+export type PatientDeactivateRequest = {
+  patientId: string;
+};
 
 export type PatientRegisterApiResponse = ApiResponse<Patient>;
 
@@ -81,3 +85,6 @@ export type PatientDetailApiResponse = ApiResponse<PatientDetail>;
 
 /** PATCH /api/patient/{patientId} 응답 */
 export type PatientUpdateApiResponse = ApiResponse<PatientDetail>;
+
+/** PATCH /api/patient/{patientId}/deactivate 응답 */
+export type PatientDeactivateApiResponse = ApiResponse<PatientDetail>;
