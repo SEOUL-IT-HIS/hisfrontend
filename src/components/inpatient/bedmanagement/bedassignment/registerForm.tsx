@@ -4,8 +4,12 @@
 import { AppDispatch, RootState } from "@/store/store";
 import { useDispatch, useSelector, shallowEqual } from "react-redux";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { createBedAssignmentRequest } from "@/features/inpatient/bedmanagement/bedassignment/slice";
+import { fetchBedRequest, selectBed } from "@/features/inpatient/bedmanagement/bedstatus/slice";
+import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
+import { fetchBedAssignmentsRequest, selectBedAssignments } from "@/features/inpatient/bedmanagement/bedassignment/slice";
+
 
 const BedAssignmentRegisterForm = () => {
     const router = useRouter();
@@ -15,7 +19,9 @@ const BedAssignmentRegisterForm = () => {
         error: state.inpatient.bedmanagement.createStatus.error,
         success: state.inpatient.bedmanagement.createStatus.success,
     }), shallowEqual);
-
+    const beds = useSelector(selectBed);
+    const admissions = useSelector(selectAdmissions);
+    const bedAssignments = useSelector(selectBedAssignments);
     const[form, setForm] = useState({
         bedId: "",
         admissionId: "",
@@ -23,7 +29,8 @@ const BedAssignmentRegisterForm = () => {
         releasedAt: "",
     });
 
-    const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+
         const { name, value } = e.target;
         setForm((prevForm) => ({...prevForm, [name]: value }));}
     
@@ -31,6 +38,16 @@ const BedAssignmentRegisterForm = () => {
         e.preventDefault();
         dispatch(createBedAssignmentRequest({ ...form, releasedAt: null }));
     };
+    useEffect(() => {
+        dispatch(fetchBedRequest());
+        dispatch(fetchAdmissionsRequest());
+        dispatch(fetchBedAssignmentsRequest());
+    }, [dispatch]);
+    const emptyBeds = useMemo(() => beds.filter((bed) => bed.bedStatus === "EMPTY"), [beds]);
+   
+    const assignedAdmissionIds = useMemo( () => bedAssignments.filter((ba)=>ba.releasedAt === null).map((ba) => ba.admissionId), [bedAssignments]);
+    const availableAdmissions = useMemo(() => admissions.filter((admission) => !assignedAdmissionIds.includes(admission.admissionId)), [admissions, assignedAdmissionIds]);
+
     useEffect(() => {
         if (success) {
             router.push("/inpatient/bedmanagement/bedassignment/list");
@@ -44,12 +61,25 @@ const BedAssignmentRegisterForm = () => {
             <form onSubmit={onSubmit}>
                 <div>
                     <label htmlFor="bedId">병상ID:</label>
-                    <input type="text" id="bedId" name="bedId" value={form.bedId} onChange={onChange} required />
+                    <select id="bedId" name="bedId" value={form.bedId} onChange={onChange} required>
+                    <option value="">선택하세요</option>
+                    {emptyBeds.map((bed) => (
+                    <option key={bed.bedId} value={bed.bedId}>
+                    {bed.roomNo}호 {bed.bedNo}번
+                </option>
+                ))}
+                </select>
                 </div>
-
                 <div>
                     <label htmlFor="admissionId">입원ID:</label>
-                    <input type="text" id="admissionId" name="admissionId" value={form.admissionId} onChange={onChange} required />
+                    <select id="admissionId" name="admissionId" value={form.admissionId} onChange={onChange} required>
+                        <option value="">선택하세요</option>
+                        {availableAdmissions.map((admission) => (
+                            <option key={admission.admissionId} value={admission.admissionId}>
+                                {admission.admissionId}
+                            </option>
+                        ))}
+                    </select>
                 </div>
                 <div>
                     <label htmlFor="assignedAt">배정시각:</label>   
