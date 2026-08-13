@@ -17,6 +17,7 @@ import {
 } from "@/components/common";
 import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemTypes";
 import { fetchEmpUpdateRequest } from "@/features/emp/slice/empSlice";
+import type { RoleType } from "@/features/emp/types/roleType";
 import { toCodeSelectOptions } from "@/features/emp/utils/empCodeLabel";
 import type { Emp, EmpUpdateRequest } from "@/features/emp/types/empTypes";
 import type { AppDispatch, RootState } from "@/store/store";
@@ -47,6 +48,7 @@ type EmpUpdateFormProps = {
   emp: Emp;
   deptCodes: CommonCodeItem[];
   statusCodes: CommonCodeItem[];
+  roles: RoleType[];
   onClose: () => void;
 };
 
@@ -54,6 +56,7 @@ export default function EmpUpdateForm({
   emp,
   deptCodes,
   statusCodes,
+  roles,
   onClose,
 }: EmpUpdateFormProps) {
   const [form, setForm] = useState<EmpUpdateFormState>({
@@ -64,11 +67,23 @@ export default function EmpUpdateForm({
     empStatus: emp.empStatus ?? "",
     deptCode: emp.deptCode ?? "",
   });
+  /** 배정할 역할 (다중 선택) */
+  const [roleIds, setRoleIds] = useState<string[]>(emp.roleIds ?? []);
   const [errors, setErrors] = useState<FieldErrors>({});
   const error = useSelector((state: RootState) => state.emp.error);
   const loading = useSelector((state: RootState) => state.emp.loading);
+  /** 역할 부여 주체 — 로그인한 관리자 empId */
+  const assignedBy = useSelector((state: RootState) => state.auth.user?.empId);
   const dispatch = useDispatch<AppDispatch>();
   const waitClose = useRef(false);
+
+  function toggleRole(roleId: string) {
+    setRoleIds((prev) =>
+      prev.includes(roleId)
+        ? prev.filter((id) => id !== roleId)
+        : [...prev, roleId],
+    );
+  }
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +104,8 @@ export default function EmpUpdateForm({
       retireDate: form.retireDate || undefined,
       empStatus: form.empStatus.trim() || undefined,
       deptCode: form.deptCode.trim() || undefined,
+      roleIds,
+      assignedBy,
     };
     dispatch(fetchEmpUpdateRequest(payload));
   };
@@ -182,6 +199,31 @@ export default function EmpUpdateForm({
           {errors.deptCode && (
             <p className="text-xs text-red-600">{errors.deptCode}</p>
           )}
+        </FormField>
+
+        <FormField label="역할" hint="다중 선택 가능">
+          <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-xl border border-slate-200 bg-white px-3 py-3">
+            {roles.length === 0 ? (
+              <span className="text-sm text-slate-400">
+                등록된 역할이 없습니다.
+              </span>
+            ) : (
+              roles.map((role) => (
+                <label
+                  key={role.roleId}
+                  className="flex items-center gap-2 text-sm text-slate-700"
+                >
+                  <input
+                    type="checkbox"
+                    checked={roleIds.includes(role.roleId)}
+                    onChange={() => toggleRole(role.roleId)}
+                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-400"
+                  />
+                  {role.roleName}
+                </label>
+              ))
+            )}
+          </div>
         </FormField>
 
         <FormActions onCancel={onClose} submitLabel="수정" loading={loading} />

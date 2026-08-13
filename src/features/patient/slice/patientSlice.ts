@@ -5,6 +5,8 @@ import type {
   PatientDuplicateCheckRequest,
   PatientListItem,
   PatientRegisterRequest,
+  PatientSearchCondition,
+  PatientUpdateRequest,
 } from "../type/patientType";
 
 type PatientState = {
@@ -19,6 +21,9 @@ type PatientState = {
   listError: string | null;
   detailError: string | null;
   error: string | null;
+  updateLoading: boolean;
+  updateError: string | null;
+  updateSuccess: boolean;
 };
 
 const initialState: PatientState = {
@@ -33,15 +38,21 @@ const initialState: PatientState = {
   listError: null,
   detailError: null,
   error: null,
+  updateLoading: false,
+  updateError: null,
+  updateSuccess: false,
 };
 
 const patientSlice = createSlice({
   name: "patient",
   initialState,
   reducers: {
-    fetchPatientListRequest(state) {
-      state.listLoading = true;
-      state.listError = null;
+    fetchPatientListRequest(
+     state,
+    _action: PayloadAction<PatientSearchCondition>,
+    ) {
+     state.listLoading = true;
+     state.listError = null;
     },
     fetchPatientListSuccess(
       state,
@@ -80,6 +91,40 @@ fetchPatientDetailFailure(
 ) {
   state.detailLoading = false;
   state.detailError = action.payload;
+},
+
+updatePatientRequest(
+  state,
+  _action: PayloadAction<PatientUpdateRequest>,
+) {
+  state.updateLoading = true;
+  state.updateError = null;
+  state.updateSuccess = false;
+},
+
+updatePatientSuccess(
+  state,
+  action: PayloadAction<PatientDetail>,
+) {
+  state.updateLoading = false;
+  state.updateError = null;
+  state.updateSuccess = true;
+  state.patientDetail = action.payload;
+},
+
+updatePatientFailure(
+  state,
+  action: PayloadAction<string>,
+) {
+  state.updateLoading = false;
+  state.updateError = action.payload;
+  state.updateSuccess = false;
+},
+
+resetPatientUpdate(state) {
+  state.updateLoading = false;
+  state.updateError = null;
+  state.updateSuccess = false;
 },
 
     registerPatientRequest: {
@@ -139,6 +184,10 @@ export const {
   checkPatientDuplicateSuccess,
   checkPatientDuplicateFailure,
   resetPatientRegistration,
+  updatePatientRequest,
+  updatePatientSuccess,
+  updatePatientFailure,
+  resetPatientUpdate,
 } = patientSlice.actions;
 
 export default patientSlice.reducer;

@@ -4,7 +4,33 @@
  * <p>백엔드 SurgeryDto 와 1:1 대응. 날짜 필드 구분에 주의한다(§14.2):
  * `_dt`(DATE)는 yyyy-MM-dd 문자열, `_at`(TIMESTAMP)은 ISO 일시 문자열이다.</p>
  */
-import type { CodeValue, YnFlag } from "@/features/surgery/types";
+import type { CodeValue, PageParams, YnFlag } from "@/features/surgery/types";
+
+/**
+ * 수술 상태 코드 (SURGERY_STATUS_CD)
+ *
+ * <p>백엔드 {@code schedule/type/SurgeryStatus.java} 와 짝을 이룬다. 값이 바뀌면 양쪽을 함께 고친다.</p>
+ *
+ * <p>화면 로직에서 {@code statusCd === "01"} 처럼 문자열을 직접 비교하면 오타를 컴파일러가
+ * 잡지 못한다. 상수로 두면 잡힌다.</p>
+ *
+ * <p>표시할 <b>이름</b>은 여기서 갖지 않는다 — 코드명은 admin-service 소유라
+ * 공통코드 조회로 가져와야 한다(§21.4). 이 상수는 <b>비교용 값</b>일 뿐이다.</p>
+ *
+ * <pre>
+ *   00 요청접수 → 01 예약 → 02 진행중 → 03 완료
+ *                └─────────┴→ 04 취소 (요청접수·예약에서만)
+ * </pre>
+ */
+export const SURGERY_STATUS = {
+  /** 진료·응급실이 요청했고 아직 수술실이 배정되지 않은 상태 */
+  REQUESTED: "00",
+  /** 배정 완료 */
+  SCHEDULED: "01",
+  IN_PROGRESS: "02",
+  COMPLETED: "03",
+  CANCELLED: "04",
+} as const;
 
 /**
  * 수술 (SURGERY)
@@ -27,10 +53,12 @@ export type Surgery = {
   surgeryDt: string;
   /** SURGERY_STATUS_CD: 00요청접수/01예약/02진행중/03완료/04취소 */
   statusCd: CodeValue;
-  /** SURG_PROGRESS_CD — 당일 실시간 진행상태(status_cd 와 별개 트랙) */
+  /** SURGERY_PROGRESS_CD — 당일 실시간 진행상태(status_cd 와 별개 트랙) */
   progressCd: CodeValue | null;
+  /** SURGERY_CANCEL_CD */
   cancelReasonCd: CodeValue | null;
-  surgTypeCd: CodeValue | null;
+  /** SURGERY_TYPE_CD — 값 정의 미확정. 백엔드 Surgery 엔티티 주석 참고 */
+  surgeryTypeCd: CodeValue | null;
   /** 수술 서비스가 직접 입력받아 소유하는 원본 데이터라 저장한다(스냅샷 아님) */
   surgeryName: string | null;
   emergencyYn: YnFlag;
@@ -58,7 +86,7 @@ export type RegisterSurgeryRequest = {
   roomCode?: string | null;
   anesthesiologistId?: string | null;
   nurseId?: string | null;
-  surgTypeCd?: CodeValue | null;
+  surgeryTypeCd?: CodeValue | null;
   surgeryName?: string | null;
 };
 
@@ -101,6 +129,22 @@ export type UpdateProgressRequest = {
 export type SurgeryListParams = {
   /** yyyy-MM-dd, 미지정 시 전체 조회 */
   date?: string;
+};
+
+/**
+ * 배정 대기 목록 검색·페이지 파라미터 (SL2-235 페이징 / SL2-236 검색·필터)
+ *
+ * <p>모두 선택이다. 아무것도 안 보내면 요청접수(00) 전체를 응급 우선으로 돌려준다.
+ * 빈 문자열은 백엔드가 "조건 없음"으로 처리하므로 검색창을 비워 보내도 안전하다.</p>
+ */
+export type SurgeryRequestSearchParams = PageParams & {
+  /** 'Y' 응급만 / 'N' 일반만 / 미지정 전체 */
+  emergencyYn?: YnFlag;
+  patientId?: string;
+  /** 희망일 시작 yyyy-MM-dd */
+  fromDt?: string;
+  /** 희망일 종료 yyyy-MM-dd */
+  toDt?: string;
 };
 
 // ---------------------------------------------------------------------------

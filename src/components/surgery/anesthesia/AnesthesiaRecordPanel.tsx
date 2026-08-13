@@ -13,14 +13,19 @@ import {
   selectAnesthesiaRecords,
   selectAnesthesiaSaving,
 } from "@/features/surgery/anesthesia/slice";
+import {
+  Alert,
+  Button,
+  FormActions,
+  FormField,
+  Input,
+  Panel,
+} from "@/components/common";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 
 type Props = {
   surgeryId: string;
 };
-
-const inputClass =
-  "h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50";
 
 /**
  * 마취기록 패널 (SL2-34 조회 / SL2-21 생성 / SL2-18 활력징후)
@@ -92,56 +97,53 @@ export default function AnesthesiaRecordPanel({ surgeryId }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      <form
-        onSubmit={handleCreate}
-        className="flex flex-col gap-3 rounded-lg border border-slate-200 p-4"
-      >
-        <h3 className="text-sm font-medium text-slate-700">마취기록 등록</h3>
+      <Panel className="p-4">
+        <form onSubmit={handleCreate} className="flex flex-col gap-3">
+          <h3 className="text-sm font-medium text-slate-700">마취기록 등록</h3>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="anesthesiaTypeCd" className="text-xs text-slate-600">
-            마취 유형 코드 (01전신/02척추/03국소/04기타)
-          </label>
-          <input
-            id="anesthesiaTypeCd"
-            className={inputClass}
-            value={anesthesiaTypeCd}
-            onChange={(e) => setAnesthesiaTypeCd(e.target.value)}
-            disabled={saving}
+          <FormField
+            label="마취 유형 코드"
+            htmlFor="anesthesiaTypeCd"
+            hint="01전신 / 02척추 / 03국소 / 04기타"
+          >
+            <Input
+              id="anesthesiaTypeCd"
+              value={anesthesiaTypeCd}
+              onChange={(e) => setAnesthesiaTypeCd(e.target.value)}
+              disabled={saving}
+            />
+          </FormField>
+
+          <FormField label="ASA 등급 코드" htmlFor="asaGradeCd" hint="01~06">
+            <Input
+              id="asaGradeCd"
+              value={asaGradeCd}
+              onChange={(e) => setAsaGradeCd(e.target.value)}
+              disabled={saving}
+            />
+          </FormField>
+
+          <FormActions
+            onCancel={() => {
+              setAnesthesiaTypeCd("");
+              setAsaGradeCd("");
+            }}
+            cancelLabel="초기화"
+            submitLabel="마취기록 등록"
+            loading={saving}
           />
-        </div>
+        </form>
+      </Panel>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="asaGradeCd" className="text-xs text-slate-600">
-            ASA 등급 코드 (01~06)
-          </label>
-          <input
-            id="asaGradeCd"
-            className={inputClass}
-            value={asaGradeCd}
-            onChange={(e) => setAsaGradeCd(e.target.value)}
-            disabled={saving}
-          />
-        </div>
+      {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="h-10 rounded-lg bg-sky-500 px-4 text-white disabled:bg-slate-300"
-        >
-          {saving ? "처리 중…" : "마취기록 등록"}
-        </button>
-      </form>
+      {loading ? (
+        <p className="text-sm text-slate-500">불러오는 중입니다…</p>
+      ) : null}
 
-      {error && (
-        <p className="text-sm text-red-600">{resolveSurgeryMessage(error)}</p>
-      )}
-
-      {loading && <p className="text-sm text-slate-500">불러오는 중입니다…</p>}
-
-      {!loading && records.length === 0 && (
+      {!loading && records.length === 0 ? (
         <p className="text-sm text-slate-500">등록된 마취기록이 없습니다.</p>
-      )}
+      ) : null}
 
       {records.map((record) => {
         // CLOB 누적 로그를 줄 단위로 끊어 최신 기록이 위로 오게 뒤집는다
@@ -151,18 +153,14 @@ export default function AnesthesiaRecordPanel({ surgeryId }: Props) {
           .reverse();
 
         return (
-          <div
-            key={record.anesthesiaId}
-            className="rounded-lg border border-slate-200 p-4"
-          >
+          <Panel key={record.anesthesiaId} className="p-4">
             <div className="mb-3 flex gap-4 text-xs text-slate-600">
               <span>마취유형 {record.anesthesiaTypeCd ?? "-"}</span>
               <span>ASA {record.asaGradeCd ?? "-"}</span>
             </div>
 
             <div className="mb-3 flex gap-2">
-              <input
-                className={inputClass}
+              <Input
                 placeholder="예: BP 120/80, HR 72"
                 value={vitalInput[record.anesthesiaId] ?? ""}
                 onChange={(e) =>
@@ -173,18 +171,20 @@ export default function AnesthesiaRecordPanel({ surgeryId }: Props) {
                 }
                 disabled={saving}
               />
-              <button
-                type="button"
+              <Button
+                variant="secondary"
                 onClick={() => handleAppendVitals(record.anesthesiaId)}
                 disabled={saving}
-                className="h-10 shrink-0 rounded-lg bg-slate-700 px-4 text-sm text-white disabled:bg-slate-300"
+                className="h-10 shrink-0"
               >
                 활력징후 추가
-              </button>
+              </Button>
             </div>
 
             {lines.length === 0 ? (
-              <p className="text-xs text-slate-500">기록된 활력징후가 없습니다.</p>
+              <p className="text-xs text-slate-500">
+                기록된 활력징후가 없습니다.
+              </p>
             ) : (
               <ul className="flex flex-col gap-1 text-xs text-slate-700">
                 {lines.map((line, index) => (
@@ -192,7 +192,7 @@ export default function AnesthesiaRecordPanel({ surgeryId }: Props) {
                 ))}
               </ul>
             )}
-          </div>
+          </Panel>
         );
       })}
     </div>

@@ -11,8 +11,10 @@ export default async function PatientDetailPage({
   params,
 }: PatientDetailPageProps) {
   const { patientId } = await params;
+  const uuidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  if (!patientId) {
+  if (!uuidPattern.test(patientId)) {
     notFound();
   }
 

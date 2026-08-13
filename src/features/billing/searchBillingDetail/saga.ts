@@ -2,7 +2,8 @@ import { call, put, takeLatest } from "redux-saga/effects";
 import { searchPatientApi,
          fetchBillingDetailApi,
          admissionBillingDetailApi,
-         visitBillingDetailApi
+         visitBillingDetailApi,
+         updateBillingStatusApi
  } from "@/features/billing/searchBillingDetail/api";
 import {
   admissionBillingDetailFailure,
@@ -16,7 +17,7 @@ import {
   searchBillingDetailSuccess,
   visitBillingDetailFailure,
   visitBillingDetailRequest,
-  visitBillingDetailSuccess,
+  visitBillingDetailSuccess
 } from "@/features/billing/searchBillingDetail/slice";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { BillingDetail,
@@ -61,6 +62,7 @@ function* visitBillingDetailSaga(action: PayloadAction<string>) {
     yield put(visitBillingDetailFailure(message));
   }
 }
+
 export default function* billingDetailSaga() {
   yield takeLatest(searchBillingDetailRequest.type, searchBillingDetailSaga);
   yield takeLatest(fetchBillingDetailRequest.type, fetchBillingDetailSaga);

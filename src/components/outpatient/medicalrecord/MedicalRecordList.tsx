@@ -8,6 +8,20 @@ import MedicalRecordDetail from "@/components/outpatient/medicalrecord/MedicalRe
 import { fetchRecordListRequest } from "@/features/outpatient/medicalrecord/slice";
 import type { AppDispatch, RootState } from "@/store/store";
 
+const getStatusText = (status: string) => {
+    switch (status) {
+        case 'WAITING':
+        case 'PENDING':
+            return '대기중';
+        case 'IN_PROGRESS':
+            return '진료중';
+        case 'COMPLETED':
+            return '진료완료';
+        default:
+            return status; // 정의되지 않은 값이면 원본 출력
+    }
+};
+
 const formatDateTime = (value: string) => (value ? value.replace("T", " ").slice(0, 19) : "-");
 
 const MedicalRecordList = () => {
@@ -94,11 +108,11 @@ const MedicalRecordList = () => {
                         <tr>
                             <th className="w-[120px] p-3 font-semibold">환자번호</th>
                             <th className="w-[120px] p-3 font-semibold">환자명</th>
-                            <th className="w-[130px] p-3 font-semibold">담당의</th>
-                            <th className="w-[180px] p-3 font-semibold">주호소</th>
-                            <th className="w-[100px] p-3 font-semibold">상태</th>
-                            <th className="w-[160px] p-3 font-semibold">작성일시</th>
-                            <th className="w-[100px] p-3 font-semibold">관리</th>
+                            <th className="w-[120px] p-3 font-semibold">담당의</th>
+                            <th className="w-[120px] p-3 font-semibold">주호소</th>
+                            <th className="w-[120px] p-3 font-semibold">상태</th>
+                            <th className="w-[120px] p-3 font-semibold">작성일시</th>
+                            <th className="w-[120px] p-3 font-semibold">관리</th>
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -111,7 +125,7 @@ const MedicalRecordList = () => {
                                         {record.doctorName ? `${record.doctorName}` : (record.doctorId ?? "-")}
                                     </td>
                                     <td className="p-3 truncate">{record.chiefComplaint ?? "-"}</td>
-                                    <td className="p-3">{record.status}</td>
+                                    <td className="p-3">{getStatusText(record.status)}</td>
                                     <td className="p-3">{formatDateTime(record.createdAt)}</td>
                                     <td className="p-3">
                                         <Button

@@ -6,12 +6,21 @@ export type ApiResponse<T> = {
 };
 
 export type PatientStatus = "ACTIVE" | "INACTIVE";
+export type GenderCd = "01" | "02" | "03" | "04";
+
+/** GET /api/patient/list 검색조건 */
+export type PatientSearchCondition = {
+  patientName?: string;
+  birthDate?: string;
+  statusCd?: PatientStatus;
+};
 
 /** POST /api/patient/register 요청 */
 export type PatientRegisterRequest = {
   patientName: string;
   birthDate: string;
   residentRegNo: string;
+  genderCd: GenderCd;
   statusCd: PatientStatus;
 };
 
@@ -20,6 +29,7 @@ export type Patient = {
   patientId: string;
   patientName: string;
   birthDate: string;
+  genderCd: GenderCd;
   statusCd: PatientStatus;
   createdAt: string;
 };
@@ -28,9 +38,10 @@ export type Patient = {
 export type PatientListItem = {
   patientId: string;
   patientName: string;
-  /** 마스킹된 주민등록번호 (예: 000813-4******) */
+   /** 마스킹된 주민등록번호 (예: 000813-4******) */
   residentRegNo: string;
   birthDate: string;
+  genderCd: GenderCd;
   statusCd: PatientStatus;
   createdAt: string;
   updatedAt: string;
@@ -42,6 +53,7 @@ export type PatientDetail = {
   patientName: string;
   residentRegNo: string;
   birthDate: string;
+  genderCd: GenderCd;
   statusCd: PatientStatus;
   createdAt: string;
   updatedAt: string;
@@ -52,6 +64,12 @@ export type PatientDuplicateCheckRequest = {
   residentRegNo: string;
 };
 
+/** PATCH /api/patient/{patientId} 요청 */
+export type PatientUpdateRequest = {
+  patientId: string;
+  patientName: string;
+};
+
 
 export type PatientRegisterApiResponse = ApiResponse<Patient>;
 
@@ -60,3 +78,6 @@ export type PatientDuplicateCheckApiResponse = ApiResponse<boolean>;
 export type PatientListApiResponse = ApiResponse<PatientListItem[]>;
 
 export type PatientDetailApiResponse = ApiResponse<PatientDetail>;
+
+/** PATCH /api/patient/{patientId} 응답 */
+export type PatientUpdateApiResponse = ApiResponse<PatientDetail>;
