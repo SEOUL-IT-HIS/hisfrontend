@@ -26,6 +26,8 @@ const surgeryApiOrigin =
 
 const billingApiOrigin =
   process.env.BILLING_API_ORIGIN ?? "http://192.168.1.143:8989";
+const receptionApiOrigin =
+  process.env.RECEPTION_API_ORIGIN ?? "http://192.168.1.105:8080";
 
 const nextConfig: NextConfig = {
   // LAN IP로 접속할 때 /_next 정적 리소스 403 방지
@@ -39,6 +41,7 @@ const nextConfig: NextConfig = {
     "192.168.1.130",
     "192.168.1.120",
     "192.168.1.143",
+    "192.168.1.105",
   ],
   async rewrites() {
     return [
@@ -112,6 +115,16 @@ const nextConfig: NextConfig = {
       {
         source: "/api/billing/:path*",
         destination: `${billingApiOrigin}/api/billing/:path*`,
+      },
+
+      // ----------- reception-service (구체 경로 먼저) ----------
+      {
+        source: "/api/reception",
+        destination: `${receptionApiOrigin}/api/reception`,
+      },
+      {
+        source: "/api/reception/:path*",
+        destination: `${receptionApiOrigin}/api/reception/:path*`,
       },
 
       // ---------- admin-service (나머지 /api) ----------
