@@ -23,6 +23,8 @@ const emergencyApiOrigin =
 // surgery-service 만 8080 이 아니라 8383 을 쓴다
 const surgeryApiOrigin =
   process.env.SURGERY_API_ORIGIN ?? "http://192.168.1.120:8383";
+const receptionApiOrigin =
+    process.env.RECEPTION_API_ORIGIN ?? "http://192.168.1.105:8080";
 
 const nextConfig: NextConfig = {
   // LAN IP로 접속할 때 /_next 정적 리소스 403 방지
@@ -35,6 +37,8 @@ const nextConfig: NextConfig = {
     "192.168.1.112",
     "192.168.1.130",
     "192.168.1.120",
+    "192.168.1.105",
+
   ],
   async rewrites() {
     return [
@@ -96,6 +100,16 @@ const nextConfig: NextConfig = {
       {
         source: "/api/surgery/:path*",
         destination: `${surgeryApiOrigin}/api/surgery/:path*`,
+      },
+
+      // ----------- reception-service (구체 경로 먼저) ----------
+      {
+        source: "/api/reception",
+        destination: `${receptionApiOrigin}/api/reception`,
+      },
+      {
+        source: "/api/reception/:path*",
+        destination: `${receptionApiOrigin}/api/reception/:path*`,
       },
 
       // ---------- admin-service (나머지 /api) ----------
