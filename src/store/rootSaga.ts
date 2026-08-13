@@ -18,6 +18,7 @@ import watchMenuSaga from "@/features/system/saga/menuSaga";
 import watchPatientSaga from "@/features/patient/saga/patientSaga";
 import billingDetailSaga from "@/features/billing/searchBillingDetail/saga";
 import billingMasterSaga from "@/features/billing/billingMaster/saga";
+import billingPaymentSaga from "@/features/billing/payment/saga";
 
 /**
  * RootSaga (프론트 리더 관리 영역)
@@ -35,6 +36,7 @@ export default function* rootSaga() {
     // fork(receptionSaga),
     fork(billingDetailSaga),
     fork(billingMasterSaga),
+    fork(billingPaymentSaga),
      fork(outpatientSaga),
     fork(emergencySaga),
     fork(inpatientSaga),
