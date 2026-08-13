@@ -15,7 +15,7 @@ const patientApiOrigin =
 const labImagingApiOrigin =
   process.env.LABIMAGING_API_ORIGIN ?? "http://192.168.1.104:8080";
 const inpatientApiOrigin =
-  process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.125:8080";
+  process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.140:8080";
 const outpatientApiOrigin =
   process.env.OUTPATIENT_API_ORIGIN ?? "http://192.168.1.112:8080";
 const emergencyApiOrigin =
@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
     "192.168.1.128",
     "192.168.1.149",
     "192.168.1.104",
-    "192.168.1.125",
+    "192.168.1.140",
     "192.168.1.112",
     "192.168.1.130",
     "192.168.1.120",
@@ -79,6 +79,8 @@ const nextConfig: NextConfig = {
       },
 
       // ---------- inpatient-service (구체 경로 먼저) ----------
+      // 컨트롤러가 전부 /api/inpatient/... 로 통일되어 있어서 이 규칙 하나로 bed/bedassignment/
+      // bedreservation/admission/nursingrecord/vitalsign 등 모든 하위 경로를 커버함
       {
         source: "/api/inpatient",
         destination: `${inpatientApiOrigin}/api/inpatient`,
@@ -86,46 +88,6 @@ const nextConfig: NextConfig = {
       {
         source: "/api/inpatient/:path*",
         destination: `${inpatientApiOrigin}/api/inpatient/:path*`,
-      },
-      {
-        source: "/api/bed",
-        destination: `${inpatientApiOrigin}/api/bed`,
-      },
-      {
-        source: "/api/bed/:path*",
-        destination: `${inpatientApiOrigin}/api/bed/:path*`,
-      },
-      {
-        source: "/api/bedassignment",
-        destination: `${inpatientApiOrigin}/api/bedassignment`,
-      },
-      {
-        source: "/api/bedassignment/:path*",
-        destination: `${inpatientApiOrigin}/api/bedassignment/:path*`,
-      },
-      {
-        source: "/api/bedreservation",
-        destination: `${inpatientApiOrigin}/api/bedreservation`,
-      },
-      {
-        source: "/api/bedreservation/:path*",
-        destination: `${inpatientApiOrigin}/api/bedreservation/:path*`,
-      },
-      {
-        source: "/api/admission",
-        destination: `${inpatientApiOrigin}/api/admission`,
-      },
-      {
-        source: "/api/admission/:path*",
-        destination: `${inpatientApiOrigin}/api/admission/:path*`,
-      },
-      {
-        source: "/api/vitalsign",
-        destination: `${inpatientApiOrigin}/api/vitalsign`,
-      },
-      {
-        source: "/api/vitalsign/:path*",
-        destination: `${inpatientApiOrigin}/api/vitalsign/:path*`,
       },
 
       // ---------- surgery-service (구체 경로 먼저) ----------

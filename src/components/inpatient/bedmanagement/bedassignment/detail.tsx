@@ -1,6 +1,8 @@
 "use client"
 
+import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchBedAssignmentDetailRequest, updateBedAssignmentRequest, selectBedAssignmentUpdateStatus } from "@/features/inpatient/bedmanagement/bedassignment/slice";
+import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice";
 import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
@@ -13,6 +15,26 @@ const BedAssignmentDetail=()=>{
     const bedAssignment=useSelector((state:RootState)=>state.inpatient.bedmanagement.detail);
     const updateStatus = useSelector((state: RootState) => state.inpatient.bedmanagement.updateStatus);
     const {loading,error}=useSelector((state:RootState)=>state.inpatient.bedmanagement.detailStatus);
+    const admission = useSelector((state: RootState) => state.inpatient.admissiondischarge.detail);
+    const patientDetail = useSelector((state: RootState) => state.patient.patientDetail);
+
+
+    useEffect(() => {
+    if (!bedAssignment?.admissionId) return;
+    dispatch(fetchAdmissionDetailRequest(bedAssignment.admissionId));
+    }, [bedAssignment?.admissionId]);
+
+    useEffect(() => {
+    if (!admission?.patientId) return;
+    dispatch(fetchPatientDetailRequest(admission.patientId));
+    }, [admission?.patientId]);
+
+
+    useEffect(() => {
+        if (!bedAssignment?.admissionId) return;
+        dispatch(fetchAdmissionDetailRequest(bedAssignment.admissionId));
+    }, [bedAssignment?.admissionId]);
+
     useEffect(()=>{
         if (!assignmentId) return;
         dispatch(fetchBedAssignmentDetailRequest(assignmentId));
@@ -37,6 +59,11 @@ const BedAssignmentDetail=()=>{
           
                
             <div>
+            <p>환자명:{
+                admission?.admissionId === bedAssignment.admissionId
+                ?(patientDetail?.patientId === admission.patientId?patientDetail.patientName:"Patient Not Found")
+                : "Admission Not Found"
+            }</p>
             <p>AssignmentId: {bedAssignment.assignmentId}</p>
             <p>BedId: {bedAssignment.bedId}</p>
             <p>AdmissionId: {bedAssignment.admissionId}</p>
