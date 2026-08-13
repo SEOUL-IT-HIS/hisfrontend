@@ -4,7 +4,7 @@
  * <p>백엔드 SurgeryDto 와 1:1 대응. 날짜 필드 구분에 주의한다(§14.2):
  * `_dt`(DATE)는 yyyy-MM-dd 문자열, `_at`(TIMESTAMP)은 ISO 일시 문자열이다.</p>
  */
-import type { CodeValue, YnFlag } from "@/features/surgery/types";
+import type { CodeValue, PageParams, YnFlag } from "@/features/surgery/types";
 
 /**
  * 수술 상태 코드 (SURGERY_STATUS_CD)
@@ -129,6 +129,22 @@ export type UpdateProgressRequest = {
 export type SurgeryListParams = {
   /** yyyy-MM-dd, 미지정 시 전체 조회 */
   date?: string;
+};
+
+/**
+ * 배정 대기 목록 검색·페이지 파라미터 (SL2-235 페이징 / SL2-236 검색·필터)
+ *
+ * <p>모두 선택이다. 아무것도 안 보내면 요청접수(00) 전체를 응급 우선으로 돌려준다.
+ * 빈 문자열은 백엔드가 "조건 없음"으로 처리하므로 검색창을 비워 보내도 안전하다.</p>
+ */
+export type SurgeryRequestSearchParams = PageParams & {
+  /** 'Y' 응급만 / 'N' 일반만 / 미지정 전체 */
+  emergencyYn?: YnFlag;
+  patientId?: string;
+  /** 희망일 시작 yyyy-MM-dd */
+  fromDt?: string;
+  /** 희망일 종료 yyyy-MM-dd */
+  toDt?: string;
 };
 
 // ---------------------------------------------------------------------------
