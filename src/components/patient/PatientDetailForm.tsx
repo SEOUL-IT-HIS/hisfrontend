@@ -318,17 +318,13 @@ export default function PatientDetailForm({
               <DetailItem
                 label="환자 구분"
                 value={
-                  patientDetail.tempPatientYn === "Y"
-                    ? "임시환자"
-                    : "정식환자"
+                  patientDetail.tempPatientYn === "Y" ? "임시환자" : "정식환자"
                 }
               />
 
               <DetailItem
                 label="사망 여부"
-                value={
-                  patientDetail.deathYn === "Y" ? "사망" : "사망정보 없음"
-                }
+                value={patientDetail.deathYn === "Y" ? "사망" : "사망정보 없음"}
               />
 
               {patientDetail.deathYn === "Y" ? (
@@ -462,9 +458,7 @@ export default function PatientDetailForm({
                   <DetailItem
                     label="사망 여부"
                     value={
-                      patientDetail.deathYn === "Y"
-                        ? "사망"
-                        : "사망정보 없음"
+                      patientDetail.deathYn === "Y" ? "사망" : "사망정보 없음"
                     }
                   />
 

@@ -65,6 +65,7 @@ const patientSlice = createSlice({
       state,
       _action: PayloadAction<PatientSearchCondition>,
     ) {
+      void _action;
       state.listLoading = true;
       state.listError = null;
     },
@@ -96,6 +97,7 @@ const patientSlice = createSlice({
     },
 
     updatePatientRequest(state, _action: PayloadAction<PatientUpdateRequest>) {
+      void _action;
       state.updateLoading = true;
       state.updateError = null;
       state.updateSuccess = false;
@@ -121,40 +123,39 @@ const patientSlice = createSlice({
     },
 
     updatePatientDeathRequest(
-  state,
-  _action: PayloadAction<PatientDeathUpdateRequest>,
-) {
-  state.deathUpdateLoading = true;
-  state.deathUpdateError = null;
-  state.deathUpdateSuccess = false;
-},
+      state,
+      _action: PayloadAction<PatientDeathUpdateRequest>,
+    ) {
+      void _action;
+      state.deathUpdateLoading = true;
+      state.deathUpdateError = null;
+      state.deathUpdateSuccess = false;
+    },
 
-updatePatientDeathSuccess(
-  state,
-  action: PayloadAction<PatientDetail>,
-) {
-  state.deathUpdateLoading = false;
-  state.deathUpdateError = null;
-  state.deathUpdateSuccess = true;
-  state.patientDetail = action.payload;
-},
+    updatePatientDeathSuccess(state, action: PayloadAction<PatientDetail>) {
+      state.deathUpdateLoading = false;
+      state.deathUpdateError = null;
+      state.deathUpdateSuccess = true;
+      state.patientDetail = action.payload;
+    },
 
-updatePatientDeathFailure(state, action: PayloadAction<string>) {
-  state.deathUpdateLoading = false;
-  state.deathUpdateError = action.payload;
-  state.deathUpdateSuccess = false;
-},
+    updatePatientDeathFailure(state, action: PayloadAction<string>) {
+      state.deathUpdateLoading = false;
+      state.deathUpdateError = action.payload;
+      state.deathUpdateSuccess = false;
+    },
 
-resetPatientDeathUpdate(state) {
-  state.deathUpdateLoading = false;
-  state.deathUpdateError = null;
-  state.deathUpdateSuccess = false;
-},
+    resetPatientDeathUpdate(state) {
+      state.deathUpdateLoading = false;
+      state.deathUpdateError = null;
+      state.deathUpdateSuccess = false;
+    },
 
     deactivatePatientRequest(
       state,
       _action: PayloadAction<PatientDeactivateRequest>,
     ) {
+      void _action;
       state.deactivateLoading = true;
       state.deactivateError = null;
       state.deactivateSuccess = false;

@@ -204,10 +204,7 @@ export default function* patientSaga() {
 
   yield takeLatest(updatePatientRequest.type, updatePatientSaga);
 
-  yield takeLatest(
-  updatePatientDeathRequest.type,
-  updatePatientDeathSaga,
-);
+  yield takeLatest(updatePatientDeathRequest.type, updatePatientDeathSaga);
 
   yield takeLatest(deactivatePatientRequest.type, deactivatePatientSaga);
 

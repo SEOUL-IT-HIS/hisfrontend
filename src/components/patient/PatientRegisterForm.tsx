@@ -472,29 +472,29 @@ export default function PatientRegisterForm() {
           </FormField>
 
           <FormField label="환자 구분">
-  <label className="flex items-center gap-2 text-sm text-slate-700">
-    <input
-      type="checkbox"
-      checked={form.tempPatientYn === "Y"}
-      onChange={(event) =>
-        updateForm(
-          "tempPatientYn",
-          event.target.checked ? "Y" : "N",
-        )
-      }
-      disabled={registerLoading}
-      className="h-4 w-4 rounded border-slate-300"
-    />
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.tempPatientYn === "Y"}
+                onChange={(event) =>
+                  updateForm("tempPatientYn", event.target.checked ? "Y" : "N")
+                }
+                disabled={registerLoading}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              임시환자로 등록
+            </label>
 
-    임시환자로 등록
-  </label>
+            <p className="mt-1 text-xs text-slate-500">
+              신원 확인 전 임시 등록이 필요한 환자에게 사용합니다.
+            </p>
+          </FormField>
 
-  <p className="mt-1 text-xs text-slate-500">
-    신원 확인 전 임시 등록이 필요한 환자에게 사용합니다.
-  </p>
-</FormField>
-
-<FormField label="환자상태관리코드" required htmlFor="statusCd"></FormField>
+          <FormField
+            label="환자상태관리코드"
+            required
+            htmlFor="statusCd"
+          ></FormField>
 
           <FormField label="환자상태관리코드" required htmlFor="statusCd">
             <Select

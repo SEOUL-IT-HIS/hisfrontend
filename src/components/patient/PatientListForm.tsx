@@ -60,34 +60,34 @@ const columns: DataTableColumn<PatientListItem>[] = [
     render: (patient) => patient.birthDate,
   },
 
-{
-  key: "tempPatientYn",
-  header: "환자 구분",
-  render: (patient) => (
-    <div className="flex flex-wrap gap-1">
-      {patient.tempPatientYn === "Y" ? (
-        <span className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
-          임시
-        </span>
-      ) : (
-        <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
-          정식
-        </span>
-      )}
+  {
+    key: "tempPatientYn",
+    header: "환자 구분",
+    render: (patient) => (
+      <div className="flex flex-wrap gap-1">
+        {patient.tempPatientYn === "Y" ? (
+          <span className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
+            임시
+          </span>
+        ) : (
+          <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+            정식
+          </span>
+        )}
 
-      {patient.deathYn === "Y" ? (
-        <span className="rounded bg-rose-100 px-2 py-1 text-xs font-medium text-rose-700">
-          사망
-        </span>
-      ) : null}
-    </div>
-  ),
-},
-{
-  key: "statusCd",
-  header: "환자관리상태코드",
-  render: (patient) => patient.statusCd,
-},
+        {patient.deathYn === "Y" ? (
+          <span className="rounded bg-rose-100 px-2 py-1 text-xs font-medium text-rose-700">
+            사망
+          </span>
+        ) : null}
+      </div>
+    ),
+  },
+  {
+    key: "statusCd",
+    header: "환자관리상태코드",
+    render: (patient) => patient.statusCd,
+  },
   {
     key: "createdAt",
     header: "등록일시",
