@@ -30,7 +30,7 @@ export type BillingDetail = {
   tel: string;
   addr: string;
   birthDate: string;
-};
+}
 
 /** 진료비 입원 상세조회 */
 export type BillingDetailAdmission = {

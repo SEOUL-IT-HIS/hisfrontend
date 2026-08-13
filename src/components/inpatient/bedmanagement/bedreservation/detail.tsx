@@ -1,7 +1,8 @@
 "use client"
 
 import { fetchBedReservationDetailRequest,deleteBedReservationRequest } from "@/features/inpatient/bedmanagement/bedreservation/slice";
-
+import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice";
+import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
 import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -17,7 +18,11 @@ const BedReservationDetail=()=>{
     const scheduleUpdateStatus = useSelector((state: RootState) => state.inpatient.bedreservation.scheduleUpdateStatus);
     const [scheduleForm, setScheduleForm] = useState({ reserveAt: "", expectedAdmissionAt: "" });
     const {loading,error}=useSelector((state:RootState)=>state.inpatient.bedreservation.detailStatus);
+    const patientDetail = useSelector((state: RootState) => state.patient.patientDetail);
+    const admission = useSelector((state: RootState) => state.inpatient.admissiondischarge.detail);
+
     
+
     useEffect(() => {  
         if (scheduleUpdateStatus.success && bedReservationId) {
             dispatch(fetchBedReservationDetailRequest(bedReservationId));
@@ -29,6 +34,11 @@ const BedReservationDetail=()=>{
         if (!bedReservationId) return;
         dispatch(fetchBedReservationDetailRequest(bedReservationId));
     },[bedReservationId]);
+
+    useEffect(() => {
+        if (!bedReservation?.patientId) return;
+        dispatch(fetchPatientDetailRequest(bedReservation.patientId));
+    }, [bedReservation?.patientId]);
 
     useEffect(() => {
         if (updateStatus.success && bedReservationId) {
@@ -67,6 +77,9 @@ const BedReservationDetail=()=>{
             { error && <p>{error}</p> }
             { !loading && bedReservation &&         
             <div>
+            <p>환자명: {bedReservation.patientId
+                ? (patientDetail?.patientId === bedReservation.patientId ? patientDetail.patientName : "조회중...")
+                : "없음"}</p>
             <p>BedReservationId: {bedReservation.bedReservationId}</p>
             <p>BedId: {bedReservation.bedId}</p>
             <p>PatientId: {bedReservation.patientId}</p>

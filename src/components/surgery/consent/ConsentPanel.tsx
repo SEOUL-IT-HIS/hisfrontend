@@ -3,6 +3,16 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import {
+  Alert,
+  DataTable,
+  FormActions,
+  FormField,
+  Input,
+  Panel,
+  Select,
+  type DataTableColumn,
+} from "@/components/common";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
@@ -46,9 +56,6 @@ type Props = { surgeryId: string };
  */
 const SURGERY_CONSENT_CODES = ["01", "02", "03"];
 
-const inputClass =
-  "h-10 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50";
-
 type FieldErrors = {
   consentTypeCd?: string;
   signedBy?: string;
@@ -84,6 +91,27 @@ export default function ConsentPanel({ surgeryId }: Props) {
     (option) => !recordedTypes.includes(option.value),
   );
 
+  const consentColumns: DataTableColumn<(typeof consents)[number]>[] = [
+    {
+      key: "consentTypeCd",
+      header: "동의 종류",
+      // 코드값 그대로가 아니라 이름으로 보여준다. 아직 못 받았거나 목록에 없는
+      //   코드면 값을 그대로 두어 빈칸이 되지 않게 한다
+      render: (consent) =>
+        codeOptions.find((o) => o.value === consent.consentTypeCd)?.label ??
+        consent.consentTypeCd,
+    },
+    { key: "signedBy", header: "서명자", render: (c) => c.signedBy },
+    { key: "signedDt", header: "서명일", render: (c) => c.signedDt },
+  ];
+
+  function reset() {
+    setConsentTypeCd("");
+    setSignedBy("");
+    setSignedDt("");
+    setErrors({});
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -99,7 +127,7 @@ export default function ConsentPanel({ surgeryId }: Props) {
       createConsentRequest(surgeryId, {
         consentTypeCd,
         signedBy: signedBy.trim(),
-        // <input type="date"> 값이 이미 yyyy-MM-dd 라 그대로 보낸다(§14.2 `_dt`)
+        // Input type="date" 값이 이미 yyyy-MM-dd 라 그대로 보낸다(§14.2 `_dt`)
         signedDt,
       }),
     );
@@ -111,40 +139,14 @@ export default function ConsentPanel({ surgeryId }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {/* ----- 목록 (SL2-54) ----- */}
-      {loading ? (
-        <p className="text-sm text-slate-500">불러오는 중입니다…</p>
-      ) : consents.length === 0 ? (
-        <p className="text-sm text-slate-500">기록된 동의서가 없습니다.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-slate-600">
-              <tr>
-                <th className="px-3 py-2">동의 종류</th>
-                <th className="px-3 py-2">서명자</th>
-                <th className="px-3 py-2">서명일</th>
-              </tr>
-            </thead>
-            <tbody>
-              {consents.map((consent) => (
-                <tr
-                  key={consent.consentId}
-                  className="border-t border-slate-100"
-                >
-                  {/* 코드값 그대로가 아니라 이름으로 보여준다. 아직 못 받았거나
-                      목록에 없는 코드면 값을 그대로 두어 빈칸이 되지 않게 한다 */}
-                  <td className="px-3 py-2">
-                    {codeOptions.find((o) => o.value === consent.consentTypeCd)
-                      ?.label ?? consent.consentTypeCd}
-                  </td>
-                  <td className="px-3 py-2">{consent.signedBy}</td>
-                  <td className="px-3 py-2">{consent.signedDt}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable
+        columns={consentColumns}
+        rows={consents}
+        rowKey={(consent) => consent.consentId}
+        loading={loading}
+        emptyMessage="기록된 동의서가 없습니다."
+        minWidthClassName="min-w-[480px]"
+      />
 
       {/* ----- 등록 (SL2-53) ----- */}
       {availableTypes.length === 0 ? (
@@ -152,82 +154,60 @@ export default function ConsentPanel({ surgeryId }: Props) {
           세 종류의 동의서가 모두 기록되었습니다.
         </p>
       ) : (
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-4 rounded-lg border border-slate-200 p-4"
-        >
-          <p className="text-sm font-medium text-slate-700">동의 확인 기록</p>
+        <Panel className="p-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <p className="text-sm font-medium text-slate-700">동의 확인 기록</p>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="consentTypeCd" className="text-sm text-slate-700">
-              동의 종류
-            </label>
-            <select
-              id="consentTypeCd"
-              className={inputClass}
-              value={consentTypeCd}
-              onChange={(e) => setConsentTypeCd(e.target.value)}
-              disabled={saving}
-            >
-              <option value="">선택</option>
-              {availableTypes.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {errors.consentTypeCd && (
-              <p className="text-xs text-red-600">{errors.consentTypeCd}</p>
-            )}
-          </div>
+            <FormField label="동의 종류" required htmlFor="consentTypeCd">
+              <Select
+                id="consentTypeCd"
+                placeholder="선택"
+                options={availableTypes}
+                value={consentTypeCd}
+                onChange={(e) => setConsentTypeCd(e.target.value)}
+                disabled={saving}
+              />
+              {errors.consentTypeCd ? (
+                <span className="text-xs text-rose-600">{errors.consentTypeCd}</span>
+              ) : null}
+            </FormField>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="signedBy" className="text-sm text-slate-700">
-              서명자 성명
-            </label>
-            <input
-              id="signedBy"
-              className={inputClass}
-              value={signedBy}
-              onChange={(e) => setSignedBy(e.target.value)}
-              disabled={saving}
+            <FormField label="서명자 성명" required htmlFor="signedBy">
+              <Input
+                id="signedBy"
+                value={signedBy}
+                onChange={(e) => setSignedBy(e.target.value)}
+                disabled={saving}
+              />
+              {errors.signedBy ? (
+                <span className="text-xs text-rose-600">{errors.signedBy}</span>
+              ) : null}
+            </FormField>
+
+            <FormField label="서명일" required htmlFor="signedDt">
+              <Input
+                id="signedDt"
+                type="date"
+                value={signedDt}
+                onChange={(e) => setSignedDt(e.target.value)}
+                disabled={saving}
+              />
+              {errors.signedDt ? (
+                <span className="text-xs text-rose-600">{errors.signedDt}</span>
+              ) : null}
+            </FormField>
+
+            {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
+
+            <FormActions
+              onCancel={reset}
+              cancelLabel="초기화"
+              submitLabel="동의 확인 기록"
+              loading={saving}
+              loadingLabel="기록 중…"
             />
-            {errors.signedBy && (
-              <p className="text-xs text-red-600">{errors.signedBy}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label htmlFor="signedDt" className="text-sm text-slate-700">
-              서명일
-            </label>
-            <input
-              id="signedDt"
-              type="date"
-              className={inputClass}
-              value={signedDt}
-              onChange={(e) => setSignedDt(e.target.value)}
-              disabled={saving}
-            />
-            {errors.signedDt && (
-              <p className="text-xs text-red-600">{errors.signedDt}</p>
-            )}
-          </div>
-
-          {error && (
-            <p className="text-sm text-red-600">
-              {resolveSurgeryMessage(error)}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={saving}
-            className="h-10 rounded-lg bg-sky-500 px-4 text-white disabled:bg-slate-300"
-          >
-            {saving ? "기록 중…" : "동의 확인 기록"}
-          </button>
-        </form>
+          </form>
+        </Panel>
       )}
     </div>
   );

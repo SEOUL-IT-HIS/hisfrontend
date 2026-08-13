@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import {
+  Alert,
+  DataTable,
+  Pagination,
+  Select,
+  type DataTableColumn,
+} from "@/components/common";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
+import type { SurgicalEquipment } from "@/features/surgery/room/types";
 import {
   changeEquipmentInoutRequest,
   changeEquipmentStatusRequest,
@@ -28,10 +36,12 @@ import {
  *
  * <p>"폐기" 코드는 아직 OR_EQUIP_STATUS_CD 에 없다. admin 에 추가되면 이 화면은 손대지 않아도
  * 선택지에 자동으로 나타난다 — 하드코딩을 걷어낸 이득이 여기서 드러난다.</p>
+ *
+ * <p>표·셀렉트·페이지네이션은 components/common 을 쓴다(§12.1).</p>
  */
 
-const selectClass =
-  "h-8 rounded-md border border-slate-200 px-2 text-xs outline-none focus:border-sky-400 disabled:bg-slate-50";
+/** 출고(01) 상태에서는 장비 상태를 바꿀 수 없다 — 수술실에 나가 있는 장비다 */
+const STATUS_LOCKED_INOUT = "01";
 
 export default function EquipmentList() {
   const dispatch = useDispatch<AppDispatch>();
@@ -40,118 +50,118 @@ export default function EquipmentList() {
   const saving = useSelector(selectRoomSaving);
   const error = useSelector(selectRoomError);
 
+  // 공통 Pagination 은 1-base, 백엔드 Pageable 은 0-base 다.
+  const [page, setPage] = useState(1);
+
   const { options: statusOptions } = useCommonCodeOptions("OR_EQUIP_STATUS_CD");
   const { options: inoutOptions } = useCommonCodeOptions("EQUIP_INOUT_CD");
 
   useEffect(() => {
-    dispatch(fetchEquipmentsRequest());
-  }, [dispatch]);
-
-  if (loading) {
-    return <p className="p-4 text-sm text-slate-500">불러오는 중입니다…</p>;
-  }
-
-  if (error) {
-    return (
-      <p className="p-4 text-sm text-red-600">{resolveSurgeryMessage(error)}</p>
-    );
-  }
+    dispatch(fetchEquipmentsRequest({ page: page - 1 }));
+  }, [dispatch, page]);
 
   const items = equipments?.items ?? [];
 
-  if (items.length === 0) {
-    return <p className="p-4 text-sm text-slate-500">등록된 장비가 없습니다.</p>;
-  }
+  const columns: DataTableColumn<SurgicalEquipment>[] = [
+    {
+      key: "equipmentId",
+      header: "장비 ID",
+      render: (equipment) => equipment.equipmentId,
+    },
+    {
+      key: "equipmentName",
+      header: "장비명",
+      render: (equipment) => equipment.equipmentName,
+    },
+    {
+      key: "roomCode",
+      header: "소속 수술실",
+      render: (equipment) => equipment.roomCode,
+    },
+    {
+      key: "statusCd",
+      header: "상태",
+      render: (equipment) => (
+        <Select
+          className="h-8 text-xs"
+          placeholder="미지정"
+          options={statusOptions}
+          value={equipment.statusCd ?? ""}
+          disabled={saving || equipment.inoutCd === STATUS_LOCKED_INOUT}
+          onChange={(e) => {
+            if (!e.target.value) {
+              return;
+            }
+            dispatch(
+              changeEquipmentStatusRequest(equipment.equipmentId, {
+                statusCd: e.target.value,
+              }),
+            );
+          }}
+        />
+      ),
+    },
+    {
+      key: "inoutCd",
+      header: "출고/반입",
+      render: (equipment) => (
+        <Select
+          className="h-8 text-xs"
+          placeholder="미지정"
+          options={inoutOptions}
+          value={equipment.inoutCd ?? ""}
+          disabled={saving}
+          onChange={(e) => {
+            if (!e.target.value) {
+              return;
+            }
+            dispatch(
+              changeEquipmentInoutRequest(equipment.equipmentId, {
+                inoutCd: e.target.value,
+              }),
+            );
+          }}
+        />
+      ),
+    },
+    {
+      key: "actions",
+      header: "수정",
+      render: (equipment) => (
+        <Link
+          href={`/surgery/equipment/update/${equipment.equipmentId}`}
+          className="text-sky-600 underline"
+        >
+          수정
+        </Link>
+      ),
+    },
+  ];
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-slate-50 text-left text-slate-600">
-          <tr>
-            <th className="px-3 py-2">장비 ID</th>
-            <th className="px-3 py-2">장비명</th>
-            <th className="px-3 py-2">소속 수술실</th>
-            <th className="px-3 py-2">상태</th>
-            <th className="px-3 py-2">출고/반입</th>
-            <th className="px-3 py-2">수정</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((equipment) => (
-            <tr
-              key={equipment.equipmentId}
-              className="border-t border-slate-100"
-            >
-              <td className="px-3 py-2">{equipment.equipmentId}</td>
-              <td className="px-3 py-2">{equipment.equipmentName}</td>
-              <td className="px-3 py-2">{equipment.roomCode}</td>
-              <td className="px-3 py-2">
-                <select
-                  className={selectClass}
-                  value={equipment.statusCd ?? ""}
-                  disabled={saving||equipment.inoutCd === "01"} // 출고 상태에서는 상태 변경 불가
-                  onChange={(e) => {
-                    if (!e.target.value) return;
-                    dispatch(
-                      changeEquipmentStatusRequest(equipment.equipmentId, {
-                        statusCd: e.target.value,
-                      }),
-                    )
-                  }}
-                >
-                  <option value="" disabled>
-                    미지정
-                  </option>
-                  {statusOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td className="px-3 py-2">
-                <select
-                  className={selectClass}
-                  value={equipment.inoutCd ?? ""}
-                  disabled={saving}
-                  onChange={(e) => {
-                    if (!e.target.value) return;  // 미지정은 전송하지 않는다
-                    dispatch(
-                      changeEquipmentInoutRequest(equipment.equipmentId, {
-                        inoutCd: e.target.value,
-                      }),
-                    )
-                  }}
-                >
-                  <option value="" disabled>
-                    미지정
-                  </option>
-                  {inoutOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td className="px-3 py-2">
-                <Link
-                  href={`/surgery/equipment/update/${equipment.equipmentId}`}
-                  className="text-sky-600 underline"
-                >
-                  수정
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="flex flex-col gap-3">
+      {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
-      {equipments && (
-        <p className="px-3 py-2 text-xs text-slate-500">
-          전체 {equipments.totalElements}건 / {equipments.page + 1}·
-          {equipments.totalPages}페이지
-        </p>
-      )}
+      <DataTable
+        columns={columns}
+        rows={items}
+        rowKey={(equipment) => equipment.equipmentId}
+        loading={loading}
+        emptyMessage="등록된 장비가 없습니다."
+      />
+
+      {equipments ? (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-slate-500">
+            전체 {equipments.totalElements}건
+          </p>
+          <Pagination
+            page={page}
+            totalPages={equipments.totalPages}
+            onPageChange={setPage}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

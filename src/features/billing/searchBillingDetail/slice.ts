@@ -110,6 +110,13 @@ const billingDetailSlice = createSlice({
       state.visitDetail = null;
       state.visitDetailStatus = { loading: false, error: action.payload };
     },
+    updateBillingStatusRequest(state, _action: PayloadAction<string>){
+      state.loading=true; state.error="";},
+    updateBillingStatusSuccess(state){
+      state.loading=false; state.error="";},
+    updateBillingStatusFailure(state, action: PayloadAction<string>){
+      state.loading=false; state.error=action.payload
+    }
 
 
 
@@ -128,7 +135,10 @@ export const {
   admissionBillingDetailFailure,
   visitBillingDetailRequest,
   visitBillingDetailSuccess,
-  visitBillingDetailFailure
+  visitBillingDetailFailure,
+  updateBillingStatusRequest,
+  updateBillingStatusSuccess,
+  updateBillingStatusFailure
 } = billingDetailSlice.actions;
 
 export default billingDetailSlice.reducer;
