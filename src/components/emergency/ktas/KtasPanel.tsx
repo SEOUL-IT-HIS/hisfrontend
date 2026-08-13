@@ -8,14 +8,16 @@ import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createKtasRequest,
   fetchKtasHistoryRequest,
+  fetchKtasLevelCodesRequest,
   reassessKtasRequest,
   selectKtasError,
   selectKtasItems,
+  selectKtasLevelCodes,
   selectKtasLoading,
   selectKtasSubmitError,
   selectKtasSubmitting,
 } from "@/features/emergency/ktas/slice";
-import { KTAS_LEVEL_OPTIONS } from "@/features/emergency/ktas/types";
+import { KTAS_LEVEL_FALLBACK_OPTIONS } from "@/features/emergency/ktas/types";
 import { formatDateTime } from "@/features/emergency/utils";
 
 type KtasPanelProps = {
@@ -37,6 +39,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
   const error = useSelector(selectKtasError);
   const submitting = useSelector(selectKtasSubmitting);
   const submitError = useSelector(selectKtasSubmitError);
+  const levelCodes = useSelector(selectKtasLevelCodes);
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
@@ -46,6 +49,20 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
       dispatch(fetchKtasHistoryRequest(receptionNo));
     }
   }, [dispatch, receptionNo]);
+
+  // admin commonCodes(KTAS_LEVEL)는 접수번호와 무관하게 한 번만 받아오면 된다.
+  useEffect(() => {
+    dispatch(fetchKtasLevelCodesRequest());
+  }, [dispatch]);
+
+  // emergency-service 캐시에서 받아온 값이 있으면 그걸 쓰고, 없으면(admin 미연동/실패) 폴백 상수를 쓴다.
+  const levelOptions =
+    levelCodes.length > 0
+      ? levelCodes
+          .filter((code) => code.useYn !== "N")
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((code) => ({ value: code.codeValue, label: code.codeName }))
+      : [...KTAS_LEVEL_FALLBACK_OPTIONS];
 
   // 등록/재평가 성공(items 길이 증가) 시 입력값 초기화
   if (items.length > lastCount) {
@@ -139,7 +156,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
                 name="ktasScore"
                 value={form.ktasScore}
                 onChange={handleChange}
-                options={[...KTAS_LEVEL_OPTIONS]}
+                options={levelOptions}
                 placeholder="선택"
                 disabled={submitting}
               />

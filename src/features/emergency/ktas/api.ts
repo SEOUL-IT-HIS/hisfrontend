@@ -1,8 +1,24 @@
 import apiClient from "@/lib/axios";
 import type { ApiResponse } from "@/features/emergency/types";
-import type { KtasCreateRequest, KtasUpdateRequest, TriageAssessment } from "@/features/emergency/ktas/types";
+import type {
+  KtasCreateRequest,
+  KtasLevelCode,
+  KtasUpdateRequest,
+  TriageAssessment,
+} from "@/features/emergency/ktas/types";
 
 const KTAS_PATH = "/api/emergency/triage/ktas";
+const KTAS_LEVEL_CODE_PATH = "/api/emergency/codes/common/KTAS_LEVEL";
+
+/**
+ * KTAS 등급 공통코드를 조회한다.
+ * emergency-service 가 서버 기동 시 admin-service 에서 미리 캐싱해둔 값을 내려준다
+ * (admin 을 매 요청마다 직접 호출하지 않음). UD2-51.
+ */
+export async function getKtasLevelCodes(): Promise<KtasLevelCode[]> {
+  const { data } = await apiClient.get<ApiResponse<KtasLevelCode[]>>(KTAS_LEVEL_CODE_PATH);
+  return data.data;
+}
 
 /** 접수건의 KTAS 분류/재평가 이력을 조회한다. UC-TRI-02/03 / Jira UD2-9, UD2-43 */
 export async function getKtasHistory(receptionNo: string): Promise<TriageAssessment[]> {
