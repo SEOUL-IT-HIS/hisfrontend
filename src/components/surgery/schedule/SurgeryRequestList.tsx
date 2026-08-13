@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
@@ -8,9 +8,14 @@ import {
   Alert,
   Button,
   DataTable,
+  FormActions,
+  FormField,
+  Modal,
+  Select,
   StatusBadge,
   type DataTableColumn,
 } from "@/components/common";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import type { Surgery } from "@/features/surgery/schedule/types";
 import {
@@ -36,6 +41,14 @@ import {
  *
  * <p>표·배지·버튼은 components/common 을 쓴다(§12.1). 응급 구분은 직접 만든 뱃지 대신
  * StatusBadge 를 쓴다 — 색과 모양이 다른 서비스 목록과 같아진다.</p>
+ *
+ * <p><b>반려 사유(SL2-227)</b> — 버튼을 누르면 바로 반려하지 않고 사유를 고르는 창을 띄운다.
+ * 되돌릴 수 없는 조작이라 한 번 더 확인받는 편이 낫고, 사유를 남겨야 나중에 "왜 반려됐나"에
+ * 답할 수 있다. 사유는 이력에 함께 저장된다(SL2-233).</p>
+ *
+ * <p>사유 코드 그룹(SURGERY_CANCEL_CD)이 admin 에 아직 없으면 선택지가 비어 보인다.
+ * 그때도 사유 없이 반려할 수 있게 열어둔다 — 코드 등록 전이라고 업무를 막을 수는 없다.
+ * 백엔드도 같은 판단으로 그룹이 없으면 검증을 건너뛴다.</p>
  */
 export default function SurgeryRequestList() {
   const dispatch = useDispatch<AppDispatch>();
@@ -44,9 +57,34 @@ export default function SurgeryRequestList() {
   const saving = useSelector(selectScheduleSaving);
   const error = useSelector(selectScheduleError);
 
+  // 반려 대상과 사유. 대상이 있으면 창이 열린 상태다.
+  const [rejectTarget, setRejectTarget] = useState<Surgery | null>(null);
+  const [reasonCd, setReasonCd] = useState("");
+
+  const { options: reasonOptions } = useCommonCodeOptions("SURGERY_CANCEL_CD");
+
   useEffect(() => {
     dispatch(fetchSurgeryRequestsRequest());
   }, [dispatch]);
+
+  function closeReject() {
+    setRejectTarget(null);
+    setReasonCd("");
+  }
+
+  function confirmReject() {
+    if (!rejectTarget) {
+      return;
+    }
+    dispatch(
+      cancelSurgeryRequest(
+        rejectTarget.surgeryId,
+        // 빈 값이면 아예 보내지 않는다 — 백엔드가 본문 없는 호출을 허용한다
+        reasonCd ? { cancelReasonCd: reasonCd } : undefined,
+      ),
+    );
+    closeReject();
+  }
 
   const columns: DataTableColumn<Surgery>[] = [
     {
@@ -90,10 +128,7 @@ export default function SurgeryRequestList() {
             variant="ghost"
             disabled={saving}
             className="h-8 px-2"
-            onClick={() => {
-              // 사유 코드는 SURGERY_CANCEL_CD 등록 후 선택 UI 로 교체한다
-              dispatch(cancelSurgeryRequest(s.surgeryId));
-            }}
+            onClick={() => setRejectTarget(s)}
           >
             반려
           </Button>
@@ -114,6 +149,53 @@ export default function SurgeryRequestList() {
         emptyMessage="배정 대기 중인 요청이 없습니다."
         minWidthClassName="min-w-[920px]"
       />
+
+      <Modal
+        open={rejectTarget !== null}
+        title="수술 요청 반려"
+        onClose={closeReject}
+        maxWidthClassName="max-w-md"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            confirmReject();
+          }}
+          className="flex flex-col gap-4"
+        >
+          <p className="text-sm text-slate-700">
+            {rejectTarget?.surgeryName ?? "수술명 미입력"} (환자{" "}
+            {rejectTarget?.patientId}) 요청을 반려합니다.
+          </p>
+
+          <FormField
+            label="반려 사유"
+            htmlFor="cancelReasonCd"
+            hint={
+              reasonOptions.length === 0
+                ? "사유 코드가 아직 등록되지 않아 사유 없이 반려됩니다."
+                : "선택하지 않으면 사유 없이 반려됩니다."
+            }
+          >
+            <Select
+              id="cancelReasonCd"
+              placeholder="사유 선택 안 함"
+              options={reasonOptions}
+              value={reasonCd}
+              onChange={(e) => setReasonCd(e.target.value)}
+              disabled={saving || reasonOptions.length === 0}
+            />
+          </FormField>
+
+          <FormActions
+            onCancel={closeReject}
+            cancelLabel="닫기"
+            submitLabel="반려"
+            loading={saving}
+            loadingLabel="반려 중…"
+          />
+        </form>
+      </Modal>
     </div>
   );
 }
