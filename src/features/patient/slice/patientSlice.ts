@@ -57,7 +57,7 @@ const patientSlice = createSlice({
 
     fetchPatientDetailRequest(
   state,
-  action: PayloadAction<number>,
+  action: PayloadAction<string>,
 ) {
   void action;
 

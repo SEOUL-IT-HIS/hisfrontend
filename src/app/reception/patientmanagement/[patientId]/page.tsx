@@ -10,10 +10,9 @@ type PatientDetailPageProps = {
 export default async function PatientDetailPage({
   params,
 }: PatientDetailPageProps) {
-  const { patientId: patientIdParam } = await params;
-  const patientId = Number(patientIdParam);
+  const { patientId } = await params;
 
-  if (!Number.isSafeInteger(patientId) || patientId <= 0) {
+  if (!patientId) {
     notFound();
   }
 
