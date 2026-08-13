@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import { Alert, Button, Panel } from "@/components/common";
 import {
   fetchLabReceptionByNoRequest,
   selectSelectedLabReception,
@@ -32,8 +33,7 @@ export default function LabReceptionDetail() {
   }, [dispatch, receptionNo]);
 
   if (loading) return <p className="text-sm text-slate-400">불러오는 중…</p>;
-  if (error)
-    return <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>;
+  if (error) return <Alert>{error}</Alert>;
   if (!reception) return <p className="text-sm text-slate-400">접수 정보가 없습니다.</p>;
 
   const rows: Array<[string, string]> = [
@@ -48,31 +48,31 @@ export default function LabReceptionDetail() {
 
   return (
     <div className="space-y-4">
-      <dl className="divide-y divide-slate-100 rounded-lg border border-slate-100">
-        {rows.map(([label, value]) => (
-          <div key={label} className="flex px-4 py-2.5 text-sm">
-            <dt className="w-32 shrink-0 text-slate-400">{label}</dt>
-            <dd className="text-slate-700">{value}</dd>
-          </div>
-        ))}
-      </dl>
+      <Panel>
+        <dl className="divide-y divide-slate-100">
+          {rows.map(([label, value]) => (
+            <div key={label} className="flex px-4 py-2.5 text-sm">
+              <dt className="w-32 shrink-0 text-slate-400">{label}</dt>
+              <dd className="text-slate-700">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </Panel>
       <div className="flex justify-end gap-2">
         <Link
           href="/labimaging/laborder/receptions"
-          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+          className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
         >
           목록
         </Link>
-        <button
-          type="button"
+        <Button
           onClick={() => {
             dispatch(selectLabReception(reception));
             router.push(`/labimaging/labschedule/register/${reception.labReceptionId}`);
           }}
-          className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-600"
         >
           일정 등록
-        </button>
+        </Button>
       </div>
     </div>
   );

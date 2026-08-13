@@ -4,7 +4,15 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import {
+  Alert,
+  Button,
+  DataTable,
+  StatusBadge,
+  type DataTableColumn,
+} from "@/components/common";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
+import type { Surgery } from "@/features/surgery/schedule/types";
 import {
   cancelSurgeryRequest,
   fetchSurgeryRequestsRequest,
@@ -25,6 +33,9 @@ import {
  * 저장하지 않으며(§14.1), 표시하려면 각 서비스 API 를 호출해야 한다(§21.9).</p>
  *
  * <p>여기서의 취소는 업무상 '반려'다. 행을 지우지 않고 취소(04) 상태로 전이시킨다(§21.6).</p>
+ *
+ * <p>표·배지·버튼은 components/common 을 쓴다(§12.1). 응급 구분은 직접 만든 뱃지 대신
+ * StatusBadge 를 쓴다 — 색과 모양이 다른 서비스 목록과 같아진다.</p>
  */
 export default function SurgeryRequestList() {
   const dispatch = useDispatch<AppDispatch>();
@@ -37,79 +48,72 @@ export default function SurgeryRequestList() {
     dispatch(fetchSurgeryRequestsRequest());
   }, [dispatch]);
 
-  if (loading) {
-    return <p className="p-4 text-sm text-slate-500">불러오는 중입니다…</p>;
-  }
-
-  if (error) {
-    return (
-      <p className="p-4 text-sm text-red-600">{resolveSurgeryMessage(error)}</p>
-    );
-  }
-
-  if (requests.length === 0) {
-    return (
-      <p className="p-4 text-sm text-slate-500">배정 대기 중인 요청이 없습니다.</p>
-    );
-  }
+  const columns: DataTableColumn<Surgery>[] = [
+    {
+      key: "emergencyYn",
+      header: "구분",
+      render: (s) => (
+        <StatusBadge
+          value={s.emergencyYn}
+          activeLabel="응급"
+          inactiveLabel="일반"
+        />
+      ),
+    },
+    { key: "surgeryDt", header: "희망 수술일", render: (s) => s.surgeryDt },
+    { key: "surgeryName", header: "수술명", render: (s) => s.surgeryName ?? "-" },
+    { key: "patientId", header: "환자ID", render: (s) => s.patientId },
+    { key: "surgeonId", header: "집도의ID", render: (s) => s.surgeonId },
+    {
+      key: "roomCode",
+      header: "희망 수술실",
+      // 진료가 희망 수술실을 지정했더라도 확정은 배정 단계에서 한다
+      render: (s) => s.roomCode ?? "-",
+    },
+    {
+      key: "createdAt",
+      header: "요청일시",
+      render: (s) => s.createdAt?.slice(0, 10) ?? "-",
+    },
+    {
+      key: "actions",
+      header: "처리",
+      render: (s) => (
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/surgery/schedule/assign/${s.surgeryId}`}
+            className="text-sky-600 underline"
+          >
+            배정
+          </Link>
+          <Button
+            variant="ghost"
+            disabled={saving}
+            className="h-8 px-2"
+            onClick={() => {
+              // 사유 코드는 SURGERY_CANCEL_CD 등록 후 선택 UI 로 교체한다
+              dispatch(cancelSurgeryRequest(s.surgeryId));
+            }}
+          >
+            반려
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-slate-50 text-left text-slate-600">
-          <tr>
-            <th className="px-3 py-2">구분</th>
-            <th className="px-3 py-2">희망 수술일</th>
-            <th className="px-3 py-2">수술명</th>
-            <th className="px-3 py-2">환자ID</th>
-            <th className="px-3 py-2">집도의ID</th>
-            <th className="px-3 py-2">희망 수술실</th>
-            <th className="px-3 py-2">요청일시</th>
-            <th className="px-3 py-2">처리</th>
-          </tr>
-        </thead>
-        <tbody>
-          {requests.map((surgery) => (
-            <tr key={surgery.surgeryId} className="border-t border-slate-100">
-              <td className="px-3 py-2">
-                {surgery.emergencyYn === "Y" ? (
-                  <span className="rounded bg-red-50 px-2 py-0.5 text-xs text-red-600">
-                    응급
-                  </span>
-                ) : (
-                  <span className="text-xs text-slate-400">일반</span>
-                )}
-              </td>
-              <td className="px-3 py-2">{surgery.surgeryDt}</td>
-              <td className="px-3 py-2">{surgery.surgeryName ?? "-"}</td>
-              <td className="px-3 py-2">{surgery.patientId}</td>
-              <td className="px-3 py-2">{surgery.surgeonId}</td>
-              {/* 진료가 희망 수술실을 지정했더라도 확정은 배정 단계에서 한다 */}
-              <td className="px-3 py-2">{surgery.roomCode ?? "-"}</td>
-              <td className="px-3 py-2">{surgery.createdAt?.slice(0, 10)}</td>
-              <td className="flex gap-3 px-3 py-2">
-                <Link
-                  href={`/surgery/schedule/assign/${surgery.surgeryId}`}
-                  className="text-sky-600 underline"
-                >
-                  배정
-                </Link>
-                <button
-                  type="button"
-                  disabled={saving}
-                  className="text-slate-500 underline disabled:text-slate-300"
-                  onClick={() => {
-                    // 사유 코드는 SURGERY_CANCEL_CD 등록 후 선택 UI 로 교체한다
-                    dispatch(cancelSurgeryRequest(surgery.surgeryId));
-                  }}
-                >
-                  반려
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="flex flex-col gap-3">
+      {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
+
+      <DataTable
+        columns={columns}
+        rows={requests}
+        rowKey={(s) => s.surgeryId}
+        loading={loading}
+        emptyMessage="배정 대기 중인 요청이 없습니다."
+        minWidthClassName="min-w-[920px]"
+      />
     </div>
   );
 }

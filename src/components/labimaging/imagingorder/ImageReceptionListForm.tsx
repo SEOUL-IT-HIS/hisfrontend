@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import { Alert, Button, DataTable } from "@/components/common";
+import type { DataTableColumn } from "@/components/common";
 import {
   fetchImageReceptionsRequest,
   selectImageReceptions,
@@ -16,6 +18,7 @@ import type { ImageReceptionSummary } from "@/features/labimaging/imagingorder/t
 
 /**
  * 영상 접수 목록(미일정) — 일정 등록 대상 선택 화면. (laborder 목록과 동일 패턴)
+ * - 표는 전역 공통 DataTable 을 쓴다. 로딩/빈 목록 표시는 DataTable 이 담당한다.
  */
 export default function ImageReceptionListForm() {
   const dispatch = useDispatch<AppDispatch>();
@@ -33,80 +36,60 @@ export default function ImageReceptionListForm() {
     router.push(`/labimaging/imagingschedule/register/${reception.imageReceptionId}`);
   }
 
+  const columns: DataTableColumn<ImageReceptionSummary>[] = [
+    {
+      key: "receptionNo",
+      header: "접수번호",
+      render: (r) => <span className="font-semibold text-slate-700">{r.receptionNo}</span>,
+    },
+    { key: "imageOrderNo", header: "오더번호", render: (r) => r.imageOrderNo },
+    { key: "patientNo", header: "환자번호", render: (r) => r.patientNo },
+    { key: "orderStatusCode", header: "오더상태", render: (r) => r.orderStatusCode },
+    {
+      key: "receptionStatusCode",
+      header: "접수상태",
+      render: (r) => r.receptionStatusCode,
+    },
+    {
+      key: "actions",
+      header: "액션",
+      className: "text-right",
+      render: (r) => (
+        <div className="flex justify-end gap-2">
+          <Link
+            href={`/labimaging/imagingorder/receptions/${encodeURIComponent(r.receptionNo)}`}
+            className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+          >
+            상세
+          </Link>
+          <Button onClick={() => goRegisterSchedule(r)}>일정 등록</Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <div className="space-y-4">
-      {error ? (
-        <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>
-      ) : null}
+    <div className="flex min-h-0 flex-col gap-4">
+      {error ? <Alert>{error}</Alert> : null}
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-500">일정 등록 대상(미일정) 영상 접수 목록</p>
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={() => dispatch(fetchImageReceptionsRequest())}
           disabled={loading}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-50"
         >
           새로고침
-        </button>
+        </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-100">
-        <table className="w-full min-w-[720px] text-sm">
-          <thead className="bg-slate-50 text-left text-xs text-slate-500">
-            <tr>
-              <th className="px-3 py-2 font-medium">접수번호</th>
-              <th className="px-3 py-2 font-medium">오더번호</th>
-              <th className="px-3 py-2 font-medium">환자번호</th>
-              <th className="px-3 py-2 font-medium">오더상태</th>
-              <th className="px-3 py-2 font-medium">접수상태</th>
-              <th className="px-3 py-2 text-right font-medium">액션</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {loading ? (
-              <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-slate-400">
-                  불러오는 중…
-                </td>
-              </tr>
-            ) : receptions.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-slate-400">
-                  일정 등록 대상 접수가 없습니다.
-                </td>
-              </tr>
-            ) : (
-              receptions.map((r) => (
-                <tr key={r.imageReceptionId} className="hover:bg-slate-50/60">
-                  <td className="px-3 py-2 font-medium text-slate-700">{r.receptionNo}</td>
-                  <td className="px-3 py-2 text-slate-600">{r.imageOrderNo}</td>
-                  <td className="px-3 py-2 text-slate-600">{r.patientNo}</td>
-                  <td className="px-3 py-2 text-slate-600">{r.orderStatusCode}</td>
-                  <td className="px-3 py-2 text-slate-600">{r.receptionStatusCode}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex justify-end gap-2">
-                      <Link
-                        href={`/labimaging/imagingorder/receptions/${encodeURIComponent(r.receptionNo)}`}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 hover:bg-slate-50"
-                      >
-                        상세
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => goRegisterSchedule(r)}
-                        className="rounded-lg bg-sky-500 px-3 py-1 text-xs font-medium text-white hover:bg-sky-600"
-                      >
-                        일정 등록
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        rows={receptions}
+        rowKey={(r) => r.imageReceptionId}
+        loading={loading}
+        emptyMessage="일정 등록 대상 접수가 없습니다."
+      />
     </div>
   );
 }

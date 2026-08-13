@@ -4,12 +4,12 @@ import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { searchBillingDetailRequest } from "@/features/billing/searchBillingDetail/slice";
-import BillingDetailSearchList from "@/components/billing/BillingDetailSearchList";
+import BillingDetailSearchList from "@/components/billing/detail/BillingDetailSearchList";
 
 export default function BillingDetailSearchForm() {
     const dispatch = useDispatch<AppDispatch>();
     const [patientName, setPatientName] = useState("");
-    const { billingDetails, loading, error } = useSelector(
+    const { searchPatient, loading, error } = useSelector(
         (state: RootState) => state.billingDetail,
     );
 
@@ -26,12 +26,12 @@ export default function BillingDetailSearchForm() {
 
             {loading && <p>조회 중입니다.</p>}
             {error && <p>{error}</p>}
-            {!loading && !error && billingDetails.length === 0 && (<p>검색 결과가 없습니다.</p>)}
+            {!loading && !error && searchPatient.length === 0 && (<p>검색 결과가 없습니다.</p>)}
             
             <div>
-                {billingDetails.map((billingDetail)=>(
-                    <BillingDetailSearchList key={billingDetail.billingId}
-                    billingDetail={billingDetail}
+                {searchPatient.map((searchPatient)=>(
+                    <BillingDetailSearchList key={searchPatient.billingId}
+                    patient={searchPatient}
                     />
                     ))}
             </div>

@@ -9,22 +9,49 @@ import type {
   PatientListItem,
   PatientRegisterApiResponse,
   PatientRegisterRequest,
+  PatientSearchCondition,
+  PatientUpdateApiResponse,
+  PatientUpdateRequest,
 } from "../type/patientType";
 
 /** GET /api/patient/list */
-export async function fetchPatientListApi(): Promise<PatientListItem[]> {
-  const response =
-    await apiClient.get<PatientListApiResponse>("/api/patient/list");
+export async function fetchPatientListApi(
+  condition: PatientSearchCondition,
+): Promise<PatientListItem[]> {
+  const response = await apiClient.get<PatientListApiResponse>(
+    "/api/patient/list",
+    {
+      params: {
+        patientName: condition.patientName?.trim() || undefined,
+        birthDate: condition.birthDate || undefined,
+        statusCd: condition.statusCd || undefined,
+      },
+    },
+  );
 
   return response.data.data;
 }
 
 /** GET /api/patient/{patientId} */
 export async function fetchPatientDetailApi(
-  patientId: number,
+  patientId: string,
 ): Promise<PatientDetail> {
   const response = await apiClient.get<PatientDetailApiResponse>(
-    `/api/patient/${patientId}`,
+    `/api/patient/${encodeURIComponent(patientId)}`,
+  );
+
+  return response.data.data;
+}
+
+/** PATCH /api/patient/{patientId} */
+export async function updatePatientApi(
+  request: PatientUpdateRequest,
+): Promise<PatientDetail> {
+  const response = await apiClient.patch<PatientUpdateApiResponse>(
+    `/api/patient/${encodeURIComponent(request.patientId)}`,
+    {
+      patientName: request.patientName.trim(),
+    },
   );
 
   return response.data.data;

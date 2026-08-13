@@ -1,9 +1,19 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type SubmitEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import {
+  Alert,
+  Button,
+  FormActions,
+  FormField,
+  Input,
+  Panel,
+  Select,
+} from "@/components/common";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveImageScheduleMessage } from "@/features/labimaging/imagingschedule/messages";
 import {
   createImageScheduleRequest,
@@ -15,7 +25,6 @@ import {
 } from "@/features/labimaging/imagingschedule/slice";
 import { RESERVATION_YN_OPTIONS } from "@/features/labimaging/imagingschedule/types";
 import { selectSelectedImageReception } from "@/features/labimaging/imagingorder/slice";
-import CommonCodeSelect from "@/components/commonCode/CommonCodeSelect";
 
 /**
  * 영상 일정 등록/재등록 폼. (labschedule 폼과 동일 구조, 영상 필드)
@@ -23,10 +32,14 @@ import CommonCodeSelect from "@/components/commonCode/CommonCodeSelect";
  * - 신규/재등록 필드 세트는 동일하다(영상 재등록 DTO 도 room/equipment/금기 포함).
  *   차이는 dispatch 액션뿐: create(body 에 imageReceptionId) vs reschedule(경로변수).
  *   ※ 재등록은 이미 latest 일정이 있는 접수 대상. 미일정 접수에 재등록 시 백엔드 LAB016 실패.
+ * - 입력 UI 는 전역 공통 컴포넌트(@/components/common)를 사용한다. 자체 스타일을 만들지 않는다.
+ *
+ * ⚠ 금기사항 메모(textarea)만 공통 컴포넌트가 없어 직접 마크업한다.
+ *   공통 Textarea 가 생기면 교체할 것. 스타일은 공통 Input 과 맞춰 뒀다.
  */
 
-const inputClass =
-  "h-10 rounded-lg border border-slate-200 px-3 outline-none focus:border-sky-400 disabled:bg-slate-50";
+const textareaClass =
+  "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100 disabled:bg-slate-50 disabled:text-slate-500";
 
 const initialForm = {
   roomCode: "",
@@ -55,6 +68,10 @@ export default function ImageScheduleRegisterForm() {
   const creating = useSelector(selectImageScheduleCreating);
   const createError = useSelector(selectImageScheduleCreateError);
   const lastCreated = useSelector(selectLastCreatedImageSchedule);
+
+  const examRooms = useCommonCodeOptions("EXAM_ROOM_CD");
+  const equipments = useCommonCodeOptions("EQUIPMENT_CD");
+  const contraindications = useCommonCodeOptions("CONTRAINDICATION_CD");
 
   const [mode, setMode] = useState<Mode>("create");
   const [form, setForm] = useState<FormState>(initialForm);
@@ -91,7 +108,7 @@ export default function ImageScheduleRegisterForm() {
     return next;
   }
 
-  function handleSubmit(e: FormEvent) {
+  function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
     if (!imageReceptionId) return;
     const nextErrors = validate();
@@ -117,158 +134,136 @@ export default function ImageScheduleRegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 text-sm">
+      <Panel className="px-4 py-3 text-sm">
         <p className="text-slate-500">대상 접수</p>
-        <p className="mt-1 font-medium text-slate-700">
+        <p className="mt-1 font-semibold text-slate-700">
           {reception
             ? `${reception.receptionNo} · 환자 ${reception.patientNo}`
             : `접수ID ${imageReceptionId || "(없음)"}`}
         </p>
-      </div>
+      </Panel>
 
       {lastCreated ? (
-        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <Alert variant="success">
           {mode === "create"
             ? "영상 일정이 등록되었습니다."
             : "영상 일정이 재등록되었습니다."}{" "}
           (일정ID: {lastCreated.imageScheduleId})
-        </p>
+        </Alert>
       ) : null}
       {createError ? (
-        <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">
-          {resolveImageScheduleMessage(createError)}
-        </p>
+        <Alert>{resolveImageScheduleMessage(createError)}</Alert>
       ) : null}
 
       <div className="flex gap-2">
         {(["create", "reschedule"] as Mode[]).map((m) => (
-          <button
+          <Button
             key={m}
-            type="button"
+            variant={mode === m ? "primary" : "secondary"}
             onClick={() => setMode(m)}
             disabled={creating}
-            className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
-              mode === m
-                ? "bg-sky-500 text-white"
-                : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-            }`}
           >
             {m === "create" ? "신규 등록" : "재등록"}
-          </button>
+          </Button>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-slate-700">
-            촬영실코드 <span className="text-rose-500">*</span>
-          </span>
-          <CommonCodeSelect
-            groupCode="EXAM_ROOM_CD"
+        <FormField label="촬영실코드" required>
+          <Select
             name="roomCode"
             value={form.roomCode}
             onChange={handleChange}
-            disabled={creating}
-            className={inputClass}
+            options={examRooms.options}
+            placeholder={examRooms.loading ? "불러오는 중..." : "선택"}
+            disabled={creating || examRooms.loading}
           />
           {errors.roomCode ? (
             <span className="text-xs text-rose-500">{errors.roomCode}</span>
           ) : null}
-        </label>
+          {examRooms.error ? (
+            <span className="text-xs text-rose-500">{examRooms.error}</span>
+          ) : null}
+        </FormField>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-slate-700">
-            촬영장비코드 <span className="text-rose-500">*</span>
-          </span>
-          <CommonCodeSelect
-            groupCode="EQUIPMENT_CD"
+        <FormField label="촬영장비코드" required>
+          <Select
             name="equipmentCode"
             value={form.equipmentCode}
             onChange={handleChange}
-            disabled={creating}
-            className={inputClass}
+            options={equipments.options}
+            placeholder={equipments.loading ? "불러오는 중..." : "선택"}
+            disabled={creating || equipments.loading}
           />
           {errors.equipmentCode ? (
             <span className="text-xs text-rose-500">{errors.equipmentCode}</span>
           ) : null}
-        </label>
+          {equipments.error ? (
+            <span className="text-xs text-rose-500">{equipments.error}</span>
+          ) : null}
+        </FormField>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-slate-700">
-            촬영 예정일시 <span className="text-rose-500">*</span>
-          </span>
-          <input
+        <FormField
+          label="촬영 예정일시"
+          required
+          hint="촬영을 시행할 날짜와 시각입니다. 확정한 시각은 자동 기록됩니다."
+        >
+          <Input
             type="datetime-local"
             name="scheduledAt"
             value={form.scheduledAt}
             onChange={handleChange}
             disabled={creating}
-            className={inputClass}
           />
-          <span className="text-xs text-slate-500">
-            촬영을 시행할 날짜와 시각입니다. 확정한 시각은 자동 기록됩니다.
-          </span>
           {errors.scheduledAt ? (
             <span className="text-xs text-rose-500">{errors.scheduledAt}</span>
           ) : null}
-        </label>
+        </FormField>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-slate-700">예약여부</span>
-          <select
+        <FormField label="예약여부">
+          <Select
             name="reservationYn"
             value={form.reservationYn}
             onChange={handleChange}
+            options={[...RESERVATION_YN_OPTIONS]}
             disabled={creating}
-            className={inputClass}
-          >
-            {RESERVATION_YN_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          />
+        </FormField>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-slate-700">
-            금기확인결과코드 <span className="text-rose-500">*</span>
-          </span>
-          <CommonCodeSelect
-            groupCode="CONTRAINDICATION_CD"
+        <FormField label="금기확인결과코드" required>
+          <Select
             name="contraindicationCheckCode"
             value={form.contraindicationCheckCode}
             onChange={handleChange}
-            disabled={creating}
-            className={inputClass}
+            options={contraindications.options}
+            placeholder={contraindications.loading ? "불러오는 중..." : "선택"}
+            disabled={creating || contraindications.loading}
           />
           {errors.contraindicationCheckCode ? (
             <span className="text-xs text-rose-500">
               {errors.contraindicationCheckCode}
             </span>
           ) : null}
-        </label>
+          {contraindications.error ? (
+            <span className="text-xs text-rose-500">{contraindications.error}</span>
+          ) : null}
+        </FormField>
 
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-slate-700">
-            확정담당자ID <span className="text-rose-500">*</span>
-          </span>
-          <input
+        <FormField label="확정담당자ID" required>
+          <Input
             name="confirmedById"
             value={form.confirmedById}
             onChange={handleChange}
             maxLength={20}
             disabled={creating}
             placeholder="예: STF00021"
-            className={inputClass}
           />
           {errors.confirmedById ? (
             <span className="text-xs text-rose-500">{errors.confirmedById}</span>
           ) : null}
-        </label>
+        </FormField>
 
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-          <span className="font-medium text-slate-700">금기사항 확인 메모</span>
+        <FormField label="금기사항 확인 메모" className="sm:col-span-2">
           <textarea
             name="contraindicationNote"
             value={form.contraindicationNote}
@@ -277,28 +272,18 @@ export default function ImageScheduleRegisterForm() {
             disabled={creating}
             rows={3}
             placeholder="선택 입력"
-            className="rounded-lg border border-slate-200 px-3 py-2 outline-none focus:border-sky-400 disabled:bg-slate-50"
+            className={textareaClass}
           />
-        </label>
+        </FormField>
       </div>
 
-      <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={() => router.push("/labimaging/imagingorder/receptions")}
-          disabled={creating}
-          className="h-10 rounded-lg border border-slate-200 bg-white px-5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-        >
-          목록으로
-        </button>
-        <button
-          type="submit"
-          disabled={creating || !imageReceptionId}
-          className="h-10 rounded-lg bg-sky-500 px-5 text-sm font-medium text-white hover:bg-sky-600 disabled:opacity-50"
-        >
-          {creating ? "처리 중..." : mode === "create" ? "일정 등록" : "일정 재등록"}
-        </button>
-      </div>
+      <FormActions
+        onCancel={() => router.push("/labimaging/imagingorder/receptions")}
+        cancelLabel="목록으로"
+        submitLabel={mode === "create" ? "일정 등록" : "일정 재등록"}
+        loading={creating}
+        submitDisabled={!imageReceptionId}
+      />
     </form>
   );
 }

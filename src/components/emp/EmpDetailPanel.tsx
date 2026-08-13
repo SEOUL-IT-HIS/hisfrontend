@@ -15,15 +15,25 @@ import { Alert, Button, Modal, Panel } from "@/components/common";
 import EmpUpdateForm from "@/components/emp/EmpUpdateForm";
 import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemTypes";
 import { fetchEmpDetailRequest } from "@/features/emp/slice/empSlice";
+import type { RoleType } from "@/features/emp/types/roleType";
 import { toCodeLabel } from "@/features/emp/utils/empCodeLabel";
 import type { RootState } from "@/store/store";
 
 type EmpDetailPanelProps = {
   /** 왼쪽에서 선택한 직원 PK. null 이면 빈 안내 화면 */
-  empId: number | null;
+  empId: string | null;
   deptCodes: CommonCodeItem[];
   statusCodes: CommonCodeItem[];
+  roles: RoleType[];
 };
+
+/** roleId 목록 → roleName 목록 (없는 id 는 무시) */
+function toRoleNames(roles: RoleType[], roleIds: string[] | null): string[] {
+  if (!roleIds || roleIds.length === 0) return [];
+  return roleIds
+    .map((roleId) => roles.find((role) => role.roleId === roleId)?.roleName)
+    .filter((name): name is string => Boolean(name));
+}
 
 function formatDate(value: string | null): string {
   if (!value) return "-";
@@ -34,6 +44,7 @@ export default function EmpDetailPanel({
   empId,
   deptCodes,
   statusCodes,
+  roles,
 }: EmpDetailPanelProps) {
   const dispatch = useDispatch();
   const selectedEmp = useSelector((state: RootState) => state.emp.selectedEmp);
@@ -138,6 +149,25 @@ export default function EmpDetailPanel({
               label="퇴사일"
               value={formatDate(selectedEmp.retireDate)}
             />
+            <div className="rounded-xl bg-slate-50/80 px-4 py-3 sm:col-span-2">
+              <dt className="text-xs font-medium text-slate-400">보유 역할</dt>
+              <dd className="mt-1.5 flex flex-wrap gap-1.5">
+                {toRoleNames(roles, selectedEmp.roleIds).length === 0 ? (
+                  <span className="text-sm text-slate-500">
+                    배정된 역할 없음
+                  </span>
+                ) : (
+                  toRoleNames(roles, selectedEmp.roleIds).map((name) => (
+                    <span
+                      key={name}
+                      className="rounded-md bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/10"
+                    >
+                      {name}
+                    </span>
+                  ))
+                )}
+              </dd>
+            </div>
           </dl>
         )}
       </div>
@@ -152,6 +182,7 @@ export default function EmpDetailPanel({
             emp={selectedEmp}
             deptCodes={deptCodes}
             statusCodes={statusCodes}
+            roles={roles}
             onClose={() => setEditOpen(false)}
           />
         ) : null}

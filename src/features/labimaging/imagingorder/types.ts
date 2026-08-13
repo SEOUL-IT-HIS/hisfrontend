@@ -22,10 +22,14 @@ export interface ImageOrderCreateRequest {
   imageOrderNo: string;
   /** 연계시스템코드 (예: "GR2") */
   systemCode: string;
-  /** 환자번호 (참조 식별자) */
+  /** 환자번호 (화면 표시용 업무번호) */
   patientNo: string;
-  /** 처방의번호 (참조 식별자, NULL 허용) */
+  /** 환자ID (patient-service 내부 식별자, 참조/검증용) */
+  patientId: string;
+  /** 처방의번호 (화면 표시용 업무번호, NULL 허용) */
   physicianNo?: string;
+  /** 처방의ID (참조용, 선택) */
+  physicianId?: string;
   /** 진료구분코드 (예: "OUTPATIENT") */
   treatTypeCode: string;
   /** 응급여부. API 계약(JSON)은 "Y"/"N" 문자열 유지 (요청서 1.4) */

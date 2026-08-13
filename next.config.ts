@@ -15,7 +15,7 @@ const patientApiOrigin =
 const labImagingApiOrigin =
   process.env.LABIMAGING_API_ORIGIN ?? "http://192.168.1.104:8080";
 const inpatientApiOrigin =
-  process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.165:8080";
+  process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.140:8080";
 const outpatientApiOrigin =
   process.env.OUTPATIENT_API_ORIGIN ?? "http://192.168.1.112:8080";
 const emergencyApiOrigin =
@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
     "192.168.1.128",
     "192.168.1.149",
     "192.168.1.104",
-    "192.168.1.165",
+    "192.168.1.140",
     "192.168.1.112",
     "192.168.1.130",
     "192.168.1.120",
@@ -83,6 +83,8 @@ const nextConfig: NextConfig = {
       },
 
       // ---------- inpatient-service (구체 경로 먼저) ----------
+      // 컨트롤러가 전부 /api/inpatient/... 로 통일되어 있어서 이 규칙 하나로 bed/bedassignment/
+      // bedreservation/admission/nursingrecord/vitalsign 등 모든 하위 경로를 커버함
       {
         source: "/api/inpatient",
         destination: `${inpatientApiOrigin}/api/inpatient`,
