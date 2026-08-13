@@ -5,25 +5,38 @@
  * 상태 변경(취소·진행상태·시작·종료)은 일부 필드만 바꾸므로 PATCH 를 쓴다(§21.8).</p>
  */
 import apiClient from "@/lib/axios";
-import type { ApiResponse } from "@/features/surgery/types";
+import type { ApiResponse, PageResponse } from "@/features/surgery/types";
 import type {
   AssignSurgeryRequest,
   CancelSurgeryRequest,
   RegisterSurgeryRequest,
   Surgery,
   SurgeryListParams,
+  SurgeryRequestSearchParams,
   UpdateProgressRequest,
   UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
 
 const SCHEDULE_PATH = "/api/surgery/schedule";
 
-/** 배정 대기 중인 진료 요청 목록을 조회한다(status_cd = 00 요청접수). */
-export async function getSurgeryRequests(): Promise<Surgery[]> {
-  const { data } = await apiClient.get<ApiResponse<Surgery[]>>(
+/**
+ * 배정 대기 중인 진료 요청 목록을 조회한다(status_cd = 00 요청접수).
+ * (SL2-225 조회 / SL2-235 페이징 / SL2-236 검색·필터)
+ *
+ * <p>백엔드가 배열이 아니라 PageResponse 를 돌려주도록 바뀌었다. 호출하는 쪽은 지금까지처럼
+ * 배열만 필요하므로 여기서 items 를 꺼내 돌려준다 — saga·slice 는 고치지 않아도 된다.</p>
+ *
+ * <p>검색 조건과 페이지 정보를 화면이 다루게 되면, PageResponse 를 그대로 돌려주는 함수를
+ * 따로 두고 그때 saga 를 함께 고친다. 지금 미리 바꾸면 쓰지도 않는 상태가 slice 에 쌓인다.</p>
+ */
+export async function getSurgeryRequests(
+  params?: SurgeryRequestSearchParams,
+): Promise<Surgery[]> {
+  const { data } = await apiClient.get<ApiResponse<PageResponse<Surgery>>>(
     `${SCHEDULE_PATH}/requests`,
+    { params },
   );
-  return data.data ?? [];
+  return data.data?.items ?? [];
 }
 
 /**
