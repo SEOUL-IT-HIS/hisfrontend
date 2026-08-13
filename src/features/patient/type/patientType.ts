@@ -7,6 +7,7 @@ export type ApiResponse<T> = {
 
 export type PatientStatus = "ACTIVE" | "INACTIVE";
 export type GenderCd = "01" | "02" | "03" | "04";
+export type Yn = "Y" | "N";
 
 /** GET /api/patient/list 검색조건 */
 export type PatientSearchCondition = {
@@ -22,6 +23,7 @@ export type PatientRegisterRequest = {
   residentRegNo: string;
   genderCd: GenderCd;
   statusCd: PatientStatus;
+  tempPatientYn: Yn;
 };
 
 /** POST /api/patient/register 응답 데이터 */
@@ -31,6 +33,7 @@ export type Patient = {
   birthDate: string;
   genderCd: GenderCd;
   statusCd: PatientStatus;
+  tempPatientYn: Yn;
   createdAt: string;
 };
 
@@ -43,6 +46,8 @@ export type PatientListItem = {
   birthDate: string;
   genderCd: GenderCd;
   statusCd: PatientStatus;
+  tempPatientYn: Yn;
+  deathYn: Yn;
   createdAt: string;
   updatedAt: string;
 };
@@ -55,6 +60,9 @@ export type PatientDetail = {
   birthDate: string;
   genderCd: GenderCd;
   statusCd: PatientStatus;
+  tempPatientYn: Yn;
+  deathYn: Yn;
+  deathDtm: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -68,6 +76,13 @@ export type PatientDuplicateCheckRequest = {
 export type PatientUpdateRequest = {
   patientId: string;
   patientName: string;
+};
+
+/** PATCH /api/patient/{patientId}/death-status 요청 */
+export type PatientDeathUpdateRequest = {
+  patientId: string;
+  deathYn: Yn;
+  deathDtm: string | null;
 };
 
 /** PATCH /api/patient/{patientId}/deactivate 요청 */
@@ -88,3 +103,6 @@ export type PatientUpdateApiResponse = ApiResponse<PatientDetail>;
 
 /** PATCH /api/patient/{patientId}/deactivate 응답 */
 export type PatientDeactivateApiResponse = ApiResponse<PatientDetail>;
+
+/** PATCH /api/patient/{patientId}/death-status 응답 */
+export type PatientDeathUpdateApiResponse = ApiResponse<PatientDetail>;

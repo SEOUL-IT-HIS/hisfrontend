@@ -7,6 +7,7 @@ import {
   registerPatientApi,
   updatePatientApi,
   deactivatePatientApi,
+  updatePatientDeathApi,
 } from "../api/patientApi";
 import {
   checkPatientDuplicateFailure,
@@ -27,6 +28,9 @@ import {
   deactivatePatientFailure,
   deactivatePatientRequest,
   deactivatePatientSuccess,
+  updatePatientDeathFailure,
+  updatePatientDeathRequest,
+  updatePatientDeathSuccess,
 } from "../slice/patientSlice";
 import type {
   Patient,
@@ -123,6 +127,26 @@ function* updatePatientSaga(action: ReturnType<typeof updatePatientRequest>) {
   }
 }
 
+function* updatePatientDeathSaga(
+  action: ReturnType<typeof updatePatientDeathRequest>,
+) {
+  try {
+    const patient: PatientDetail = yield call(
+      updatePatientDeathApi,
+      action.payload,
+    );
+
+    yield put(updatePatientDeathSuccess(patient));
+  } catch (error) {
+    const message = getPatientErrorMessage(
+      error,
+      "환자 사망정보 수정에 실패했습니다.",
+    );
+
+    yield put(updatePatientDeathFailure(message));
+  }
+}
+
 function* deactivatePatientSaga(
   action: ReturnType<typeof deactivatePatientRequest>,
 ) {
@@ -179,6 +203,11 @@ export default function* patientSaga() {
   yield takeLatest(fetchPatientDetailRequest.type, fetchPatientDetailSaga);
 
   yield takeLatest(updatePatientRequest.type, updatePatientSaga);
+
+  yield takeLatest(
+  updatePatientDeathRequest.type,
+  updatePatientDeathSaga,
+);
 
   yield takeLatest(deactivatePatientRequest.type, deactivatePatientSaga);
 

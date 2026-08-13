@@ -6,16 +6,20 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
   Button,
+  FormField,
   Input,
   PageHeader,
   Panel,
+  Select,
   StatusBadge,
 } from "@/components/common";
 import {
   deactivatePatientRequest,
   fetchPatientDetailRequest,
   resetPatientDeactivation,
+  resetPatientDeathUpdate,
   resetPatientUpdate,
+  updatePatientDeathRequest,
   updatePatientRequest,
 } from "@/features/patient/slice/patientSlice";
 import { getGenderLabel } from "@/features/patient/util/genderCode";
@@ -33,6 +37,9 @@ export default function PatientDetailForm({
   const dispatch = useDispatch<AppDispatch>();
   const [editing, setEditing] = useState(false);
   const [patientName, setPatientName] = useState("");
+  const [deathEditing, setDeathEditing] = useState(false);
+  const [deathYn, setDeathYn] = useState<"Y" | "N">("N");
+  const [deathDtm, setDeathDtm] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
   const {
     patientDetail,
@@ -44,6 +51,9 @@ export default function PatientDetailForm({
     deactivateLoading,
     deactivateError,
     deactivateSuccess,
+    deathUpdateLoading,
+    deathUpdateError,
+    deathUpdateSuccess,
   } = useSelector((state: RootState) => state.patient);
 
   const isEditing = editing && !updateSuccess;
@@ -51,6 +61,7 @@ export default function PatientDetailForm({
   useEffect(() => {
     dispatch(resetPatientUpdate());
     dispatch(resetPatientDeactivation());
+    dispatch(resetPatientDeathUpdate());
     dispatch(fetchPatientDetailRequest(patientId));
   }, [dispatch, patientId]);
 
@@ -75,6 +86,25 @@ export default function PatientDetailForm({
     setValidationError(null);
     dispatch(resetPatientUpdate());
     setEditing(false);
+  };
+
+  const startDeathEditing = () => {
+    if (!patientDetail) {
+      return;
+    }
+
+    setDeathYn(patientDetail.deathYn);
+    setDeathDtm(
+      patientDetail.deathDtm ? patientDetail.deathDtm.slice(0, 16) : "",
+    );
+
+    dispatch(resetPatientDeathUpdate());
+    setDeathEditing(true);
+  };
+
+  const cancelDeathEditing = () => {
+    setDeathEditing(false);
+    dispatch(resetPatientDeathUpdate());
   };
 
   const deactivatePatient = () => {
@@ -132,6 +162,37 @@ export default function PatientDetailForm({
     );
   };
 
+  const submitDeathUpdate = () => {
+    if (deathYn === "Y" && !deathDtm) {
+      window.alert("사망일시를 입력해 주세요.");
+      return;
+    }
+
+    if (deathYn === "Y" && new Date(deathDtm).getTime() > Date.now()) {
+      window.alert("사망일시는 미래일 수 없습니다.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      deathYn === "Y"
+        ? "사망 정보를 등록하시겠습니까?"
+        : "등록된 사망 정보를 해제하시겠습니까?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    dispatch(
+      updatePatientDeathRequest({
+        patientId,
+        deathYn,
+        deathDtm: deathYn === "Y" ? `${deathDtm}:00` : null,
+      }),
+    );
+    setDeathEditing(false);
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-3">
       <PageHeader
@@ -163,6 +224,14 @@ export default function PatientDetailForm({
 
       {deactivateSuccess ? (
         <Alert variant="success">환자가 비활성화되었습니다.</Alert>
+      ) : null}
+
+      {deathUpdateError ? (
+        <Alert variant="error">{deathUpdateError}</Alert>
+      ) : null}
+
+      {deathUpdateSuccess ? (
+        <Alert variant="success">사망정보가 수정되었습니다.</Alert>
       ) : null}
 
       {patientDetail ? (
@@ -247,6 +316,33 @@ export default function PatientDetailForm({
               </div>
 
               <DetailItem
+                label="환자 구분"
+                value={
+                  patientDetail.tempPatientYn === "Y"
+                    ? "임시환자"
+                    : "정식환자"
+                }
+              />
+
+              <DetailItem
+                label="사망 여부"
+                value={
+                  patientDetail.deathYn === "Y" ? "사망" : "사망정보 없음"
+                }
+              />
+
+              {patientDetail.deathYn === "Y" ? (
+                <DetailItem
+                  label="사망일시"
+                  value={
+                    patientDetail.deathDtm
+                      ? formatDateTime(patientDetail.deathDtm)
+                      : "-"
+                  }
+                />
+              ) : null}
+
+              <DetailItem
                 label="주민등록번호"
                 value={patientDetail.residentRegNo}
               />
@@ -290,6 +386,100 @@ export default function PatientDetailForm({
               </div>
             ) : null}
           </form>
+
+          <div className="border-t border-slate-200">
+            <div className="flex items-center justify-between px-5 py-4">
+              <h2 className="text-base font-semibold text-slate-800">
+                사망정보 관리
+              </h2>
+
+              {!deathEditing ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={startDeathEditing}
+                  disabled={deathUpdateLoading}
+                >
+                  사망정보 수정
+                </Button>
+              ) : null}
+            </div>
+
+            <div className="grid gap-4 border-t border-slate-100 p-5 sm:grid-cols-2">
+              {deathEditing ? (
+                <>
+                  <FormField label="사망 여부" required>
+                    <Select
+                      value={deathYn}
+                      options={[
+                        { value: "N", label: "사망정보 없음" },
+                        { value: "Y", label: "사망" },
+                      ]}
+                      onChange={(event) => {
+                        const value = event.target.value as "Y" | "N";
+
+                        setDeathYn(value);
+
+                        if (value === "N") {
+                          setDeathDtm("");
+                        }
+                      }}
+                      disabled={deathUpdateLoading}
+                    />
+                  </FormField>
+
+                  <FormField label="사망일시" required={deathYn === "Y"}>
+                    <Input
+                      type="datetime-local"
+                      value={deathDtm}
+                      onChange={(event) => setDeathDtm(event.target.value)}
+                      disabled={deathYn === "N" || deathUpdateLoading}
+                    />
+                  </FormField>
+
+                  <div className="flex justify-end gap-2 sm:col-span-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={cancelDeathEditing}
+                      disabled={deathUpdateLoading}
+                    >
+                      취소
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={submitDeathUpdate}
+                      disabled={deathUpdateLoading}
+                    >
+                      {deathUpdateLoading ? "저장 중..." : "저장"}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <DetailItem
+                    label="사망 여부"
+                    value={
+                      patientDetail.deathYn === "Y"
+                        ? "사망"
+                        : "사망정보 없음"
+                    }
+                  />
+
+                  <DetailItem
+                    label="사망일시"
+                    value={
+                      patientDetail.deathDtm
+                        ? formatDateTime(patientDetail.deathDtm)
+                        : "-"
+                    }
+                  />
+                </>
+              )}
+            </div>
+          </div>
         </Panel>
       ) : null}
     </div>

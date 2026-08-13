@@ -8,6 +8,7 @@ import type {
   PatientSearchCondition,
   PatientUpdateRequest,
   PatientDeactivateRequest,
+  PatientDeathUpdateRequest,
 } from "../type/patientType";
 
 type PatientState = {
@@ -28,6 +29,9 @@ type PatientState = {
   deactivateLoading: boolean;
   deactivateError: string | null;
   deactivateSuccess: boolean;
+  deathUpdateLoading: boolean;
+  deathUpdateError: string | null;
+  deathUpdateSuccess: boolean;
 };
 
 const initialState: PatientState = {
@@ -48,6 +52,9 @@ const initialState: PatientState = {
   deactivateLoading: false,
   deactivateError: null,
   deactivateSuccess: false,
+  deathUpdateLoading: false,
+  deathUpdateError: null,
+  deathUpdateSuccess: false,
 };
 
 const patientSlice = createSlice({
@@ -112,6 +119,37 @@ const patientSlice = createSlice({
       state.updateError = null;
       state.updateSuccess = false;
     },
+
+    updatePatientDeathRequest(
+  state,
+  _action: PayloadAction<PatientDeathUpdateRequest>,
+) {
+  state.deathUpdateLoading = true;
+  state.deathUpdateError = null;
+  state.deathUpdateSuccess = false;
+},
+
+updatePatientDeathSuccess(
+  state,
+  action: PayloadAction<PatientDetail>,
+) {
+  state.deathUpdateLoading = false;
+  state.deathUpdateError = null;
+  state.deathUpdateSuccess = true;
+  state.patientDetail = action.payload;
+},
+
+updatePatientDeathFailure(state, action: PayloadAction<string>) {
+  state.deathUpdateLoading = false;
+  state.deathUpdateError = action.payload;
+  state.deathUpdateSuccess = false;
+},
+
+resetPatientDeathUpdate(state) {
+  state.deathUpdateLoading = false;
+  state.deathUpdateError = null;
+  state.deathUpdateSuccess = false;
+},
 
     deactivatePatientRequest(
       state,
@@ -206,6 +244,10 @@ export const {
   deactivatePatientSuccess,
   deactivatePatientFailure,
   resetPatientDeactivation,
+  updatePatientDeathRequest,
+  updatePatientDeathSuccess,
+  updatePatientDeathFailure,
+  resetPatientDeathUpdate,
 } = patientSlice.actions;
 
 export default patientSlice.reducer;

@@ -14,6 +14,8 @@ import type {
   PatientUpdateRequest,
   PatientDeactivateApiResponse,
   PatientDeactivateRequest,
+  PatientDeathUpdateApiResponse,
+  PatientDeathUpdateRequest,
 } from "../type/patientType";
 
 /** GET /api/patient/list */
@@ -53,6 +55,21 @@ export async function updatePatientApi(
     `/api/patient/${encodeURIComponent(request.patientId)}`,
     {
       patientName: request.patientName.trim(),
+    },
+  );
+
+  return response.data.data;
+}
+
+/** PATCH /api/patient/{patientId}/death-status */
+export async function updatePatientDeathApi(
+  request: PatientDeathUpdateRequest,
+): Promise<PatientDetail> {
+  const response = await apiClient.patch<PatientDeathUpdateApiResponse>(
+    `/api/patient/${encodeURIComponent(request.patientId)}/death-status`,
+    {
+      deathYn: request.deathYn,
+      deathDtm: request.deathDtm,
     },
   );
 
