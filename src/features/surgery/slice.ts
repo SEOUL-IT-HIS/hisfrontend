@@ -3,6 +3,7 @@ import anesthesiaReducer from "@/features/surgery/anesthesia/slice";
 import checklistReducer from "@/features/surgery/checklist/slice";
 import consentReducer from "@/features/surgery/consent/slice";
 import operativeRecordReducer from "@/features/surgery/operativeRecord/slice";
+import orderReducer from "@/features/surgery/order/slice";
 import roomReducer from "@/features/surgery/room/slice";
 import scheduleReducer from "@/features/surgery/schedule/slice";
 
@@ -19,6 +20,7 @@ import scheduleReducer from "@/features/surgery/schedule/slice";
 const surgeryReducer = combineReducers({
   room: roomReducer,
   schedule: scheduleReducer,
+  order: orderReducer,
   anesthesia: anesthesiaReducer,
   operativeRecord: operativeRecordReducer,
   consent: consentReducer,

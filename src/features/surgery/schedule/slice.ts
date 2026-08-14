@@ -40,13 +40,13 @@ import type {
  * "어느 대상을 어떻게 바꿀지"처럼 값이 둘 이상 필요한 경우가 있다. prepare 가 둘을 하나의
  * payload 로 묶어주므로, 컴포넌트에서는 {@code dispatch(액션(id, request))} 처럼 자연스럽게 부른다.</p>
  *
- * <p>surgeries(전체)·todaySurgeries(금일)·surgeryRequests(배정 대기)를 각각 들고 있다.
+ * <p>surgeries(전체)·todaySurgeries(금일)를 각각 들고 있다. 배정 대기 요청은
+ * 수술이 아니라 오더라서 features/surgery/order 가 따로 관리한다(2026-08-13).
  * 같은 Surgery 배열이지만 조회 조건이 달라, 한 배열을 돌려쓰면 화면을 오갈 때 목록이 뒤섞인다.</p>
  */
 const initialState: ScheduleState = {
   surgeries: [],
   todaySurgeries: [],
-  surgeryRequests: [],
   selectedSurgery: null,
   loading: false,
   saving: false,
@@ -91,18 +91,6 @@ const scheduleSlice = createSlice({
 
     // ----- 배정 대기 요청 목록 -----
     /** 진료가 올린 요청 중 아직 수술실이 안 잡힌 건(status_cd = 00) */
-    fetchSurgeryRequestsRequest(state) {
-      state.loading = true;
-      state.error = "";
-    },
-    fetchSurgeryRequestsSuccess(state, action: PayloadAction<Surgery[]>) {
-      state.loading = false;
-      state.surgeryRequests = action.payload;
-    },
-    fetchSurgeryRequestsFailure(state, action: PayloadAction<string>) {
-      state.loading = false;
-      state.error = action.payload;
-    },
 
     fetchSurgeryRequest: {
       reducer(state) {
@@ -123,24 +111,6 @@ const scheduleSlice = createSlice({
     },
 
     // ----- 등록/수정 (SL2-36 / SL2-44 긴급 / SL2-37) -----
-    registerSurgeryRequest: {
-      reducer(state) {
-        state.saving = true;
-        state.error = "";
-      },
-      prepare(request: RegisterSurgeryRequest) {
-        return { payload: request };
-      },
-    },
-    registerEmergencySurgeryRequest: {
-      reducer(state) {
-        state.saving = true;
-        state.error = "";
-      },
-      prepare(request: RegisterSurgeryRequest) {
-        return { payload: request };
-      },
-    },
     updateSurgeryRequest: {
       reducer(state) {
         state.saving = true;
@@ -152,15 +122,6 @@ const scheduleSlice = createSlice({
     },
 
     // ----- 배정 (요청접수 → 예약) -----
-    assignSurgeryRequest: {
-      reducer(state) {
-        state.saving = true;
-        state.error = "";
-      },
-      prepare(surgeryId: string, request: AssignSurgeryRequest) {
-        return { payload: { surgeryId, request } };
-      },
-    },
 
     // ----- 상태 전이 (SL2-33 취소 / SL2-39 진행상태 / 시작·종료) -----
     /** 물리 삭제가 아니라 취소 상태 전이다(§21.6) */
@@ -224,16 +185,10 @@ export const {
   fetchTodaySurgeriesRequest,
   fetchTodaySurgeriesSuccess,
   fetchTodaySurgeriesFailure,
-  fetchSurgeryRequestsRequest,
-  fetchSurgeryRequestsSuccess,
-  fetchSurgeryRequestsFailure,
   fetchSurgeryRequest,
   fetchSurgerySuccess,
   fetchSurgeryFailure,
-  registerSurgeryRequest,
-  registerEmergencySurgeryRequest,
   updateSurgeryRequest,
-  assignSurgeryRequest,
   cancelSurgeryRequest,
   updateProgressRequest,
   startSurgeryRequest,
@@ -253,8 +208,6 @@ export const selectSurgeries = (state: ScheduleRoot) =>
   state.surgery.schedule.surgeries;
 export const selectTodaySurgeries = (state: ScheduleRoot) =>
   state.surgery.schedule.todaySurgeries;
-export const selectSurgeryRequests = (state: ScheduleRoot) =>
-  state.surgery.schedule.surgeryRequests;
 export const selectSelectedSurgery = (state: ScheduleRoot) =>
   state.surgery.schedule.selectedSurgery;
 export const selectScheduleLoading = (state: ScheduleRoot) =>

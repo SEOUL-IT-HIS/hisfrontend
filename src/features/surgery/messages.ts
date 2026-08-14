@@ -29,6 +29,8 @@ export const SURGERY_MESSAGES = {
   SUR054: "지원하지 않는 요청 형식입니다.",
   SUR055: "해당 수술항목이 존재하지 않습니다.",
   SUR056: "이미 등록된 수술항목 코드입니다.",
+  SUR057: "해당 수술 요청이 존재하지 않습니다.",
+  SUR058: "이미 처리된 수술 요청입니다.",
 } as const;
 
 export type SurgeryMessageCode = keyof typeof SURGERY_MESSAGES;

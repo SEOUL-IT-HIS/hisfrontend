@@ -6,7 +6,7 @@
  * 성공 시 /admin/emp 이동
  */
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { Alert, Button, FormField, Input } from "@/components/common";
 import { fetchAuthLoginRequest } from "@/features/auth/slice/authSlice";
@@ -19,6 +19,8 @@ type LoginFormState = {
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isExpired = searchParams.get("reason") === "expired";
   const dispatch = useDispatch<AppDispatch>();
   const loading = useSelector((state: RootState) => state.auth.loading);
   const error = useSelector((state: RootState) => state.auth.error);
@@ -32,6 +34,14 @@ export default function LoginForm() {
     loginId?: string;
     password?: string;
   }>({});
+
+  /**
+   * 이번 화면에서 실제로 로그인을 시도한 적 있는지.
+   * 이게 없으면, 세션 만료로 리다이렉트됐을 때 배경에서 실패했던 /api/auth/me 의
+   * leftover 에러("로그인이 필요합니다.")까지 같이 떠서 안내 문구랑 중복돼 보인다.
+   * 실제로 로그인 버튼을 눌러본 뒤부터는(성공이든 실패든) 정상적으로 에러를 보여줘야 한다.
+   */
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   /**
    * true 이면 "방금 로그인 버튼을 눌러서 결과를 기다리는 중" 이라는 뜻.
@@ -58,6 +68,7 @@ export default function LoginForm() {
     }
     setFieldErrors({});
 
+    setHasSubmitted(true);
     waitRedirect.current = true;
     dispatch(fetchAuthLoginRequest({ loginId, password }));
   }
@@ -95,7 +106,13 @@ export default function LoginForm() {
         </p>
       </div>
 
-      {error ? (
+      {isExpired ? (
+        <div className="mb-4">
+          <Alert variant="info">세션이 만료되어 다시 로그인해주세요.</Alert>
+        </div>
+      ) : null}
+
+      {error && (hasSubmitted || !isExpired) ? (
         <div className="mb-4">
           <Alert variant="error">{error}</Alert>
         </div>
