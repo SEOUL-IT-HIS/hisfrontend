@@ -13,6 +13,7 @@ type AppFrameProps = {
 
 /** 사이드바/헤더 없이 보여주는 경로 (로그인 등) */
 const BARE_PATHS = ["/login"];
+const ACTIVITY_CHECK_INTERVAL = 1000 * 60 * 5;
 
 /**
  * 공통 레이아웃 프레임
@@ -42,10 +43,23 @@ export default function AppFrame({ children }: AppFrameProps) {
    */
   const meChecked = useRef(false);
 
+
+  /**
+   * 한 번이라도 로그인 상태(authUser 있음)였던 적이 있는지.
+   * true인 상태에서 authError가 뜨면 "로그인 중 만료"로 보고 /login?reason=expired 로 보낸다.
+   * false인 상태(최초 진입, 한 번도 로그인한 적 없음)에서 authError가 뜨면 그냥 /login 으로 보낸다.
+   */
+  const hadSession = useRef(false);
+
+
+  /** 활동 감지로 마지막에 /api/auth/me 를 재확인한 시각(ms) */
+  const lastActivityCheckAt = useRef(0);
+
   // ① 아직 로그인 여부를 모르면(authUser 없음) 서버에 물어본다 (GET /api/auth/me)
   useEffect(() => {
     if (isBare) {
       meChecked.current = false;
+      hadSession.current = false;
       return;
     }
     if (authUser) return;
@@ -55,13 +69,49 @@ export default function AppFrame({ children }: AppFrameProps) {
     dispatch(fetchAuthMeRequest());
   }, [isBare, authUser, authLoading, dispatch]);
 
+  // authUser가 채워질 때마다(최초 로그인 성공이든, 활동으로 인한 재확인 성공이든)
+  // "로그인된 적 있음" 표시 + 다음 활동 확인 기준 시각을 갱신한다
+  useEffect(() => {
+    if (authUser) {
+      hadSession.current = true;
+      lastActivityCheckAt.current = Date.now();
+    }
+  }, [authUser]);
+
+  // 로그인 상태일 때만 클릭/키입력을 감지해서, ACTIVITY_CHECK_INTERVAL 넘게 재확인 안 했으면
+  // /api/auth/me 를 다시 호출한다 (고정 간격 폴링이 아니라 "활동이 있을 때만" 확인).
+  useEffect(() => {
+    if (isBare) return;
+    if (!authUser) return;
+
+    function handleActivity() {
+      const now = Date.now();
+      if (now - lastActivityCheckAt.current < ACTIVITY_CHECK_INTERVAL) return;
+      lastActivityCheckAt.current = now;
+      dispatch(fetchAuthMeRequest());
+    }
+
+    document.addEventListener("click", handleActivity);
+    document.addEventListener("keydown", handleActivity);
+    return () => {
+      document.removeEventListener("click", handleActivity);
+      document.removeEventListener("keydown", handleActivity);
+    };
+  }, [isBare, authUser, dispatch]);
+
   // ② ①의 확인 결과가 "로그인 안 되어 있음"으로 나오면 로그인 화면으로 보낸다
+  // hadSession이 true였다면 "쓰다가 만료된 것"이므로 안내 문구가 붙는 경로로 보낸다
   useEffect(() => {
     if (isBare) return;
     if (authUser) return;
     if (authLoading) return;
     if (authError) {
-      router.replace("/login");
+      if (hadSession.current) {
+        hadSession.current = false;
+        router.replace("/login?reason=expired");
+      } else {
+        router.replace("/login");
+      }
     }
   }, [isBare, authUser, authLoading, authError, router]);
 
