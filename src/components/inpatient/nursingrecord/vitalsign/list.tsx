@@ -1,18 +1,32 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch } from "@/store/store";
+import type { AppDispatch, RootState } from "@/store/store";
 import { fetchVitalSignsRequest, selectVitalSignListStatus, selectVitalSigns } from "@/features/inpatient/nursingrecord/vitalsign/slice";
 import Link from "next/link";
+import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
+import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 
 const VitalSignList = () => {
   const dispatch = useDispatch<AppDispatch>();
   const vitalSigns = useSelector(selectVitalSigns);
   const listStatus = useSelector(selectVitalSignListStatus);
+  const admissions = useSelector(selectAdmissions);
+  const patients = useSelector((state: RootState) => state.patient.patients);
 
+  const patientIdByAdmissionId = useMemo(() => {
+    return new Map(admissions.map((admission) => [admission.admissionId, admission.patientId]));
+  }, [admissions]);
+
+  const patientNameById = useMemo(() => {
+    return new Map(patients.map((patient) => [patient.patientId, patient.patientName]));
+  }, [patients]);
+  
   useEffect(() => {
     dispatch(fetchVitalSignsRequest());
+    dispatch(fetchAdmissionsRequest());
+  dispatch(fetchPatientListRequest({}));
   }, [dispatch]);
 
   return (
@@ -25,7 +39,7 @@ const VitalSignList = () => {
         <table>
           <thead>
             <tr>
-              <th>환자ID</th>
+              <th>환자명</th>
               <th>측정일시</th>
               <th>체온</th>
               <th>맥박</th>
@@ -39,7 +53,13 @@ const VitalSignList = () => {
           <tbody>
             {vitalSigns.map((vitalSign) => (
               <tr key={vitalSign.vitalSignId}>
-                <td>{vitalSign.admissionId}</td>
+                <td>
+                {(() => {
+                const patientId = patientIdByAdmissionId.get(vitalSign.admissionId);
+              return patientId ? (patientNameById.get(patientId) ?? "조회중...") : "없음";
+              })()}
+                </td>
+
                 <td>{new Date(vitalSign.measuredAt).toLocaleString()}</td>
                 <td>{vitalSign.temperature}</td>
                 <td>{vitalSign.pulse}</td>

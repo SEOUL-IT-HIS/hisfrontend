@@ -1,6 +1,8 @@
 "use client"
 
+import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchVitalSignDetailRequest, deleteVitalSignRequest, updateVitalSignRequest } from "@/features/inpatient/nursingrecord/vitalsign/slice";
+import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice";
 import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -14,6 +16,8 @@ const VitalSignDetail = () => {
     const updateStatus = useSelector((state: RootState) => state.inpatient.vitalsign.updateStatus);
     const deleteStatus = useSelector((state: RootState) => state.inpatient.vitalsign.deleteStatus);
     const { loading, error } = useSelector((state: RootState) => state.inpatient.vitalsign.detailStatus);
+    const admission = useSelector((state: RootState) => state.inpatient.admissiondischarge.detail);
+    const patientDetail = useSelector((state: RootState) => state.patient.patientDetail);
 
     const [editForm, setEditForm] = useState({
         temperature: "",
@@ -23,6 +27,16 @@ const VitalSignDetail = () => {
         bpDiastolic: "",
         spo2: "",
     });
+
+    useEffect(() => {
+        if (!vitalSign?.admissionId) return;
+        dispatch(fetchAdmissionDetailRequest(vitalSign.admissionId));
+    }, [vitalSign?.admissionId]);
+
+    useEffect(() => {
+        if (!admission?.patientId) return;
+        dispatch(fetchPatientDetailRequest(admission.patientId));
+    }, [admission?.patientId]);
 
     useEffect(() => {
         if (!vitalSignId) return;
@@ -78,7 +92,12 @@ const VitalSignDetail = () => {
             {loading && <p>로딩중...</p>}
             {error && <p>{error}</p>}
             {!loading && vitalSign &&
-                <div>
+                <div><p>환자명: {
+                          admission?.admissionId === vitalSign.admissionId
+                        ? (patientDetail?.patientId === admission.patientId ? patientDetail.patientName : "조회중...")
+                    : "조회중..."
+                    }</p>
+
                     <p>VitalSignId: {vitalSign.vitalSignId}</p>
                     <p>AdmissionId: {vitalSign.admissionId}</p>
                     <p>MeasuredAt: {new Date(vitalSign.measuredAt).toLocaleString()}</p>
@@ -112,15 +131,15 @@ const VitalSignDetail = () => {
                     </div>
                     <div>
                         <label htmlFor="bpSystolic">수축기 혈압:</label>
-                        <input type="number" id="bpSystolic" name="bpSystolic" value={editForm.bpSystolic} onChange={onEditChange} />
+                        <input type="number" id="bpSystolic" name="bpSystolic" value={editForm.bpSystolic} onChange={onEditChange} min="0" />
                     </div>
                     <div>
                         <label htmlFor="bpDiastolic">이완기 혈압:</label>
-                        <input type="number" id="bpDiastolic" name="bpDiastolic" value={editForm.bpDiastolic} onChange={onEditChange} />
+                        <input type="number" id="bpDiastolic" name="bpDiastolic" value={editForm.bpDiastolic} onChange={onEditChange} min="0" />
                     </div>
                     <div>
                         <label htmlFor="spo2">산소포화도:</label>
-                        <input type="number" id="spo2" name="spo2" value={editForm.spo2} onChange={onEditChange} step="0.1" />
+                        <input type="number" id="spo2" name="spo2" value={editForm.spo2} onChange={onEditChange} step="0.1" min="0" max="100" />
                     </div>
                     <button onClick={handleUpdate} disabled={updateStatus.loading}>
                         {updateStatus.loading ? "수정중..." : "수정"}
