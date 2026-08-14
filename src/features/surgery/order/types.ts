@@ -23,6 +23,17 @@ export const ORDER_STATUS = {
   ACCEPTED: "01",
   /** 반려 — 사유를 남기고 되돌려보냄. 수술은 만들어지지 않음 */
   REJECTED: "02",
+  /**
+   * 취소 — 수락 후 수술이 취소되어 무산됨 (2026-08-14)
+   *
+   * <p>반려(02)와 다르다. 반려는 우리가 받지 않은 요청이고, 취소는 받아서 수술까지
+   * 만들었다가 무산된 요청이다. 합치면 "요청 반려율"에 수술실·환자 사정으로 무산된
+   * 건이 섞인다.</p>
+   *
+   * <p>이 상태로 바꾸는 것은 서버다 — 수술을 취소하면 오더가 따라 바뀐다.
+   * 프론트가 직접 이 상태로 보내는 API 는 없다.</p>
+   */
+  CANCELLED: "03",
 } as const;
 
 export type OrderStatusCode = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
@@ -40,6 +51,13 @@ export type SurgeryOrder = {
   orderStatusCd: OrderStatusCode;
   /** 반려일 때만 값이 있다 */
   rejectReasonCd: CodeValue | null;
+  /**
+   * 취소 사유. 취소(03)일 때만 값이 있다.
+   *
+   * <p>SURGERY_ORDER 에는 이 컬럼이 없다 — 원본은 수술이 갖고 있고, 서버가 조회할 때
+   * surgeryId 로 읽어 응답에만 채운다. 저장된 값이 아니므로 이걸 되돌려 보내도 소용없다.</p>
+   */
+  cancelReasonCd: CodeValue | null;
   surgeryTypeCd: CodeValue | null;
   surgeryName: string | null;
   /** 요청자 식별자. 로그인 세션이 없어 프론트가 보내야 채워진다 */
