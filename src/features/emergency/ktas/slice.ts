@@ -1,7 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   KtasCreateRequest,
-  KtasLevelCode,
   KtasState,
   KtasUpdateRequest,
   TriageAssessment,
@@ -15,8 +14,6 @@ const initialState: KtasState = {
   searched: false,
   submitting: false,
   submitError: "",
-  levelCodes: [],
-  levelCodesLoading: false,
 };
 
 const ktasSlice = createSlice({
@@ -73,17 +70,6 @@ const ktasSlice = createSlice({
     resetKtasSubmitError(state) {
       state.submitError = "";
     },
-    fetchKtasLevelCodesRequest(state) {
-      state.levelCodesLoading = true;
-    },
-    fetchKtasLevelCodesSuccess(state, action: PayloadAction<KtasLevelCode[]>) {
-      state.levelCodesLoading = false;
-      state.levelCodes = action.payload;
-    },
-    fetchKtasLevelCodesFailure(state) {
-      state.levelCodesLoading = false;
-      // 조회 실패 시 levelCodes 는 빈 배열로 남고, 화면에서 폴백 상수를 대신 쓴다.
-    },
   },
 });
 
@@ -96,9 +82,6 @@ export const {
   ktasSubmitSuccess,
   ktasSubmitFailure,
   resetKtasSubmitError,
-  fetchKtasLevelCodesRequest,
-  fetchKtasLevelCodesSuccess,
-  fetchKtasLevelCodesFailure,
 } = ktasSlice.actions;
 
 export default ktasSlice.reducer;
@@ -112,5 +95,3 @@ export const selectKtasError = (state: KtasRoot) => state.emergency.ktas.error;
 export const selectKtasSearched = (state: KtasRoot) => state.emergency.ktas.searched;
 export const selectKtasSubmitting = (state: KtasRoot) => state.emergency.ktas.submitting;
 export const selectKtasSubmitError = (state: KtasRoot) => state.emergency.ktas.submitError;
-export const selectKtasLevelCodes = (state: KtasRoot) => state.emergency.ktas.levelCodes;
-export const selectKtasLevelCodesLoading = (state: KtasRoot) => state.emergency.ktas.levelCodesLoading;

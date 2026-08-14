@@ -8,16 +8,19 @@ import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createKtasRequest,
   fetchKtasHistoryRequest,
-  fetchKtasLevelCodesRequest,
   reassessKtasRequest,
   selectKtasError,
   selectKtasItems,
-  selectKtasLevelCodes,
   selectKtasLoading,
   selectKtasSubmitError,
   selectKtasSubmitting,
 } from "@/features/emergency/ktas/slice";
 import { KTAS_LEVEL_FALLBACK_OPTIONS } from "@/features/emergency/ktas/types";
+import {
+  fetchAllCommonCodesRequest,
+  selectCommonCodeLoaded,
+  selectCommonCodesByGroup,
+} from "@/features/emergency/commonCode/slice";
 import { formatDateTime } from "@/features/emergency/utils";
 
 type KtasPanelProps = {
@@ -39,7 +42,8 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
   const error = useSelector(selectKtasError);
   const submitting = useSelector(selectKtasSubmitting);
   const submitError = useSelector(selectKtasSubmitError);
-  const levelCodes = useSelector(selectKtasLevelCodes);
+  const commonCodeLoaded = useSelector(selectCommonCodeLoaded);
+  const ktasLevelCodes = useSelector(selectCommonCodesByGroup("KTAS_LEVEL"));
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
@@ -50,17 +54,18 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
     }
   }, [dispatch, receptionNo]);
 
-  // admin commonCodes(KTAS_LEVEL)는 접수번호와 무관하게 한 번만 받아오면 된다.
+  // 공통코드 전체를 앱에서 한 번만 받아오면 되므로, 이미 받아왔으면 다시 요청하지 않는다.
   useEffect(() => {
-    dispatch(fetchKtasLevelCodesRequest());
-  }, [dispatch]);
+    if (!commonCodeLoaded) {
+      dispatch(fetchAllCommonCodesRequest());
+    }
+  }, [dispatch, commonCodeLoaded]);
 
-  // emergency-service 캐시에서 받아온 값이 있으면 그걸 쓰고, 없으면(admin 미연동/실패) 폴백 상수를 쓴다.
+  // 공통코드 캐시에서 받아온 값이 있으면 그걸 쓰고, 없으면(admin 미연동/실패) 폴백 상수를 쓴다.
   const levelOptions =
-    levelCodes.length > 0
-      ? levelCodes
+    ktasLevelCodes.length > 0
+      ? ktasLevelCodes
           .filter((code) => code.useYn !== "N")
-          .sort((a, b) => a.sortOrder - b.sortOrder)
           .map((code) => ({ value: code.codeValue, label: code.codeName }))
       : [...KTAS_LEVEL_FALLBACK_OPTIONS];
 
