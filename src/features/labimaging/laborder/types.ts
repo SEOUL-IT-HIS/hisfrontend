@@ -57,21 +57,84 @@ export interface LabOrderCreateResponse {
   receptionStatusCode: string;
 }
 
-/**
- * 검사 접수 요약 — 백엔드 LabOrderSummaryDto (목록/단건 공용).
- * - 목록: GET /api/lab-imaging/lab-orders/receptions        (미일정 접수 = 일정등록 대상)
- * - 단건: GET /api/lab-imaging/lab-orders/receptions/{receptionNo}
+/*
+ * LabReceptionSummary(접수 목록 행 타입)는 삭제했다. (2026-08-14)
+ * 목록 화면이 워크리스트로 바뀌면서 LabWorklistItem 이 그 자리를 대신한다.
  */
-export interface LabReceptionSummary extends LabReceptionContext {
-  labOrderId: string;
-  labOrderNo: string;
-  patientNo: string;
-  orderStatusCode: string;
+
+// ============================================================
+// 워크리스트 (검사 업무 화면)
+// ============================================================
+
+/**
+ * 다음에 해야 할 일 — 백엔드 laborder/dto/WorklistStep enum 미러링.
+ *
+ * ⚠ 프론트에서 계산하지 않는다. "담당자가 바뀌어도 다음에 뭘 해야 할지 목록에서 바로 보인다"가
+ *   워크리스트의 목적인데, 판단 규칙이 화면마다 흩어지면 검사 화면과 영상 화면이
+ *   서로 다르게 판단하기 시작한다. 서버가 정한 값을 그대로 표시만 한다.
+ */
+export type WorklistStep =
+  | "SCHEDULE"
+  | "SPECIMEN"
+  | "RECOLLECT"
+  | "ACCEPTANCE"
+  | "RESULT";
+
+/** 워크리스트 1행 — 백엔드 LabWorklistItemDto */
+export interface LabWorklistItem {
   labReceptionId: string;
   receptionNo: string;
-  receptionStatusCode: string;
-  /** 최종 일정의 검사 예정일시. 일정 미등록이면 없음(undefined) */
+  labOrderNo: string;
+  patientNo: string;
+  /** 환자ID — 화면 표시용이 아니라 하위 작업(검체 등록 등) 요청에 담는 값 */
+  patientId: string;
+  urgencyYn: "Y" | "N";
+  /** 접수일시 — 목록 정렬 기준(오래된 건이 위) */
+  receivedAt: string;
+
+  /** 검사 예정일시. 일정 미등록이면 없음 */
   scheduledAt?: string;
+  /** 등록된 검체 수 */
+  specimenCount: number;
+  /** 적합성 판정이 끝난 검체 수 */
+  judgedCount: number;
+  /** 해소되지 않은 재채취 요청이 있는지 */
+  recollectionRequestedYn: "Y" | "N";
+  nextStep: WorklistStep;
+
+  /** ACCEPTED = 처리 대상, EXCLUDED = 제외됨 */
+  receptionStatusCode: string;
+  exclusionReason?: string;
+  excludedAt?: string;
+}
+
+/**
+ * 워크리스트 필터. 백엔드 GET /worklist?receptionStatusCode= 와 대응한다.
+ * "ALL" 이면 파라미터를 보내지 않는다.
+ */
+export type WorklistStatusFilter = "ACCEPTED" | "EXCLUDED" | "ALL";
+
+export const WORKLIST_FILTER_OPTIONS: ReadonlyArray<{
+  value: WorklistStatusFilter;
+  label: string;
+}> = [
+  { value: "ACCEPTED", label: "처리 대상" },
+  { value: "EXCLUDED", label: "제외됨" },
+  { value: "ALL", label: "전체" },
+];
+
+/** 다음 단계 한글 표시. 백엔드 WorklistStep enum 과 값을 맞춘다. */
+export const WORKLIST_STEP_LABELS: Record<WorklistStep, string> = {
+  SCHEDULE: "일정 등록",
+  SPECIMEN: "검체 등록",
+  RECOLLECT: "재채취",
+  ACCEPTANCE: "적합성 판정",
+  RESULT: "결과 등록",
+};
+
+/** 접수 제외 요청 — 백엔드 ReceptionExclusionRequestDto */
+export interface ReceptionExclusionRequest {
+  exclusionReason: string;
 }
 
 /** 검사 오더/접수 slice 상태 */
@@ -83,11 +146,6 @@ export interface LabOrderState {
   /** 마지막 생성 성공 결과 */
   lastCreated: LabOrderCreateResponse | null;
 
-  /** 접수 목록(미일정) 조회 결과 */
-  receptions: LabReceptionSummary[];
-  receptionsLoading: boolean;
-  receptionsError: string;
-
   /**
    * 일정 화면으로 넘길 컨텍스트. 목록|상세에서 고른 접수를 재조회 없이 들고 있는다.
    * 표시에 필요한 최소 정보만 담는다.
@@ -98,6 +156,21 @@ export interface LabOrderState {
   receptionDetail: LabReceptionDetail | null;
   receptionLoading: boolean;
   receptionError: string;
+
+  /** 워크리스트 목록 */
+  worklist: LabWorklistItem[];
+  worklistLoading: boolean;
+  worklistError: string;
+
+  /**
+   * 워크리스트에서 선택한 접수번호. 오른쪽 작업 폼이 이 값을 보고 대상을 정한다.
+   * 목록 갱신 후에도 선택이 풀리지 않도록 행 객체가 아니라 접수번호만 들고 있는다.
+   */
+  selectedReceptionNo: string | null;
+
+  /** 제외/복구 처리 상태 */
+  exclusionSubmitting: boolean;
+  exclusionError: string;
 }
 
 /**
@@ -114,23 +187,14 @@ export const URGENCY_YN_OPTIONS: ReadonlyArray<{ value: "Y" | "N"; label: string
   { value: "Y", label: "긴급" },
 ];
 
-/**
- * 접수 목록 필터. 백엔드 GET /receptions?scheduledYn= 파라미터와 대응한다.
- * - "N": 일정 미등록 (일정등록 대상)
- * - "Y": 일정 등록됨 (재조정 대상)
- * - "ALL": 전체 (파라미터를 보내지 않음)
+/*
+ * 일정 등록 여부 필터(ReceptionScheduledFilter / RECEPTION_FILTER_OPTIONS)는 삭제했다. (2026-08-14)
+ * 워크리스트는 접수상태(처리 대상/제외됨/전체)로 거르므로 WorklistStatusFilter 를 쓴다.
+ * 일정 등록 여부는 필터가 아니라 진행 상태 뱃지로 표시된다.
+ *
+ * ⚠ 영상(imagingorder)은 아직 워크리스트가 없어 같은 이름의 타입을
+ *   features/labimaging/imagingorder/types.ts 에 그대로 두었다.
  */
-export type ReceptionScheduledFilter = "ALL" | "Y" | "N";
-
-/** 접수 목록 필터 버튼 옵션 */
-export const RECEPTION_FILTER_OPTIONS: ReadonlyArray<{
-  value: ReceptionScheduledFilter;
-  label: string;
-}> = [
-  { value: "N", label: "일정 미등록" },
-  { value: "Y", label: "일정 등록됨" },
-  { value: "ALL", label: "전체" },
-];
 
 /**
  * 일정 화면으로 넘길 접수 컨텍스트.

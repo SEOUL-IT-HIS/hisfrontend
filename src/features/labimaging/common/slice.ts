@@ -3,6 +3,7 @@ import laborderReducer from "@/features/labimaging/laborder/slice";
 import imagingorderReducer from "@/features/labimaging/imagingorder/slice";
 import labScheduleReducer from "@/features/labimaging/labschedule/slice";
 import imageScheduleReducer from "@/features/labimaging/imagingschedule/slice";
+import labSpecimenReducer from "@/features/labimaging/labspecimen/slice";
 /**
  * labImaging 도메인 결합 reducer
  * - 하위 기능 slice 들을 하나로 묶어 rootReducer 에 labImaging 키로 등록한다.
@@ -14,6 +15,7 @@ const labImagingReducer = combineReducers({
   imagingorder: imagingorderReducer,
   labschedule: labScheduleReducer,
   imagingschedule: imageScheduleReducer,
+  labspecimen: labSpecimenReducer,
 });
 
 export default labImagingReducer;

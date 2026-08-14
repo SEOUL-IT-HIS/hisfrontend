@@ -98,10 +98,10 @@ export default function LabReceptionDetail() {
       </Panel>
       <div className="flex justify-end gap-2">
         <Link
-          href="/labimaging/laborder/receptions"
+          href="/labimaging/laborder/worklist"
           className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
         >
-          목록
+          워크리스트
         </Link>
         <Button
           onClick={() => {
