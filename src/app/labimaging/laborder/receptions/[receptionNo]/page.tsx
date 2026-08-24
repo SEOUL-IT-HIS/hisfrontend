@@ -1,3 +1,4 @@
+import PageHeader from "@/components/common/PageHeader";
 import LabReceptionDetail from "@/components/labimaging/laborder/LabReceptionDetail";
 
 /**
@@ -6,8 +7,8 @@ import LabReceptionDetail from "@/components/labimaging/laborder/LabReceptionDet
  */
 export default function Page() {
   return (
-    <div className="mx-auto w-full max-w-2xl p-6">
-      <h1 className="mb-6 text-lg font-semibold text-slate-800">검사 접수 상세</h1>
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-6">
+      <PageHeader title="검사 접수 상세" description="접수 정보와 확정된 검사 예정일시를 확인합니다." />
       <LabReceptionDetail />
     </div>
   );

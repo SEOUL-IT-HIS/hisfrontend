@@ -50,11 +50,11 @@ export async function fetchEmpRegisterApi(
  * - empNo 는 변경 불가
  */
 export async function fetchEmpUpdateApi(empData: EmpUpdateRequest): Promise<Emp> {
-  const { empId, empName, empEmail, empPhone, retireDate, empStatus, deptCode, roleIds, assignedBy } =
+  const { empId, empName, empEmail, empPhone, retireDate, empStatus, deptCode } =
     empData;
   const response = await apiClient.put<ApiResponse<Emp>>(
     `/api/emp/update/${empId}`,
-    { empName, empEmail, empPhone, retireDate, empStatus, deptCode, roleIds, assignedBy },
+    { empName, empEmail, empPhone, retireDate, empStatus, deptCode },
   );
   return response.data.data;
 }

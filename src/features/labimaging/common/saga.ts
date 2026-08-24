@@ -3,6 +3,7 @@ import labOrderSaga from "@/features/labimaging/laborder/saga";
 import imageOrderSaga from "@/features/labimaging/imagingorder/saga";
 import labScheduleSaga from "@/features/labimaging/labschedule/saga";
 import imageScheduleSaga from "@/features/labimaging/imagingschedule/saga";
+import labSpecimenSaga from "@/features/labimaging/labspecimen/saga";
 
 /**
  * labImaging 도메인 결합 saga
@@ -14,5 +15,6 @@ export default function* labImagingSaga() {
     fork(imageOrderSaga),
     fork(labScheduleSaga),
     fork(imageScheduleSaga),
+    fork(labSpecimenSaga),
   ]);
 }

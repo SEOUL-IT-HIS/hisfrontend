@@ -33,21 +33,16 @@
 import { call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import {
-  assignSurgery,
   cancelSurgerySchedule,
   endSurgery,
-  getSurgeryRequests,
   getSurgerySchedule,
   getSurgerySchedules,
   getTodaySurgeries,
-  registerEmergencySurgery,
-  registerSurgerySchedule,
   startSurgery,
   updateSurgeryProgress,
   updateSurgerySchedule,
 } from "@/features/surgery/schedule/api";
 import {
-  assignSurgeryRequest,
   cancelSurgeryRequest,
   endSurgeryRequest,
   fetchSurgeriesFailure,
@@ -55,15 +50,10 @@ import {
   fetchSurgeriesSuccess,
   fetchSurgeryFailure,
   fetchSurgeryRequest,
-  fetchSurgeryRequestsFailure,
-  fetchSurgeryRequestsRequest,
-  fetchSurgeryRequestsSuccess,
   fetchSurgerySuccess,
   fetchTodaySurgeriesFailure,
   fetchTodaySurgeriesRequest,
   fetchTodaySurgeriesSuccess,
-  registerEmergencySurgeryRequest,
-  registerSurgeryRequest,
   startSurgeryRequest,
   surgeryMutationFailure,
   surgeryMutationSuccess,
@@ -118,19 +108,6 @@ function* fetchTodaySurgeriesSaga() {
   }
 }
 
-function* fetchSurgeryRequestsSaga() {
-  try {
-    const response: Surgery[] = yield call(getSurgeryRequests);
-    yield put(fetchSurgeryRequestsSuccess(response));
-  } catch (err) {
-    yield put(
-      fetchSurgeryRequestsFailure(
-        getSurgeryErrorMessage(err, "수술 요청 목록 조회에 실패했습니다."),
-      ),
-    );
-  }
-}
-
 function* fetchSurgerySaga(action: PayloadAction<string>) {
   try {
     const response: Surgery = yield call(getSurgerySchedule, action.payload);
@@ -145,36 +122,6 @@ function* fetchSurgerySaga(action: PayloadAction<string>) {
 }
 
 // ----- 등록/수정 -----
-
-function* registerSurgerySaga(action: PayloadAction<RegisterSurgeryRequest>) {
-  try {
-    yield call(registerSurgerySchedule, action.payload);
-    yield put(surgeryMutationSuccess());
-    yield put(fetchSurgeriesRequest());
-  } catch (err) {
-    yield put(
-      surgeryMutationFailure(
-        getSurgeryErrorMessage(err, "수술 스케줄 등록에 실패했습니다."),
-      ),
-    );
-  }
-}
-
-function* registerEmergencySurgerySaga(
-  action: PayloadAction<RegisterSurgeryRequest>,
-) {
-  try {
-    yield call(registerEmergencySurgery, action.payload);
-    yield put(surgeryMutationSuccess());
-    yield put(fetchSurgeriesRequest());
-  } catch (err) {
-    yield put(
-      surgeryMutationFailure(
-        getSurgeryErrorMessage(err, "긴급 수술 등록에 실패했습니다."),
-      ),
-    );
-  }
-}
 
 function* updateSurgerySaga(
   action: PayloadAction<{ surgeryId: string; request: UpdateSurgeryRequest }>,
@@ -195,24 +142,6 @@ function* updateSurgerySaga(
 
 // ----- 배정 -----
 
-function* assignSurgerySaga(
-  action: PayloadAction<{ surgeryId: string; request: AssignSurgeryRequest }>,
-) {
-  try {
-    const { surgeryId, request } = action.payload;
-    yield call(assignSurgery, surgeryId, request);
-    yield put(surgeryMutationSuccess());
-    // 배정되면 요청접수 목록에서 빠지므로 대기 목록을 다시 불러온다
-    yield put(fetchSurgeryRequestsRequest());
-  } catch (err) {
-    yield put(
-      surgeryMutationFailure(
-        getSurgeryErrorMessage(err, "수술 배정에 실패했습니다."),
-      ),
-    );
-  }
-}
-
 // ----- 상태 전이 -----
 
 function* cancelSurgerySaga(
@@ -226,8 +155,8 @@ function* cancelSurgerySaga(
     yield call(cancelSurgerySchedule, surgeryId, request);
     yield put(surgeryMutationSuccess());
     yield put(fetchSurgeriesRequest());
-    // 요청접수 건의 취소는 '반려'라 대기 목록에서도 빠져야 한다
-    yield put(fetchSurgeryRequestsRequest());
+    // 오더 반려는 order saga 가 처리한다 — 수술 취소가 대기 목록을 건드릴 이유가 없다.
+    //   요청 단계가 오더로 옮겨져(2026-08-13) 여기 오는 것은 이미 만들어진 수술뿐이다.
   } catch (err) {
     yield put(
       surgeryMutationFailure(
@@ -287,15 +216,8 @@ function* endSurgerySaga(action: PayloadAction<string>) {
 export default function* scheduleSaga() {
   yield takeLatest(fetchSurgeriesRequest.type, fetchSurgeriesSaga);
   yield takeLatest(fetchTodaySurgeriesRequest.type, fetchTodaySurgeriesSaga);
-  yield takeLatest(fetchSurgeryRequestsRequest.type, fetchSurgeryRequestsSaga);
   yield takeLatest(fetchSurgeryRequest.type, fetchSurgerySaga);
-  yield takeLatest(registerSurgeryRequest.type, registerSurgerySaga);
-  yield takeLatest(
-    registerEmergencySurgeryRequest.type,
-    registerEmergencySurgerySaga,
-  );
   yield takeLatest(updateSurgeryRequest.type, updateSurgerySaga);
-  yield takeLatest(assignSurgeryRequest.type, assignSurgerySaga);
   yield takeLatest(cancelSurgeryRequest.type, cancelSurgerySaga);
   yield takeLatest(updateProgressRequest.type, updateProgressSaga);
   yield takeLatest(startSurgeryRequest.type, startSurgerySaga);

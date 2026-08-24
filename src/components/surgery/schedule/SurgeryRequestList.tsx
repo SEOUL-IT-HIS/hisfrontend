@@ -17,54 +17,55 @@ import {
 } from "@/components/common";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
-import type { Surgery } from "@/features/surgery/schedule/types";
 import {
-  cancelSurgeryRequest,
-  fetchSurgeryRequestsRequest,
-  selectScheduleError,
-  selectScheduleLoading,
-  selectScheduleSaving,
-  selectSurgeryRequests,
-} from "@/features/surgery/schedule/slice";
+  fetchOrdersRequest,
+  rejectOrderRequest,
+  selectOrderError,
+  selectOrderLoading,
+  selectOrderSaving,
+  selectSurgeryOrders,
+} from "@/features/surgery/order/slice";
+import { ORDER_STATUS, type SurgeryOrder } from "@/features/surgery/order/types";
 
 /**
- * 수술 요청 대기 목록 (요청접수 00)
+ * 수술 요청(오더) 대기 목록 (SL2-225)
  *
- * <p>진료(일반)와 응급실(응급)에서 올라온 요청 중 아직 수술실이 잡히지 않은 건이다.
- * 수술실 담당자가 배정하면 예약(01)이 되어 이 목록에서 빠진다. 응급 건이 위로 오도록
- * 백엔드가 정렬해 내려주므로 화면에서 다시 정렬하지 않는다.</p>
+ * <p>진료(일반)와 응급실(응급)에서 올라온 <b>요청</b> 중 아직 수술실이 잡히지 않은 건이다.
+ * 배정하면 수락(01)이 되어 이 목록에서 빠지고, 그때 비로소 수술이 만들어진다.</p>
+ *
+ * <p><b>수술이 아니라 오더를 본다</b>(2026-08-13) — 예전에는 요청도 수술 행이라
+ * 이 화면이 수술 목록을 상태로 걸러 보여줬다. 이제 SURGERY_ORDER 를 본다.
+ * 반려된 요청은 수술이 되지 않으므로 수술 통계에 섞이지 않는다.</p>
  *
  * <p>환자명·집도의명을 표시하지 않는 이유 — 환자·직원 서비스가 소유한 데이터라 수술이
  * 저장하지 않으며(§14.1), 표시하려면 각 서비스 API 를 호출해야 한다(§21.9).</p>
  *
- * <p>여기서의 취소는 업무상 '반려'다. 행을 지우지 않고 취소(04) 상태로 전이시킨다(§21.6).</p>
- *
- * <p>표·배지·버튼은 components/common 을 쓴다(§12.1). 응급 구분은 직접 만든 뱃지 대신
- * StatusBadge 를 쓴다 — 색과 모양이 다른 서비스 목록과 같아진다.</p>
+ * <p>응급 건이 위로 오도록 백엔드가 정렬해 내려주므로 화면에서 다시 정렬하지 않는다.</p>
  *
  * <p><b>반려 사유(SL2-227)</b> — 버튼을 누르면 바로 반려하지 않고 사유를 고르는 창을 띄운다.
  * 되돌릴 수 없는 조작이라 한 번 더 확인받는 편이 낫고, 사유를 남겨야 나중에 "왜 반려됐나"에
- * 답할 수 있다. 사유는 이력에 함께 저장된다(SL2-233).</p>
- *
- * <p>사유 코드 그룹(SURGERY_CANCEL_CD)이 admin 에 아직 없으면 선택지가 비어 보인다.
- * 그때도 사유 없이 반려할 수 있게 열어둔다 — 코드 등록 전이라고 업무를 막을 수는 없다.
- * 백엔드도 같은 판단으로 그룹이 없으면 검증을 건너뛴다.</p>
+ * 답할 수 있다. 사유 코드 그룹(SURGERY_ORDER_REJECT_CD)이 admin 에 아직 없으면 선택지가
+ * 비어 보이는데, 그때도 사유 없이 반려할 수 있게 열어둔다 — 코드 등록 전이라고 업무를
+ * 막을 수는 없고, 백엔드도 같은 판단으로 그룹이 없으면 검증을 건너뛴다.</p>
  */
 export default function SurgeryRequestList() {
   const dispatch = useDispatch<AppDispatch>();
-  const requests = useSelector(selectSurgeryRequests);
-  const loading = useSelector(selectScheduleLoading);
-  const saving = useSelector(selectScheduleSaving);
-  const error = useSelector(selectScheduleError);
+  const orders = useSelector(selectSurgeryOrders);
+  const loading = useSelector(selectOrderLoading);
+  const saving = useSelector(selectOrderSaving);
+  const error = useSelector(selectOrderError);
 
   // 반려 대상과 사유. 대상이 있으면 창이 열린 상태다.
-  const [rejectTarget, setRejectTarget] = useState<Surgery | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<SurgeryOrder | null>(null);
   const [reasonCd, setReasonCd] = useState("");
 
-  const { options: reasonOptions } = useCommonCodeOptions("SURGERY_CANCEL_CD");
+  const { options: reasonOptions } = useCommonCodeOptions(
+    "SURGERY_ORDER_REJECT_CD",
+  );
 
   useEffect(() => {
-    dispatch(fetchSurgeryRequestsRequest());
+    // 접수(00) 상태만 — 이미 처리된 오더는 대기 목록에 뜰 이유가 없다
+    dispatch(fetchOrdersRequest({ orderStatusCd: ORDER_STATUS.RECEIVED }));
   }, [dispatch]);
 
   function closeReject() {
@@ -77,49 +78,49 @@ export default function SurgeryRequestList() {
       return;
     }
     dispatch(
-      cancelSurgeryRequest(
-        rejectTarget.surgeryId,
+      rejectOrderRequest(
+        rejectTarget.orderId,
         // 빈 값이면 아예 보내지 않는다 — 백엔드가 본문 없는 호출을 허용한다
-        reasonCd ? { cancelReasonCd: reasonCd } : undefined,
+        reasonCd ? { rejectReasonCd: reasonCd } : undefined,
       ),
     );
     closeReject();
   }
 
-  const columns: DataTableColumn<Surgery>[] = [
+  const columns: DataTableColumn<SurgeryOrder>[] = [
     {
       key: "emergencyYn",
       header: "구분",
-      render: (s) => (
+      render: (o) => (
         <StatusBadge
-          value={s.emergencyYn}
+          value={o.emergencyYn}
           activeLabel="응급"
           inactiveLabel="일반"
         />
       ),
     },
-    { key: "surgeryDt", header: "희망 수술일", render: (s) => s.surgeryDt },
-    { key: "surgeryName", header: "수술명", render: (s) => s.surgeryName ?? "-" },
-    { key: "patientId", header: "환자ID", render: (s) => s.patientId },
-    { key: "surgeonId", header: "집도의ID", render: (s) => s.surgeonId },
+    { key: "requestedDt", header: "희망 수술일", render: (o) => o.requestedDt },
+    { key: "surgeryName", header: "수술명", render: (o) => o.surgeryName ?? "-" },
+    { key: "patientId", header: "환자ID", render: (o) => o.patientId },
+    { key: "surgeonId", header: "집도의ID", render: (o) => o.surgeonId },
     {
-      key: "roomCode",
-      header: "희망 수술실",
-      // 진료가 희망 수술실을 지정했더라도 확정은 배정 단계에서 한다
-      render: (s) => s.roomCode ?? "-",
+      key: "visitId",
+      header: "내원ID",
+      // 청구 연동(SL2-72)에 필요한 값이라 비어 있으면 눈에 띄게 둔다
+      render: (o) => o.visitId ?? "-",
     },
     {
       key: "createdAt",
       header: "요청일시",
-      render: (s) => s.createdAt?.slice(0, 10) ?? "-",
+      render: (o) => o.createdAt?.slice(0, 10) ?? "-",
     },
     {
       key: "actions",
       header: "처리",
-      render: (s) => (
+      render: (o) => (
         <div className="flex items-center gap-2">
           <Link
-            href={`/surgery/schedule/assign/${s.surgeryId}`}
+            href={`/surgery/schedule/assign/${o.orderId}`}
             className="text-sky-600 underline"
           >
             배정
@@ -128,7 +129,7 @@ export default function SurgeryRequestList() {
             variant="ghost"
             disabled={saving}
             className="h-8 px-2"
-            onClick={() => setRejectTarget(s)}
+            onClick={() => setRejectTarget(o)}
           >
             반려
           </Button>
@@ -143,11 +144,11 @@ export default function SurgeryRequestList() {
 
       <DataTable
         columns={columns}
-        rows={requests}
-        rowKey={(s) => s.surgeryId}
+        rows={orders}
+        rowKey={(o) => o.orderId}
         loading={loading}
         emptyMessage="배정 대기 중인 요청이 없습니다."
-        minWidthClassName="min-w-[920px]"
+        minWidthClassName="min-w-[960px]"
       />
 
       <Modal
@@ -170,7 +171,7 @@ export default function SurgeryRequestList() {
 
           <FormField
             label="반려 사유"
-            htmlFor="cancelReasonCd"
+            htmlFor="rejectReasonCd"
             hint={
               reasonOptions.length === 0
                 ? "사유 코드가 아직 등록되지 않아 사유 없이 반려됩니다."
@@ -178,7 +179,7 @@ export default function SurgeryRequestList() {
             }
           >
             <Select
-              id="cancelReasonCd"
+              id="rejectReasonCd"
               placeholder="사유 선택 안 함"
               options={reasonOptions}
               value={reasonCd}
