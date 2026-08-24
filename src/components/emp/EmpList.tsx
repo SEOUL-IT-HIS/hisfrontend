@@ -28,9 +28,7 @@ import {
 } from "@/components/common";
 import { fetchCommonCodeItemsByGroupCode } from "@/features/commonCode/api/commonCodeItemApi";
 import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemTypes";
-import { fetchRoleListApi } from "@/features/emp/api/roleApi";
 import { fetchEmpRequest } from "@/features/emp/slice/empSlice";
-import type { RoleType } from "@/features/emp/types/roleType";
 import {
   toCodeLabel,
   toCodeSelectOptions,
@@ -56,8 +54,6 @@ export default function EmpList() {
   /** 공통코드: DEPT_CD / EMP_STATUS_CD */
   const [deptCodes, setDeptCodes] = useState<CommonCodeItem[]>([]);
   const [statusCodes, setStatusCodes] = useState<CommonCodeItem[]>([]);
-  /** 역할 목록 (직원 상세/수정에서 배정용) */
-  const [roles, setRoles] = useState<RoleType[]>([]);
 
   // ----- 검색 조건 (프론트 전용, API 파라미터 아님) -----
   const [keyword, setKeyword] = useState("");
@@ -90,14 +86,12 @@ export default function EmpList() {
     dispatch(fetchEmpRequest());
 
     async function loadCommonCodes() {
-      const [depts, statuses, roleList] = await Promise.all([
+      const [depts, statuses] = await Promise.all([
         fetchCommonCodeItemsByGroupCode("DEPT_CD"),
         fetchCommonCodeItemsByGroupCode("EMP_STATUS_CD"),
-        fetchRoleListApi(),
       ]);
       setDeptCodes(depts);
       setStatusCodes(statuses);
-      setRoles(roleList);
     }
     void loadCommonCodes();
   }, [dispatch]);
@@ -264,7 +258,6 @@ export default function EmpList() {
           empId={selectedEmpId}
           deptCodes={deptCodes}
           statusCodes={statusCodes}
-          roles={roles}
         />
       </div>
 

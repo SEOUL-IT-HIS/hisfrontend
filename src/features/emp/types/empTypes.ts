@@ -27,7 +27,6 @@ export type Emp = {
   deptCode: string | null;
   createdAt: string | null;
   updatedAt: string | null;
-  roleIds : string[] | null;
 };
 
 /**
@@ -55,8 +54,6 @@ export type EmpUpdateRequest = {
   retireDate?: string;
   empStatus?: string;
   deptCode?: string;
-  assignedBy?: string;
-  roleIds?: string[];
 };
 
 export type EmpApiResponse = ApiResponse<Emp[]>;
