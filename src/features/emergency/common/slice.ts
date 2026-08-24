@@ -1,9 +1,9 @@
 import { combineReducers } from "@reduxjs/toolkit";
-import emsInfoReducer from "@/features/emergency/emsInfo/slice";
-import ktasReducer from "@/features/emergency/ktas/slice";
-import vitalsReducer from "@/features/emergency/vitals/slice";
-import isolationReducer from "@/features/emergency/isolation/slice";
-import riskScreeningReducer from "@/features/emergency/riskScreening/slice";
+import emsInfoReducer from "@/features/emergency/triage/emsInfo/slice";
+import ktasReducer from "@/features/emergency/triage/ktas/slice";
+import vitalsReducer from "@/features/emergency/triage/vitals/slice";
+import isolationReducer from "@/features/emergency/triage/isolation/slice";
+import riskScreeningReducer from "@/features/emergency/triage/riskScreening/slice";
 import commonCodeReducer from "@/features/emergency/commonCode/slice";
 
 /**

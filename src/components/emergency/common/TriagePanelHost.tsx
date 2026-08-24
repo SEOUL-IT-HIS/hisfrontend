@@ -2,11 +2,11 @@
 
 import { useState, type ChangeEvent } from "react";
 import { Button, FormField, Input } from "@/components/common";
-import EmsInfoPanel from "@/components/emergency/emsInfo/EmsInfoPanel";
-import IsolationPanel from "@/components/emergency/isolation/IsolationPanel";
-import KtasPanel from "@/components/emergency/ktas/KtasPanel";
-import RiskScreeningPanel from "@/components/emergency/riskScreening/RiskScreeningPanel";
-import VitalsPanel from "@/components/emergency/vitals/VitalsPanel";
+import EmsInfoPanel from "@/components/emergency/tirage/emsInfo/EmsInfoPanel";
+import IsolationPanel from "@/components/emergency/tirage/isolation/IsolationPanel";
+import KtasPanel from "@/components/emergency/tirage/ktas/KtasPanel";
+import RiskScreeningPanel from "@/components/emergency/tirage/riskScreening/RiskScreeningPanel";
+import VitalsPanel from "@/components/emergency/tirage/vitals/VitalsPanel";
 
 /**
  * ER-TRIAGE 상태평가 화면 (UC-TRI-01~06 / Jira UD2-8,9,10,11,12,43)

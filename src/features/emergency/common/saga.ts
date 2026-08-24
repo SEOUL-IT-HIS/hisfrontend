@@ -1,9 +1,9 @@
 import { all, fork } from "redux-saga/effects";
-import emsInfoSaga from "@/features/emergency/emsInfo/saga";
-import ktasSaga from "@/features/emergency/ktas/saga";
-import vitalsSaga from "@/features/emergency/vitals/saga";
-import isolationSaga from "@/features/emergency/isolation/saga";
-import riskScreeningSaga from "@/features/emergency/riskScreening/saga";
+import emsInfoSaga from "@/features/emergency/triage/emsInfo/saga";
+import ktasSaga from "@/features/emergency/triage/ktas/saga";
+import vitalsSaga from "@/features/emergency/triage/vitals/saga";
+import isolationSaga from "@/features/emergency/triage/isolation/saga";
+import riskScreeningSaga from "@/features/emergency/triage/riskScreening/saga";
 import commonCodeSaga from "@/features/emergency/commonCode/saga";
 
 /**
