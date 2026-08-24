@@ -64,6 +64,11 @@ export interface ImageReceptionSummary extends ImageReceptionContext {
   imageOrderId: string;
   imageOrderNo: string;
   patientNo: string;
+  /**
+   * 환자ID (patient-service 내부 식별자).
+   * 하위 작업(동의 등록 등)이 요청 본문에 담아야 해서 함께 내려온다. 화면 표시용은 patientNo 다.
+   */
+  patientId: string;
   orderStatusCode: string;
   imageReceptionId: string;
   receptionNo: string;
