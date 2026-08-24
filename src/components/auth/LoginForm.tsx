@@ -3,7 +3,7 @@
 /**
  * [로그인 폼]
  * dispatch(fetchAuthLoginRequest) → saga → POST /api/auth/login
- * 성공 시 /admin/emp 이동
+ * 성공 시 /main(대문) 이동
  */
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -88,7 +88,7 @@ export default function LoginForm() {
     }
     if (user) {
       waitRedirect.current = false;
-      router.push("/admin/emp");
+      router.push("/main");
     }
   }, [loading, error, user, router]);
 
