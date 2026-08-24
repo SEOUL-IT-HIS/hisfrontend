@@ -490,12 +490,6 @@ export default function PatientRegisterForm() {
             </p>
           </FormField>
 
-          <FormField
-            label="환자상태관리코드"
-            required
-            htmlFor="statusCd"
-          ></FormField>
-
           <FormField label="환자상태관리코드" required htmlFor="statusCd">
             <Select
               id="statusCd"
