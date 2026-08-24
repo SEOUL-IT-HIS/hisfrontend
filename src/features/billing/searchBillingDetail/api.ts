@@ -30,14 +30,14 @@ export async function fetchBillingDetailApi(billingDetailId: string): Promise<Bi
 
 export async function admissionBillingDetailApi(admissionId: string): Promise<BillingDetailAdmission> {
   const { data } = await apiClient.get<ApiResponse<BillingDetailAdmission>>(
-    `${BILLING_DETAIL_PATH}/preview/admission/{admissionId}`,
+    `${BILLING_DETAIL_PATH}/preview/admission/${admissionId}`,
   );
   return data.data;
 }
 
 export async function visitBillingDetailApi(visitId: string): Promise<BillingDetailVisit> {
   const { data } = await apiClient.get<ApiResponse<BillingDetailVisit>>(
-    `${BILLING_DETAIL_PATH}/preview/visit/{visitId}`,
+    `${BILLING_DETAIL_PATH}/preview/visit/${visitId}`,
   );
   return data.data;
 }
