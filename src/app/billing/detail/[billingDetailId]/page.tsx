@@ -1,4 +1,4 @@
-import BillingDetailSerchDetail from "@/components/billing/BillingDetailSearchDetail";
+import BillingDetailSerchDetail from "@/components/billing/detail/BillingDetailSearchDetail";
 
 const BillingDetailSearchPage=()=>{
     return (

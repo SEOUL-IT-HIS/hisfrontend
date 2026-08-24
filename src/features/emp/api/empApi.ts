@@ -25,14 +25,14 @@ export async function fetchEmpApi(): Promise<Emp[]> {
 }
 
 /** 직원 상세 조회 */
-export async function fetchEmpDetailApi(empId: number): Promise<Emp> {
+export async function fetchEmpDetailApi(empId: string): Promise<Emp> {
   const response = await apiClient.get<ApiResponse<Emp>>(
     `/api/emp/detail/${empId}`,
   );
   return response.data.data;
 }
 
-/** 직원 등록 — body: empNo, empName, empEmail, empPhone, hireDate, deptCode */
+/** 직원 등록 — body: empName, empEmail, empPhone, hireDate, deptCode (empNo는 서버 자동채번) */
 export async function fetchEmpRegisterApi(
   empData: EmpRegisterRequest,
 ): Promise<Emp> {

@@ -1,7 +1,7 @@
 import { all, call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { BedReservationDTO, RegisterBedReservationRequest, UpdateBedReservationRequest } from "../types";
-import { createBedReservationApi, deleteBedReservationApi, fetchBedReservationApi, fetchBedReservationDetailApi, updateBedReservationApi } from "./api";
+import { createBedReservationApi, deleteBedReservationApi, fetchBedReservationApi, fetchBedReservationDetailApi, updateBedReservationApi, updateBedReservationScheduleApi } from "./api";
 import { fetchBedReservationsFailure } from "./slice";
 
 
@@ -47,6 +47,15 @@ function* updateBedReservationSaga(action: PayloadAction<UpdateBedReservationReq
     yield put({ type: "bedReservation/updateBedReservationFailure", payload: extractErrorMessage(e) });
   }
 }
+function* updateBedReservationScheduleSaga(action: PayloadAction<{ id: string; reserveAt: string; expectedAdmissionAt: string }>) {
+  try {
+    const { id, reserveAt, expectedAdmissionAt } = action.payload;
+    const bedReservation: BedReservationDTO = yield call(updateBedReservationScheduleApi, id, { reserveAt, expectedAdmissionAt });
+    yield put({ type: "bedReservation/updateBedReservationScheduleSuccess", payload: bedReservation });
+  } catch (e: unknown) {
+    yield put({ type: "bedReservation/updateBedReservationScheduleFailure", payload: extractErrorMessage(e) });
+  }
+}
 
 function* deleteBedReservationSaga(action: PayloadAction<string>) {
   try {
@@ -62,6 +71,7 @@ export default function* bedReservationSaga() {
     takeLatest("bedReservation/fetchBedReservationDetailRequest", fetchBedReservationDetailSaga),
     takeLatest("bedReservation/createBedReservationRequest", createBedReservationSaga),
     takeLatest("bedReservation/updateBedReservationRequest", updateBedReservationSaga),
+    takeLatest("bedReservation/updateBedReservationScheduleRequest", updateBedReservationScheduleSaga),
     takeLatest("bedReservation/deleteBedReservationRequest", deleteBedReservationSaga),
   ]);
 }

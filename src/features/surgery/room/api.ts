@@ -35,7 +35,13 @@ const EQUIPMENT_PATH = "/api/surgery/equipment";
 // 수술실 (SL2-6 조회 / SL2-7 등록 / SL2-30 수정 / SL2-8 상태변경 / SL2-50 턴오버)
 // ---------------------------------------------------------------------------
 
-/** 수술실 목록을 페이지 단위로 조회한다. */
+/** 수술실 목록을 페이지 단위로 조회한다. 
+    async란? 비동기 함수를 정의할 때 사용하는 키워드로,
+    함수 내부에서 await 키워드를 사용할 수 있게 해준다
+    await란? 비동기 작업이 완료될 때까지 기다리도록 하는 키워드로,
+    Promise 객체가 resolve될 때까지 함수의 실행을 일시 중지한다
+    promise란? 비동기 작업의 최종 완료 또는 실패를 나타내는 객체로,
+    비동기 작업이 성공하면 resolve, 실패하면 reject 상태가 된다 */
 export async function getRooms(
   params?: PageParams,
 ): Promise<PageResponse<SurgeryRoom>> {
@@ -48,9 +54,10 @@ export async function getRooms(
 
 /** 사용 가능한 수술실만 조회한다(배정 화면의 선택 목록용). */
 export async function getAvailableRooms(): Promise<SurgeryRoom[]> {
-  const { data } =
-    await apiClient.get<ApiResponse<SurgeryRoom[]>>(`${ROOM_PATH}/available`);
-  return data.data;
+  const { data } = await apiClient.get<ApiResponse<SurgeryRoom[]>>(
+    `${ROOM_PATH}/available`,
+  );
+  return data.data ?? [];
 }
 
 /** 수술실 단건을 조회한다(수정 화면 초기값 바인딩 등). */

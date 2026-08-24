@@ -7,9 +7,7 @@
 import apiClient from "@/lib/axios";
 import type { ApiResponse } from "@/features/surgery/types";
 import type {
-  AssignSurgeryRequest,
   CancelSurgeryRequest,
-  RegisterSurgeryRequest,
   Surgery,
   SurgeryListParams,
   UpdateProgressRequest,
@@ -18,30 +16,6 @@ import type {
 
 const SCHEDULE_PATH = "/api/surgery/schedule";
 
-/** 배정 대기 중인 진료 요청 목록을 조회한다(status_cd = 00 요청접수). */
-export async function getSurgeryRequests(): Promise<Surgery[]> {
-  const { data } = await apiClient.get<ApiResponse<Surgery[]>>(
-    `${SCHEDULE_PATH}/requests`,
-  );
-  return data.data;
-}
-
-/**
- * 수술을 배정한다(요청접수 → 예약).
- *
- * <p>수술실·마취의·간호사만 바꾸므로 PATCH 를 쓴다(§21.8).</p>
- */
-export async function assignSurgery(
-  surgeryId: string,
-  request: AssignSurgeryRequest,
-): Promise<Surgery> {
-  const { data } = await apiClient.patch<ApiResponse<Surgery>>(
-    `${SCHEDULE_PATH}/${surgeryId}/assign`,
-    request,
-  );
-  return data.data;
-}
-
 /** 수술 일정 목록을 조회한다. date 미지정 시 전체. (SL2-25) */
 export async function getSurgerySchedules(
   params?: SurgeryListParams,
@@ -49,7 +23,7 @@ export async function getSurgerySchedules(
   const { data } = await apiClient.get<ApiResponse<Surgery[]>>(SCHEDULE_PATH, {
     params,
   });
-  return data.data;
+  return data.data ?? [];
 }
 
 /** 금일 수술 현황을 조회한다. (SL2-40 모니터링) */
@@ -57,7 +31,7 @@ export async function getTodaySurgeries(): Promise<Surgery[]> {
   const { data } = await apiClient.get<ApiResponse<Surgery[]>>(
     `${SCHEDULE_PATH}/today`,
   );
-  return data.data;
+  return data.data ?? [];
 }
 
 export async function getSurgerySchedule(surgeryId: string): Promise<Surgery> {
@@ -67,27 +41,9 @@ export async function getSurgerySchedule(surgeryId: string): Promise<Surgery> {
   return data.data;
 }
 
-/** 수술 스케줄을 등록한다. (SL2-36) */
-export async function registerSurgerySchedule(
-  request: RegisterSurgeryRequest,
-): Promise<Surgery> {
-  const { data } = await apiClient.post<ApiResponse<Surgery>>(
-    SCHEDULE_PATH,
-    request,
-  );
-  return data.data;
-}
-
-/** 긴급 수술을 등록한다. (SL2-44) */
-export async function registerEmergencySurgery(
-  request: RegisterSurgeryRequest,
-): Promise<Surgery> {
-  const { data } = await apiClient.post<ApiResponse<Surgery>>(
-    `${SCHEDULE_PATH}/emergency`,
-    request,
-  );
-  return data.data;
-}
+// 수술 요청 등록(SL2-36)·응급 등록(SL2-44)·배정 대기 목록(SL2-225)·일괄 배정(SL2-15)은
+//   오더로 옮겼다 — features/surgery/order/api.ts (2026-08-13 결정).
+//   수술은 오더가 수락(배정)될 때 만들어지므로, 수술을 직접 만드는 함수는 여기 없다.
 
 /** 수술 스케줄을 수정한다. (SL2-37) */
 export async function updateSurgerySchedule(

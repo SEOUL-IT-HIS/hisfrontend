@@ -13,11 +13,13 @@ import surgerySaga from "@/features/surgery/saga";
 // import adminSaga from "@/features/admin/saga";
 import watchCommonCodeItemSaga from "@/features/commonCode/saga/commonCodeItemSaga";
 import watchCommonCodeGroupSaga from "@/features/commonCode/saga/commonCodeGroupSaga";
+import watchAuthSaga from "@/features/auth/saga/authSaga";
 import watchEmpSaga from "@/features/emp/saga/empSaga";
 import watchMenuSaga from "@/features/system/saga/menuSaga";
 import watchPatientSaga from "@/features/patient/saga/patientSaga";
 import billingDetailSaga from "@/features/billing/searchBillingDetail/saga";
 import billingMasterSaga from "@/features/billing/billingMaster/saga";
+import billingPaymentSaga from "@/features/billing/payment/saga";
 
 /**
  * RootSaga (프론트 리더 관리 영역)
@@ -26,6 +28,7 @@ import billingMasterSaga from "@/features/billing/billingMaster/saga";
 export default function* rootSaga() {
   yield all([
       fork(watchMenuSaga),
+      fork(watchAuthSaga),
       fork(watchEmpSaga),
       fork(watchCommonCodeGroupSaga),
       fork(watchCommonCodeItemSaga),
@@ -35,6 +38,7 @@ export default function* rootSaga() {
     // fork(receptionSaga),
     fork(billingDetailSaga),
     fork(billingMasterSaga),
+    fork(billingPaymentSaga),
      fork(outpatientSaga),
     fork(emergencySaga),
     fork(inpatientSaga),
