@@ -9,10 +9,11 @@ import emergencySaga from "@/features/emergency/common/saga";
 import inpatientSaga from "@/features/inpatient/saga";
 import labImagingSaga from "@/features/labimaging/common/saga";
 // import pharmacySaga from "@/features/pharmacy/saga";
-// import surgerySaga from "@/features/surgery/saga";
+import surgerySaga from "@/features/surgery/saga";
 // import adminSaga from "@/features/admin/saga";
 import watchCommonCodeItemSaga from "@/features/commonCode/saga/commonCodeItemSaga";
 import watchCommonCodeGroupSaga from "@/features/commonCode/saga/commonCodeGroupSaga";
+import watchAuthSaga from "@/features/auth/saga/authSaga";
 import watchEmpSaga from "@/features/emp/saga/empSaga";
 import watchMenuSaga from "@/features/system/saga/menuSaga";
 import watchPatientSaga from "@/features/patient/saga/patientSaga";
@@ -27,6 +28,7 @@ import billingPaymentSaga from "@/features/billing/payment/saga";
 export default function* rootSaga() {
   yield all([
       fork(watchMenuSaga),
+      fork(watchAuthSaga),
       fork(watchEmpSaga),
       fork(watchCommonCodeGroupSaga),
       fork(watchCommonCodeItemSaga),
@@ -41,6 +43,6 @@ export default function* rootSaga() {
     fork(emergencySaga),
     fork(inpatientSaga),
     // fork(pharmacySaga),
-    // fork(surgerySaga),
+    fork(surgerySaga),
   ]);
 }

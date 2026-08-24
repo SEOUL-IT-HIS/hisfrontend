@@ -9,10 +9,11 @@ import emergencyReducer from "@/features/emergency/common/slice";
 import inpatientReducer from "@/features/inpatient/slice";
 import labImagingReducer from "@/features/labimaging/common/slice";
 // import pharmacyReducer from "@/features/pharmacy/slice";
-// import surgeryReducer from "@/features/surgery/slice";
+import surgeryReducer from "@/features/surgery/slice";
 // import adminReducer from "@/features/admin/slice";
 import commonCodeItemReducer from "@/features/commonCode/slice/commonCodeItemSlice";
 import commonCodeGroupReducer from "@/features/commonCode/slice/commonCodeGroupSlice";
+import authReducer from "@/features/auth/slice/authSlice";
 import empReducer from "@/features/emp/slice/empSlice";
 import systemReducer from "@/features/system/slice/menuSlice";
 import patientReducer from "@/features/patient/slice/patientSlice";
@@ -32,6 +33,7 @@ const rootReducer = combineReducers({
 
   // 공통
   system: systemReducer,
+  auth: authReducer,
   commonCodeGroup: commonCodeGroupReducer,
   commonCodeItem: commonCodeItemReducer,
   emp: empReducer,
@@ -66,7 +68,7 @@ const rootReducer = combineReducers({
   // pharmacy: pharmacyReducer,
 
   // 수술 (SUR)
-  // surgery: surgeryReducer,
+  surgery: surgeryReducer,
 });
 
 export default rootReducer;

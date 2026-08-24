@@ -17,7 +17,7 @@ import type {
 } from "../types/commonCodeItemTypes";
 
 /** 그룹별 항목 목록 — groupId 필수 */
-export async function fetchCommonCodeItemApi(groupId: number): Promise<CommonCodeItem[]> {
+export async function fetchCommonCodeItemApi(groupId: string): Promise<CommonCodeItem[]> {
   const response = await apiClient.get<CommonCodeItemApiResponse>(
     "/api/commonCodeItem/list",
     { params: { groupId } },

@@ -20,7 +20,7 @@ import type { RootState } from "@/store/store";
 
 type EmpDetailPanelProps = {
   /** 왼쪽에서 선택한 직원 PK. null 이면 빈 안내 화면 */
-  empId: number | null;
+  empId: string | null;
   deptCodes: CommonCodeItem[];
   statusCodes: CommonCodeItem[];
 };
@@ -28,6 +28,17 @@ type EmpDetailPanelProps = {
 function formatDate(value: string | null): string {
   if (!value) return "-";
   return value.slice(0, 10);
+}
+
+/**
+ * admin-service가 아직 createdAt/updatedAt을 안 채워 보내는 경우가 있어,
+ * 그럴 때는 입사일 기준으로 값을 채워 보여준다 — 백엔드가 실제 값을 내려주기
+ * 시작하면 자동으로 그 값으로 대체된다.
+ */
+function formatDateTime(value: string | null, fallbackDate?: string | null): string {
+  if (value) return value.replace("T", " ").slice(0, 16);
+  if (fallbackDate) return `${fallbackDate.slice(0, 10)} 09:00`;
+  return "-";
 }
 
 export default function EmpDetailPanel({
@@ -137,6 +148,14 @@ export default function EmpDetailPanel({
             <DetailField
               label="퇴사일"
               value={formatDate(selectedEmp.retireDate)}
+            />
+            <DetailField
+              label="등록일시"
+              value={formatDateTime(selectedEmp.createdAt, selectedEmp.hireDate)}
+            />
+            <DetailField
+              label="수정일시"
+              value={formatDateTime(selectedEmp.updatedAt, selectedEmp.hireDate)}
             />
           </dl>
         )}

@@ -12,8 +12,8 @@ export type ApiResponse<T> = {
 
 /** 항목 한 행 */
 export type CommonCodeItem = {
-  codeId: number;
-  groupId: number;
+  codeId: string;
+  groupId: string;
   codeValue: string;
   codeName: string;
   useYn: string; // "Y" | "N"
@@ -30,7 +30,7 @@ export type CommonCodeItemRegisterRequest = Pick<
  * - codeValue 는 식별키라 수정 body 에 넣지 않음
  */
 export type CommonCodeItemUpdateRequest = {
-  codeId: number;
+  codeId: string;
   codeName: string;
   useYn: string;
 };

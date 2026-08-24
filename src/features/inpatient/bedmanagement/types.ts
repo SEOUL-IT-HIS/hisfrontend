@@ -9,6 +9,7 @@ export interface BedAssignmentDTO {
 }
 
 export interface BedDTO {
+  patientId: string | null;
   bedId: string;
   roomNo: string;
   bedNo: string;
@@ -16,6 +17,18 @@ export interface BedDTO {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface BedReservationDTO {
+  bedReservationId: number;
+  bedId: string;
+  patientId: string | null;
+  reserveAt: string;
+  expectedAdmissionAt: string;
+  reservationStatusCd: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 export interface ApiResponse<T> {
   code: string;
@@ -60,4 +73,32 @@ export interface BedState {
   detail: BedDTO | null;
   listStatus: Status;
   detailStatus: Status;
+}
+
+// ----- 병상예약(bedreservation) 전용 -----
+
+/** 예약 생성 요청 — 서버가 채워주는 필드(bedReservationId/createdAt/updatedAt) 및 서버가 REQUESTED로 강제 지정하는 reservationStatusCd 제외 */
+export type RegisterBedReservationRequest = Omit<
+  BedReservationDTO,
+  "bedReservationId" | "createdAt" | "updatedAt" | "reservationStatusCd"
+>;
+
+/** 예약 수정 요청 — PUT 경로/바디에 bedReservationId 필요, createdAt/updatedAt은 서버가 관리 */
+export type UpdateBedReservationRequest = Omit<
+  BedReservationDTO,
+  "createdAt" | "updatedAt"
+>;
+export type UpdateBedReservationScheduleRequest = Pick<
+  BedReservationDTO,
+  "reserveAt" | "expectedAdmissionAt"
+>;
+export interface BedReservationState {
+  list: BedReservationDTO[];
+  detail: BedReservationDTO | null;
+  listStatus: Status;
+  detailStatus: Status;
+  createStatus: Status;
+  updateStatus: Status;
+  deleteStatus: Status;
+  scheduleUpdateStatus: Status;
 }

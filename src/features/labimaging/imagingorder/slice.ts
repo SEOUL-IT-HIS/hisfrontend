@@ -3,7 +3,10 @@ import type {
   ImageOrderCreateRequest,
   ImageOrderCreateResponse,
   ImageOrderState,
+  ImageReceptionContext,
+  ImageReceptionDetail,
   ImageReceptionSummary,
+  ReceptionScheduledFilter,
 } from "@/features/labimaging/imagingorder/types";
 
 /**
@@ -20,6 +23,7 @@ const initialState: ImageOrderState = {
   receptionsError: "",
 
   selectedReception: null,
+  receptionDetail: null,
   receptionLoading: false,
   receptionError: "",
 };
@@ -56,7 +60,11 @@ const imagingOrderSlice = createSlice({
     },
 
     // ---------- 접수 목록(미일정) 조회 ----------
-    fetchImageReceptionsRequest(state) {
+    // payload = 필터("ALL"/"Y"/"N"). saga 가 읽어 API 파라미터로 넘긴다.
+    fetchImageReceptionsRequest(
+      state,
+      _action: PayloadAction<ReceptionScheduledFilter | undefined>,
+    ) {
       state.receptionsLoading = true;
       state.receptionsError = "";
     },
@@ -77,7 +85,7 @@ const imagingOrderSlice = createSlice({
       reducer(state) {
         state.receptionLoading = true;
         state.receptionError = "";
-        state.selectedReception = null;
+        state.receptionDetail = null;
       },
       prepare(receptionNo: string) {
         return { payload: receptionNo };
@@ -85,17 +93,17 @@ const imagingOrderSlice = createSlice({
     },
     fetchImageReceptionByNoSuccess(
       state,
-      action: PayloadAction<ImageReceptionSummary>,
+      action: PayloadAction<ImageReceptionDetail>,
     ) {
       state.receptionLoading = false;
-      state.selectedReception = action.payload;
+      state.receptionDetail = action.payload;
     },
     fetchImageReceptionByNoFailure(state, action: PayloadAction<string>) {
       state.receptionLoading = false;
       state.receptionError = action.payload;
     },
 
-    selectImageReception(state, action: PayloadAction<ImageReceptionSummary>) {
+    selectImageReception(state, action: PayloadAction<ImageReceptionContext>) {
       state.selectedReception = action.payload;
       state.receptionError = "";
     },
@@ -146,3 +154,6 @@ export const selectImageReceptionLoading = (s: ImageOrderRoot) =>
   s.labImaging.imagingorder.receptionLoading;
 export const selectImageReceptionError = (s: ImageOrderRoot) =>
   s.labImaging.imagingorder.receptionError;
+
+export const selectImageReceptionDetail = (s: ImageOrderRoot) =>
+  s.labImaging.imagingorder.receptionDetail;

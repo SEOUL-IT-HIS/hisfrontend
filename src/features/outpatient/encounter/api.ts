@@ -1,5 +1,4 @@
-// features/outpatient/encounter/api.ts
-import axios from "@/lib/axios"; // 실제 프로젝트에서 쓰는 axios 인스턴스 경로로 맞춰주세요
+import axios from "@/lib/axios";
 import { EncounterDto, EncounterSearchParams } from "./types";
 
 export const fetchEncounterList = async (
