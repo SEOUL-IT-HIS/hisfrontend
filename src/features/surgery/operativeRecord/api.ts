@@ -21,7 +21,7 @@ export async function getOperativeRecords(
   const { data } = await apiClient.get<ApiResponse<OperativeRecord[]>>(
     `${SURGERY_PATH}/${surgeryId}/operative-record`,
   );
-  return data.data;
+  return data.data ?? [];
 }
 
 export async function getOperativeRecord(

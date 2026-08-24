@@ -3,7 +3,7 @@
  *
  * 상태: items / loading / error
  *
- * fetchCommonCodeItemRequest payload = groupId (number)
+ * fetchCommonCodeItemRequest payload = groupId (string, UUID)
  * → saga 가 그 groupId 로 목록 API 호출
  *
  * 검색 필터는 이 slice 에 넣지 않음.
@@ -33,7 +33,7 @@ const commonCodeItemSlice = createSlice({
   initialState,
   reducers: {
     // ----- 목록 조회 (payload: groupId) -----
-    fetchCommonCodeItemRequest(state, _action: PayloadAction<number>) {
+    fetchCommonCodeItemRequest(state, _action: PayloadAction<string>) {
       state.loading = true;
       state.error = null;
     },

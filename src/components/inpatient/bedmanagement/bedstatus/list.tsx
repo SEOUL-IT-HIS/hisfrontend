@@ -2,15 +2,21 @@
 
 import React, { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch } from "@/store/store";
+import type { AppDispatch, RootState } from "@/store/store";
 import Link from "next/link";
 import BedAssignmentDetail from "../bedassignment/detail";
 import { fetchBedRequest, selectBed, selectBedListStatus } from "@/features/inpatient/bedmanagement/bedstatus/slice";
+import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 
 const BedStatusList = () => {
   const dispatch = useDispatch<AppDispatch>();
   const bedAssignments = useSelector(selectBed);
   const listStatus = useSelector(selectBedListStatus);
+  const patients = useSelector((state: RootState) => state.patient.patients);
+  const patientNameById = useMemo(
+    () => new Map(patients.map((patient) => [patient.patientId, patient.patientName])),
+    [patients],
+  );
 
   const items=[
     {id:1, name: 'EMPTY', description: '빈 병상'},
@@ -18,6 +24,8 @@ const BedStatusList = () => {
     {id:3, name: 'RESERVED', description: '예약된 병상'},
     {id:4, name: 'MAINTENANCE', description: '유지보수 중인 병상'},
   ];
+
+
   const [searchStatus, setSearchStatus] = React.useState<string>('');
   const filteredBeds = useMemo(() => {
   // searchStatus가 빈 문자열이면 bedAssignments 그대로 return
@@ -30,6 +38,7 @@ const BedStatusList = () => {
 
   useEffect(() => {
     dispatch(fetchBedRequest());
+    dispatch(fetchPatientListRequest());
   }, [dispatch]);
 
   return (
@@ -50,6 +59,8 @@ const BedStatusList = () => {
         <table>
           <thead>
             <tr>
+              <th>환자명</th>
+              <th>환자ID</th>
               <th>병상ID</th>
               <th>병실번호</th>
               <th>병상번호</th>
@@ -59,6 +70,8 @@ const BedStatusList = () => {
           <tbody>
             {filteredBeds.map((bed) => (
               <tr key={bed.bedId}>
+                <td>{bed.patientId ? (patientNameById.get(bed.patientId) ?? '조회중...') : '없음'}</td>
+                 <td>{bed.patientId ?? '없음'}</td>
                 <td>
                 <Link href={`/inpatient/bedmanagement/bedstatus/${bed.bedId}`}>
                     {bed.bedId}

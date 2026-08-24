@@ -12,7 +12,7 @@ export type ApiResponse<T> = {
 
 /** 직원 한 행 (목록/등록/수정 응답) */
 export type Emp = {
-  empId: number;
+  empId: string;
   empNo: string;
   empName: string;
   empEmail: string | null;
@@ -32,9 +32,9 @@ export type Emp = {
 /**
  * 직원 등록 요청
  * - createEmp 가 실제 사용하는 필드만
+ * - empNo 는 서버에서 자동채번 (연도별 리셋) 되므로 요청에 포함하지 않음
  */
 export type EmpRegisterRequest = {
-  empNo: string;
   empName: string;
   empEmail?: string;
   empPhone?: string;
@@ -47,7 +47,7 @@ export type EmpRegisterRequest = {
  * - empNo 는 식별키라 수정 API body 에 넣지 않음
  */
 export type EmpUpdateRequest = {
-  empId: number;
+  empId: string;
   empName: string;
   empEmail?: string;
   empPhone?: string;

@@ -20,7 +20,7 @@ import type { RootState } from "@/store/store";
 
 type EmpDetailPanelProps = {
   /** 왼쪽에서 선택한 직원 PK. null 이면 빈 안내 화면 */
-  empId: number | null;
+  empId: string | null;
   deptCodes: CommonCodeItem[];
   statusCodes: CommonCodeItem[];
 };

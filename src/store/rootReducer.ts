@@ -13,11 +13,13 @@ import surgeryReducer from "@/features/surgery/slice";
 // import adminReducer from "@/features/admin/slice";
 import commonCodeItemReducer from "@/features/commonCode/slice/commonCodeItemSlice";
 import commonCodeGroupReducer from "@/features/commonCode/slice/commonCodeGroupSlice";
+import authReducer from "@/features/auth/slice/authSlice";
 import empReducer from "@/features/emp/slice/empSlice";
 import systemReducer from "@/features/system/slice/menuSlice";
 import patientReducer from "@/features/patient/slice/patientSlice";
 import billingDetailReducer from "@/features/billing/searchBillingDetail/slice";
 import billingMasterReducer from "@/features/billing/billingMaster/slice";
+import billingPaymentReducer from "@/features/billing/payment/slice";
 
 /**
  * RootReducer (프론트 리더 관리 영역)
@@ -31,6 +33,7 @@ const rootReducer = combineReducers({
 
   // 공통
   system: systemReducer,
+  auth: authReducer,
   commonCodeGroup: commonCodeGroupReducer,
   commonCodeItem: commonCodeItemReducer,
   emp: empReducer,
@@ -47,6 +50,7 @@ const rootReducer = combineReducers({
   // 수납/청구 (BIL)
   billingDetail: billingDetailReducer,
   billingMaster: billingMasterReducer,
+  billingPayment: billingPaymentReducer,
 
   // 외래 (OPD)
   outpatient: outpatientReducer,
