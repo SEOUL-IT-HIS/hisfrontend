@@ -1,28 +1,45 @@
 import apiClient from "@/lib/axios";
 import type { ApiResponse } from "@/features/labimaging/types";
 import type {
-  ImageOrderCreateRequest,
-  ImageOrderCreateResponse,
+  ConsentCreateRequest,
+  ConsentSummary,
 } from "@/features/labimaging/imagingacquisition/types";
 
 /**
- * 영상 오더 접수 API 경로 (백엔드 ImageOrderController @PostMapping("/image-orders"))
+ * 동의 API 경로
+ * (백엔드 ConsentController @RequestMapping("/api/lab-imaging/consents"))
  *
- * NOTE(리더 확인 필요): next.config rewrite 가 "/api/*" 만 프록시하므로
- *   "/image-orders" 경로 라우팅 설정이 별도로 필요하다. (산출물 리더 요청 목록 참고)
+ * "/api/*" 로 시작하므로 next.config rewrite 가 lab-imaging-service 로 프록시한다.
  */
-const IMAGE_ORDER_PATH = "/image-orders";
+const CONSENT_PATH = "/api/lab-imaging/consents";
 
 /**
- * 영상 오더를 접수한다. (IMAGE_ORDER + IMAGE_ORDER_ITEM + IMAGE_RECEPTION 동시 생성)
- * - 실패(HTTP 4xx/5xx)는 공통 axios interceptor 가 reject → saga 에서 처리.
- *   (중복 오더는 HTTP 409 + code "LAB008" — 요청서 1.2)
+ * 영상오더 1건의 동의 이력을 조회한다. (ZP2-80)
+ * GET /api/lab-imaging/consents?imageOrderId={imageOrderId} → 200 + ConsentSummaryDto[]
+ *
+ * ⚠ 철회된 건도 함께 내려온다. 이력 화면이라 그대로 보여주고,
+ *   "유효한 동의가 있는가"는 types.ts 의 hasValidConsent 로 판단한다.
  */
-export async function createImageOrder(
-  request: ImageOrderCreateRequest,
-): Promise<ImageOrderCreateResponse> {
-  const { data } = await apiClient.post<ApiResponse<ImageOrderCreateResponse>>(
-    IMAGE_ORDER_PATH,
+export async function fetchConsentsByImageOrderId(
+  imageOrderId: string,
+): Promise<ConsentSummary[]> {
+  const { data } = await apiClient.get<ApiResponse<ConsentSummary[]>>(CONSENT_PATH, {
+    params: { imageOrderId },
+  });
+  return data.data;
+}
+
+/**
+ * 동의를 등록한다. (ZP2-84)
+ * POST /api/lab-imaging/consents → 201 + ConsentSummaryDto
+ *
+ * ⚠ 같은 오더에 같은 유형의 철회 전 동의가 이미 있으면 400 + LAB031 로 실패한다.
+ */
+export async function createConsent(
+  request: ConsentCreateRequest,
+): Promise<ConsentSummary> {
+  const { data } = await apiClient.post<ApiResponse<ConsentSummary>>(
+    CONSENT_PATH,
     request,
   );
   return data.data;

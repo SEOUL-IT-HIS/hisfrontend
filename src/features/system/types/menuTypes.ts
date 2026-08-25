@@ -11,8 +11,8 @@ export type ApiResponse<T> = {
 
 /** GET /api/menu flat row (백엔드 MenuEntity) */
 export type MenuRow = {
-  menuId: number;
-  parentMenuId: number | null;
+  menuId: string;
+  parentMenuId: string | null;
   menuCode: string;
   menuName: string;
   menuUrl: string | null;

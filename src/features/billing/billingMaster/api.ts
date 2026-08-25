@@ -1,20 +1,23 @@
 import api from "@/lib/axios";
-import type { BillingMasterCreateRequest } from "./types";
+import type { ApiResponse } from "@/features/billing/types";
+import type {
+  BillingMaster,
+  BillingMasterCreateRequest,
+} from "@/features/billing/billingMaster/types";
 
-export interface ApiResponse<T> {
-    success: boolean;
-    data: T;
-    message?: string;
-}
+const BILLING_MASTER_PATH = "/api/billing/master";
 
-// 목록
-export const fetchBillingMasterAPI = () => api.get("/api/billing/statistics");
+// 전체조회
+export const fetchBillingMasterAPI = () => {
+  return api.get<ApiResponse<BillingMaster[]>>(BILLING_MASTER_PATH);
+};
 
-// 상세
-export const fetchBillingMasterDetailAPI = (billingMasterId: string) =>
-    api.get(`/api/billing/statistics/${billingMasterId}`);
+// 단일 조회
+export const fetchBillingMasterDetailAPI = (billingMasterId: string) => {
+  return api.get<ApiResponse<BillingMaster>>(`${BILLING_MASTER_PATH}/${billingMasterId}`);
+};
 
 // 등록
-export const registerBillingMasterAPI = (data: BillingMasterCreateRequest) =>
-    api.post("/api/billing/statistics", data);
-
+export const createBillingMasterAPI = (payload: BillingMasterCreateRequest) => {
+  return api.post<ApiResponse<BillingMaster>>(BILLING_MASTER_PATH, payload);
+};

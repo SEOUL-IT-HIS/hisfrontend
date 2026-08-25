@@ -1,41 +1,94 @@
 import { call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import { createLabOrder } from "@/features/labimaging/labspecimen/api";
 import {
-  createLabOrderFailure,
-  createLabOrderRequest,
-  createLabOrderSuccess,
+  acceptSpecimen,
+  createSpecimen,
+  fetchSpecimensByReceptionNo,
+} from "@/features/labimaging/labspecimen/api";
+import {
+  fetchSpecimensRequest,
+  fetchSpecimensSuccess,
+  fetchSpecimensFailure,
+  createSpecimenRequest,
+  createSpecimenSuccess,
+  createSpecimenFailure,
+  acceptSpecimenRequest,
+  acceptSpecimenSuccess,
+  acceptSpecimenFailure,
 } from "@/features/labimaging/labspecimen/slice";
 import type {
-  LabOrderCreateRequest,
-  LabOrderCreateResponse,
+  SpecimenAcceptanceRequest,
+  SpecimenAcceptanceSummary,
+  SpecimenCreateRequest,
+  SpecimenSummary,
 } from "@/features/labimaging/labspecimen/types";
 
 /**
- * labSpecimen saga
- * - API 호출은 여기서만 한다 (가이드 10.3)
- * - 흐름: createLabOrderRequest → createLabOrder → Success / Failure
- * - 실패 시 Error.message(백엔드 message = LAB### 코드 또는 문구)를 그대로 실어 보내고,
- *   사용자 노출용 문구 변환은 컴포넌트에서 resolveLabSpecimenMessage 로 처리한다. (가이드 15.1)
- * - 사용자 노출은 공통 Toast 로 표시하는 것이 원칙이나(가이드 15.3), 공통 Toast 는
- *   리더 관리 공통 컴포넌트라 아직 없어 slice 상태로 결과를 전달한다. (리더 요청 목록 참고)
+ * labspecimen saga — API 호출은 여기서만 (가이드 10.3).
+ * 실패 시 Error.message(백엔드 message)를 그대로 실어 보내고, 문구 변환은 컴포넌트에서 처리.
  */
-function* createLabOrderSaga(action: PayloadAction<LabOrderCreateRequest>) {
+function* fetchSpecimensSaga(action: PayloadAction<string>) {
   try {
-    const response: LabOrderCreateResponse = yield call(
-      createLabOrder,
+    const list: SpecimenSummary[] = yield call(
+      fetchSpecimensByReceptionNo,
       action.payload,
     );
-    yield put(createLabOrderSuccess(response));
+    yield put(fetchSpecimensSuccess(list));
   } catch (err) {
-    // 중복 오더(LAB004) 등 업무 실패도 여기서 실패 메시지로 처리한다. (요청서 1.2)
     const message =
-      err instanceof Error ? err.message : "검사 오더 접수에 실패했습니다.";
-    yield put(createLabOrderFailure(message));
+      err instanceof Error ? err.message : "검체 목록 조회에 실패했습니다.";
+    yield put(fetchSpecimensFailure(message));
   }
 }
 
-/** 검사 오더 접수 요청을 감시한다 (최신 요청만 처리) */
+/**
+ * 등록에 성공하면 그 접수의 검체 목록을 다시 불러온다.
+ * 방금 등록한 검체가 아래 목록에 바로 보여야 담당자가 결과를 확인할 수 있다.
+ */
+function* createSpecimenSaga(
+  action: PayloadAction<{ request: SpecimenCreateRequest; receptionNo: string }>,
+) {
+  const { request, receptionNo } = action.payload;
+  try {
+    const created: SpecimenSummary = yield call(createSpecimen, request);
+    yield put(createSpecimenSuccess(created));
+    yield put(fetchSpecimensRequest(receptionNo));
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "검체 등록에 실패했습니다.";
+    yield put(createSpecimenFailure(message));
+  }
+}
+
+/**
+ * 판정에 성공하면 그 접수의 검체 목록을 다시 불러온다.
+ * 방금 판정한 검체의 적합성 컬럼이 "미판정"에서 바로 바뀌어야 결과를 확인할 수 있다.
+ */
+function* acceptSpecimenSaga(
+  action: PayloadAction<{
+    specimenId: string;
+    request: SpecimenAcceptanceRequest;
+    receptionNo: string;
+  }>,
+) {
+  const { specimenId, request, receptionNo } = action.payload;
+  try {
+    const accepted: SpecimenAcceptanceSummary = yield call(
+      acceptSpecimen,
+      specimenId,
+      request,
+    );
+    yield put(acceptSpecimenSuccess(accepted));
+    yield put(fetchSpecimensRequest(receptionNo));
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "적합성 판정에 실패했습니다.";
+    yield put(acceptSpecimenFailure(message));
+  }
+}
+
 export default function* labSpecimenSaga() {
-  yield takeLatest(createLabOrderRequest.type, createLabOrderSaga);
+  yield takeLatest(fetchSpecimensRequest.type, fetchSpecimensSaga);
+  yield takeLatest(createSpecimenRequest.type, createSpecimenSaga);
+  yield takeLatest(acceptSpecimenRequest.type, acceptSpecimenSaga);
 }

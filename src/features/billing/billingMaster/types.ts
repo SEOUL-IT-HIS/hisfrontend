@@ -1,4 +1,5 @@
-export interface BillingMaster{
+/** 수납 기준정보 */
+export type BillingMaster = {
   billingMasterId: string;
   sourceServiceCode: string;
   feeCode: string;
@@ -9,27 +10,16 @@ export interface BillingMaster{
   effectiveFrom: string;
   effectiveTo: string;
   useYn: string;
-}
-export interface BillingMasterCreateRequest{
-    sourceServiceCode: string;
-    feeCode: string;
-    feeName: string;
-    defaultPrice: string;
-    categoryCode: string;
-    insuranceTypeCode: string;
-    effectiveFrom:string;
-    effectiveTo:string;
-}
-export interface Status{
-    loading:boolean;
-    error:string|null;
-    success:boolean;
 };
-export interface BillingMasterState{
-    list:BillingMaster[];
-    detail:BillingMaster|null;
 
-    listStatus:Status;
-    detailStatus:Status;
-    createStatus:Status;
+/** 수납 기준정보 등록 요청 */
+export type BillingMasterCreateRequest = {
+  sourceServiceCode: string;
+  feeCode: string;
+  feeName: string;
+  defaultPrice: string;
+  categoryCode: string;
+  insuranceTypeCode: string;
+  effectiveFrom: string;
+  effectiveTo: string;
 };

@@ -1,58 +1,63 @@
-import { all, call, put, takeLatest } from "redux-saga/effects";
+import { call, put, takeLatest } from "redux-saga/effects";
+import type { AxiosResponse } from "axios";
 import {
-    fetchBillingMasterRequest, fetchBillingMasterSuccess, fetchBillingMasterFailure,
-    fetchBillingMasterDetailRequest, fetchBillingMasterDetailSuccess, fetchBillingMasterDetailFailure,
-    registerBillingMasterRequest, registerBillingMasterSuccess, registerBillingMasterFailure
-} from "./slice";
-import { fetchBillingMasterAPI, fetchBillingMasterDetailAPI, registerBillingMasterAPI, type ApiResponse } from "./api";
-import axios, { type AxiosResponse } from "axios";
+  createBillingMasterAPI,
+  fetchBillingMasterAPI,
+  fetchBillingMasterDetailAPI,
+} from "@/features/billing/billingMaster/api";
+import type { ApiResponse } from "@/features/billing/types";
+import {
+  fetchBillingMasterDetailFailure,
+  fetchBillingMasterDetailRequest,
+  fetchBillingMasterDetailSuccess,
+  fetchBillingMasterFailure,
+  fetchBillingMasterRequest,
+  fetchBillingMasterSuccess,
+  registerBillingMasterFailure,
+  registerBillingMasterRequest,
+  registerBillingMasterSuccess,
+} from "@/features/billing/billingMaster/slice";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import type { BillingMaster, BillingMasterCreateRequest } from "./types";
+import type {
+  BillingMaster,
+  BillingMasterCreateRequest,
+} from "@/features/billing/billingMaster/types";
 
-// 공통 에러 처리
-function getErrorMessage(e: unknown, defaultMsg: string) {
-  if (axios.isAxiosError(e))
-    return e.response?.data?.message || defaultMsg;
-
-  return (e as Error)?.message || defaultMsg;
-}
-
-function* fetchBillingMasterSaga(){
-    try{
-    const response:AxiosResponse<ApiResponse<BillingMaster[]>> =
-      yield call(fetchBillingMasterAPI);
-
+function* fetchBillingMasterSaga() {
+  try {
+    const response: AxiosResponse<ApiResponse<BillingMaster[]>> = yield call(fetchBillingMasterAPI);
     yield put(fetchBillingMasterSuccess(response.data.data));
-
-    }catch(e){
-    yield put(fetchBillingMasterFailure(getErrorMessage(e, "청구 기준 목록 로딩 실패")));
-    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "수납 기준정보 목록 조회에 실패했습니다.";
+    yield put(fetchBillingMasterFailure(message));
+  }
 }
-function* fetchBillingMasterDetailSaga(action: PayloadAction<string>){
-    try{
-    const response:AxiosResponse<ApiResponse<BillingMaster>>=
-      yield call(fetchBillingMasterDetailAPI,action.payload);
 
+function* fetchBillingMasterDetailSaga(action: PayloadAction<string>) {
+  try {
+    const response: AxiosResponse<ApiResponse<BillingMaster>> = yield call(
+      fetchBillingMasterDetailAPI,
+      action.payload,
+    );
     yield put(fetchBillingMasterDetailSuccess(response.data.data));
-
-    }catch(e){
-    yield put(fetchBillingMasterDetailFailure(getErrorMessage(e, "청구 기준 상세 로딩 실패")));
-    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "수납 기준정보 상세 조회에 실패했습니다.";
+    yield put(fetchBillingMasterDetailFailure(message));
+  }
 }
 
-function* registerBillingSaga(action: PayloadAction<BillingMasterCreateRequest>){
-    try{
-    yield call(registerBillingMasterAPI,action.payload);
+function* registerBillingMasterSaga(action: PayloadAction<BillingMasterCreateRequest>) {
+  try {
+    yield call(createBillingMasterAPI, action.payload);
     yield put(registerBillingMasterSuccess());
-    }catch(e){
-    yield put(registerBillingMasterFailure(getErrorMessage(e, "청구 기준 등록 실패")));
-    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "수납 기준정보 등록에 실패했습니다.";
+    yield put(registerBillingMasterFailure(message));
+  }
 }
 
-export function* watchBillingMasterSaga(){
-    yield all( [
-      takeLatest( fetchBillingMasterRequest.type, fetchBillingMasterSaga),
-      takeLatest( fetchBillingMasterDetailRequest.type, fetchBillingMasterDetailSaga),
-      takeLatest( registerBillingMasterRequest.type, registerBillingSaga)
-    ]);
+export default function* billingMasterSaga() {
+  yield takeLatest(fetchBillingMasterRequest.type, fetchBillingMasterSaga);
+  yield takeLatest(fetchBillingMasterDetailRequest.type, fetchBillingMasterDetailSaga);
+  yield takeLatest(registerBillingMasterRequest.type, registerBillingMasterSaga);
 }
