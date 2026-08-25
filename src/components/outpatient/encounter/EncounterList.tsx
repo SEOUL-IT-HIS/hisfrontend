@@ -78,17 +78,35 @@ const EncounterList = () => {
     };
 
     // 오늘 진료 저장 핸들러
+    // const handleSaveChart = () => {
+    //     if (!selectedEncounter) return;
+    //     setSaveMessage(null);
+    //     dispatch(createRecordRequest({
+    //         encounterId: selectedEncounter.encounterId,
+    //         chiefComplaint,
+    //         examinationNote,
+    //         assessmentNote,
+    //         planNote,
+    //     }));
+
+    // 오늘 진료 저장 핸들러
     const handleSaveChart = () => {
         if (!selectedEncounter) return;
         setSaveMessage(null);
+
+        // 디버깅용 콘솔 (개발자 콘솔에서 어떤 값이 들어있는지 확인)
+        console.log("선택된 환자 객체:", selectedEncounter);
+
         dispatch(createRecordRequest({
-            encounterId: selectedEncounter.encounterId,
+            // encounterId가 없으면 receptionId를 대신 사용하도록 안전장치 추가
+            encounterId: selectedEncounter.encounterId || selectedEncounter.receptionId,
             chiefComplaint,
             examinationNote,
             assessmentNote,
             planNote,
         }));
     };
+
 
     return (
         <div className="flex h-full min-h-0 flex-col gap-3 p-4">
