@@ -87,16 +87,6 @@ const nextConfig: NextConfig = {
         source: "/api/lab-imaging/:path*",
         destination: `${labImagingApiOrigin}/api/lab-imaging/:path*`,
       },
-      // ---------- billing-service (구체 경로 먼저) ----------
-      {
-        source: "/api/billing",     
-        destination: `${billingApiOrigin}/api/billing`,
-      },
-      {
-        source: "/api/billing/:path*",
-        destination: `${billingApiOrigin}/api/billing/:path*`,
-      },
-
       // ---------- surgery-service (구체 경로 먼저) ----------
       {
         source: "/api/surgery",
@@ -105,6 +95,15 @@ const nextConfig: NextConfig = {
       {
         source: "/api/surgery/:path*",
         destination: `${surgeryApiOrigin}/api/surgery/:path*`,
+      },
+      // ---------- billing-service (구체 경로 먼저) ----------
+      {
+        source: "/api/billing",     
+        destination: `${billingApiOrigin}/api/billing`,
+      },
+      {
+        source: "/api/billing/:path*",
+        destination: `${billingApiOrigin}/api/billing/:path*`,
       },
 
       // ----------- reception-service (구체 경로 먼저) ----------

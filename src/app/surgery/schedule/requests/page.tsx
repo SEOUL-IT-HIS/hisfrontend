@@ -11,7 +11,7 @@ export default function Page() {
       <div className="mb-2 flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-800">수술 요청 대기</h1>
         <Link
-          href="/surgery/schedule/list"
+          href="/surgery/schedule"
           className="text-sm text-sky-600 underline"
         >
           수술 일정

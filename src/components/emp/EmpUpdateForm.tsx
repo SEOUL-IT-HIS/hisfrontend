@@ -66,9 +66,19 @@ export default function EmpUpdateForm({
   });
   const [errors, setErrors] = useState<FieldErrors>({});
   const error = useSelector((state: RootState) => state.emp.error);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(emp.profileImageUrl);
   const loading = useSelector((state: RootState) => state.emp.loading);
   const dispatch = useDispatch<AppDispatch>();
   const waitClose = useRef(false);
+
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    setImageFile(file);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(file ? URL.createObjectURL(file) : emp.profileImageUrl);
+  }
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +99,7 @@ export default function EmpUpdateForm({
       retireDate: form.retireDate || undefined,
       empStatus: form.empStatus.trim() || undefined,
       deptCode: form.deptCode.trim() || undefined,
+      image: imageFile ?? undefined,
     };
     dispatch(fetchEmpUpdateRequest(payload));
   };
@@ -104,6 +115,12 @@ export default function EmpUpdateForm({
     waitClose.current = false;
     onClose();
   }, [loading, error, onClose]);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
 
   return (
     <div className="space-y-5">
@@ -182,6 +199,23 @@ export default function EmpUpdateForm({
           {errors.deptCode && (
             <p className="text-xs text-red-600">{errors.deptCode}</p>
           )}
+        </FormField>
+
+        <FormField label="사진" htmlFor="image">
+          <input
+              id="image"
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-sky-700"
+          />
+          {imagePreview ? (
+              <img
+                  src={imagePreview}
+                  alt="미리보기"
+                  className="mt-2 h-20 w-20 rounded-full object-cover"
+              />
+          ) : null}
         </FormField>
 
         <FormActions onCancel={onClose} submitLabel="수정" loading={loading} />
