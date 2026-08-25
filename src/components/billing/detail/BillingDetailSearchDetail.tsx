@@ -8,7 +8,7 @@ import PaymentRequest from "@/features/billing/payment/PaymentRequest";
 import type { AppDispatch, RootState } from "@/store/store";
 
 const BillingDetailSearchDetail = () => {
-  const { billingId } = useParams<{ billingId: string }>();
+  const { billingDetailId: billingId } = useParams<{ billingDetailId: string }>();
   const dispatch = useDispatch<AppDispatch>();
 
   const [paymentOpen, setPaymentOpen] = useState(false); // 결제 모달 open 상태

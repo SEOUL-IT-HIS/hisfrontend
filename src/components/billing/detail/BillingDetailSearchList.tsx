@@ -7,7 +7,7 @@ import { SearchPatientResult } from "@/features/billing/searchBillingDetail/type
     const router = useRouter();
 
     const onDetail = () => {
-        router.push(`api/billing/detail/${patient.patientId}`)
+        router.push(`/billing/detail/${patient.billingId}`)
     }
 
     

@@ -8,7 +8,7 @@ import type {
   SearchPatientResult
 } from "@/features/billing/searchBillingDetail/types";
 
-const BILLING_DETAIL_PATH = "/api/billing/detail";
+const BILLING_DETAIL_PATH = "/api/billing/payment";
 
 /** 환자 리스트 검색 */
 export async function searchPatientApi(

@@ -12,7 +12,8 @@ type AppFrameProps = {
 };
 
 /** 사이드바/헤더 없이 보여주는 경로 (로그인 등) */
-const BARE_PATHS = ["/login"];
+// TODO: 로그인 없이 화면 확인용 임시 우회 — 작업 끝나면 "/billing/detail" 제거할 것
+const BARE_PATHS = ["/login", "/billing/detail"];
 const ACTIVITY_CHECK_INTERVAL = 1000 * 60 * 5;
 
 /**
