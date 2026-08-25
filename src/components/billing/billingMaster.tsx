@@ -24,7 +24,7 @@ const billingMaster = () => {
         <div>
 
                 <h2>수납 기준정보</h2>
-                <button onClick={() => router.push('/billing/master/register')}>수납 기준등록</button>
+                <button onClick={() => router.push('/billing/statistics/register')}>수납 기준등록</button>
             
             {loading && <p>로딩중...</p>}
             {error && <p>{error}</p>}
