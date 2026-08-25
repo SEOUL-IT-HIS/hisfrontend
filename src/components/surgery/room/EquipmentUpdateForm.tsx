@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, FormActions, FormField, Input } from "@/components/common";
@@ -17,6 +16,8 @@ import {
 
 type Props = {
   equipmentId: string;
+  /** 저장에 성공했거나 사용자가 취소했을 때. 모달을 닫는 쪽이 넘긴다 */
+  onDone: () => void;
 };
 
 /**
@@ -27,10 +28,13 @@ type Props = {
  * assignEquipments(SL2-141), 상태·출고반입은 각각 전용 PATCH 가 담당한다.</p>
  *
  * <p>입력·버튼은 components/common 을 쓴다(§12.1).</p>
+ *
+ * <p><b>페이지가 아니라 모달 안에서 쓴다</b>(2026-08-24) — 장비명 한 칸 고치자고 목록을
+ * 떠났다가 돌아오는 이동이 잦았다. {@code router.push} 대신 {@code onDone} 콜백을 받아
+ * 닫는 방식을 호출부가 정한다. 수술실 수정 폼과 같은 모양이다.</p>
  */
-export default function EquipmentUpdateForm({ equipmentId }: Props) {
+export default function EquipmentUpdateForm({ equipmentId, onDone }: Props) {
   const dispatch = useDispatch<AppDispatch>();
-  const router = useRouter();
   const equipment = useSelector(selectSelectedEquipment);
   const loading = useSelector(selectRoomLoading);
   const saving = useSelector(selectRoomSaving);
@@ -45,14 +49,14 @@ export default function EquipmentUpdateForm({ equipmentId }: Props) {
     dispatch(fetchEquipmentRequest(equipmentId));
   }, [dispatch, equipmentId]);
 
-  // 수정 성공 시 목록으로 돌아간다(실패면 error 가 채워지므로 머문다)
+  // 수정 성공 시 닫는다(실패면 error 가 채워지므로 열린 채로 머문다)
   useEffect(() => {
     if (submitted.current && !saving && !error) {
       submitted.current = false;
-      router.push("/surgery/equipment/list");
+      onDone();
     }
     if (!saving && error) submitted.current = false;
-  }, [saving, error, router]);
+  }, [saving, error, onDone]);
 
   if (equipment && equipment.equipmentId !== boundId) {
     setBoundId(equipment.equipmentId);
@@ -107,8 +111,8 @@ export default function EquipmentUpdateForm({ equipmentId }: Props) {
       {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
       <FormActions
-        onCancel={() => router.push("/surgery/equipment/list")}
-        cancelLabel="목록"
+        onCancel={onDone}
+        cancelLabel="취소"
         submitLabel="수정"
         loading={saving}
         loadingLabel="저장 중…"
