@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import {
   Alert,
   DataTable,
+  Modal,
   Pagination,
   Select,
   type DataTableColumn,
 } from "@/components/common";
+import EquipmentUpdateForm from "@/components/surgery/room/EquipmentUpdateForm";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import type { SurgicalEquipment } from "@/features/surgery/room/types";
@@ -52,6 +53,9 @@ export default function EquipmentList() {
 
   // 공통 Pagination 은 1-base, 백엔드 Pageable 은 0-base 다.
   const [page, setPage] = useState(1);
+
+  /** 수정 모달에 열려 있는 장비. null 이면 닫힌 상태다 */
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const { options: statusOptions } = useCommonCodeOptions("OR_EQUIP_STATUS_CD");
   const { options: inoutOptions } = useCommonCodeOptions("EQUIP_INOUT_CD");
@@ -128,12 +132,14 @@ export default function EquipmentList() {
       key: "actions",
       header: "수정",
       render: (equipment) => (
-        <Link
-          href={`/surgery/equipment/update/${equipment.equipmentId}`}
+        // 페이지 이동 대신 모달을 연다 — 장비명 한 칸 고치자고 목록을 떠날 이유가 없다
+        <button
+          type="button"
           className="text-sky-600 underline"
+          onClick={() => setEditingId(equipment.equipmentId)}
         >
           수정
-        </Link>
+        </button>
       ),
     },
   ];
@@ -162,6 +168,25 @@ export default function EquipmentList() {
           />
         </div>
       ) : null}
+
+      {/*
+        editingId 가 있을 때만 폼을 그린다 — 미리 그려두면 목록에 장비가 20개일 때
+        단건 조회가 20번 나간다. key 를 걸어 다른 장비를 열면 폼 상태가 초기화되게 한다.
+      */}
+      <Modal
+        open={editingId !== null}
+        title="수술장비 수정"
+        onClose={() => setEditingId(null)}
+        closeDisabled={saving}
+      >
+        {editingId ? (
+          <EquipmentUpdateForm
+            key={editingId}
+            equipmentId={editingId}
+            onDone={() => setEditingId(null)}
+          />
+        ) : null}
+      </Modal>
     </div>
   );
 }

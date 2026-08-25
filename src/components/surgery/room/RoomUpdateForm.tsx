@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, FormActions, FormField, Input } from "@/components/common";
@@ -17,6 +16,8 @@ import {
 
 type Props = {
   roomCode: string;
+  /** 저장에 성공했거나 사용자가 취소했을 때. 모달을 닫는 쪽이 넘긴다 */
+  onDone: () => void;
 };
 
 /**
@@ -25,12 +26,16 @@ type Props = {
  * <p>진입 시 단건 조회로 기존 값을 폼 초기값에 바인딩한다(SL2-115).
  * 백엔드 PUT /rooms/{roomCode} 는 이름만 교체하므로 코드는 읽기 전용으로 보여준다.</p>
  *
- * <p>취소가 &lt;Link&gt; 에서 router.push 로 바뀌었다 — FormActions 가 onCancel 콜백을
- * 받는 형태라서다. 이동 대상은 그대로 목록이다(§12.1).</p>
+ * <p><b>페이지가 아니라 모달 안에서 쓴다</b>(2026-08-24) — 이름 한 칸 고치자고 목록을
+ * 떠났다가 돌아오는 이동이 잦았다. 그래서 {@code router.push} 대신 {@code onDone} 콜백을
+ * 받는다. 이동을 이 컴포넌트가 정하지 않으므로 나중에 다른 화면에 끼워 넣기도 쉽다.</p>
+ *
+ * <p>더 큰 문제도 있었다 — 이 폼으로 들어오는 길이 <b>어디에도 없었다</b>. 목록에 수정
+ * 진입점이 없어 수술실명을 고칠 방법 자체가 없었고, 장비만 수정 링크를 갖고 있었다.
+ * 같은 마스터 관리인데 둘이 갈려 있던 것을 맞췄다.</p>
  */
-export default function RoomUpdateForm({ roomCode }: Props) {
+export default function RoomUpdateForm({ roomCode, onDone }: Props) {
   const dispatch = useDispatch<AppDispatch>();
-  const router = useRouter();
   const room = useSelector(selectSelectedRoom);
   const loading = useSelector(selectRoomLoading);
   const saving = useSelector(selectRoomSaving);
@@ -45,14 +50,14 @@ export default function RoomUpdateForm({ roomCode }: Props) {
     dispatch(fetchRoomRequest(roomCode));
   }, [dispatch, roomCode]);
 
-  // 수정 성공 시 목록으로 돌아간다(실패면 error 가 채워지므로 머문다)
+  // 수정 성공 시 닫는다(실패면 error 가 채워지므로 열린 채로 머문다)
   useEffect(() => {
     if (submitted.current && !saving && !error) {
       submitted.current = false;
-      router.push("/surgery/room/list");
+      onDone();
     }
     if (!saving && error) submitted.current = false;
-  }, [saving, error, router]);
+  }, [saving, error, onDone]);
 
   // 조회 결과가 도착하면 초기값을 한 번만 채운다.
   // (effect 대신 렌더 중 처리 — 사용자가 수정 중인 값을 덮어쓰지 않도록 코드가 바뀔 때만 반영)
@@ -98,8 +103,8 @@ export default function RoomUpdateForm({ roomCode }: Props) {
       {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
       <FormActions
-        onCancel={() => router.push("/surgery/room/list")}
-        cancelLabel="목록"
+        onCancel={onDone}
+        cancelLabel="취소"
         submitLabel="수정"
         loading={saving}
         loadingLabel="저장 중…"

@@ -1,7 +1,5 @@
+import ReceptionManagementPage from "@/components/reception/receptionmanagement/ReceptionManagementPage";
+
 export default function Page() {
-  return (
-    <div className="flex h-full items-center justify-center text-sm text-slate-500">
-      Page placeholder
-    </div>
-  );
+  return <ReceptionManagementPage />;
 }

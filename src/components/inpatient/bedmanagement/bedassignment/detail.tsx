@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchBedAssignmentDetailRequest, updateBedAssignmentRequest, selectBedAssignmentUpdateStatus } from "@/features/inpatient/bedmanagement/bedassignment/slice";
@@ -8,37 +8,39 @@ import { useParams } from "next/navigation";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-const BedAssignmentDetail=()=>{
-    const dispatch=useDispatch();
-    const { assignmentId: assignmentIdParam }:{assignmentId:string} = useParams();
-    const assignmentId = Number(assignmentIdParam);
-    const bedAssignment=useSelector((state:RootState)=>state.inpatient.bedmanagement.detail);
+const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
+
+type BedAssignmentDetailProps = {
+    /** 목록 옆에 끼워 넣을 때 라우트 파라미터 대신 직접 전달 */
+    assignmentId?: number;
+    /** 목록 옆에 끼워 넣었을 때만 표시되는 "선택 해제" 버튼 */
+    onClose?: () => void;
+};
+
+const BedAssignmentDetail = ({ assignmentId: assignmentIdProp, onClose }: BedAssignmentDetailProps = {}) => {
+    const dispatch = useDispatch();
+    const routeParams = useParams() as { assignmentId?: string };
+    const assignmentId = assignmentIdProp ?? Number(routeParams.assignmentId);
+    const bedAssignment = useSelector((state: RootState) => state.inpatient.bedmanagement.detail);
     const updateStatus = useSelector((state: RootState) => state.inpatient.bedmanagement.updateStatus);
-    const {loading,error}=useSelector((state:RootState)=>state.inpatient.bedmanagement.detailStatus);
+    const { loading, error } = useSelector((state: RootState) => state.inpatient.bedmanagement.detailStatus);
     const admission = useSelector((state: RootState) => state.inpatient.admissiondischarge.detail);
     const patientDetail = useSelector((state: RootState) => state.patient.patientDetail);
-
-
-    useEffect(() => {
-    if (!bedAssignment?.admissionId) return;
-    dispatch(fetchAdmissionDetailRequest(bedAssignment.admissionId));
-    }, [bedAssignment?.admissionId]);
-
-    useEffect(() => {
-    if (!admission?.patientId) return;
-    dispatch(fetchPatientDetailRequest(admission.patientId));
-    }, [admission?.patientId]);
-
 
     useEffect(() => {
         if (!bedAssignment?.admissionId) return;
         dispatch(fetchAdmissionDetailRequest(bedAssignment.admissionId));
     }, [bedAssignment?.admissionId]);
 
-    useEffect(()=>{
+    useEffect(() => {
+        if (!admission?.patientId) return;
+        dispatch(fetchPatientDetailRequest(admission.patientId));
+    }, [admission?.patientId]);
+
+    useEffect(() => {
         if (!assignmentId) return;
         dispatch(fetchBedAssignmentDetailRequest(assignmentId));
-    },[assignmentId]);
+    }, [assignmentId]);
 
     useEffect(() => {
         if (updateStatus.success && assignmentId) {
@@ -48,39 +50,100 @@ const BedAssignmentDetail=()=>{
 
     const handleRelease = () => {
         if (!bedAssignment) return;
-        dispatch(updateBedAssignmentRequest({ ...bedAssignment, 
+        dispatch(updateBedAssignmentRequest({ ...bedAssignment,
             releasedAt: new Date().toISOString().slice(0, -1) }));
     };
-    return(
-        <div>
-            { loading && <p>로딩중...</p> }
-            { error && <p>{error}</p> }
-            { !loading && bedAssignment &&         
-          
-               
-            <div>
-            <p>환자명:{
-                admission?.admissionId === bedAssignment.admissionId
-                ?(patientDetail?.patientId === admission.patientId?patientDetail.patientName:"Patient Not Found")
-                : "Admission Not Found"
-            }</p>
-            <p>AssignmentId: {bedAssignment.assignmentId}</p>
-            <p>BedId: {bedAssignment.bedId}</p>
-            <p>AdmissionId: {bedAssignment.admissionId}</p>
-            <p>AssignedAt: {bedAssignment.assignedAt}</p>
-            <p>ReleasedAt: {bedAssignment.releasedAt ?? "-"}</p>
-            {bedAssignment.releasedAt === null && (
-                <button onClick={handleRelease} disabled={updateStatus.loading}>
-                    {updateStatus.loading ? "처리중..." : "퇴상처리"}
-                </button>
-            )}
-            {updateStatus.error && <p>{updateStatus.error}</p>}
-            {updateStatus.success && <p>퇴상처리 완료</p>}
-            <p>CreatedAt: {bedAssignment.createdAt}</p>
-            <p>UpdatedAt: {bedAssignment.updatedAt}</p>
-            </div>
-}
 
+    const patientName =
+        admission?.admissionId === bedAssignment?.admissionId
+            ? (patientDetail?.patientId === admission?.patientId ? patientDetail?.patientName : "Patient Not Found")
+            : "Admission Not Found";
+
+    const isActive = bedAssignment?.releasedAt === null;
+
+    return (
+        <div className="w-full p-6">
+            <div className="mb-6 flex items-center justify-between">
+                <div>
+                    <h1 className="text-lg font-semibold text-slate-800">병상 배정 상세</h1>
+                    <p className="mt-1 text-sm text-slate-500">배정 정보와 퇴상 처리 상태입니다.</p>
+                </div>
+                {onClose && (
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+                    >
+                        선택 해제
+                    </button>
+                )}
+            </div>
+
+            {loading && <p className="text-sm text-slate-500">로딩중...</p>}
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            {!loading && bedAssignment && (
+                <div className="space-y-4">
+                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                            <span className="text-sm font-medium text-slate-800">{patientName}</span>
+                            <span
+                                className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
+                                    isActive
+                                        ? "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200"
+                                        : "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
+                                }`}
+                            >
+                                {isActive ? "배정중" : "퇴상완료"}
+                            </span>
+                        </div>
+                        <div>
+                            <div className={INFO_ROW}>
+                                <span className="text-slate-500">배정ID</span>
+                                <span className="text-slate-800">{bedAssignment.assignmentId}</span>
+                            </div>
+                            <div className={INFO_ROW}>
+                                <span className="text-slate-500">병상ID</span>
+                                <span className="text-slate-800">{bedAssignment.bedId}</span>
+                            </div>
+                            <div className={INFO_ROW}>
+                                <span className="text-slate-500">입원ID</span>
+                                <span className="text-slate-800">{bedAssignment.admissionId}</span>
+                            </div>
+                            <div className={INFO_ROW}>
+                                <span className="text-slate-500">배정시각</span>
+                                <span className="text-slate-800">{bedAssignment.assignedAt}</span>
+                            </div>
+                            <div className={INFO_ROW}>
+                                <span className="text-slate-500">퇴상시각</span>
+                                <span className="text-slate-800">{bedAssignment.releasedAt ?? "-"}</span>
+                            </div>
+                            <div className={INFO_ROW}>
+                                <span className="text-slate-500">생성일시</span>
+                                <span className="text-slate-800">{bedAssignment.createdAt}</span>
+                            </div>
+                            <div className={INFO_ROW}>
+                                <span className="text-slate-500">수정일시</span>
+                                <span className="text-slate-800">{bedAssignment.updatedAt}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {isActive && (
+                        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <button
+                                onClick={handleRelease}
+                                disabled={updateStatus.loading}
+                                className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+                            >
+                                {updateStatus.loading ? "처리중..." : "퇴상처리"}
+                            </button>
+                            {updateStatus.error && <p className="mt-2 text-sm text-red-600">{updateStatus.error}</p>}
+                            {updateStatus.success && <p className="mt-2 text-sm text-emerald-600">퇴상처리 완료</p>}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
