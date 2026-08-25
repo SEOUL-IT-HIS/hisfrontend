@@ -8,7 +8,7 @@ import type {
   SearchPatientResult
 } from "@/features/billing/searchBillingDetail/types";
 
-const BILLING_DETAIL_PATH = "/api/billing/detail";
+const BILLING_DETAIL_PATH = "/api/billing/payment";
 
 /** 환자 리스트 검색 */
 export async function searchPatientApi(
@@ -21,9 +21,9 @@ export async function searchPatientApi(
 }
 
 /** 진료비 상세조회 단건(환자 상세정보) 조회 */
-export async function fetchBillingDetailApi(billingDetailId: string): Promise<BillingDetail> {
+export async function fetchBillingDetailApi(billingId: string): Promise<BillingDetail> {
   const { data } = await apiClient.get<ApiResponse<BillingDetail>>(
-    `${BILLING_DETAIL_PATH}/${billingDetailId}`,
+    `${BILLING_DETAIL_PATH}/${billingId}`,
   );
   return data.data;
 }

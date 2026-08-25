@@ -17,16 +17,16 @@ export type Emp = {
   empName: string;
   empEmail: string | null;
   empPhone: string | null;
-  /** yyyy-MM-dd 또는 ISO 문자열 */
   hireDate: string | null;
-  /** yyyy-MM-dd 또는 ISO 문자열 */
   retireDate: string | null;
-  /** 공통코드 EMP_STATUS_CD 등 */
   empStatus: string | null;
-  /** 공통코드 DEPT_CD 등 */
   deptCode: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  profileImageUrl: string | null;
+  zipCode: string | null;
+  address: string | null;
+  addressDetail: string | null;
 };
 
 /**
@@ -40,6 +40,10 @@ export type EmpRegisterRequest = {
   empPhone?: string;
   hireDate?: string;
   deptCode?: string;
+  zipCode?: string;
+  address?: string;
+  addressDetail?: string;
+  image?: File;
 };
 
 /**
@@ -54,6 +58,10 @@ export type EmpUpdateRequest = {
   retireDate?: string;
   empStatus?: string;
   deptCode?: string;
+  zipCode?: string;
+  address?: string;
+  addressDetail?: string;
+  image?: File;
 };
 
 export type EmpApiResponse = ApiResponse<Emp[]>;

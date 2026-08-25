@@ -5,11 +5,12 @@
  * 상태 변경(취소·진행상태·시작·종료)은 일부 필드만 바꾸므로 PATCH 를 쓴다(§21.8).</p>
  */
 import apiClient from "@/lib/axios";
-import type { ApiResponse } from "@/features/surgery/types";
+import type { ApiResponse, PageResponse } from "@/features/surgery/types";
 import type {
   CancelSurgeryRequest,
   Surgery,
   SurgeryListParams,
+  SurgerySearchParams,
   UpdateProgressRequest,
   UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
@@ -24,6 +25,22 @@ export async function getSurgerySchedules(
     params,
   });
   return data.data ?? [];
+}
+
+/**
+ * 조건으로 수술을 검색한다. (SL2-314 기록지 조회 / SL2-334 간호기록 조회)
+ *
+ * <p>{@code /assignments} 를 쓴다 — 목록 조회({@code SCHEDULE_PATH})는 날짜 하나만 받고
+ * 페이징도 없어서 검색 화면에 맞지 않는다.</p>
+ */
+export async function searchSurgeries(
+  params?: SurgerySearchParams,
+): Promise<PageResponse<Surgery>> {
+  const { data } = await apiClient.get<ApiResponse<PageResponse<Surgery>>>(
+    `${SCHEDULE_PATH}/assignments`,
+    { params },
+  );
+  return data.data;
 }
 
 /** 금일 수술 현황을 조회한다. (SL2-40 모니터링) */
