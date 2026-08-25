@@ -105,17 +105,15 @@ const nextConfig: NextConfig = {
         source: "/api/billing/:path*",
         destination: `${billingApiOrigin}/api/billing/:path*`,
       },
-
-      // ----------- reception-service (구체 경로 먼저) ----------
+      // ---------- inpatient-service (구체 경로 먼저) ----------
       {
-        source: "/api/reception",
-        destination: `${receptionApiOrigin}/api/reception`,
+        source: "/api/inpatient",
+        destination: `${inpatientApiOrigin}/api/inpatient`,
       },
       {
-        source: "/api/reception/:path*",
-        destination: `${receptionApiOrigin}/api/reception/:path*`,
+        source: "/api/inpatient/:path*",
+        destination: `${inpatientApiOrigin}/api/inpatient/:path*`,
       },
-
       // ---------- admin-service (나머지 /api) ----------
       {
         source: "/api/:path*",
