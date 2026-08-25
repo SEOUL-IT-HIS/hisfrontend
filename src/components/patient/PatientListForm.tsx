@@ -67,13 +67,9 @@ const columns: DataTableColumn<PatientListItem>[] = [
       <div className="flex flex-wrap gap-1">
         {patient.tempPatientYn === "Y" ? (
           <span className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
-            임시
+            임시환자
           </span>
-        ) : (
-          <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
-            정식
-          </span>
-        )}
+        ) : null}
 
         {patient.deathYn === "Y" ? (
           <span className="rounded bg-rose-100 px-2 py-1 text-xs font-medium text-rose-700">
@@ -86,7 +82,8 @@ const columns: DataTableColumn<PatientListItem>[] = [
   {
     key: "statusCd",
     header: "환자관리상태코드",
-    render: (patient) => patient.statusCd,
+    render: (patient) =>
+      patient.statusCd === "ACTIVE" ? "활성" : "비활성",
   },
   {
     key: "createdAt",
@@ -176,7 +173,7 @@ export default function PatientListForm() {
 
         <div className="w-36">
           <label className="mb-1 block text-sm font-medium text-slate-700">
-            환자 상태
+            환자관리상태코드
           </label>
 
           <Select

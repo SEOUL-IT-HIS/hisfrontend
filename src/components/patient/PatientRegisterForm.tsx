@@ -19,21 +19,9 @@ import {
 import type {
   GenderCd,
   PatientRegisterRequest,
-  PatientStatus,
 } from "@/features/patient/type/patientType";
 import type { AppDispatch, RootState } from "@/store/store";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
-
-const patientStatusOptions = [
-  {
-    value: "ACTIVE",
-    label: "활성(ACTIVE)",
-  },
-  {
-    value: "INACTIVE",
-    label: "비활성(INACTIVE)",
-  },
-];
 
 type PatientRegisterFormState = Omit<PatientRegisterRequest, "genderCd"> & {
   genderCd: GenderCd | "";
@@ -89,7 +77,6 @@ const initialForm: PatientRegisterFormState = {
   birthDate: "",
   residentRegNo: "",
   genderCd: "",
-  statusCd: "ACTIVE",
   tempPatientYn: "N",
 };
 
@@ -125,8 +112,7 @@ export default function PatientRegisterForm() {
       : !form.patientName.trim() ||
           !form.residentRegNo ||
           !form.birthDate ||
-          !form.genderCd ||
-          !form.statusCd
+          !form.genderCd
         ? "필수 항목을 모두 입력해 주세요."
         : form.patientName.trim().length < 2 ||
             form.patientName.trim().length > 100
@@ -168,7 +154,6 @@ export default function PatientRegisterForm() {
         form.residentRegNo !== "" ||
         form.birthDate !== "" ||
         form.genderCd !== "" ||
-        form.statusCd !== initialForm.statusCd ||
         form.tempPatientYn !== initialForm.tempPatientYn;
 
       if (!hasUnsavedChanges || submitted) {
@@ -253,8 +238,7 @@ export default function PatientRegisterForm() {
       !form.patientName.trim() ||
       !form.birthDate ||
       !form.residentRegNo.trim() ||
-      !form.genderCd ||
-      !form.statusCd.trim()
+      !form.genderCd
     ) {
       setValidationError("모든 필수 항목을 입력해 주세요.");
       return;
@@ -287,7 +271,6 @@ export default function PatientRegisterForm() {
         birthDate: form.birthDate,
         residentRegNo: form.residentRegNo.trim(),
         genderCd: form.genderCd as GenderCd,
-        statusCd: form.statusCd,
         tempPatientYn: form.tempPatientYn,
       }),
     );
@@ -299,7 +282,7 @@ export default function PatientRegisterForm() {
       form.residentRegNo !== "" ||
       form.birthDate !== "" ||
       form.genderCd !== "" ||
-      form.statusCd !== initialForm.statusCd;
+      form.tempPatientYn !== initialForm.tempPatientYn;
 
     if (
       hasUnsavedChanges &&
@@ -317,7 +300,7 @@ export default function PatientRegisterForm() {
       form.residentRegNo !== "" ||
       form.birthDate !== "" ||
       form.genderCd !== "" ||
-      form.statusCd !== initialForm.statusCd;
+      form.tempPatientYn !== initialForm.tempPatientYn;
 
     if (
       hasUnsavedChanges &&
@@ -490,17 +473,6 @@ export default function PatientRegisterForm() {
             </p>
           </FormField>
 
-          <FormField label="환자상태관리코드" required htmlFor="statusCd">
-            <Select
-              id="statusCd"
-              value={form.statusCd}
-              options={patientStatusOptions}
-              onChange={(event) =>
-                updateForm("statusCd", event.target.value as PatientStatus)
-              }
-              disabled={registerLoading}
-            />
-          </FormField>
           {registrationDisabledReason ? (
             <p className="text-right text-xs text-slate-500" role="status">
               {registrationDisabledReason}
