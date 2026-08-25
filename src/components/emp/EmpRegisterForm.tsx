@@ -24,6 +24,7 @@ import { fetchEmpRegisterRequest } from "@/features/emp/slice/empSlice";
 import { toCodeSelectOptions } from "@/features/emp/utils/empCodeLabel";
 import type { EmpRegisterRequest } from "@/features/emp/types/empTypes";
 import type { AppDispatch, RootState } from "@/store/store";
+import Script from "next/script";
 
 type EmpRegisterFormState = {
   empName: string;
@@ -31,6 +32,9 @@ type EmpRegisterFormState = {
   empPhone: string;
   hireDate: string;
   deptCode: string;
+  zipCode: string;
+  address: string;
+  addressDetail: string;
 };
 
 /** 필드별 인라인 검증 메시지 (§15.3: 검증은 필드 하단 인라인, Toast는 서버 결과에만) */
@@ -56,6 +60,9 @@ export default function EmpRegisterForm({
     empPhone: "",
     hireDate: "",
     deptCode: "",
+    zipCode: "",
+    address: "",
+    addressDetail: "",
   });
   const [errors, setErrors] = useState<FieldErrors>({});
   const error = useSelector((state: RootState) => state.emp.error);
@@ -72,6 +79,29 @@ export default function EmpRegisterForm({
     setImageFile(file);
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImagePreview(file ? URL.createObjectURL(file) : null);
+  }
+
+  type DaumPostcodeData = { zonecode: string; address: string };
+  type DaumPostcodeWindow = {
+    daum?: {
+      Postcode: new (options: {
+        oncomplete: (data: DaumPostcodeData) => void;
+      }) => { open: () => void };
+    };
+  };
+
+  function handleAddressSearch() {
+    const daum = (window as unknown as DaumPostcodeWindow).daum;
+    if (!daum) return;
+    new daum.Postcode({
+      oncomplete: (data) => {
+        setForm((prev) => ({
+          ...prev,
+          zipCode: data.zonecode,
+          address: data.address,
+        }));
+      },
+    }).open();
   }
 
   const onSubmit = (e: React.FormEvent) => {
@@ -93,6 +123,9 @@ export default function EmpRegisterForm({
       hireDate: form.hireDate || undefined,
       deptCode: form.deptCode.trim() || undefined,
       image: imageFile ?? undefined,
+      zipCode: form.zipCode || undefined,
+      address: form.address || undefined,
+      addressDetail: form.addressDetail.trim() || undefined,
     };
     dispatch(fetchEmpRegisterRequest(payload));
   };
@@ -116,6 +149,7 @@ export default function EmpRegisterForm({
 
   return (
     <div className="space-y-5">
+      <Script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" strategy="afterInteractive" />
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       <form onSubmit={onSubmit} className="space-y-4">
@@ -176,6 +210,26 @@ export default function EmpRegisterForm({
           {errors.deptCode && (
             <p className="text-xs text-red-600">{errors.deptCode}</p>
           )}
+        </FormField>
+
+        <FormField label="주소" htmlFor="zipCode">
+          <div className="flex gap-2">
+            <Input id="zipCode" value={form.zipCode} placeholder="우편번호" disabled />
+            <button
+                type="button"
+                onClick={handleAddressSearch}
+                className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              주소 검색
+            </button>
+          </div>
+          <Input value={form.address} placeholder="기본주소" disabled className="mt-2" />
+          <Input
+              value={form.addressDetail}
+              placeholder="상세주소를 입력하세요 (예: 101동 202호)"
+              onChange={(e) => setForm({ ...form, addressDetail: e.target.value })}
+              className="mt-2"
+          />
         </FormField>
 
         <FormField label="사진" htmlFor="image">
