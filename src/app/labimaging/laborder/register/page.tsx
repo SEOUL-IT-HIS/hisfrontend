@@ -1,3 +1,4 @@
+import PageHeader from "@/components/common/PageHeader";
 import LabOrderReceptionForm from "@/components/labimaging/laborder/LabOrderReceptionForm";
 
 /**
@@ -8,8 +9,8 @@ import LabOrderReceptionForm from "@/components/labimaging/laborder/LabOrderRece
  */
 export default function Page() {
   return (
-    <div className="mx-auto w-full max-w-3xl p-6">
-      <h1 className="mb-6 text-lg font-semibold text-slate-800">검사오더 접수</h1>
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
+      <PageHeader title="검사오더 접수" description="외부 시스템에서 발생한 검사 오더를 접수합니다." />
       <LabOrderReceptionForm />
     </div>
   );

@@ -6,14 +6,20 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
   Button,
+  FormField,
   Input,
   PageHeader,
   Panel,
+  Select,
   StatusBadge,
 } from "@/components/common";
 import {
+  deactivatePatientRequest,
   fetchPatientDetailRequest,
+  resetPatientDeactivation,
+  resetPatientDeathUpdate,
   resetPatientUpdate,
+  updatePatientDeathRequest,
   updatePatientRequest,
 } from "@/features/patient/slice/patientSlice";
 import { getGenderLabel } from "@/features/patient/util/genderCode";
@@ -23,8 +29,7 @@ type PatientDetailFormProps = {
   patientId: string;
 };
 
-const formatDateTime = (value: string) =>
-  value.replace("T", " ").slice(0, 19);
+const formatDateTime = (value: string) => value.replace("T", " ").slice(0, 19);
 
 export default function PatientDetailForm({
   patientId,
@@ -32,80 +37,161 @@ export default function PatientDetailForm({
   const dispatch = useDispatch<AppDispatch>();
   const [editing, setEditing] = useState(false);
   const [patientName, setPatientName] = useState("");
-  const [validationError, setValidationError] =
-  useState<string | null>(null);
+  const [deathEditing, setDeathEditing] = useState(false);
+  const [deathYn, setDeathYn] = useState<"Y" | "N">("N");
+  const [deathDtm, setDeathDtm] = useState("");
+  const [validationError, setValidationError] = useState<string | null>(null);
   const {
-  patientDetail,
-  detailLoading,
-  detailError,
-  updateLoading,
-  updateError,
-  updateSuccess,
-} = useSelector((state: RootState) => state.patient);
+    patientDetail,
+    detailLoading,
+    detailError,
+    updateLoading,
+    updateError,
+    updateSuccess,
+    deactivateLoading,
+    deactivateError,
+    deactivateSuccess,
+    deathUpdateLoading,
+    deathUpdateError,
+    deathUpdateSuccess,
+  } = useSelector((state: RootState) => state.patient);
 
-const isEditing = editing && !updateSuccess;
+  const isEditing = editing && !updateSuccess;
 
-useEffect(() => {
-  dispatch(resetPatientUpdate());
-  dispatch(fetchPatientDetailRequest(patientId));
-}, [dispatch, patientId]);
+  useEffect(() => {
+    dispatch(resetPatientUpdate());
+    dispatch(resetPatientDeactivation());
+    dispatch(resetPatientDeathUpdate());
+    dispatch(fetchPatientDetailRequest(patientId));
+  }, [dispatch, patientId]);
 
-const startEditing = () => {
-  if (!patientDetail) {
-    return;
-  }
+  const startEditing = () => {
+    if (!patientDetail) {
+      return;
+    }
 
-  setPatientName(patientDetail.patientName);
-  setValidationError(null);
-  dispatch(resetPatientUpdate());
-  setEditing(true);
-};
+    setPatientName(patientDetail.patientName);
+    setValidationError(null);
+    dispatch(resetPatientUpdate());
+    dispatch(resetPatientDeactivation());
+    setEditing(true);
+  };
 
-const cancelEditing = () => {
-  if (!patientDetail) {
-    return;
-  }
+  const cancelEditing = () => {
+    if (!patientDetail) {
+      return;
+    }
 
-  setPatientName(patientDetail.patientName);
-  setValidationError(null);
-  dispatch(resetPatientUpdate());
-  setEditing(false);
-};
+    setPatientName(patientDetail.patientName);
+    setValidationError(null);
+    dispatch(resetPatientUpdate());
+    setEditing(false);
+  };
 
-const submitUpdate = (
-  event: React.FormEvent<HTMLFormElement>,
-) => {
-  event.preventDefault();
+  const startDeathEditing = () => {
+    if (!patientDetail) {
+      return;
+    }
 
-  const normalizedPatientName = patientName.trim();
-
-  if (
-    normalizedPatientName.length < 2 ||
-    normalizedPatientName.length > 100
-  ) {
-    setValidationError(
-      "환자명은 2자 이상 100자 이하로 입력해 주세요.",
+    setDeathYn(patientDetail.deathYn);
+    setDeathDtm(
+      patientDetail.deathDtm ? patientDetail.deathDtm.slice(0, 16) : "",
     );
-    return;
-  }
 
-  if (
-    patientDetail &&
-    normalizedPatientName === patientDetail.patientName
-  ) {
-    setValidationError("변경된 환자명이 없습니다.");
-    return;
-  }
+    dispatch(resetPatientDeathUpdate());
+    setDeathEditing(true);
+  };
 
-  setValidationError(null);
+  const cancelDeathEditing = () => {
+    setDeathEditing(false);
+    dispatch(resetPatientDeathUpdate());
+  };
 
-  dispatch(
-    updatePatientRequest({
-      patientId,
-      patientName: normalizedPatientName,
-    }),
-  );
-};
+  const deactivatePatient = () => {
+    if (
+      !patientDetail ||
+      patientDetail.statusCd === "INACTIVE" ||
+      deactivateLoading
+    ) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "환자를 비활성화하시겠습니까?\n비활성화된 환자는 신규 접수에 사용할 수 없습니다.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    dispatch(resetPatientUpdate());
+    dispatch(resetPatientDeactivation());
+
+    dispatch(
+      deactivatePatientRequest({
+        patientId,
+      }),
+    );
+  };
+
+  const submitUpdate = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const normalizedPatientName = patientName.trim();
+
+    if (
+      normalizedPatientName.length < 2 ||
+      normalizedPatientName.length > 100
+    ) {
+      setValidationError("환자명은 2자 이상 100자 이하로 입력해 주세요.");
+      return;
+    }
+
+    if (patientDetail && normalizedPatientName === patientDetail.patientName) {
+      setValidationError("변경된 환자명이 없습니다.");
+      return;
+    }
+
+    setValidationError(null);
+
+    dispatch(
+      updatePatientRequest({
+        patientId,
+        patientName: normalizedPatientName,
+      }),
+    );
+  };
+
+  const submitDeathUpdate = () => {
+    if (deathYn === "Y" && !deathDtm) {
+      window.alert("사망일시를 입력해 주세요.");
+      return;
+    }
+
+    if (deathYn === "Y" && new Date(deathDtm).getTime() > Date.now()) {
+      window.alert("사망일시는 미래일 수 없습니다.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      deathYn === "Y"
+        ? "사망 정보를 등록하시겠습니까?"
+        : "등록된 사망 정보를 해제하시겠습니까?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    dispatch(
+      updatePatientDeathRequest({
+        patientId,
+        deathYn,
+        deathDtm: deathYn === "Y" ? `${deathDtm}:00` : null,
+      }),
+    );
+    setDeathEditing(false);
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-3">
@@ -118,149 +204,278 @@ const submitUpdate = (
         }
       />
 
-      {detailLoading ? (
-        <Alert>환자 정보를 불러오는 중입니다...</Alert>
-      ) : null}
+      {detailLoading ? <Alert>환자 정보를 불러오는 중입니다...</Alert> : null}
 
-      {detailError ? (
-        <Alert variant="error">{detailError}</Alert>
-      ) : null}
+      {detailError ? <Alert variant="error">{detailError}</Alert> : null}
 
       {validationError ? (
-      <Alert variant="error">{validationError}</Alert>
+        <Alert variant="error">{validationError}</Alert>
       ) : null}
 
-      {updateError ? (
-      <Alert variant="error">{updateError}</Alert>
-       ) : null}
+      {updateError ? <Alert variant="error">{updateError}</Alert> : null}
 
       {updateSuccess ? (
-     <Alert variant="success">
-      환자 정보가 수정되었습니다.
-     </Alert>
-     ) : null}
+        <Alert variant="success">환자 정보가 수정되었습니다.</Alert>
+      ) : null}
+
+      {deactivateError ? (
+        <Alert variant="error">{deactivateError}</Alert>
+      ) : null}
+
+      {deactivateSuccess ? (
+        <Alert variant="success">환자가 비활성화되었습니다.</Alert>
+      ) : null}
+
+      {deathUpdateError ? (
+        <Alert variant="error">{deathUpdateError}</Alert>
+      ) : null}
+
+      {deathUpdateSuccess ? (
+        <Alert variant="success">사망정보가 수정되었습니다.</Alert>
+      ) : null}
 
       {patientDetail ? (
-  <Panel>
-    <form onSubmit={submitUpdate}>
-      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-        <h2 className="text-base font-semibold text-slate-800">
-          {patientDetail.patientName} 환자 정보
-        </h2>
+        <Panel>
+          <form onSubmit={submitUpdate}>
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <h2 className="text-base font-semibold text-slate-800">
+                {patientDetail.patientName} 환자 정보
+              </h2>
 
-        {!isEditing ? (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={startEditing}
-          >
-            수정
-          </Button>
-        ) : null}
-      </div>
+              {!isEditing ? (
+                <div className="flex gap-2">
+                  {patientDetail.statusCd === "ACTIVE" ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={deactivatePatient}
+                      disabled={deactivateLoading}
+                    >
+                      {deactivateLoading ? "처리 중..." : "비활성화"}
+                    </Button>
+                  ) : null}
 
-      <dl className="grid grid-cols-1 gap-x-8 gap-y-5 p-5 sm:grid-cols-2 lg:grid-cols-3">
-        <DetailItem
-          label="환자 ID"
-          value={String(patientDetail.patientId)}
-        />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={startEditing}
+                    disabled={deactivateLoading}
+                  >
+                    수정
+                  </Button>
+                </div>
+              ) : null}
+            </div>
 
-        {isEditing ? (
-          <div>
-            <dt className="text-xs font-medium text-slate-400">
-              환자명
-            </dt>
-
-            <dd className="mt-1">
-              <Input
-                id="patientName"
-                value={patientName}
-                onChange={(event) => {
-                  setPatientName(event.target.value);
-                  setValidationError(null);
-                }}
-                minLength={2}
-                maxLength={100}
-                disabled={updateLoading}
-                autoFocus
-                autoComplete="name"
+            <dl className="grid grid-cols-1 gap-x-8 gap-y-5 p-5 sm:grid-cols-2 lg:grid-cols-3">
+              <DetailItem
+                label="환자 ID"
+                value={String(patientDetail.patientId)}
               />
-            </dd>
+
+              {isEditing ? (
+                <div>
+                  <dt className="text-xs font-medium text-slate-400">환자명</dt>
+
+                  <dd className="mt-1">
+                    <Input
+                      id="patientName"
+                      value={patientName}
+                      onChange={(event) => {
+                        setPatientName(event.target.value);
+                        setValidationError(null);
+                      }}
+                      minLength={2}
+                      maxLength={100}
+                      disabled={updateLoading}
+                      autoFocus
+                      autoComplete="name"
+                    />
+                  </dd>
+                </div>
+              ) : (
+                <DetailItem label="환자명" value={patientDetail.patientName} />
+              )}
+
+              <div>
+                <dt className="text-xs font-medium text-slate-400">
+                  환자관리상태코드
+                </dt>
+
+                <dd className="mt-1">
+                  <StatusBadge
+                    value={
+                      patientDetail.statusCd === "ACTIVE"
+                        ? "active"
+                        : "inactive"
+                    }
+                    activeLabel="활성"
+                    inactiveLabel="비활성"
+                  />
+                </dd>
+              </div>
+
+              <DetailItem
+                label="환자 구분"
+                value={
+                  patientDetail.tempPatientYn === "Y" ? "임시환자" : "정식환자"
+                }
+              />
+
+              <DetailItem
+                label="사망 여부"
+                value={patientDetail.deathYn === "Y" ? "사망" : "사망정보 없음"}
+              />
+
+              {patientDetail.deathYn === "Y" ? (
+                <DetailItem
+                  label="사망일시"
+                  value={
+                    patientDetail.deathDtm
+                      ? formatDateTime(patientDetail.deathDtm)
+                      : "-"
+                  }
+                />
+              ) : null}
+
+              <DetailItem
+                label="주민등록번호"
+                value={patientDetail.residentRegNo}
+              />
+
+              <DetailItem
+                label="성별"
+                value={getGenderLabel(patientDetail.genderCd)}
+              />
+
+              <DetailItem label="생년월일" value={patientDetail.birthDate} />
+
+              <DetailItem
+                label="등록일시"
+                value={formatDateTime(patientDetail.createdAt)}
+              />
+
+              <DetailItem
+                label="수정일시"
+                value={formatDateTime(patientDetail.updatedAt)}
+              />
+            </dl>
+
+            {isEditing ? (
+              <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={cancelEditing}
+                  disabled={updateLoading}
+                >
+                  취소
+                </Button>
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={updateLoading}
+                >
+                  {updateLoading ? "저장 중..." : "저장"}
+                </Button>
+              </div>
+            ) : null}
+          </form>
+
+          <div className="border-t border-slate-200">
+            <div className="flex items-center justify-between px-5 py-4">
+              <h2 className="text-base font-semibold text-slate-800">
+                사망정보 관리
+              </h2>
+
+              {!deathEditing ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={startDeathEditing}
+                  disabled={deathUpdateLoading}
+                >
+                  사망정보 수정
+                </Button>
+              ) : null}
+            </div>
+
+            <div className="grid gap-4 border-t border-slate-100 p-5 sm:grid-cols-2">
+              {deathEditing ? (
+                <>
+                  <FormField label="사망 여부" required>
+                    <Select
+                      value={deathYn}
+                      options={[
+                        { value: "N", label: "사망정보 없음" },
+                        { value: "Y", label: "사망" },
+                      ]}
+                      onChange={(event) => {
+                        const value = event.target.value as "Y" | "N";
+
+                        setDeathYn(value);
+
+                        if (value === "N") {
+                          setDeathDtm("");
+                        }
+                      }}
+                      disabled={deathUpdateLoading}
+                    />
+                  </FormField>
+
+                  <FormField label="사망일시" required={deathYn === "Y"}>
+                    <Input
+                      type="datetime-local"
+                      value={deathDtm}
+                      onChange={(event) => setDeathDtm(event.target.value)}
+                      disabled={deathYn === "N" || deathUpdateLoading}
+                    />
+                  </FormField>
+
+                  <div className="flex justify-end gap-2 sm:col-span-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={cancelDeathEditing}
+                      disabled={deathUpdateLoading}
+                    >
+                      취소
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={submitDeathUpdate}
+                      disabled={deathUpdateLoading}
+                    >
+                      {deathUpdateLoading ? "저장 중..." : "저장"}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <DetailItem
+                    label="사망 여부"
+                    value={
+                      patientDetail.deathYn === "Y" ? "사망" : "사망정보 없음"
+                    }
+                  />
+
+                  <DetailItem
+                    label="사망일시"
+                    value={
+                      patientDetail.deathDtm
+                        ? formatDateTime(patientDetail.deathDtm)
+                        : "-"
+                    }
+                  />
+                </>
+              )}
+            </div>
           </div>
-        ) : (
-          <DetailItem
-            label="환자명"
-            value={patientDetail.patientName}
-          />
-        )}
-
-        <div>
-          <dt className="text-xs font-medium text-slate-400">
-            환자관리상태코드
-          </dt>
-
-          <dd className="mt-1">
-            <StatusBadge
-              value={
-                patientDetail.statusCd === "ACTIVE"
-                  ? "active"
-                  : "inactive"
-              }
-              activeLabel="활성"
-              inactiveLabel="비활성"
-            />
-          </dd>
-        </div>
-
-        <DetailItem
-          label="주민등록번호"
-          value={patientDetail.residentRegNo}
-        />
-
-        <DetailItem
-          label="성별"
-          value={getGenderLabel(patientDetail.genderCd)}
-        />
-
-        <DetailItem
-          label="생년월일"
-          value={patientDetail.birthDate}
-        />
-
-        <DetailItem
-          label="등록일시"
-          value={formatDateTime(patientDetail.createdAt)}
-        />
-
-        <DetailItem
-          label="수정일시"
-          value={formatDateTime(patientDetail.updatedAt)}
-        />
-      </dl>
-
-      {isEditing ? (
-        <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={cancelEditing}
-            disabled={updateLoading}
-          >
-            취소
-          </Button>
-
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={updateLoading}
-          >
-            {updateLoading ? "저장 중..." : "저장"}
-          </Button>
-        </div>
+        </Panel>
       ) : null}
-    </form>
-  </Panel>
-) : null}
     </div>
   );
 }
@@ -270,19 +485,12 @@ type DetailItemProps = {
   value: string;
 };
 
-function DetailItem({
-  label,
-  value,
-}: DetailItemProps) {
+function DetailItem({ label, value }: DetailItemProps) {
   return (
     <div>
-      <dt className="text-xs font-medium text-slate-400">
-        {label}
-      </dt>
+      <dt className="text-xs font-medium text-slate-400">{label}</dt>
 
-      <dd className="mt-1 text-sm font-medium text-slate-800">
-        {value}
-      </dd>
+      <dd className="mt-1 text-sm font-medium text-slate-800">{value}</dd>
     </div>
   );
 }

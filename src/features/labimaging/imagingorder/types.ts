@@ -60,14 +60,21 @@ export interface ImageOrderCreateResponse {
  * - 목록: GET /api/lab-imaging/image-orders/receptions        (미일정 접수 = 일정등록 대상)
  * - 단건: GET /api/lab-imaging/image-orders/receptions/{receptionNo}
  */
-export interface ImageReceptionSummary {
+export interface ImageReceptionSummary extends ImageReceptionContext {
   imageOrderId: string;
   imageOrderNo: string;
   patientNo: string;
+  /**
+   * 환자ID (patient-service 내부 식별자).
+   * 하위 작업(동의 등록 등)이 요청 본문에 담아야 해서 함께 내려온다. 화면 표시용은 patientNo 다.
+   */
+  patientId: string;
   orderStatusCode: string;
   imageReceptionId: string;
   receptionNo: string;
   receptionStatusCode: string;
+  /** 최종 일정의 촬영 예정일시. 일정 미등록이면 없음(undefined) */
+  scheduledAt?: string;
 }
 
 /** 영상 오더/접수 slice 상태 */
@@ -82,7 +89,11 @@ export interface ImageOrderState {
   receptionsError: string;
 
   /** 접수 단건(상세/일정등록 컨텍스트) */
-  selectedReception: ImageReceptionSummary | null;
+  /** 일정 화면으로 넘길 컨텍스트 (검사 쪽과 동일 규약) */
+  selectedReception: ImageReceptionContext | null;
+
+  /** 접수 상세 조회 결과 (촬영항목 포함) */
+  receptionDetail: ImageReceptionDetail | null;
   receptionLoading: boolean;
   receptionError: string;
 }
@@ -98,3 +109,48 @@ export const URGENCY_YN_OPTIONS: ReadonlyArray<{ value: "Y" | "N"; label: string
   { value: "N", label: "일반" },
   { value: "Y", label: "긴급" },
 ];
+
+/**
+ * 접수 목록 필터. 백엔드 GET /receptions?scheduledYn= 파라미터와 대응한다.
+ * (검사 쪽 laborder/types.ts 와 동일 규약)
+ */
+export type ReceptionScheduledFilter = "ALL" | "Y" | "N";
+
+/** 접수 목록 필터 버튼 옵션 */
+export const RECEPTION_FILTER_OPTIONS: ReadonlyArray<{
+  value: ReceptionScheduledFilter;
+  label: string;
+}> = [
+  { value: "N", label: "일정 미등록" },
+  { value: "Y", label: "일정 등록됨" },
+  { value: "ALL", label: "전체" },
+];
+
+/**
+ * 일정 화면으로 넘길 접수 컨텍스트. (검사 쪽 laborder/types.ts 와 동일 규약)
+ */
+export interface ImageReceptionContext {
+  imageReceptionId: string;
+  receptionNo: string;
+  patientNo: string;
+}
+
+/**
+ * 영상 접수 상세 — 백엔드 ImageReceptionDetailDto
+ * 목록(ImageReceptionSummary)과 달리 촬영항목(imageItemCodes)을 담는다.
+ */
+export interface ImageReceptionDetail extends ImageReceptionContext {
+  imageOrderNo: string;
+  /** 진료구분코드 (공통코드 RCPT_TYPE_CD) */
+  treatTypeCode: string;
+  urgencyYn: "Y" | "N";
+  physicianNo?: string;
+  /** 촬영항목코드 목록 (공통코드 IMG_ITEM_CD) */
+  imageItemCodes: string[];
+  receivedAt: string;
+  /** 촬영 예정일시. 일정 미등록이면 없음 */
+  scheduledAt?: string;
+  orderStatusCode: string;
+  receptionStatusCode: string;
+  receivedById: string;
+}

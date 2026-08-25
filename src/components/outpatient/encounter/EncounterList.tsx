@@ -92,9 +92,7 @@ const EncounterList = () => {
 
     return (
         <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h1 className="text-lg font-bold text-slate-800">외래진료 통합 차트</h1>
-            </div>
+            <h1 className="px-1 text-2xl font-bold text-slate-800">외래진료 통합 차트</h1>
 
             {error && <Alert variant="error">{error}</Alert>}
 

@@ -19,7 +19,9 @@ import {
 import type {
   ImageOrderCreateRequest,
   ImageOrderCreateResponse,
+  ImageReceptionDetail,
   ImageReceptionSummary,
+  ReceptionScheduledFilter,
 } from "@/features/labimaging/imagingorder/types";
 
 /** imagingOrder saga (laborder 과 동일 패턴) — API 호출은 여기서만 (가이드 10.3). */
@@ -37,9 +39,15 @@ function* createImageOrderSaga(action: PayloadAction<ImageOrderCreateRequest>) {
   }
 }
 
-function* fetchImageReceptionsSaga() {
+function* fetchImageReceptionsSaga(
+  action: PayloadAction<ReceptionScheduledFilter | undefined>,
+) {
   try {
-    const list: ImageReceptionSummary[] = yield call(fetchImageReceptions);
+    // "ALL"(또는 미지정)이면 파라미터를 보내지 않아 백엔드가 전체를 반환한다.
+    const filter = action.payload;
+    const scheduledYn = filter && filter !== "ALL" ? filter : undefined;
+
+    const list: ImageReceptionSummary[] = yield call(fetchImageReceptions, scheduledYn);
     yield put(fetchImageReceptionsSuccess(list));
   } catch (err) {
     const message =
@@ -50,7 +58,7 @@ function* fetchImageReceptionsSaga() {
 
 function* fetchImageReceptionByNoSaga(action: PayloadAction<string>) {
   try {
-    const reception: ImageReceptionSummary = yield call(
+    const reception: ImageReceptionDetail = yield call(
       fetchImageReceptionByNo,
       action.payload,
     );

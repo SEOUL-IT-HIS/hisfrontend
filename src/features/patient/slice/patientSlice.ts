@@ -7,6 +7,8 @@ import type {
   PatientRegisterRequest,
   PatientSearchCondition,
   PatientUpdateRequest,
+  PatientDeactivateRequest,
+  PatientDeathUpdateRequest,
 } from "../type/patientType";
 
 type PatientState = {
@@ -24,6 +26,12 @@ type PatientState = {
   updateLoading: boolean;
   updateError: string | null;
   updateSuccess: boolean;
+  deactivateLoading: boolean;
+  deactivateError: string | null;
+  deactivateSuccess: boolean;
+  deathUpdateLoading: boolean;
+  deathUpdateError: string | null;
+  deathUpdateSuccess: boolean;
 };
 
 const initialState: PatientState = {
@@ -41,6 +49,12 @@ const initialState: PatientState = {
   updateLoading: false,
   updateError: null,
   updateSuccess: false,
+  deactivateLoading: false,
+  deactivateError: null,
+  deactivateSuccess: false,
+  deathUpdateLoading: false,
+  deathUpdateError: null,
+  deathUpdateSuccess: false,
 };
 
 const patientSlice = createSlice({
@@ -48,16 +62,14 @@ const patientSlice = createSlice({
   initialState,
   reducers: {
     fetchPatientListRequest(
-     state,
-    _action: PayloadAction<PatientSearchCondition>,
-    ) {
-     state.listLoading = true;
-     state.listError = null;
-    },
-    fetchPatientListSuccess(
       state,
-      action: PayloadAction<PatientListItem[]>,
+      _action: PayloadAction<PatientSearchCondition>,
     ) {
+      void _action;
+      state.listLoading = true;
+      state.listError = null;
+    },
+    fetchPatientListSuccess(state, action: PayloadAction<PatientListItem[]>) {
       state.listLoading = false;
       state.patients = action.payload;
     },
@@ -66,66 +78,107 @@ const patientSlice = createSlice({
       state.listError = action.payload;
     },
 
-    fetchPatientDetailRequest(
-  state,
-  action: PayloadAction<string>,
-) {
-  void action;
+    fetchPatientDetailRequest(state, action: PayloadAction<string>) {
+      void action;
 
-  state.detailLoading = true;
-  state.detailError = null;
-  state.patientDetail = null;
-},
+      state.detailLoading = true;
+      state.detailError = null;
+      state.patientDetail = null;
+    },
 
-fetchPatientDetailSuccess(
-  state,
-  action: PayloadAction<PatientDetail>,
-) {
-  state.detailLoading = false;
-  state.patientDetail = action.payload;
-},
+    fetchPatientDetailSuccess(state, action: PayloadAction<PatientDetail>) {
+      state.detailLoading = false;
+      state.patientDetail = action.payload;
+    },
 
-fetchPatientDetailFailure(
-  state,
-  action: PayloadAction<string>,
-) {
-  state.detailLoading = false;
-  state.detailError = action.payload;
-},
+    fetchPatientDetailFailure(state, action: PayloadAction<string>) {
+      state.detailLoading = false;
+      state.detailError = action.payload;
+    },
 
-updatePatientRequest(
-  state,
-  _action: PayloadAction<PatientUpdateRequest>,
-) {
-  state.updateLoading = true;
-  state.updateError = null;
-  state.updateSuccess = false;
-},
+    updatePatientRequest(state, _action: PayloadAction<PatientUpdateRequest>) {
+      void _action;
+      state.updateLoading = true;
+      state.updateError = null;
+      state.updateSuccess = false;
+    },
 
-updatePatientSuccess(
-  state,
-  action: PayloadAction<PatientDetail>,
-) {
-  state.updateLoading = false;
-  state.updateError = null;
-  state.updateSuccess = true;
-  state.patientDetail = action.payload;
-},
+    updatePatientSuccess(state, action: PayloadAction<PatientDetail>) {
+      state.updateLoading = false;
+      state.updateError = null;
+      state.updateSuccess = true;
+      state.patientDetail = action.payload;
+    },
 
-updatePatientFailure(
-  state,
-  action: PayloadAction<string>,
-) {
-  state.updateLoading = false;
-  state.updateError = action.payload;
-  state.updateSuccess = false;
-},
+    updatePatientFailure(state, action: PayloadAction<string>) {
+      state.updateLoading = false;
+      state.updateError = action.payload;
+      state.updateSuccess = false;
+    },
 
-resetPatientUpdate(state) {
-  state.updateLoading = false;
-  state.updateError = null;
-  state.updateSuccess = false;
-},
+    resetPatientUpdate(state) {
+      state.updateLoading = false;
+      state.updateError = null;
+      state.updateSuccess = false;
+    },
+
+    updatePatientDeathRequest(
+      state,
+      _action: PayloadAction<PatientDeathUpdateRequest>,
+    ) {
+      void _action;
+      state.deathUpdateLoading = true;
+      state.deathUpdateError = null;
+      state.deathUpdateSuccess = false;
+    },
+
+    updatePatientDeathSuccess(state, action: PayloadAction<PatientDetail>) {
+      state.deathUpdateLoading = false;
+      state.deathUpdateError = null;
+      state.deathUpdateSuccess = true;
+      state.patientDetail = action.payload;
+    },
+
+    updatePatientDeathFailure(state, action: PayloadAction<string>) {
+      state.deathUpdateLoading = false;
+      state.deathUpdateError = action.payload;
+      state.deathUpdateSuccess = false;
+    },
+
+    resetPatientDeathUpdate(state) {
+      state.deathUpdateLoading = false;
+      state.deathUpdateError = null;
+      state.deathUpdateSuccess = false;
+    },
+
+    deactivatePatientRequest(
+      state,
+      _action: PayloadAction<PatientDeactivateRequest>,
+    ) {
+      void _action;
+      state.deactivateLoading = true;
+      state.deactivateError = null;
+      state.deactivateSuccess = false;
+    },
+
+    deactivatePatientSuccess(state, action: PayloadAction<PatientDetail>) {
+      state.deactivateLoading = false;
+      state.deactivateError = null;
+      state.deactivateSuccess = true;
+      state.patientDetail = action.payload;
+    },
+
+    deactivatePatientFailure(state, action: PayloadAction<string>) {
+      state.deactivateLoading = false;
+      state.deactivateError = action.payload;
+      state.deactivateSuccess = false;
+    },
+
+    resetPatientDeactivation(state) {
+      state.deactivateLoading = false;
+      state.deactivateError = null;
+      state.deactivateSuccess = false;
+    },
 
     registerPatientRequest: {
       reducer(state) {
@@ -188,6 +241,14 @@ export const {
   updatePatientSuccess,
   updatePatientFailure,
   resetPatientUpdate,
+  deactivatePatientRequest,
+  deactivatePatientSuccess,
+  deactivatePatientFailure,
+  resetPatientDeactivation,
+  updatePatientDeathRequest,
+  updatePatientDeathSuccess,
+  updatePatientDeathFailure,
+  resetPatientDeathUpdate,
 } = patientSlice.actions;
 
 export default patientSlice.reducer;

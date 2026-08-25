@@ -18,14 +18,17 @@ import type { CodeValue, PageParams, YnFlag } from "@/features/surgery/types";
  * 공통코드 조회로 가져와야 한다(§21.4). 이 상수는 <b>비교용 값</b>일 뿐이다.</p>
  *
  * <pre>
- *   00 요청접수 → 01 예약 → 02 진행중 → 03 완료
- *                └─────────┴→ 04 취소 (요청접수·예약에서만)
+ *   01 예약 → 02 진행중 → 03 완료
+ *        └────────────→ 04 취소 (예약에서만)
  * </pre>
  */
 export const SURGERY_STATUS = {
-  /** 진료·응급실이 요청했고 아직 수술실이 배정되지 않은 상태 */
+  /**
+   * @deprecated 요청 단계는 오더로 옮겼다(2026-08-13). 수술은 예약(01)에서 시작한다.
+   * 이미 저장된 이력의 before_cd='00' 을 읽을 때만 쓴다.
+   */
   REQUESTED: "00",
-  /** 배정 완료 */
+  /** 배정 완료 — 수술은 여기서 시작한다 */
   SCHEDULED: "01",
   IN_PROGRESS: "02",
   COMPLETED: "03",
@@ -131,21 +134,7 @@ export type SurgeryListParams = {
   date?: string;
 };
 
-/**
- * 배정 대기 목록 검색·페이지 파라미터 (SL2-235 페이징 / SL2-236 검색·필터)
- *
- * <p>모두 선택이다. 아무것도 안 보내면 요청접수(00) 전체를 응급 우선으로 돌려준다.
- * 빈 문자열은 백엔드가 "조건 없음"으로 처리하므로 검색창을 비워 보내도 안전하다.</p>
- */
-export type SurgeryRequestSearchParams = PageParams & {
-  /** 'Y' 응급만 / 'N' 일반만 / 미지정 전체 */
-  emergencyYn?: YnFlag;
-  patientId?: string;
-  /** 희망일 시작 yyyy-MM-dd */
-  fromDt?: string;
-  /** 희망일 종료 yyyy-MM-dd */
-  toDt?: string;
-};
+// 배정 대기 목록 검색 파라미터는 오더로 옮겼다 — features/surgery/order/types.ts
 
 // ---------------------------------------------------------------------------
 // Redux 상태
@@ -159,8 +148,6 @@ export type SurgeryRequestSearchParams = PageParams & {
 export type ScheduleState = {
   surgeries: Surgery[];
   todaySurgeries: Surgery[];
-  /** 진료가 요청했으나 아직 수술실이 안 잡힌 건(status_cd = 00) — 배정 화면 전용 */
-  surgeryRequests: Surgery[];
   selectedSurgery: Surgery | null;
   loading: boolean;
   saving: boolean;

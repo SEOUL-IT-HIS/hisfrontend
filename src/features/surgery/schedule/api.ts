@@ -5,55 +5,16 @@
  * 상태 변경(취소·진행상태·시작·종료)은 일부 필드만 바꾸므로 PATCH 를 쓴다(§21.8).</p>
  */
 import apiClient from "@/lib/axios";
-import type { ApiResponse, PageResponse } from "@/features/surgery/types";
+import type { ApiResponse } from "@/features/surgery/types";
 import type {
-  AssignSurgeryRequest,
   CancelSurgeryRequest,
-  RegisterSurgeryRequest,
   Surgery,
   SurgeryListParams,
-  SurgeryRequestSearchParams,
   UpdateProgressRequest,
   UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
 
 const SCHEDULE_PATH = "/api/surgery/schedule";
-
-/**
- * 배정 대기 중인 진료 요청 목록을 조회한다(status_cd = 00 요청접수).
- * (SL2-225 조회 / SL2-235 페이징 / SL2-236 검색·필터)
- *
- * <p>백엔드가 배열이 아니라 PageResponse 를 돌려주도록 바뀌었다. 호출하는 쪽은 지금까지처럼
- * 배열만 필요하므로 여기서 items 를 꺼내 돌려준다 — saga·slice 는 고치지 않아도 된다.</p>
- *
- * <p>검색 조건과 페이지 정보를 화면이 다루게 되면, PageResponse 를 그대로 돌려주는 함수를
- * 따로 두고 그때 saga 를 함께 고친다. 지금 미리 바꾸면 쓰지도 않는 상태가 slice 에 쌓인다.</p>
- */
-export async function getSurgeryRequests(
-  params?: SurgeryRequestSearchParams,
-): Promise<Surgery[]> {
-  const { data } = await apiClient.get<ApiResponse<PageResponse<Surgery>>>(
-    `${SCHEDULE_PATH}/requests`,
-    { params },
-  );
-  return data.data?.items ?? [];
-}
-
-/**
- * 수술을 배정한다(요청접수 → 예약).
- *
- * <p>수술실·마취의·간호사만 바꾸므로 PATCH 를 쓴다(§21.8).</p>
- */
-export async function assignSurgery(
-  surgeryId: string,
-  request: AssignSurgeryRequest,
-): Promise<Surgery> {
-  const { data } = await apiClient.patch<ApiResponse<Surgery>>(
-    `${SCHEDULE_PATH}/${surgeryId}/assign`,
-    request,
-  );
-  return data.data;
-}
 
 /** 수술 일정 목록을 조회한다. date 미지정 시 전체. (SL2-25) */
 export async function getSurgerySchedules(
@@ -80,36 +41,9 @@ export async function getSurgerySchedule(surgeryId: string): Promise<Surgery> {
   return data.data;
 }
 
-/**
- * 수술 요청을 등록한다. (SL2-36)
- *
- * <p><b>수술 화면에서는 호출하지 않는다.</b> 일반 수술 요청은 진료가 보낸다(§21.1).
- * 이 함수와 아래 응급 등록이 남아 있는 이유는 계약을 기록해두기 위해서다 —
- * 두 엔드포인트 모두 patientId·surgeonId·surgeryDt 를 받고, statusCd·emergencyYn 은
- * 보내도 무시한다(서버가 요청접수 00 으로 강제).</p>
- *
- * <p>진료·응급이 각자 features 에서 직접 호출하게 되면 이쪽은 지워도 된다.</p>
- */
-export async function registerSurgerySchedule(
-  request: RegisterSurgeryRequest,
-): Promise<Surgery> {
-  const { data } = await apiClient.post<ApiResponse<Surgery>>(
-    SCHEDULE_PATH,
-    request,
-  );
-  return data.data;
-}
-
-/** 응급 수술 요청을 등록한다. (SL2-44) — 응급실이 보낸다. 위 주석 참고. */
-export async function registerEmergencySurgery(
-  request: RegisterSurgeryRequest,
-): Promise<Surgery> {
-  const { data } = await apiClient.post<ApiResponse<Surgery>>(
-    `${SCHEDULE_PATH}/emergency`,
-    request,
-  );
-  return data.data;
-}
+// 수술 요청 등록(SL2-36)·응급 등록(SL2-44)·배정 대기 목록(SL2-225)·일괄 배정(SL2-15)은
+//   오더로 옮겼다 — features/surgery/order/api.ts (2026-08-13 결정).
+//   수술은 오더가 수락(배정)될 때 만들어지므로, 수술을 직접 만드는 함수는 여기 없다.
 
 /** 수술 스케줄을 수정한다. (SL2-37) */
 export async function updateSurgerySchedule(
