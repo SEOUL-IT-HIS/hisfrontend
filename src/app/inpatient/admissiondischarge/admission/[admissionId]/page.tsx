@@ -1,4 +1,4 @@
-import AdmissionDetail from "@/components/inpatient/admissiondischarge/AdmissionDetail";
+import AdmissionDetail from "@/components/inpatient/admissiondischarge/admission/detail";
 
 const admissionDetailPage=()=>{
     return(

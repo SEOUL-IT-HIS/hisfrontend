@@ -1,7 +1,8 @@
 import { all, call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import { VitalSignDTO, RegisterVitalSignRequest, UpdateVitalSignRequest } from "../types";
-import { createVitalSignApi,  deleteVitalSignApi,fetchVitalSignApi, fetchVitalSignDetailApi, updateVitalSignApi, updateVitalSignScheduleApi } from "./api";
+import { VitalSignDTO, VitalSignHistoryDTO, RegisterVitalSignRequest, UpdateVitalSignRequest } from "../types";
+import { createVitalSignApi, deleteVitalSignApi, fetchVitalSignApi, fetchVitalSignDetailApi, fetchVitalSignHistoryApi, updateVitalSignApi, updateVitalSignScheduleApi } from "./api";
+
 
 
 
@@ -65,6 +66,15 @@ function* deleteVitalSignSaga(action: PayloadAction<string>) {
     yield put({ type: "vitalSign/deleteVitalSignFailure", payload: extractErrorMessage(e) });
   }
 }
+function* fetchVitalSignHistorySaga(action: PayloadAction<string>) {
+  try {
+    const history: VitalSignHistoryDTO[] = yield call(fetchVitalSignHistoryApi, action.payload);
+    yield put({ type: "vitalSign/fetchVitalSignHistorySuccess", payload: history });
+  } catch (e: unknown) {
+    yield put({ type: "vitalSign/fetchVitalSignHistoryFailure", payload: extractErrorMessage(e) });
+  }
+}
+
 export default function* vitalSignSaga() {
   yield all([
     takeLatest("vitalSign/fetchVitalSignsRequest", fetchVitalSignsSaga),
@@ -73,5 +83,6 @@ export default function* vitalSignSaga() {
     takeLatest("vitalSign/updateVitalSignRequest", updateVitalSignSaga),
     takeLatest("vitalSign/updateVitalSignScheduleRequest", updateVitalSignScheduleSaga),
     takeLatest("vitalSign/deleteVitalSignRequest", deleteVitalSignSaga),
+    takeLatest("vitalSign/fetchVitalSignHistoryRequest", fetchVitalSignHistorySaga),
   ]);
 }

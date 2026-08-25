@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const MENUS = [
   {
-    href: "/inpatient/admissiondischarge/list",
+    href: "/inpatient/admissiondischarge/admission/list",
     label: "입원요청",
     desc: "입퇴원 목록 조회",
   },
