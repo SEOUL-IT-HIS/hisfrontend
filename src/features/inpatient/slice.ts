@@ -4,6 +4,7 @@ import bedReducer from "./bedmanagement/bedstatus/slice";
 import bedReservationReducer from "./bedmanagement/bedreservation/slice";
 import admissionReducer from "./admissiondischarge/slice";
 import vitalSignReducer from "./nursingrecord/vitalsign/slice";
+import riskAssessmentReducer from "./nursingrecord/riskassessment/slice";
 /**
  * inpatient(입원) 서비스 reducer
  * - 기능(Story) 단위 하위 slice 를 combine 한다.
@@ -15,6 +16,7 @@ const inpatientReducer = combineReducers({
   bedreservation: bedReservationReducer,
   admissiondischarge: admissionReducer,
   vitalsign: vitalSignReducer,
+  riskassessment: riskAssessmentReducer,
 });
 
 export default inpatientReducer;
