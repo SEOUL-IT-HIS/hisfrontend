@@ -140,7 +140,10 @@ export default function LabWorklist() {
           }
         >
           {r.receptionNo}
-          <span className="ml-2 font-normal text-slate-400">{r.patientNo}</span>
+          {/* 환자번호는 발급 주체가 없어 연계 수신 건에는 값이 없다. (2026-08-25) */}
+          <span className="ml-2 font-normal text-slate-400">
+            {r.patientNo ?? "환자번호 미발급"}
+          </span>
           {r.urgencyYn === "Y" ? (
             <span className="ml-2 rounded bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-600">
               긴급

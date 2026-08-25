@@ -166,7 +166,7 @@ export default function LabScheduleRegisterForm({
           <p className="text-slate-500">대상 접수</p>
           <p className="mt-1 font-semibold text-slate-700">
             {reception
-              ? `${reception.receptionNo} · 환자 ${reception.patientNo}`
+              ? `${reception.receptionNo}${reception.patientNo ? ` · 환자 ${reception.patientNo}` : ""}`
               : `접수ID ${labReceptionId || "(없음)"}`}
           </p>
         </Panel>

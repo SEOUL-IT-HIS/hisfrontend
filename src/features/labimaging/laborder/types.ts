@@ -85,7 +85,11 @@ export interface LabWorklistItem {
   labReceptionId: string;
   receptionNo: string;
   labOrderNo: string;
-  patientNo: string;
+  /**
+   * 환자번호. 발급 주체가 아직 없어 연계 수신으로 들어온 접수에는 값이 없다. (2026-08-25)
+   * 환자 식별은 patientId 로 한다. 화면에는 없으면 "미발급" 으로 표시한다.
+   */
+  patientNo?: string;
   /** 환자ID — 화면 표시용이 아니라 하위 작업(검체 등록 등) 요청에 담는 값 */
   patientId: string;
   urgencyYn: "Y" | "N";
@@ -204,7 +208,8 @@ export const URGENCY_YN_OPTIONS: ReadonlyArray<{ value: "Y" | "N"; label: string
 export interface LabReceptionContext {
   labReceptionId: string;
   receptionNo: string;
-  patientNo: string;
+  /** 환자번호 발급 주체가 아직 없어 값이 없을 수 있다. (2026-08-25) */
+  patientNo?: string;
 }
 
 /**

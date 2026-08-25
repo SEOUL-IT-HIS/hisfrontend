@@ -74,7 +74,8 @@ export default function LabReceptionDetail() {
     ["오더번호", reception.labOrderNo],
     ["진료구분", toCodeLabel(treatTypes.options, reception.treatTypeCode)],
     ["긴급여부", reception.urgencyYn === "Y" ? "긴급" : "일반"],
-    ["환자번호", reception.patientNo],
+    // 발급 주체가 없어 값이 없는 접수가 있다. (2026-08-25)
+    ["환자번호", reception.patientNo || "미발급"],
     ["처방의번호", reception.physicianNo || "-"],
     ["검사항목", labItems || "-"],
     ["접수일시", formatDateTime(reception.receivedAt)],

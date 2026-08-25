@@ -70,7 +70,7 @@ export default function WorklistReceptionHeader({
         <p className="text-base font-semibold text-slate-800">
           {reception.receptionNo}
           <span className="ml-2 text-sm font-normal text-slate-500">
-            환자 {reception.patientNo}
+            {reception.patientNo ? `환자 ${reception.patientNo}` : "환자번호 미발급"}
           </span>
           {reception.urgencyYn === "Y" ? (
             <span className="ml-2 rounded bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-600">

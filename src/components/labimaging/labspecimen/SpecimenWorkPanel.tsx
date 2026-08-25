@@ -111,6 +111,7 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
           labReceptionId: reception.labReceptionId,
           specimenContainerCode: form.specimenContainerCode,
           specimenType: form.specimenType,
+          // 접수에 환자번호가 없으면 필드를 빼고 보낸다. 빈 문자열을 넣으면 없는 값을 있는 것처럼 저장한다.
           patientNo: reception.patientNo,
           patientId: reception.patientId,
           collectedAt: form.collectedAt,
