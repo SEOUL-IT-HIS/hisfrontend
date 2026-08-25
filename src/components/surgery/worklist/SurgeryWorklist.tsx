@@ -7,6 +7,9 @@ import {
   Alert,
   Button,
   DataTable,
+  FormField,
+  Input,
+  Pagination,
   Panel,
   StatusBadge,
   type DataTableColumn,
@@ -16,12 +19,17 @@ import ChecklistPanel from "@/components/surgery/checklist/ChecklistPanel";
 import ConsentPanel from "@/components/surgery/consent/ConsentPanel";
 import OperativeRecordPanel from "@/components/surgery/operativeRecord/OperativeRecordPanel";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
-import { SURGERY_STATUS, type Surgery } from "@/features/surgery/schedule/types";
 import {
-  fetchSurgeriesRequest,
+  SURGERY_STATUS,
+  type Surgery,
+  type SurgerySearchParams,
+} from "@/features/surgery/schedule/types";
+import {
+  searchSurgeriesRequest,
   selectScheduleError,
   selectScheduleLoading,
-  selectSurgeries,
+  selectSurgerySearchParams,
+  selectSurgerySearchResult,
 } from "@/features/surgery/schedule/slice";
 
 /**
@@ -72,21 +80,67 @@ const STATUS_LABEL: Record<string, string> = {
   [SURGERY_STATUS.CANCELLED]: "취소",
 };
 
+/** 검색 입력칸의 초기값. "조건 없음"을 빈 문자열로 표현한다 */
+const EMPTY_FORM = {
+  patientId: "",
+  surgeonId: "",
+  roomCode: "",
+  fromDt: "",
+  toDt: "",
+};
+
 export default function SurgeryWorklist() {
   const dispatch = useDispatch<AppDispatch>();
-  const surgeries = useSelector(selectSurgeries);
+  const result = useSelector(selectSurgerySearchResult);
+  const lastParams = useSelector(selectSurgerySearchParams);
   const loading = useSelector(selectScheduleLoading);
   const error = useSelector(selectScheduleError);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("consent");
   const [showAll, setShowAll] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+
+  // 공통 Pagination 은 1-base, 백엔드 Pageable 은 0-base 다(§14.2 와 무관한 라이브러리 차이).
+  const [page, setPage] = useState(1);
+
+  /** 폼 + 페이지를 검색 파라미터로 만든다. 빈 칸은 아예 빼서 조건 없음으로 둔다 */
+  const buildParams = (p: number): SurgerySearchParams => {
+    const params: SurgerySearchParams = { page: p - 1, size: 20 };
+    if (form.patientId.trim()) params.patientId = form.patientId.trim();
+    if (form.surgeonId.trim()) params.surgeonId = form.surgeonId.trim();
+    if (form.roomCode.trim()) params.roomCode = form.roomCode.trim();
+    if (form.fromDt) params.fromDt = form.fromDt;
+    if (form.toDt) params.toDt = form.toDt;
+    return params;
+  };
 
   useEffect(() => {
-    dispatch(fetchSurgeriesRequest());
+    // 첫 진입은 조건 없이 1페이지
+    dispatch(searchSurgeriesRequest({ page: 0, size: 20 }));
   }, [dispatch]);
 
-  const rows = (surgeries ?? []).filter(
+  function handleSearch() {
+    setPage(1);
+    setSelectedId(null);
+    dispatch(searchSurgeriesRequest(buildParams(1)));
+  }
+
+  function handleReset() {
+    setForm(EMPTY_FORM);
+    setPage(1);
+    setSelectedId(null);
+    dispatch(searchSurgeriesRequest({ page: 0, size: 20 }));
+  }
+
+  function handlePage(next: number) {
+    setPage(next);
+    setSelectedId(null);
+    // 마지막 조건을 그대로 쓴다 — 폼을 고치다 만 상태여도 보고 있던 결과가 유지된다
+    dispatch(searchSurgeriesRequest({ ...lastParams, page: next - 1 }));
+  }
+
+  const rows = (result?.items ?? []).filter(
     (s) => showAll || WORKABLE.includes(s.statusCd ?? ""),
   );
 
@@ -152,6 +206,58 @@ export default function SurgeryWorklist() {
     <div className="flex min-h-0 flex-1 gap-4">
       {/* ---- 왼쪽: 수술 목록 ---- */}
       <div className="flex min-h-0 w-[52%] min-w-[480px] flex-col gap-3">
+        {/*
+          검색 조건 (SL2-312·314 기록지 조회 / SL2-333·334 간호기록 조회)
+          환자·집도의는 이름이 아니라 식별자로 찾는다 — 이름은 다른 서비스가 갖고 있어
+          우리 DB 에 없다(§21.9). 그래서 부분일치가 아니라 정확일치다.
+        */}
+        <div className="grid grid-cols-2 gap-2 rounded-lg border border-slate-200 p-3">
+          <FormField label="환자 ID" htmlFor="q-patient">
+            <Input
+              id="q-patient"
+              value={form.patientId}
+              onChange={(e) => setForm({ ...form, patientId: e.target.value })}
+              placeholder="정확히 일치"
+            />
+          </FormField>
+          <FormField label="집도의 ID" htmlFor="q-surgeon">
+            <Input
+              id="q-surgeon"
+              value={form.surgeonId}
+              onChange={(e) => setForm({ ...form, surgeonId: e.target.value })}
+              placeholder="정확히 일치"
+            />
+          </FormField>
+          <FormField label="수술실" htmlFor="q-room">
+            <Input
+              id="q-room"
+              value={form.roomCode}
+              onChange={(e) => setForm({ ...form, roomCode: e.target.value })}
+              placeholder="수술실 코드"
+            />
+          </FormField>
+          <FormField label="수술일" htmlFor="q-from">
+            <div className="flex items-center gap-1">
+              <Input
+                id="q-from"
+                type="date"
+                value={form.fromDt}
+                onChange={(e) => setForm({ ...form, fromDt: e.target.value })}
+              />
+              <span className="text-xs text-slate-400">~</span>
+              <Input
+                type="date"
+                value={form.toDt}
+                onChange={(e) => setForm({ ...form, toDt: e.target.value })}
+              />
+            </div>
+          </FormField>
+          <div className="col-span-2 flex justify-end gap-2">
+            <Button onClick={handleReset}>초기화</Button>
+            <Button onClick={handleSearch}>검색</Button>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between">
           <p className="text-xs text-slate-500">
             수술을 고르면 오른쪽에서 기록을 이어서 작성합니다.
@@ -170,11 +276,27 @@ export default function SurgeryWorklist() {
           loading={loading}
           emptyMessage={
             showAll
-              ? "수술이 없습니다."
+              ? "조건에 맞는 수술이 없습니다."
               : "기록을 작성할 수술이 없습니다. 요청 배정이 끝나야 목록에 나타납니다."
           }
           minWidthClassName="min-w-[560px]"
         />
+
+        {result ? (
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-500">
+              전체 {result.totalElements}건
+              {!showAll && rows.length !== result.items.length
+                ? ` (작업 대상 ${rows.length}건 표시)`
+                : ""}
+            </p>
+            <Pagination
+              page={page}
+              totalPages={result.totalPages}
+              onPageChange={handlePage}
+            />
+          </div>
+        ) : null}
       </div>
 
       {/* ---- 오른쪽: 고른 수술의 기록 ---- */}

@@ -1,14 +1,14 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
-  AssignSurgeryRequest,
   CancelSurgeryRequest,
-  RegisterSurgeryRequest,
   ScheduleState,
   Surgery,
   SurgeryListParams,
+  SurgerySearchParams,
   UpdateProgressRequest,
   UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
+import type { PageResponse } from "@/features/surgery/types";
 
 /**
  * 수술 스케줄링 slice (SL2-2)
@@ -48,6 +48,8 @@ const initialState: ScheduleState = {
   surgeries: [],
   todaySurgeries: [],
   selectedSurgery: null,
+  searchResult: null,
+  searchParams: {},
   loading: false,
   saving: false,
   error: "",
@@ -72,6 +74,31 @@ const scheduleSlice = createSlice({
       state.surgeries = action.payload;
     },
     fetchSurgeriesFailure(state, action: PayloadAction<string>) {
+      state.loading = false;
+      state.error = action.payload;
+    },
+
+    // ----- 검색 (SL2-314 기록지 조회 / SL2-334 간호기록 조회) -----
+    /**
+     * 조건으로 수술을 찾는다. 조건을 여기 담아 두는 이유 — 페이지를 넘길 때
+     * 화면이 조건을 다시 만들어 보내지 않아도 되고, 조건이 유실돼 갑자기 전체가
+     * 나오는 일도 없다. 오더 목록에서 쓴 것과 같은 방식이다.
+     */
+    searchSurgeriesRequest: {
+      reducer(state, action: PayloadAction<SurgerySearchParams | undefined>) {
+        state.loading = true;
+        state.error = "";
+        state.searchParams = action.payload ?? {};
+      },
+      prepare(params?: SurgerySearchParams) {
+        return { payload: params };
+      },
+    },
+    searchSurgeriesSuccess(state, action: PayloadAction<PageResponse<Surgery>>) {
+      state.loading = false;
+      state.searchResult = action.payload;
+    },
+    searchSurgeriesFailure(state, action: PayloadAction<string>) {
       state.loading = false;
       state.error = action.payload;
     },
@@ -182,6 +209,9 @@ export const {
   fetchSurgeriesRequest,
   fetchSurgeriesSuccess,
   fetchSurgeriesFailure,
+  searchSurgeriesRequest,
+  searchSurgeriesSuccess,
+  searchSurgeriesFailure,
   fetchTodaySurgeriesRequest,
   fetchTodaySurgeriesSuccess,
   fetchTodaySurgeriesFailure,
@@ -216,3 +246,11 @@ export const selectScheduleSaving = (state: ScheduleRoot) =>
   state.surgery.schedule.saving;
 export const selectScheduleError = (state: ScheduleRoot) =>
   state.surgery.schedule.error;
+
+/** 검색 결과 (SL2-314·334). 검색 전에는 null */
+export const selectSurgerySearchResult = (state: ScheduleRoot) =>
+  state.surgery.schedule.searchResult;
+
+/** 마지막 검색 조건 — 페이지 이동 시 그대로 다시 쓴다 */
+export const selectSurgerySearchParams = (state: ScheduleRoot) =>
+  state.surgery.schedule.searchParams;

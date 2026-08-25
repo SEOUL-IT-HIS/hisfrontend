@@ -4,7 +4,12 @@
  * <p>백엔드 SurgeryDto 와 1:1 대응. 날짜 필드 구분에 주의한다(§14.2):
  * `_dt`(DATE)는 yyyy-MM-dd 문자열, `_at`(TIMESTAMP)은 ISO 일시 문자열이다.</p>
  */
-import type { CodeValue, PageParams, YnFlag } from "@/features/surgery/types";
+import type {
+  CodeValue,
+  PageParams,
+  PageResponse,
+  YnFlag,
+} from "@/features/surgery/types";
 
 /**
  * 수술 상태 코드 (SURGERY_STATUS_CD)
@@ -134,6 +139,27 @@ export type SurgeryListParams = {
   date?: string;
 };
 
+/**
+ * 수술 검색 파라미터 (SL2-314 기록지 조회 / SL2-334 간호기록 조회)
+ *
+ * <p>백엔드 {@code GET /api/surgery/schedule/assignments} 와 짝을 이룬다.
+ * 조건은 전부 선택이고, 비우면 그 조건은 없는 것으로 본다.</p>
+ *
+ * <p><b>환자·집도의를 이름이 아니라 식별자로 받는 이유</b> — 둘 다 다른 서비스가
+ * 소유한 데이터라 수술 DB 에 이름이 없다(§21.9). 이름으로 찾으려면 환자·직원 서비스에서
+ * 먼저 식별자를 받아와야 한다. 지금은 식별자 정확일치만 지원한다.</p>
+ */
+export type SurgerySearchParams = PageParams & {
+  patientId?: string;
+  surgeonId?: string;
+  roomCode?: string;
+  statusCd?: CodeValue;
+  /** 수술일 시작 yyyy-MM-dd */
+  fromDt?: string;
+  /** 수술일 종료 yyyy-MM-dd */
+  toDt?: string;
+};
+
 // 배정 대기 목록 검색 파라미터는 오더로 옮겼다 — features/surgery/order/types.ts
 
 // ---------------------------------------------------------------------------
@@ -149,6 +175,15 @@ export type ScheduleState = {
   surgeries: Surgery[];
   todaySurgeries: Surgery[];
   selectedSurgery: Surgery | null;
+  /**
+   * 검색 결과 (SL2-314·334). 아직 검색한 적이 없으면 null 이다.
+   *
+   * <p>surgeries 와 따로 두는 이유 — 그쪽은 조건 없이 받아오는 전체 목록이라 성격이
+   * 다르고, 페이징 정보(총건수·페이지수)도 여기에만 있다.</p>
+   */
+  searchResult: PageResponse<Surgery> | null;
+  /** 마지막 검색 조건. 페이지를 넘길 때 조건을 그대로 유지하려고 들고 있다 */
+  searchParams: SurgerySearchParams;
   loading: boolean;
   saving: boolean;
   /** SUR### 코드 또는 완성 문구 — 노출 직전 resolveSurgeryMessage 로 변환한다(§15.2) */
