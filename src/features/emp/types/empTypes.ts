@@ -27,6 +27,7 @@ export type Emp = {
   deptCode: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  profileImageUrl: string | null;
 };
 
 /**
@@ -40,6 +41,7 @@ export type EmpRegisterRequest = {
   empPhone?: string;
   hireDate?: string;
   deptCode?: string;
+  image?: File;
 };
 
 /**
@@ -54,6 +56,7 @@ export type EmpUpdateRequest = {
   retireDate?: string;
   empStatus?: string;
   deptCode?: string;
+  image?: File;
 };
 
 export type EmpApiResponse = ApiResponse<Emp[]>;
