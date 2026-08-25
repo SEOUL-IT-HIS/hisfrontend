@@ -1,5 +1,5 @@
 import apiClient from "@/lib/axios";
-import type { ApiResponse, VitalSignDTO } from "../types";
+import type { ApiResponse, VitalSignDTO, VitalSignHistoryDTO } from "../types";
 import type { RegisterVitalSignRequest, UpdateVitalSignRequest } from "../types";
 export async function fetchVitalSignApi() {
   const { data } = await apiClient.get<ApiResponse<VitalSignDTO[]>>("/api/inpatient/nursingrecord/vitalsign");
@@ -30,5 +30,11 @@ export const updateVitalSignScheduleApi = async (id: string, request: { reserveA
 
 export const deleteVitalSignApi = async (id: string) => {
   const { data } = await apiClient.delete<ApiResponse<void>>(`/api/inpatient/nursingrecord/vitalsign/${id}`);
+  return data.data;
+};
+export const fetchVitalSignHistoryApi = async (vitalSignId: string) => {
+  const { data } = await apiClient.get<ApiResponse<VitalSignHistoryDTO[]>>(
+    `/api/inpatient/nursingrecord/vitalsign/${vitalSignId}/history`
+  );
   return data.data;
 };
