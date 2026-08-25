@@ -102,6 +102,8 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
     const nextErrors = validate();
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
+    // 환자ID가 없으면 서버가 어차피 거절한다. 아래 안내를 이미 띄웠으므로 조용히 멈춘다.
+    if (!reception.patientId) return;
 
     dispatch(
       createSpecimenRequest(
@@ -156,6 +158,19 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
     <div className="flex min-h-0 flex-1 flex-col gap-5">
       {/* ---------- 등록 폼 ---------- */}
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/*
+          ⚠ 환자ID(LAB_RECEPTION.patient_id)는 nullable 이라 값이 없는 접수가 존재한다.
+            (patient_id 컬럼이 생기기 전에 만들어진 데이터)
+            그대로 보내면 서버 @NotBlank 에 걸려 LAB998 이 나는데, 화면만 봐서는
+            어느 항목이 문제인지 알 수 없다. 보내기 전에 여기서 막고 이유를 알려준다.
+        */}
+        {reception.patientId ? null : (
+          <Alert>
+            이 접수에는 환자ID가 없어 검체를 등록할 수 없습니다. (접수번호{" "}
+            {reception.receptionNo}) 접수 데이터의 patient_id 를 채워야 합니다.
+          </Alert>
+        )}
+
         {lastCreated ? (
           <Alert variant="success">
             검체가 등록되었습니다. (바코드: {lastCreated.specimenBarcode})
@@ -218,7 +233,7 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={creating}>
+          <Button type="submit" disabled={creating || !reception.patientId}>
             {creating ? "등록 중..." : "검체 등록"}
           </Button>
         </div>

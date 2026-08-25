@@ -1,5 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
+  SpecimenAcceptanceRequest,
+  SpecimenAcceptanceSummary,
   SpecimenCreateRequest,
   SpecimenState,
   SpecimenSummary,
@@ -17,6 +19,10 @@ const initialState: SpecimenState = {
   creating: false,
   createError: "",
   lastCreated: null,
+
+  accepting: false,
+  acceptError: "",
+  lastAccepted: null,
 };
 
 const specimenSlice = createSlice({
@@ -67,12 +73,44 @@ const specimenSlice = createSlice({
       state.createError = action.payload;
     },
 
-    /** 다른 접수를 고르면 이전 접수의 등록 결과/오류가 남아 있으면 안 된다. */
+    // ---------- 인수 + 적합성 판정 ----------
+    /**
+     * payload 에 receptionNo 를 같이 싣는다.
+     * 판정에 성공하면 그 접수의 검체 목록을 다시 불러와야 적합성 컬럼이 갱신되는데,
+     * 판정 요청은 검체ID로 하고 목록 조회는 접수번호로 하기 때문이다.
+     * (검체 등록과 같은 이유)
+     */
+    acceptSpecimenRequest: {
+      reducer(state) {
+        state.accepting = true;
+        state.acceptError = "";
+      },
+      prepare(
+        specimenId: string,
+        request: SpecimenAcceptanceRequest,
+        receptionNo: string,
+      ) {
+        return { payload: { specimenId, request, receptionNo } };
+      },
+    },
+    acceptSpecimenSuccess(state, action: PayloadAction<SpecimenAcceptanceSummary>) {
+      state.accepting = false;
+      state.acceptError = "";
+      state.lastAccepted = action.payload;
+    },
+    acceptSpecimenFailure(state, action: PayloadAction<string>) {
+      state.accepting = false;
+      state.acceptError = action.payload;
+    },
+
+    /** 다른 접수를 고르면 이전 접수의 등록/판정 결과나 오류가 남아 있으면 안 된다. */
     resetSpecimenState(state) {
       state.specimens = [];
       state.specimensError = "";
       state.createError = "";
       state.lastCreated = null;
+      state.acceptError = "";
+      state.lastAccepted = null;
     },
   },
 });
@@ -84,6 +122,9 @@ export const {
   createSpecimenRequest,
   createSpecimenSuccess,
   createSpecimenFailure,
+  acceptSpecimenRequest,
+  acceptSpecimenSuccess,
+  acceptSpecimenFailure,
   resetSpecimenState,
 } = specimenSlice.actions;
 
@@ -105,3 +146,10 @@ export const selectSpecimenCreateError = (s: SpecimenRoot) =>
   s.labImaging.labspecimen.createError;
 export const selectLastCreatedSpecimen = (s: SpecimenRoot) =>
   s.labImaging.labspecimen.lastCreated;
+
+export const selectSpecimenAccepting = (s: SpecimenRoot) =>
+  s.labImaging.labspecimen.accepting;
+export const selectSpecimenAcceptError = (s: SpecimenRoot) =>
+  s.labImaging.labspecimen.acceptError;
+export const selectLastAcceptedSpecimen = (s: SpecimenRoot) =>
+  s.labImaging.labspecimen.lastAccepted;

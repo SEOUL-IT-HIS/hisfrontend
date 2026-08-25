@@ -26,12 +26,16 @@ import {
   type WorklistStatusFilter,
 } from "@/features/labimaging/laborder/types";
 import { selectLastCreatedLabSchedule } from "@/features/labimaging/labschedule/slice";
-import { selectLastCreatedSpecimen } from "@/features/labimaging/labspecimen/slice";
+import {
+  selectLastAcceptedSpecimen,
+  selectLastCreatedSpecimen,
+} from "@/features/labimaging/labspecimen/slice";
 import ReceptionExcludeDialog from "@/components/labimaging/laborder/ReceptionExcludeDialog";
 import WorklistProgress from "@/components/labimaging/laborder/WorklistProgress";
 import WorklistReceptionHeader from "@/components/labimaging/laborder/WorklistReceptionHeader";
 import LabScheduleRegisterForm from "@/components/labimaging/labschedule/LabScheduleRegisterForm";
 import SpecimenWorkPanel from "@/components/labimaging/labspecimen/SpecimenWorkPanel";
+import SpecimenAcceptancePanel from "@/components/labimaging/labspecimen/SpecimenAcceptancePanel";
 
 /**
  * 검사 워크리스트 — 왼쪽 접수 목록 + 오른쪽 작업 폼 (마스터-디테일).
@@ -63,7 +67,7 @@ type WorkTab = "schedule" | "specimen" | "acceptance" | "result";
 const WORK_TABS: ReadonlyArray<{ value: WorkTab; label: string; enabled: boolean }> = [
   { value: "schedule", label: "일정", enabled: true },
   { value: "specimen", label: "검체", enabled: true },
-  { value: "acceptance", label: "적합성 판정", enabled: false },
+  { value: "acceptance", label: "적합성 판정", enabled: true },
   { value: "result", label: "결과", enabled: false },
 ];
 
@@ -83,22 +87,26 @@ export default function LabWorklist() {
   const [excludeTarget, setExcludeTarget] = useState<string | null>(null);
 
   /*
-   * 일정/검체 등록 결과. 값 자체는 쓰지 않고 "방금 뭔가 저장됐다"는 신호로만 본다.
-   * 저장은 오른쪽 폼이 하는데 그 결과로 진행 뱃지(일정·검체 수)가 달라지므로,
+   * 일정/검체/판정 결과. 값 자체는 쓰지 않고 "방금 뭔가 저장됐다"는 신호로만 본다.
+   * 저장은 오른쪽 폼이 하는데 그 결과로 진행 뱃지(일정·검체 수·판정 n/m)가 달라지므로,
    * 목록을 쥐고 있는 이쪽이 알아야 한다.
+   *
+   * ⚠ 판정은 검체 1건당 1건뿐이라 specimenId 가 판정 건을 그대로 가리킨다.
+   *   (판정 PK 를 응답에 담지 않기로 해서 이 값을 쓴다)
    */
   const lastScheduleId = useSelector(selectLastCreatedLabSchedule)?.labScheduleId ?? null;
   const lastSpecimenId = useSelector(selectLastCreatedSpecimen)?.specimenId ?? null;
+  const lastAcceptedId = useSelector(selectLastAcceptedSpecimen)?.specimenId ?? null;
 
   /*
    * 목록을 다시 부르는 지점은 이 효과 하나로 모은다.
    *   - 필터를 바꿨을 때
-   *   - 일정이나 검체가 저장돼 진행 상태가 달라졌을 때
+   *   - 일정·검체·판정이 저장돼 진행 상태가 달라졌을 때
    * 효과를 나눠 두면 필터를 바꿀 때 양쪽이 같이 돌아 같은 요청이 두 번 나간다.
    */
   useEffect(() => {
     dispatch(fetchLabWorklistRequest(filter));
-  }, [dispatch, filter, lastScheduleId, lastSpecimenId]);
+  }, [dispatch, filter, lastScheduleId, lastSpecimenId, lastAcceptedId]);
 
   const selected =
     worklist.find((item) => item.receptionNo === selectedReceptionNo) ?? null;
@@ -256,6 +264,12 @@ export default function LabWorklist() {
 
             {tab === "specimen" ? (
               <SpecimenWorkPanel reception={selected} />
+            ) : tab === "acceptance" ? (
+              // key 로 접수마다 새로 마운트해 이전 접수의 검체 선택·입력값이 남지 않게 한다.
+              <SpecimenAcceptancePanel
+                key={selected.labReceptionId}
+                reception={selected}
+              />
             ) : tab === "schedule" ? (
               /*
                * key 로 접수마다 새로 마운트시킨다.

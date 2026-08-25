@@ -1,6 +1,8 @@
 import apiClient from "@/lib/axios";
 import type { ApiResponse } from "@/features/labimaging/types";
 import type {
+  SpecimenAcceptanceRequest,
+  SpecimenAcceptanceSummary,
   SpecimenCreateRequest,
   SpecimenSummary,
 } from "@/features/labimaging/labspecimen/types";
@@ -39,6 +41,27 @@ export async function createSpecimen(
 ): Promise<SpecimenSummary> {
   const { data } = await apiClient.post<ApiResponse<SpecimenSummary>>(
     SPECIMEN_PATH,
+    request,
+  );
+  return data.data;
+}
+
+/**
+ * 검체를 인수하면서 적합/부적합을 판정한다.
+ * POST /api/lab-imaging/specimens/{specimenId}/acceptance → 201 + SpecimenAcceptanceSummaryDto
+ *
+ * ⚠ 대상 검체는 경로변수다. 이미 존재하는 검체를 지목하는 행위라 본문에 담지 않는다.
+ *
+ * ⚠ 서버가 막는 조합이 있다. 화면에서 미리 걸러도 최종 판단은 서버가 한다.
+ *   - 부적합인데 사유 없음 / 적합인데 사유 있음 / 적합인데 재채취 요청 → 400 + LAB998
+ *   - 이미 판정된 검체 → 400 + LAB022 (검체 1건당 판정 1건)
+ */
+export async function acceptSpecimen(
+  specimenId: string,
+  request: SpecimenAcceptanceRequest,
+): Promise<SpecimenAcceptanceSummary> {
+  const { data } = await apiClient.post<ApiResponse<SpecimenAcceptanceSummary>>(
+    `${SPECIMEN_PATH}/${encodeURIComponent(specimenId)}/acceptance`,
     request,
   );
   return data.data;
