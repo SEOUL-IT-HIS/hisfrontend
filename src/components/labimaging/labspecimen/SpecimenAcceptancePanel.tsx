@@ -92,6 +92,12 @@ export default function SpecimenAcceptancePanel({
     dispatch(fetchSpecimensRequest(reception.receptionNo));
   }, [dispatch, reception.receptionNo]);
 
+  /*
+   * ⚠ 판정 여부를 서버에서 걸러 받지 않고 여기서 나눈다. 백엔드에 judgedYn 필터가 있지만 안 쓴다.
+   *   판정이 끝난 검체도 목록에 회색으로 남겨야 "3건 중 2건 판정" 이 보이는데,
+   *   서버에서 미판정만 받아오면 방금 판정한 줄이 사라져 결과를 확인할 수 없다.
+   *   unjudged 는 "몇 건 남았는지" 세는 용도이고, 표시는 specimens 전체로 한다.
+   */
   const unjudged = specimens.filter((s) => !s.fitnessStatus);
   const selected = specimens.find((s) => s.specimenId === selectedSpecimenId) ?? null;
   const isUnfit = form.fitnessStatus === "UNFIT";
