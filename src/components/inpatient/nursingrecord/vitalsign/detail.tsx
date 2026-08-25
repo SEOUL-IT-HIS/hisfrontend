@@ -1,7 +1,7 @@
 "use client"
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
-import { fetchVitalSignDetailRequest, deleteVitalSignRequest, updateVitalSignRequest } from "@/features/inpatient/nursingrecord/vitalsign/slice";
+import { fetchVitalSignDetailRequest, deleteVitalSignRequest, updateVitalSignRequest, fetchVitalSignHistoryRequest } from "@/features/inpatient/nursingrecord/vitalsign/slice";
 import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice";
 import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
@@ -18,6 +18,9 @@ const VitalSignDetail = () => {
     const { loading, error } = useSelector((state: RootState) => state.inpatient.vitalsign.detailStatus);
     const admission = useSelector((state: RootState) => state.inpatient.admissiondischarge.detail);
     const patientDetail = useSelector((state: RootState) => state.patient.patientDetail);
+    const history = useSelector((state: RootState) => state.inpatient.vitalsign.history);
+    const historyStatus = useSelector((state: RootState) => state.inpatient.vitalsign.historyStatus);
+
 
     const [editForm, setEditForm] = useState({
         temperature: "",
@@ -27,6 +30,11 @@ const VitalSignDetail = () => {
         bpDiastolic: "",
         spo2: "",
     });
+
+    useEffect(() => {
+    if (!vitalSignId) return;
+    dispatch(fetchVitalSignHistoryRequest(vitalSignId));
+    }, [vitalSignId]);
 
     useEffect(() => {
         if (!vitalSign?.admissionId) return;
@@ -144,6 +152,37 @@ const VitalSignDetail = () => {
                     <button onClick={handleUpdate} disabled={updateStatus.loading}>
                         {updateStatus.loading ? "수정중..." : "수정"}
                     </button>
+                    <h3>변경 이력</h3>
+                    {historyStatus.loading && <p>이력 로딩중...</p>}
+                    {historyStatus.error && <p>{historyStatus.error}</p>}
+                    {history.length === 0 && !historyStatus.loading && <p>변경 이력 없음</p>}
+                    <table>
+                    <thead>
+                        <tr>
+                        <th>구분</th>
+                        <th>변경일시</th>
+                        <th>체온</th>
+                        <th>맥박</th>
+                        <th>호흡수</th>
+                        <th>혈압</th>
+                        <th>산소포화도</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {history.map((h) => (
+                    <tr key={h.vitalSignHistoryId}>
+                    <td>{h.changeType === "UPDATED" ? "수정" : "삭제"}</td>
+                    <td>{new Date(h.changedAt).toLocaleString()}</td>
+                    <td>{h.temperature}</td>
+                    <td>{h.pulse}</td>
+                    <td>{h.respiration}</td>
+                    <td>{h.bpSystolic}/{h.bpDiastolic}</td>
+                    <td>{h.spo2}</td>
+                </tr>
+                ))}
+                </tbody>
+                </table>
+
                     {updateStatus.error && <p>{updateStatus.error}</p>}
                     {updateStatus.success && <p>수정 완료</p>}
                 </div>

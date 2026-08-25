@@ -20,16 +20,9 @@ const inpatientApiOrigin =
 const outpatientApiOrigin =
   process.env.OUTPATIENT_API_ORIGIN ?? "http://192.168.1.112:8080";
 const emergencyApiOrigin =
-  process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.130:8080";
-// surgery-service 만 8080 이 아니라 8383 을 쓴다
-const surgeryApiOrigin =
-  process.env.SURGERY_API_ORIGIN ?? "http://192.168.1.120:8383";
-
+    process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.130:8080";
 const billingApiOrigin =
-  process.env.BILLING_API_ORIGIN ?? "http://192.168.1.143:8989";
-const receptionApiOrigin =
-  process.env.RECEPTION_API_ORIGIN ?? "http://192.168.1.105:8080";
-
+    process.env.BILLING_API_ORIGIN ?? "http://192.168.1.143:8989";
 const nextConfig: NextConfig = {
   // LAN IP로 접속할 때 /_next 정적 리소스 403 방지
   // (다른 PC에서 http://192.168.1.149:3000 접속 시 필요)
@@ -88,49 +81,15 @@ const nextConfig: NextConfig = {
         source: "/api/lab-imaging/:path*",
         destination: `${labImagingApiOrigin}/api/lab-imaging/:path*`,
       },
-
-      // ---------- inpatient-service (구체 경로 먼저) ----------
-      // 컨트롤러가 전부 /api/inpatient/... 로 통일되어 있어서 이 규칙 하나로 bed/bedassignment/
-      // bedreservation/admission/nursingrecord/vitalsign 등 모든 하위 경로를 커버함
-      {
-        source: "/api/inpatient",
-        destination: `${inpatientApiOrigin}/api/inpatient`,
-      },
-      {
-        source: "/api/inpatient/:path*",
-        destination: `${inpatientApiOrigin}/api/inpatient/:path*`,
-      },
-
-      // ---------- surgery-service (구체 경로 먼저) ----------
-      {
-        source: "/api/surgery",
-        destination: `${surgeryApiOrigin}/api/surgery`,
-      },
-      {
-        source: "/api/surgery/:path*",
-        destination: `${surgeryApiOrigin}/api/surgery/:path*`,
-      },
-
       // ---------- billing-service (구체 경로 먼저) ----------
       {
-        source: "/api/billing",
+        source: "/api/billing",     
         destination: `${billingApiOrigin}/api/billing`,
       },
       {
         source: "/api/billing/:path*",
         destination: `${billingApiOrigin}/api/billing/:path*`,
       },
-
-      // ----------- reception-service (구체 경로 먼저) ----------
-      {
-        source: "/api/reception",
-        destination: `${receptionApiOrigin}/api/reception`,
-      },
-      {
-        source: "/api/reception/:path*",
-        destination: `${receptionApiOrigin}/api/reception/:path*`,
-      },
-
       // ---------- admin-service (나머지 /api) ----------
       {
         source: "/api/:path*",
