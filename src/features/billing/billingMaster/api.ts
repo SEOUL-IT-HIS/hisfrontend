@@ -8,13 +8,13 @@ export interface ApiResponse<T> {
 }
 
 // 목록
-export const fetchBillingMasterAPI = () => api.get("/api/billing/master");
+export const fetchBillingMasterAPI = () => api.get("/api/billing/statistics");
 
 // 상세
 export const fetchBillingMasterDetailAPI = (billingMasterId: string) =>
-    api.get(`/api/billing/master/${billingMasterId}`);
+    api.get(`/api/billing/statistics/${billingMasterId}`);
 
 // 등록
 export const registerBillingMasterAPI = (data: BillingMasterCreateRequest) =>
-    api.post("/api/billing/master", data);
+    api.post("/api/billing/statistics", data);
 
