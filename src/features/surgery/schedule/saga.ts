@@ -235,6 +235,8 @@ function* cancelSurgerySaga(
     yield call(cancelSurgerySchedule, surgeryId, request);
     yield put(surgeryMutationSuccess());
     yield put(fetchSurgeriesRequest());
+    yield put(fetchSurgeryRequest(surgeryId));
+    yield put(fetchHistoryRequest(surgeryId));
     // 오더 반려는 order saga 가 처리한다 — 수술 취소가 대기 목록을 건드릴 이유가 없다.
     //   요청 단계가 오더로 옮겨져(2026-08-13) 여기 오는 것은 이미 만들어진 수술뿐이다.
   } catch (err) {
@@ -269,6 +271,11 @@ function* startSurgerySaga(action: PayloadAction<string>) {
     yield call(startSurgery, action.payload);
     yield put(surgeryMutationSuccess());
     yield put(fetchTodaySurgeriesRequest());
+    // 상세 화면이 보는 단건과 이력도 다시 읽는다(2026-08-26).
+    //   이걸 빼면 시작을 눌러도 화면의 statusCd 가 예약(01)에 머물러, 잠겨야 할
+    //   취소 버튼이 열린 채로 남는다. 실제로 눌러서 400 SUR039 를 받은 일이 있었다.
+    yield put(fetchSurgeryRequest(action.payload));
+    yield put(fetchHistoryRequest(action.payload));
   } catch (err) {
     yield put(
       surgeryMutationFailure(
@@ -283,6 +290,8 @@ function* endSurgerySaga(action: PayloadAction<string>) {
     yield call(endSurgery, action.payload);
     yield put(surgeryMutationSuccess());
     yield put(fetchTodaySurgeriesRequest());
+    yield put(fetchSurgeryRequest(action.payload));
+    yield put(fetchHistoryRequest(action.payload));
   } catch (err) {
     yield put(
       surgeryMutationFailure(
