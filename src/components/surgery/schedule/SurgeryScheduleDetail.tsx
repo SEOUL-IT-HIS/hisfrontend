@@ -56,12 +56,16 @@ import {
  * 같은 패널 셋을 이미 보여주고 있었다. 기록은 워크리스트가, 배정은 여기가 맡는다.
  * (2026-08-25)</p>
  *
- * <h3>왜 항목마다 따로 저장하나</h3>
+ * <h3>고르면 바로 저장한다</h3>
  *
- * <p>백엔드가 수술실·집도의·마취의·간호사를 <b>각각 다른 PATCH</b> 로 받는다(SL2-166).
- * 한 번에 묶어 보내는 엔드포인트는 오더를 처음 배정할 때만 있다. 화면도 그 모양을 따라
- * 항목별로 저장한다 — 수술실만 바꾸려는데 마취의까지 다시 보내면, 그 사이 다른 사람이
- * 바꾼 값을 덮어쓴다.</p>
+ * <p>처음에는 셀렉트마다 '저장' 버튼을 뒀는데, 같은 성격의 조작을 하는 {@code RoomList}·
+ * {@code EquipmentList} 는 버튼 없이 {@code onChange} 에서 바로 보내고 있었다. 한 서비스
+ * 안에서 어떤 화면은 고르면 끝, 어떤 화면은 고르고 또 눌러야 하는 상태였다.
+ * 버튼을 없애 그쪽에 맞췄다. (2026-08-26)</p>
+ *
+ * <p>항목별로 <b>따로</b> 보내는 것은 그대로다 — 백엔드가 수술실·집도의·마취의·간호사를
+ * 각각 다른 PATCH 로 받고(SL2-166), 한 번에 묶어 보내면 수술실만 바꾸려는데 마취의까지
+ * 다시 보내게 되어 그 사이 다른 사람이 바꾼 값을 덮어쓴다.</p>
  *
  * <h3>집도의만 비울 수 없다</h3>
  *
@@ -255,7 +259,7 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
       <Panel className="p-5">
         <h2 className="mb-1 text-sm font-medium text-slate-700">배정</h2>
         <p className="mb-4 text-xs text-slate-500">
-          항목마다 따로 저장합니다. 집도의를 뺀 셋은 비워 저장하면 배정이 해제됩니다.
+          고르면 바로 저장됩니다. 집도의를 뺀 셋은 비워 두면 배정이 해제됩니다.
           {!editable
             ? isInProgress
               ? " 진행중인 수술은 배정을 바꿀 수 없습니다."
@@ -265,28 +269,21 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="수술실" htmlFor="a-room">
-            <div className="flex gap-2">
-              <Select
-                id="a-room"
-                placeholder="미배정"
-                options={roomOptions}
-                value={form.roomCode}
-                disabled={saving || !editable}
-                onChange={(e) => setForm({ ...form, roomCode: e.target.value })}
-              />
-              <Button
-                disabled={saving || !editable}
-                onClick={() =>
-                  dispatch(
-                    assignFieldRequest(surgeryId, "room", {
-                      roomCode: form.roomCode,
-                    }),
-                  )
-                }
-              >
-                저장
-              </Button>
-            </div>
+            <Select
+              id="a-room"
+              placeholder="미배정"
+              options={roomOptions}
+              value={form.roomCode}
+              disabled={saving || !editable}
+              onChange={(e) => {
+                setForm({ ...form, roomCode: e.target.value });
+                dispatch(
+                  assignFieldRequest(surgeryId, "room", {
+                    roomCode: e.target.value,
+                  }),
+                );
+              }}
+            />
           </FormField>
 
           <FormField
@@ -295,80 +292,61 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
             required
             hint="비울 수 없습니다."
           >
-            <div className="flex gap-2">
-              <Select
-                id="a-surgeon"
-                placeholder="선택"
-                options={employeeOptions}
-                value={form.surgeonId}
-                disabled={saving || !editable}
-                onChange={(e) => setForm({ ...form, surgeonId: e.target.value })}
-              />
-              <Button
-                disabled={saving || !editable}
-                onClick={() =>
-                  dispatch(
-                    assignFieldRequest(surgeryId, "surgeon", {
-                      surgeonId: form.surgeonId,
-                    }),
-                  )
-                }
-              >
-                저장
-              </Button>
-            </div>
+            <Select
+              id="a-surgeon"
+              placeholder="선택"
+              options={employeeOptions}
+              value={form.surgeonId}
+              disabled={saving || !editable}
+              onChange={(e) => {
+                setForm({ ...form, surgeonId: e.target.value });
+                // 빈 값은 보내지 않는다 — 집도의 해제는 백엔드가 막으므로(400)
+                // 그대로 보내면 사용자는 "선택"을 골랐을 뿐인데 오류만 본다.
+                // RoomList 의 턴오버가 쓰는 것과 같은 방식이다.
+                if (!e.target.value) return;
+                dispatch(
+                  assignFieldRequest(surgeryId, "surgeon", {
+                    surgeonId: e.target.value,
+                  }),
+                );
+              }}
+            />
           </FormField>
 
           <FormField label="마취의" htmlFor="a-anes">
-            <div className="flex gap-2">
-              <Select
-                id="a-anes"
-                placeholder="미배정"
-                options={employeeOptions}
-                value={form.anesthesiologistId}
-                disabled={saving || !editable}
-                onChange={(e) =>
-                  setForm({ ...form, anesthesiologistId: e.target.value })
-                }
-              />
-              <Button
-                disabled={saving || !editable}
-                onClick={() =>
-                  dispatch(
-                    assignFieldRequest(surgeryId, "anesthesiologist", {
-                      anesthesiologistId: form.anesthesiologistId,
-                    }),
-                  )
-                }
-              >
-                저장
-              </Button>
-            </div>
+            <Select
+              id="a-anes"
+              placeholder="미배정"
+              options={employeeOptions}
+              value={form.anesthesiologistId}
+              disabled={saving || !editable}
+              onChange={(e) => {
+                setForm({ ...form, anesthesiologistId: e.target.value });
+                dispatch(
+                  assignFieldRequest(surgeryId, "anesthesiologist", {
+                    anesthesiologistId: e.target.value,
+                  }),
+                );
+              }}
+            />
           </FormField>
 
           <FormField label="간호사" htmlFor="a-nurse">
-            <div className="flex gap-2">
-              <Select
-                id="a-nurse"
-                placeholder="미배정"
-                options={employeeOptions}
-                value={form.nurseId}
-                disabled={saving || !editable}
-                onChange={(e) => setForm({ ...form, nurseId: e.target.value })}
-              />
-              <Button
-                disabled={saving || !editable}
-                onClick={() =>
-                  dispatch(
-                    assignFieldRequest(surgeryId, "nurse", {
-                      nurseId: form.nurseId,
-                    }),
-                  )
-                }
-              >
-                저장
-              </Button>
-            </div>
+            <Select
+              id="a-nurse"
+              placeholder="미배정"
+              options={employeeOptions}
+              value={form.nurseId}
+              disabled={saving || !editable}
+              onChange={(e) => {
+                setForm({ ...form, nurseId: e.target.value });
+                dispatch(
+                  assignFieldRequest(surgeryId, "nurse", {
+                    nurseId: e.target.value,
+                  }),
+                );
+              }}
+            />
           </FormField>
         </div>
       </Panel>
