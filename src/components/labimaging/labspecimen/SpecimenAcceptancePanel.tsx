@@ -4,6 +4,7 @@ import { useEffect, useState, type ChangeEvent, type SubmitEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveLabSpecimenMessage } from "@/features/labimaging/labspecimen/messages";
 import {
@@ -78,6 +79,12 @@ export default function SpecimenAcceptancePanel({
   const lastAccepted = useSelector(selectLastAcceptedSpecimen);
 
   const rejectReasons = useCommonCodeOptions(SPECIMEN_REJECT_CD);
+
+  /*
+   * ⚠ 판정은 되돌릴 수 없다. 검체 1건당 판정 1건이라 잘못 누르면 LAB022 로 막히고 수정도 안 된다.
+   *   누구 검체를 판정하는지 폼 옆에서 다시 확인할 수 있게 이름을 띄운다.
+   */
+  const { names: patientNames } = usePatientNames([reception.patientId]);
 
   const [selectedSpecimenId, setSelectedSpecimenId] = useState<string>("");
   const [form, setForm] = useState<FormState>(initialForm);
@@ -178,6 +185,13 @@ export default function SpecimenAcceptancePanel({
           판정이 등록되었습니다.
         </Alert>
       ) : null}
+
+      <p className="text-sm text-slate-500">
+        대상 환자{" "}
+        <span className="font-semibold text-slate-800">
+          {patientNames[reception.patientId] ?? "미상"}
+        </span>
+      </p>
 
       {/* ---------- 판정 대상 검체 고르기 ---------- */}
       <div className="flex flex-col gap-2">

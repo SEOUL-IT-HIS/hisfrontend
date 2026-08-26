@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, DataTable, Panel } from "@/components/common";
 import type { DataTableColumn } from "@/components/common";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { resolveLabOrderMessage } from "@/features/labimaging/laborder/messages";
 import {
   clearWorklistSelection,
@@ -108,6 +109,13 @@ export default function LabWorklist() {
     dispatch(fetchLabWorklistRequest(filter));
   }, [dispatch, filter, lastScheduleId, lastSpecimenId, lastAcceptedId]);
 
+  /*
+   * 목록에 보이는 환자들의 이름을 한 번에 불러온다. (POST /api/patient/batch)
+   * 행마다 부르면 목록 크기만큼 요청이 나가므로, 목록이 바뀔 때 한 번만 부른다.
+   * 환자번호가 발급되지 않는 상태라 화면에서 환자를 알아보는 수단이 사실상 이름뿐이다.
+   */
+  const { names: patientNames } = usePatientNames(worklist.map((r) => r.patientId));
+
   const selected =
     worklist.find((item) => item.receptionNo === selectedReceptionNo) ?? null;
 
@@ -140,9 +148,9 @@ export default function LabWorklist() {
           }
         >
           {r.receptionNo}
-          {/* 환자번호는 발급 주체가 없어 연계 수신 건에는 값이 없다. (2026-08-25) */}
-          <span className="ml-2 font-normal text-slate-400">
-            {r.patientNo ?? "환자번호 미발급"}
+          {/* 환자 식별은 이름으로 한다. 환자번호는 화면에서 쓰지 않기로 했다. (2026-08-25) */}
+          <span className="ml-2 font-normal text-slate-500">
+            {patientNames[r.patientId] ?? "환자 미상"}
           </span>
           {r.urgencyYn === "Y" ? (
             <span className="ml-2 rounded bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-600">
