@@ -1,24 +1,41 @@
-"use client"
+"use client";
 
-import { BillingMaster } from "@/features/billing/billingMaster/types";
 import { useRouter } from "next/navigation";
+import { StatusBadge } from "@/components/common";
+import type { BillingMaster } from "@/features/billing/billingMaster/types";
 
-
-const billingMasterRow = ({ billingMaster }: { billingMaster: BillingMaster }) => {
-    const router = useRouter();
-
-    return (
-            <div>
-            <p>{billingMaster.feeName} ({billingMaster.feeCode})</p>
-            <p>가격: {billingMaster.defaultPrice}</p>
-            <p>분류: {billingMaster.categoryCode} / 보험유형: {billingMaster.insuranceTypeCode}</p>
-            <p>유효기간: {billingMaster.effectiveFrom} ~ {billingMaster.effectiveTo}</p>
-            <p>사용여부: {billingMaster.useYn}</p>
-            <button onClick={() => router.push(`/billing/statistics/${billingMaster.billingMasterId}`)}>
-                    상세보기
-                </button>
-        </div>
-    );
+type BillingMasterRowProps = {
+  billingMaster: BillingMaster;
 };
 
-export default billingMasterRow;
+function formatPrice(value: string): string {
+  const amount = Number(value);
+  return Number.isNaN(amount) ? value : `${amount.toLocaleString()}원`;
+}
+
+const BillingMasterRow = ({ billingMaster }: BillingMasterRowProps) => {
+  const router = useRouter();
+
+  return (
+    <tr
+      onClick={() => router.push(`/billing/statistics/${billingMaster.billingMasterId}`)}
+      className="cursor-pointer border-t border-slate-50 transition-colors hover:bg-slate-50"
+    >
+      <td className="px-5 py-3.5">
+        <span className="font-semibold text-slate-800">{billingMaster.feeName}</span>
+        <span className="ml-1.5 text-xs text-slate-400">{billingMaster.feeCode}</span>
+      </td>
+      <td className="px-5 py-3.5 text-slate-600">{formatPrice(billingMaster.defaultPrice)}</td>
+      <td className="px-5 py-3.5 text-slate-600">{billingMaster.categoryCode}</td>
+      <td className="px-5 py-3.5 text-slate-600">{billingMaster.insuranceTypeCode}</td>
+      <td className="px-5 py-3.5 text-slate-600">
+        {billingMaster.effectiveFrom} ~ {billingMaster.effectiveTo}
+      </td>
+      <td className="px-5 py-3.5">
+        <StatusBadge value={billingMaster.useYn} />
+      </td>
+    </tr>
+  );
+};
+
+export default BillingMasterRow;

@@ -1,11 +1,7 @@
 import Detail from "@/components/billing/billingMasterDetail";
 
 const BillingMasterDetailPage = () => {
-    return (
-        <div>
-            <Detail />
-        </div>
-    );
+  return <Detail />;
 };
 
 export default BillingMasterDetailPage;
