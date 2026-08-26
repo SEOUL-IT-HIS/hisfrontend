@@ -34,6 +34,14 @@ export default function AppFrame({ children }: AppFrameProps) {
   );
 
   /**
+   * 로그인 우회 (개인 PC 로컬 개발 전용)
+   * - admin-service 없이 내 서비스 화면만 확인하고 싶을 때 .env.local에
+   *   NEXT_PUBLIC_SKIP_AUTH=true 로 설정하면 세션 확인 없이 바로 AppShell을 보여준다.
+   * - 절대 커밋/공유하지 말 것 (.env.local 자체가 git 제외라 안전함)
+   */
+  const skipAuth = process.env.NEXT_PUBLIC_SKIP_AUTH === "true";
+
+  /**
    * 보호된 경로에서 이미 세션을 확인했는지 (한 번 확인했으면 같은 화면에서 또 물어보지 않기 위함).
    * /login 으로 돌아올 때마다 false로 리셋하는 이유:
    * 로그아웃하면 authSlice의 fetchAuthLogoutSuccess가 user/error를 다시 null로 되돌리는데,
@@ -63,6 +71,7 @@ export default function AppFrame({ children }: AppFrameProps) {
       hadSession.current = false;
       return;
     }
+    if (skipAuth) return;
     if (authUser) return;
     if (authLoading) return;
     if (meChecked.current) return;
@@ -83,6 +92,7 @@ export default function AppFrame({ children }: AppFrameProps) {
   // /api/auth/me 를 다시 호출한다 (고정 간격 폴링이 아니라 "활동이 있을 때만" 확인).
   useEffect(() => {
     if (isBare) return;
+    if (skipAuth) return;
     if (!authUser) return;
 
     function handleActivity() {
@@ -104,6 +114,7 @@ export default function AppFrame({ children }: AppFrameProps) {
   // hadSession이 true였다면 "쓰다가 만료된 것"이므로 안내 문구가 붙는 경로로 보낸다
   useEffect(() => {
     if (isBare) return;
+    if (skipAuth) return;
     if (authUser) return;
     if (authLoading) return;
     if (authError) {
@@ -118,6 +129,10 @@ export default function AppFrame({ children }: AppFrameProps) {
 
   if (isBare) {
     return <>{children}</>;
+  }
+
+  if (skipAuth) {
+    return <AppShell>{children}</AppShell>;
   }
 
   // 아직 로그인 여부를 모르는 상태(위 ①이 진행 중)와, 확인 결과 로그인이 안 된 상태(곧 ②가 리다이렉트 시킴)
