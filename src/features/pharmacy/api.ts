@@ -14,8 +14,10 @@ import type {
   ReceiptRegisterRequest,
 } from "./types";
 
+// pharmacy-service. 담당자 PC 로컬 기본값 (다른 PC에서 접근해야 하면 .env.local 에서
+// NEXT_PUBLIC_PHARMACY_API_BASE_URL 을 본인 LAN IP로 덮어쓰면 됨)
 const PHARMACY_API_BASE =
-  process.env.NEXT_PUBLIC_PHARMACY_API_BASE_URL ?? "http://localhost:8088";
+  process.env.NEXT_PUBLIC_PHARMACY_API_BASE_URL ?? "http://192.168.1.115:8088";
 
 export async function getMedicationList(): Promise<
   ApiResponse<MedicationDto[]>
