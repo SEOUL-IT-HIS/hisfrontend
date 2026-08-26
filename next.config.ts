@@ -31,7 +31,7 @@ const billingApiOrigin =
 // pharmacy-service. 담당자 PC 로컬 기본값 (다른 PC에서 접근해야 하면 .env.local 에서
 // PHARMACY_API_ORIGIN 을 본인 LAN IP로 덮어쓰면 됨)
 const pharmacyApiOrigin =
-  process.env.PHARMACY_API_ORIGIN ?? "http://localhost:8088";
+  process.env.PHARMACY_API_ORIGIN ?? "http://192.168.1.115:8088";
 
 const nextConfig: NextConfig = {
   // LAN IP로 접속할 때 /_next 정적 리소스 403 방지
