@@ -316,10 +316,8 @@ export default function PatientDetailForm({
               </div>
 
               <DetailItem
-                label="환자 구분"
-                value={
-                  patientDetail.tempPatientYn === "Y" ? "임시환자" : "정식환자"
-                }
+                label="임시환자 여부"
+                value={patientDetail.tempPatientYn === "Y" ? "예" : "아니요"}
               />
 
               <DetailItem

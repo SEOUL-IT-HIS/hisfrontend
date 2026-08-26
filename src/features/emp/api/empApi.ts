@@ -32,13 +32,24 @@ export async function fetchEmpDetailApi(empId: string): Promise<Emp> {
   return response.data.data;
 }
 
-/** 직원 등록 — body: empName, empEmail, empPhone, hireDate, deptCode (empNo는 서버 자동채번) */
+/** 직원 등록 — dto(JSON) + image(파일)를 multipart로 전송 */
 export async function fetchEmpRegisterApi(
-  empData: EmpRegisterRequest,
+    empData: EmpRegisterRequest,
 ): Promise<Emp> {
+  const { image, ...dto } = empData;
+  const formData = new FormData();
+  formData.append(
+      "dto",
+      new Blob([JSON.stringify(dto)], { type: "application/json" }),
+  );
+  if (image) {
+    formData.append("image", image);
+  }
+
   const response = await apiClient.post<ApiResponse<Emp>>(
-    "/api/emp/register",
-    empData,
+      "/api/emp/register",
+      formData,
+      { headers: { "Content-Type": undefined } },
   );
   return response.data.data;
 }
@@ -46,15 +57,24 @@ export async function fetchEmpRegisterApi(
 /**
  * 직원 수정
  * - Path: empId
- * - Body: empName, empEmail, empPhone, retireDate, empStatus, deptCode
- * - empNo 는 변경 불가
+ * - Body: empName, empEmail, empPhone, retireDate, empStatus, deptCode (dto 파트)
+ * - image: 선택 시에만 image 파트로 같이 전송
  */
 export async function fetchEmpUpdateApi(empData: EmpUpdateRequest): Promise<Emp> {
-  const { empId, empName, empEmail, empPhone, retireDate, empStatus, deptCode } =
-    empData;
+  const { empId, image, ...dto } = empData;
+  const formData = new FormData();
+  formData.append(
+      "dto",
+      new Blob([JSON.stringify(dto)], { type: "application/json" }),
+  );
+  if (image) {
+    formData.append("image", image);
+  }
+
   const response = await apiClient.put<ApiResponse<Emp>>(
-    `/api/emp/update/${empId}`,
-    { empName, empEmail, empPhone, retireDate, empStatus, deptCode },
+      `/api/emp/update/${empId}`,
+      formData,
+      { headers: { "Content-Type": undefined } },
   );
   return response.data.data;
 }

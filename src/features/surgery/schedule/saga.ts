@@ -37,6 +37,7 @@ import {
   endSurgery,
   getSurgerySchedule,
   getSurgerySchedules,
+  searchSurgeries,
   getTodaySurgeries,
   startSurgery,
   updateSurgeryProgress,
@@ -54,6 +55,9 @@ import {
   fetchTodaySurgeriesFailure,
   fetchTodaySurgeriesRequest,
   fetchTodaySurgeriesSuccess,
+  searchSurgeriesFailure,
+  searchSurgeriesRequest,
+  searchSurgeriesSuccess,
   startSurgeryRequest,
   surgeryMutationFailure,
   surgeryMutationSuccess,
@@ -61,14 +65,14 @@ import {
   updateSurgeryRequest,
 } from "@/features/surgery/schedule/slice";
 import type {
-  AssignSurgeryRequest,
   CancelSurgeryRequest,
-  RegisterSurgeryRequest,
   Surgery,
   SurgeryListParams,
+  SurgerySearchParams,
   UpdateProgressRequest,
   UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
+import type { PageResponse } from "@/features/surgery/types";
 import { getSurgeryErrorMessage } from "@/features/surgery/errorMessage";
 
 /**
@@ -90,6 +94,25 @@ function* fetchSurgeriesSaga(
     yield put(
       fetchSurgeriesFailure(
         getSurgeryErrorMessage(err, "수술 일정 조회에 실패했습니다."),
+      ),
+    );
+  }
+}
+
+/** 조건 검색 (SL2-314 기록지 조회 / SL2-334 간호기록 조회) */
+function* searchSurgeriesSaga(
+  action: PayloadAction<SurgerySearchParams | undefined>,
+) {
+  try {
+    const response: PageResponse<Surgery> = yield call(
+      searchSurgeries,
+      action.payload,
+    );
+    yield put(searchSurgeriesSuccess(response));
+  } catch (err) {
+    yield put(
+      searchSurgeriesFailure(
+        getSurgeryErrorMessage(err, "수술 검색에 실패했습니다."),
       ),
     );
   }
@@ -215,6 +238,7 @@ function* endSurgerySaga(action: PayloadAction<string>) {
 /** 수술 스케줄 관련 요청을 감시한다(최신 요청만 처리) */
 export default function* scheduleSaga() {
   yield takeLatest(fetchSurgeriesRequest.type, fetchSurgeriesSaga);
+  yield takeLatest(searchSurgeriesRequest.type, searchSurgeriesSaga);
   yield takeLatest(fetchTodaySurgeriesRequest.type, fetchTodaySurgeriesSaga);
   yield takeLatest(fetchSurgeryRequest.type, fetchSurgerySaga);
   yield takeLatest(updateSurgeryRequest.type, updateSurgerySaga);
