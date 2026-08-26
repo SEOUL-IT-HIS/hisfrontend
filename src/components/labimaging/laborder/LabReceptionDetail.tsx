@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, Panel } from "@/components/common";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import {
@@ -56,6 +57,13 @@ export default function LabReceptionDetail() {
 
   const treatTypes = useCommonCodeOptions("RCPT_TYPE_CD");
   const testTypes = useCommonCodeOptions("TEST_TYPE_CD");
+  /*
+   * ⚠ 훅은 조건부로 부를 수 없어서 reception 이 없을 때도 호출된다.
+   *   그래서 아래 early return 보다 위에 둔다. 빈 배열이면 요청을 보내지 않는다.
+   */
+  const { names: patientNames } = usePatientNames(
+    reception?.patientId ? [reception.patientId] : [],
+  );
 
   useEffect(() => {
     if (receptionNo) dispatch(fetchLabReceptionByNoRequest(receptionNo));
@@ -74,8 +82,8 @@ export default function LabReceptionDetail() {
     ["오더번호", reception.labOrderNo],
     ["진료구분", toCodeLabel(treatTypes.options, reception.treatTypeCode)],
     ["긴급여부", reception.urgencyYn === "Y" ? "긴급" : "일반"],
-    // 발급 주체가 없어 값이 없는 접수가 있다. (2026-08-25)
-    ["환자번호", reception.patientNo || "미발급"],
+    // 환자번호는 화면에서 쓰지 않기로 해서 이름만 둔다. (2026-08-25)
+    ["환자명", patientNames[reception.patientId] || "미상"],
     ["처방의번호", reception.physicianNo || "-"],
     ["검사항목", labItems || "-"],
     ["접수일시", formatDateTime(reception.receivedAt)],

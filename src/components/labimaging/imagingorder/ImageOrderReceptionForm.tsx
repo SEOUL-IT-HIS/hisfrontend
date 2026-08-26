@@ -23,7 +23,6 @@ import { URGENCY_YN_OPTIONS } from "@/features/labimaging/imagingorder/types";
 const initialForm = {
   imageOrderNo: "",
   systemCode: "",
-  patientNo: "",
   patientId: "",
   physicianNo: "",
   physicianId: "",
@@ -97,7 +96,6 @@ export default function ImageOrderReceptionForm() {
     const next: FieldErrors = {};
     if (!form.imageOrderNo.trim()) next.imageOrderNo = "오더번호는 필수입니다.";
     if (!form.systemCode.trim()) next.systemCode = "시스템코드는 필수입니다.";
-    if (!form.patientNo.trim()) next.patientNo = "환자번호는 필수입니다.";
     if (!form.patientId.trim()) next.patientId = "환자ID는 필수입니다.";
     if (!form.treatTypeCode) next.treatTypeCode = "진료유형을 선택해주세요.";
     if (!form.receivedById.trim()) next.receivedById = "접수자ID는 필수입니다.";
@@ -118,7 +116,6 @@ export default function ImageOrderReceptionForm() {
     const request: ImageOrderCreateRequest = {
       imageOrderNo: form.imageOrderNo.trim(),
       systemCode: form.systemCode.trim(),
-      patientNo: form.patientNo.trim(),
       patientId: form.patientId.trim(),
       physicianNo: form.physicianNo.trim() || undefined,
       physicianId: form.physicianId.trim() || undefined,
@@ -171,20 +168,6 @@ export default function ImageOrderReceptionForm() {
           ) : null}
           {systemCodes.error ? (
             <span className="text-xs text-rose-500">{systemCodes.error}</span>
-          ) : null}
-        </FormField>
-
-        <FormField label="환자번호" required>
-          <Input
-            name="patientNo"
-            value={form.patientNo}
-            onChange={handleChange}
-            maxLength={20}
-            disabled={creating}
-            placeholder="예: P00012345"
-          />
-          {errors.patientNo ? (
-            <span className="text-xs text-rose-500">{errors.patientNo}</span>
           ) : null}
         </FormField>
 

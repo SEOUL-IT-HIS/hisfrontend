@@ -37,13 +37,13 @@ export default function PatientSearchModal({
   onSelect,
 }: PatientSearchModalProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const [keyword, setKeyword] = useState("");
+  const [patientName, setPatientName] = useState("");
   const results = useSelector(selectPatientSearchResults);
   const loading = useSelector(selectPatientSearchLoading);
   const error = useSelector(selectPatientSearchError);
 
   function handleSearch() {
-    dispatch(searchPatientsRequest({ keyword: keyword.trim() }));
+    dispatch(searchPatientsRequest({ patientName: patientName.trim() }));
   }
 
   function handleSelect(patient: PatientSearchItem) {
@@ -52,7 +52,7 @@ export default function PatientSearchModal({
   }
 
   function handleClose() {
-    setKeyword("");
+    setPatientName("");
     dispatch(clearPatientSearch());
     onClose();
   }
@@ -60,8 +60,7 @@ export default function PatientSearchModal({
   const columns: DataTableColumn<PatientSearchItem>[] = [
     { key: "patientName", header: "환자명", render: (p) => p.patientName },
     { key: "birthDate", header: "생년월일", render: (p) => p.birthDate },
-    { key: "genderCode", header: "성별", render: (p) => p.genderCode },
-    { key: "phoneNumber", header: "연락처", render: (p) => p.phoneNumber },
+    { key: "genderCd", header: "성별", render: (p) => p.genderCd },
     {
       key: "action",
       header: "",
@@ -83,9 +82,9 @@ export default function PatientSearchModal({
       <div className="space-y-3">
         <div className="flex gap-2">
           <Input
-            value={keyword}
-            placeholder="환자명 또는 등록번호를 입력하세요"
-            onChange={(e) => setKeyword(e.target.value)}
+            value={patientName}
+            placeholder="환자명을 입력하세요"
+            onChange={(e) => setPatientName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();

@@ -64,8 +64,6 @@ export interface SpecimenCreateRequest {
   /** 검체용기코드 (공통코드 SPECIMEN_CONTAINER_CD) */
   specimenContainerCode: string;
   specimenType: SpecimenType;
-  /** 접수에 환자번호가 없으면 보내지 않는다. 서버도 필수로 보지 않는다. (2026-08-25) */
-  patientNo?: string;
   /** 환자ID (patient-service 내부 식별자) */
   patientId: string;
   /** 검체채취일시 (ISO) */
@@ -81,7 +79,6 @@ export interface SpecimenSummary {
   specimenBarcode: string;
   specimenType: SpecimenType;
   specimenContainerCode: string;
-  patientNo?: string;
   collectedAt: string;
   collectedById: string;
   /** 미판정이면 없음(undefined) */
@@ -113,7 +110,6 @@ export interface SpecimenAcceptanceSummary {
   receptionNo: string;
   specimenBarcode: string;
   specimenType: SpecimenType;
-  patientNo?: string;
   acceptedAt: string;
   acceptedById: string;
   fitnessStatus: FitnessStatus;

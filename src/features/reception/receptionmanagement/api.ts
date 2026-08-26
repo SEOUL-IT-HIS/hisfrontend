@@ -5,13 +5,13 @@ import type {
   ReceptionDetail,
   ReceptionListQuery,
   ReceptionRegisterRequest,
+  ReceptionCancelRequest,
   DepartmentOption,
   DoctorOption,
 } from "./types";
 
-const RECEPTION_PATH = "/api/reception/receptions";
-const DEPARTMENT_PATH = "/api/hospital/departments";
-const DOCTOR_PATH = "/api/hospital/doctors";
+const RECEPTION_PATH = "/api/reception";
+const DEPARTMENT_PATH = "/api/reception/departments";
 
 export async function getReceptionList(
   query: ReceptionListQuery,
@@ -42,6 +42,16 @@ export async function registerReception(
   return data.data;
 }
 
+export async function cancelReception(
+  request: ReceptionCancelRequest,
+): Promise<void> {
+  const { receptionId, ...body } = request;
+  await apiClient.patch<ApiResponse<void>>(
+    `${RECEPTION_PATH}/${receptionId}/cancel`,
+    body,
+  );
+}
+
 export async function getDepartments(): Promise<DepartmentOption[]> {
   const { data } =
     await apiClient.get<ApiResponse<DepartmentOption[]>>(DEPARTMENT_PATH);
@@ -50,8 +60,7 @@ export async function getDepartments(): Promise<DepartmentOption[]> {
 
 export async function getDoctors(deptId: string): Promise<DoctorOption[]> {
   const { data } = await apiClient.get<ApiResponse<DoctorOption[]>>(
-    DOCTOR_PATH,
-    { params: { deptId } },
+    `${DEPARTMENT_PATH}/${deptId}/doctors`,
   );
   return data.data;
 }
