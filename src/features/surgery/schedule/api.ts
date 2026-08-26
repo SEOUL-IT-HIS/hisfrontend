@@ -9,8 +9,10 @@ import type { ApiResponse, PageResponse } from "@/features/surgery/types";
 import type {
   CancelSurgeryRequest,
   Surgery,
+  AssignFieldRequest,
   SurgeryListParams,
   SurgerySearchParams,
+  SurgeryStatusHistory,
   UpdateProgressRequest,
   UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
@@ -39,6 +41,43 @@ export async function searchSurgeries(
   const { data } = await apiClient.get<ApiResponse<PageResponse<Surgery>>>(
     `${SCHEDULE_PATH}/assignments`,
     { params },
+  );
+  return data.data;
+}
+
+/**
+ * 상태변경 이력을 조회한다. (SL2-282)
+ *
+ * @param type STATUS(큰 상태 전이) / PROGRESS(당일 진행단계). 비우면 전체
+ */
+export async function getSurgeryHistory(
+  surgeryId: string,
+  type?: string,
+): Promise<SurgeryStatusHistory[]> {
+  const { data } = await apiClient.get<ApiResponse<SurgeryStatusHistory[]>>(
+    `${SCHEDULE_PATH}/${surgeryId}/history`,
+    { params: type ? { type } : undefined },
+  );
+  return data.data ?? [];
+}
+
+/**
+ * 개별 배정 (SL2-13 집도의 / SL2-15 수술실 / SL2-43 마취의 / SL2-63 간호사)
+ *
+ * <p>백엔드가 넷 다 같은 {@code AssignmentRequest} 를 받고 자기 필드만 읽는다.
+ * 그래서 한 함수로 묶고 어느 항목인지는 경로로 구분한다.</p>
+ *
+ * <p><b>값을 비워 보내면 해제</b>다(SL2-166). 다만 집도의는 해제할 수 없어
+ * 빈 값을 보내면 400 이 온다 — 수술에 집도의가 없는 상태는 성립하지 않는다.</p>
+ */
+export async function assignSurgeryField(
+  surgeryId: string,
+  field: "room" | "surgeon" | "anesthesiologist" | "nurse",
+  request: AssignFieldRequest,
+): Promise<Surgery> {
+  const { data } = await apiClient.patch<ApiResponse<Surgery>>(
+    `${SCHEDULE_PATH}/${surgeryId}/${field}`,
+    request,
   );
   return data.data;
 }

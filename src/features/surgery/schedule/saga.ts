@@ -38,6 +38,8 @@ import {
   getSurgerySchedule,
   getSurgerySchedules,
   searchSurgeries,
+  getSurgeryHistory,
+  assignSurgeryField,
   getTodaySurgeries,
   startSurgery,
   updateSurgeryProgress,
@@ -58,6 +60,10 @@ import {
   searchSurgeriesFailure,
   searchSurgeriesRequest,
   searchSurgeriesSuccess,
+  fetchHistoryRequest,
+  fetchHistorySuccess,
+  fetchHistoryFailure,
+  assignFieldRequest,
   startSurgeryRequest,
   surgeryMutationFailure,
   surgeryMutationSuccess,
@@ -69,6 +75,8 @@ import type {
   Surgery,
   SurgeryListParams,
   SurgerySearchParams,
+  SurgeryStatusHistory,
+  AssignFieldRequest,
   UpdateProgressRequest,
   UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
@@ -113,6 +121,55 @@ function* searchSurgeriesSaga(
     yield put(
       searchSurgeriesFailure(
         getSurgeryErrorMessage(err, "수술 검색에 실패했습니다."),
+      ),
+    );
+  }
+}
+
+/** 상태변경 이력 조회 (SL2-282) */
+function* fetchHistorySaga(
+  action: PayloadAction<{ surgeryId: string; type?: string }>,
+) {
+  try {
+    const response: SurgeryStatusHistory[] = yield call(
+      getSurgeryHistory,
+      action.payload.surgeryId,
+      action.payload.type,
+    );
+    yield put(fetchHistorySuccess(response));
+  } catch (err) {
+    yield put(
+      fetchHistoryFailure(
+        getSurgeryErrorMessage(err, "상태 변경 이력 조회에 실패했습니다."),
+      ),
+    );
+  }
+}
+
+/**
+ * 개별 배정 (SL2-13 / SL2-15 / SL2-43 / SL2-63)
+ *
+ * <p>성공하면 그 수술을 다시 읽는다 — 수술실 배정은 백엔드가 존재·가용을 검증하므로
+ * (SUR036·SUR045) 화면이 짐작해 고치면 거절된 요청도 성공한 것처럼 보인다.
+ * 이력도 함께 갱신한다. 배정 변경이 이력에 남기 때문이다.</p>
+ */
+function* assignFieldSaga(
+  action: PayloadAction<{
+    surgeryId: string;
+    field: "room" | "surgeon" | "anesthesiologist" | "nurse";
+    request: AssignFieldRequest;
+  }>,
+) {
+  try {
+    const { surgeryId, field, request } = action.payload;
+    yield call(assignSurgeryField, surgeryId, field, request);
+    yield put(surgeryMutationSuccess());
+    yield put(fetchSurgeryRequest(surgeryId));
+    yield put(fetchHistoryRequest(surgeryId));
+  } catch (err) {
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "배정 처리에 실패했습니다."),
       ),
     );
   }
@@ -241,6 +298,8 @@ export default function* scheduleSaga() {
   yield takeLatest(searchSurgeriesRequest.type, searchSurgeriesSaga);
   yield takeLatest(fetchTodaySurgeriesRequest.type, fetchTodaySurgeriesSaga);
   yield takeLatest(fetchSurgeryRequest.type, fetchSurgerySaga);
+  yield takeLatest(fetchHistoryRequest.type, fetchHistorySaga);
+  yield takeLatest(assignFieldRequest.type, assignFieldSaga);
   yield takeLatest(updateSurgeryRequest.type, updateSurgerySaga);
   yield takeLatest(cancelSurgeryRequest.type, cancelSurgerySaga);
   yield takeLatest(updateProgressRequest.type, updateProgressSaga);
