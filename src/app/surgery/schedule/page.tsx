@@ -28,9 +28,6 @@ export default function Page() {
       <h1 className="mb-1 text-lg font-semibold text-slate-800">
         수술 스케줄링 관리
       </h1>
-      <p className="mb-6 text-sm text-slate-600">
-        진료·응급실이 올린 수술 요청을 배정하고 진행 상태를 관리합니다.
-      </p>
 
       {/* 상태 흐름을 먼저 보여준다 — 코드값만으로는 순서가 드러나지 않는다 */}
       <div className="mb-8 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 p-4">

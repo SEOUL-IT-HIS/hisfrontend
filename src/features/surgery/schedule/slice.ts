@@ -1,10 +1,12 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
+  AssignFieldRequest,
   CancelSurgeryRequest,
   ScheduleState,
   Surgery,
   SurgeryListParams,
   SurgerySearchParams,
+  SurgeryStatusHistory,
   UpdateProgressRequest,
   UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
@@ -50,6 +52,7 @@ const initialState: ScheduleState = {
   selectedSurgery: null,
   searchResult: null,
   searchParams: {},
+  history: [],
   loading: false,
   saving: false,
   error: "",
@@ -137,6 +140,44 @@ const scheduleSlice = createSlice({
       state.error = action.payload;
     },
 
+    // ----- 상태변경 이력 (SL2-282) -----
+    fetchHistoryRequest: {
+      reducer(state) {
+        state.loading = true;
+        state.error = "";
+      },
+      prepare(surgeryId: string, type?: string) {
+        return { payload: { surgeryId, type } };
+      },
+    },
+    fetchHistorySuccess(state, action: PayloadAction<SurgeryStatusHistory[]>) {
+      state.loading = false;
+      state.history = action.payload;
+    },
+    fetchHistoryFailure(state, action: PayloadAction<string>) {
+      state.loading = false;
+      state.error = action.payload;
+    },
+
+    // ----- 개별 배정 (SL2-13 집도의 / SL2-15 수술실 / SL2-43 마취의 / SL2-63 간호사) -----
+    /**
+     * 항목 하나씩 배정하거나 해제한다. 성공하면 saga 가 그 수술을 다시 읽는다 —
+     * 배정은 백엔드가 수술실 상태를 검증하므로(SUR036·SUR045) 화면이 짐작하면 안 된다.
+     */
+    assignFieldRequest: {
+      reducer(state) {
+        state.saving = true;
+        state.error = "";
+      },
+      prepare(
+        surgeryId: string,
+        field: "room" | "surgeon" | "anesthesiologist" | "nurse",
+        request: AssignFieldRequest,
+      ) {
+        return { payload: { surgeryId, field, request } };
+      },
+    },
+
     // ----- 등록/수정 (SL2-36 / SL2-44 긴급 / SL2-37) -----
     updateSurgeryRequest: {
       reducer(state) {
@@ -218,6 +259,10 @@ export const {
   fetchSurgeryRequest,
   fetchSurgerySuccess,
   fetchSurgeryFailure,
+  fetchHistoryRequest,
+  fetchHistorySuccess,
+  fetchHistoryFailure,
+  assignFieldRequest,
   updateSurgeryRequest,
   cancelSurgeryRequest,
   updateProgressRequest,
@@ -254,3 +299,7 @@ export const selectSurgerySearchResult = (state: ScheduleRoot) =>
 /** 마지막 검색 조건 — 페이지 이동 시 그대로 다시 쓴다 */
 export const selectSurgerySearchParams = (state: ScheduleRoot) =>
   state.surgery.schedule.searchParams;
+
+/** 선택한 수술의 상태변경 이력 (SL2-282) */
+export const selectSurgeryHistory = (state: ScheduleRoot) =>
+  state.surgery.schedule.history;

@@ -1,24 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch } from "@/store/store";
+import type { AppDispatch, RootState } from "@/store/store";
 import {
   fetchAdmissionsRequest,
   selectAdmissions,
   selectAdmissionListStatus,
 } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchBedAssignmentsRequest, selectBedAssignments } from "@/features/inpatient/bedmanagement/bedassignment/slice";
+import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import AdmissionDetail from "@/components/inpatient/admissiondischarge/admission/detail";
 import Link from "next/link";
 
 const STATUS_BADGE: Record<string, string> = {
+  REQUESTED: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
   ADMITTED: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
   DISCHARGE_REQUESTED: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
   DISCHARGED: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
 };
 
 const STATUS_LABEL: Record<string, string> = {
+  REQUESTED: "요청됨",
   ADMITTED: "입원중",
   DISCHARGE_REQUESTED: "퇴원 신청",
   DISCHARGED: "퇴원 완료",
@@ -29,11 +32,18 @@ const AdmissionList = () => {
   const admissions = useSelector(selectAdmissions);
   const listStatus = useSelector(selectAdmissionListStatus);
   const bedAssignments = useSelector(selectBedAssignments);
+  const patients = useSelector((state: RootState) => state.patient.patients);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const patientNameById = useMemo(
+    () => new Map(patients.map((patient) => [patient.patientId, patient.patientName])),
+    [patients],
+  );
 
   useEffect(() => {
     dispatch(fetchAdmissionsRequest());
     dispatch(fetchBedAssignmentsRequest());
+    dispatch(fetchPatientListRequest({}));
   }, [dispatch]);
 
   const isBedAssigned = (admissionId: string) =>
@@ -64,6 +74,7 @@ const AdmissionList = () => {
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
                   <th className="whitespace-nowrap px-4 py-3">입원ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">환자명</th>
                   <th className="whitespace-nowrap px-4 py-3">입원과ID</th>
                   <th className="whitespace-nowrap px-4 py-3">입원경로</th>
                   <th className="whitespace-nowrap px-4 py-3">입원날짜</th>
@@ -83,6 +94,9 @@ const AdmissionList = () => {
                     }`}
                   >
                     <td className="whitespace-nowrap px-4 py-3 font-medium text-sky-700">{admission.admissionId}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-800">
+                      {patientNameById.get(admission.patientId) ?? "조회중..."}
+                    </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDeptId}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionRoute}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDate}</td>

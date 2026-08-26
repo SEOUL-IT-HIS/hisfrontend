@@ -3,8 +3,8 @@
 import { AppDispatch, RootState } from "@/store/store";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { createAdmissionRequest, selectAdmissionCreateStatus } from "@/features/inpatient/admissiondischarge/slice";
+import { useEffect, useMemo, useState } from "react";
+import { createAdmissionRequest, fetchAdmissionsRequest, selectAdmissionCreateStatus, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 
 const LABEL = "mb-1 block text-sm font-medium text-slate-700";
@@ -15,6 +15,8 @@ const AdmissionRegisterForm = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error, success } = useSelector(selectAdmissionCreateStatus);
     const patients = useSelector((state: RootState) => state.patient.patients);
+    const admissions = useSelector(selectAdmissions);
+
 
     const [form, setForm] = useState({
         patientId: "",
@@ -26,6 +28,7 @@ const AdmissionRegisterForm = () => {
 
     useEffect(() => {
         dispatch(fetchPatientListRequest({}));
+        dispatch(fetchAdmissionsRequest());
     }, [dispatch]);
 
     const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -35,7 +38,7 @@ const AdmissionRegisterForm = () => {
 
     const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        dispatch(createAdmissionRequest({ ...form, status: "ADMITTED" }));
+        dispatch(createAdmissionRequest({ ...form, status: "REQUESTED" }));
     };
 
     useEffect(() => {
@@ -44,6 +47,14 @@ const AdmissionRegisterForm = () => {
         }
     }, [success, router]);
 
+    const activepatientIds = useMemo(
+        () => new Set(admissions.filter((a)=>a.status !== "DISCHARGED").map((a) => a.patientId)),
+        [admissions],
+    );
+    const availablePatients = useMemo(
+        () => patients.filter((patient) => !activepatientIds.has(patient.patientId)),
+        [patients, activepatientIds],
+    );
     return (
         <div className="mx-auto w-full max-w-lg p-6">
             <div className="mb-6">
@@ -61,7 +72,7 @@ const AdmissionRegisterForm = () => {
                     <label htmlFor="patientId" className={LABEL}>환자</label>
                     <select id="patientId" name="patientId" value={form.patientId} onChange={onChange} required className={FIELD}>
                         <option value="">선택하세요</option>
-                        {patients.map((patient) => (
+                        {availablePatients.map((patient) => (
                             <option key={patient.patientId} value={patient.patientId}>
                                 {patient.patientName}
                             </option>

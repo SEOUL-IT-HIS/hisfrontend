@@ -1,13 +1,20 @@
-import AnesthesiaRecordPanel from "@/components/surgery/anesthesia/AnesthesiaRecordPanel";
-import ConsentPanel from "@/components/surgery/consent/ConsentPanel";
-import OperativeRecordPanel from "@/components/surgery/operativeRecord/OperativeRecordPanel";
+import PageHeader from "@/components/common/PageHeader";
+import SurgeryScheduleDetail from "@/components/surgery/schedule/SurgeryScheduleDetail";
 
 /**
- * 수술 상세 화면 (동의서 SL2-42 / 마취기록 SL2-3 / 수술기록지 SL2-51)
+ * 수술 배정·일정 상세
  * 경로: /surgery/schedule/detail/{surgeryId} (§8.1 detail/[id])
  *
- * <p>동의서·마취기록·수술기록지는 특정 수술에 종속되므로 수술 상세 아래에 둔다.
- * Next 15+ 에서 params 는 Promise 라 await 해서 꺼낸다.</p>
+ * <p><b>기록 화면에서 배정 화면으로 바꿨다</b>(2026-08-25) — 여기는
+ * {@code /surgery/schedule} 아래, 즉 진료·응급이 올린 요청을 받아 배정하고 일정을
+ * 관리하는 영역이다. 그런데 동의서·마취기록·수술기록지를 보여주고 있어서, 일정
+ * 목록에서 수술을 누르면 엉뚱하게 기록 작성 화면이 나왔다. 게다가 그 패널 셋은
+ * {@code /surgery/worklist} 가 이미 보여주고 있었다.</p>
+ *
+ * <p>이제 배정(수술실·집도의·마취의·간호사)·상태 전이·변경 이력을 다룬다.
+ * 기록은 워크리스트로 가는 링크만 둔다.</p>
+ *
+ * <p>Next 15+ 에서 params 는 Promise 라 await 해서 꺼낸다.</p>
  */
 type Props = {
   params: Promise<{ surgeryId: string }>;
@@ -17,25 +24,12 @@ export default async function Page({ params }: Props) {
   const { surgeryId } = await params;
 
   return (
-    <div className="mx-auto w-full max-w-4xl p-6">
-      <h1 className="mb-1 text-lg font-semibold text-slate-800">수술 상세</h1>
-      <p className="mb-6 text-xs text-slate-500">수술 ID {surgeryId}</p>
-
-      {/* 동의서를 맨 위에 둔다 — 수술 시작 전 반드시 확인해야 하고, 미기록 시 백엔드가 시작을 막는다(SL2-217) */}
-      <section className="mb-10">
-        <h2 className="mb-3 text-sm font-medium text-slate-700">수술 동의서</h2>
-        <ConsentPanel surgeryId={surgeryId} />
-      </section>
-
-      <section className="mb-10">
-        <h2 className="mb-3 text-sm font-medium text-slate-700">마취기록</h2>
-        <AnesthesiaRecordPanel surgeryId={surgeryId} />
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-sm font-medium text-slate-700">수술기록지</h2>
-        <OperativeRecordPanel surgeryId={surgeryId} />
-      </section>
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-6">
+      <PageHeader
+        title="수술 배정 상세"
+        description="수술실·집도의·마취의·간호사 배정과 진행 상태를 관리합니다."
+      />
+      <SurgeryScheduleDetail surgeryId={surgeryId} />
     </div>
   );
 }
