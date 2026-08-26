@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Button } from "@/components/common";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import {
@@ -47,6 +48,10 @@ export default function WorklistReceptionHeader({
   const dispatch = useDispatch<AppDispatch>();
   const detail = useSelector(selectLabReceptionDetail);
 
+  // 선택한 접수 1건이라 배열에 하나만 담아 넘긴다. 훅은 목록/단건을 같은 방식으로 다룬다.
+  const { names: patientNames } = usePatientNames([reception.patientId]);
+  const patientName = patientNames[reception.patientId];
+
   const treatTypes = useCommonCodeOptions("RCPT_TYPE_CD");
   const testTypes = useCommonCodeOptions("TEST_TYPE_CD");
 
@@ -70,7 +75,7 @@ export default function WorklistReceptionHeader({
         <p className="text-base font-semibold text-slate-800">
           {reception.receptionNo}
           <span className="ml-2 text-sm font-normal text-slate-500">
-            {reception.patientNo ? `환자 ${reception.patientNo}` : "환자번호 미발급"}
+            {patientName ?? "환자 미상"}
           </span>
           {reception.urgencyYn === "Y" ? (
             <span className="ml-2 rounded bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-600">

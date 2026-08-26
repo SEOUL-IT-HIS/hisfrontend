@@ -32,6 +32,13 @@ export interface ReceptionRegisterRequest {
   memo: string;
 }
 
+export interface ReceptionCancelRequest {
+  receptionId: string;
+  cancelReasonCode: string;
+  cancelReasonDetail?: string;
+  cancelledBy: string;
+}
+
 export interface DepartmentOption {
   deptId: string;
   deptName: string;
