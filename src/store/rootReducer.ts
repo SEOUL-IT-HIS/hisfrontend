@@ -8,7 +8,7 @@ import receptionReducer from "@/features/reception/slice";
 import emergencyReducer from "@/features/emergency/common/slice";
 import inpatientReducer from "@/features/inpatient/slice";
 import labImagingReducer from "@/features/labimaging/common/slice";
-// import pharmacyReducer from "@/features/pharmacy/slice";
+import pharmacyReducer from "@/features/pharmacy/slice";
 import surgeryReducer from "@/features/surgery/slice";
 // import adminReducer from "@/features/admin/slice";
 import commonCodeItemReducer from "@/features/commonCode/slice/commonCodeItemSlice";
@@ -65,7 +65,7 @@ const rootReducer = combineReducers({
   labImaging: labImagingReducer,
 
   // 약국 (PHM)
-  // pharmacy: pharmacyReducer,
+  pharmacy: pharmacyReducer,
 
   // 수술 (SUR)
   surgery: surgeryReducer,

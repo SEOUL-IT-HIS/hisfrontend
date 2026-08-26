@@ -30,6 +30,17 @@ function formatDate(value: string | null): string {
   return value.slice(0, 10);
 }
 
+function formatAddress(
+    zipCode: string | null,
+    address: string | null,
+    addressDetail: string | null,
+): string {
+  if (!address) return "-";
+  const detail = addressDetail ? ` ${addressDetail}` : "";
+  const zip = zipCode ? ` (${zipCode})` : "";
+  return `${address}${detail}${zip}`;
+}
+
 /**
  * admin-service가 아직 createdAt/updatedAt을 안 채워 보내는 경우가 있어,
  * 그럴 때는 입사일 기준으로 값을 채워 보여준다 — 백엔드가 실제 값을 내려주기
@@ -148,6 +159,12 @@ export default function EmpDetailPanel({
             <DetailField label="이름" value={selectedEmp.empName} />
             <DetailField label="이메일" value={selectedEmp.empEmail ?? "-"} />
             <DetailField label="연락처" value={selectedEmp.empPhone ?? "-"} />
+            <div className="rounded-xl bg-slate-50/80 px-4 py-3 sm:col-span-2">
+              <dt className="text-xs font-medium text-slate-400">주소</dt>
+              <dd className="mt-1 text-sm font-medium text-slate-800">
+                {formatAddress(selectedEmp.zipCode, selectedEmp.address, selectedEmp.addressDetail)}
+              </dd>
+            </div>
             <DetailField
               label="부서"
               value={toCodeLabel(deptCodes, selectedEmp.deptCode)}

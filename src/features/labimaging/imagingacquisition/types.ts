@@ -13,8 +13,6 @@
 export interface ConsentCreateRequest {
   /** 대상 영상오더ID (UUID) */
   imageOrderId: string;
-  /** 환자번호 (화면 표시용 업무번호) */
-  patientNo: string;
   /** 환자ID (patient-service 내부 식별자, 참조/검증용) */
   patientId: string;
   /** 동의서유형코드 (공통코드 CONSENT_TYPE_CD — 예: CONTRAST, INVASIVE) */
@@ -35,7 +33,6 @@ export interface ConsentCreateRequest {
 export interface ConsentSummary {
   consentId: string;
   imageOrderId: string;
-  patientNo: string;
   consentTypeCode: string;
   consentYn: "Y" | "N";
   consentDt: string;

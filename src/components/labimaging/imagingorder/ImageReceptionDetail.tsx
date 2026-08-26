@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, Panel } from "@/components/common";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import {
@@ -49,6 +50,14 @@ export default function ImageReceptionDetail() {
   const loading = useSelector(selectImageReceptionLoading);
   const error = useSelector(selectImageReceptionError);
 
+  /*
+   * ⚠ 훅은 조건부로 부를 수 없어 reception 이 없을 때도 호출된다.
+   *   빈 배열이면 요청을 보내지 않으므로 early return 보다 위에 두어도 안전하다.
+   */
+  const { names: patientNames } = usePatientNames(
+    reception?.patientId ? [reception.patientId] : [],
+  );
+
   const treatTypes = useCommonCodeOptions("RCPT_TYPE_CD");
   const imageItems = useCommonCodeOptions("IMG_ITEM_CD");
 
@@ -69,7 +78,8 @@ export default function ImageReceptionDetail() {
     ["오더번호", reception.imageOrderNo],
     ["진료구분", toCodeLabel(treatTypes.options, reception.treatTypeCode)],
     ["긴급여부", reception.urgencyYn === "Y" ? "긴급" : "일반"],
-    ["환자번호", reception.patientNo],
+    // 환자번호는 화면에서 쓰지 않기로 해서 이름만 둔다. (2026-08-25)
+    ["환자명", patientNames[reception.patientId] || "미상"],
     ["처방의번호", reception.physicianNo || "-"],
     ["촬영항목", items || "-"],
     ["접수일시", formatDateTime(reception.receivedAt)],

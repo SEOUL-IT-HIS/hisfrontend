@@ -22,7 +22,6 @@ export type PatientRegisterRequest = {
   birthDate: string;
   residentRegNo: string;
   genderCd: GenderCd;
-  statusCd: PatientStatus;
   tempPatientYn: Yn;
 };
 

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, DataTable } from "@/components/common";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import type { DataTableColumn } from "@/components/common";
 import {
   fetchImageReceptionsRequest,
@@ -35,6 +36,8 @@ export default function ImageReceptionListForm() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const receptions = useSelector(selectImageReceptions);
+  // 목록에 보이는 환자 이름을 한 번에 불러온다. (환자번호를 화면에서 뺀 대체 표시)
+  const { names: patientNames } = usePatientNames(receptions.map((r) => r.patientId));
   const loading = useSelector(selectImageReceptionsLoading);
   const error = useSelector(selectImageReceptionsError);
 
@@ -57,7 +60,12 @@ export default function ImageReceptionListForm() {
       render: (r) => <span className="font-semibold text-slate-700">{r.receptionNo}</span>,
     },
     { key: "imageOrderNo", header: "오더번호", render: (r) => r.imageOrderNo },
-    { key: "patientNo", header: "환자번호", render: (r) => r.patientNo },
+    // 환자번호는 화면에서 쓰지 않기로 해서 이름으로 대체했다. (2026-08-25)
+    {
+      key: "patientName",
+      header: "환자",
+      render: (r) => patientNames[r.patientId] ?? "미상",
+    },
     {
       key: "scheduledAt",
       header: "촬영 예정일시",

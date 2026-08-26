@@ -5,11 +5,14 @@
  * 상태 변경(취소·진행상태·시작·종료)은 일부 필드만 바꾸므로 PATCH 를 쓴다(§21.8).</p>
  */
 import apiClient from "@/lib/axios";
-import type { ApiResponse } from "@/features/surgery/types";
+import type { ApiResponse, PageResponse } from "@/features/surgery/types";
 import type {
   CancelSurgeryRequest,
   Surgery,
+  AssignFieldRequest,
   SurgeryListParams,
+  SurgerySearchParams,
+  SurgeryStatusHistory,
   UpdateProgressRequest,
   UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
@@ -24,6 +27,59 @@ export async function getSurgerySchedules(
     params,
   });
   return data.data ?? [];
+}
+
+/**
+ * 조건으로 수술을 검색한다. (SL2-314 기록지 조회 / SL2-334 간호기록 조회)
+ *
+ * <p>{@code /assignments} 를 쓴다 — 목록 조회({@code SCHEDULE_PATH})는 날짜 하나만 받고
+ * 페이징도 없어서 검색 화면에 맞지 않는다.</p>
+ */
+export async function searchSurgeries(
+  params?: SurgerySearchParams,
+): Promise<PageResponse<Surgery>> {
+  const { data } = await apiClient.get<ApiResponse<PageResponse<Surgery>>>(
+    `${SCHEDULE_PATH}/assignments`,
+    { params },
+  );
+  return data.data;
+}
+
+/**
+ * 상태변경 이력을 조회한다. (SL2-282)
+ *
+ * @param type STATUS(큰 상태 전이) / PROGRESS(당일 진행단계). 비우면 전체
+ */
+export async function getSurgeryHistory(
+  surgeryId: string,
+  type?: string,
+): Promise<SurgeryStatusHistory[]> {
+  const { data } = await apiClient.get<ApiResponse<SurgeryStatusHistory[]>>(
+    `${SCHEDULE_PATH}/${surgeryId}/history`,
+    { params: type ? { type } : undefined },
+  );
+  return data.data ?? [];
+}
+
+/**
+ * 개별 배정 (SL2-13 집도의 / SL2-15 수술실 / SL2-43 마취의 / SL2-63 간호사)
+ *
+ * <p>백엔드가 넷 다 같은 {@code AssignmentRequest} 를 받고 자기 필드만 읽는다.
+ * 그래서 한 함수로 묶고 어느 항목인지는 경로로 구분한다.</p>
+ *
+ * <p><b>값을 비워 보내면 해제</b>다(SL2-166). 다만 집도의는 해제할 수 없어
+ * 빈 값을 보내면 400 이 온다 — 수술에 집도의가 없는 상태는 성립하지 않는다.</p>
+ */
+export async function assignSurgeryField(
+  surgeryId: string,
+  field: "room" | "surgeon" | "anesthesiologist" | "nurse",
+  request: AssignFieldRequest,
+): Promise<Surgery> {
+  const { data } = await apiClient.patch<ApiResponse<Surgery>>(
+    `${SCHEDULE_PATH}/${surgeryId}/${field}`,
+    request,
+  );
+  return data.data;
 }
 
 /** 금일 수술 현황을 조회한다. (SL2-40 모니터링) */

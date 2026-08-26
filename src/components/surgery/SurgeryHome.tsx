@@ -106,11 +106,6 @@ export default function SurgeryHome() {
           </Link>
         ))}
       </div>
-
-      <p className="text-xs text-slate-500">
-        수술 요청은 진료·응급실이 올립니다. 수술관리는 요청을 배정하고 수술 전후
-        기록을 관리합니다.
-      </p>
     </div>
   );
 }
