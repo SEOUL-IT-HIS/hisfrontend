@@ -9,8 +9,14 @@ import ScheduleList from "@/components/surgery/schedule/ScheduleList";
  * 들어온 요청을 배정하고 진행을 관리하는 것까지가 수술의 몫이다.</p>
  */
 
+/**
+ * 수술 상태 흐름.
+ *
+ * <p><b>요청접수(00)가 빠진 이유</b>(2026-08-13) — 요청 단계는 SURGERY_ORDER 로 옮겼다.
+ * 수술은 오더가 배정될 때 비로소 만들어지므로 예약(01)에서 시작한다. 화면에 00 을
+ * 남겨두면 있지도 않은 상태를 사용자가 기다리게 된다.</p>
+ */
 const FLOW = [
-  { code: "00", label: "요청접수", desc: "진료·응급실이 요청" },
   { code: "01", label: "예약", desc: "수술실 배정 완료" },
   { code: "02", label: "진행중", desc: "수술 시작" },
   { code: "03", label: "완료", desc: "수술 종료" },
@@ -41,7 +47,7 @@ export default function Page() {
         ))}
         <span className="ml-1 rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-700">
           <b>04</b> 취소
-          <span className="ml-1 text-slate-500">· 요청접수·예약에서만</span>
+          <span className="ml-1 text-slate-500">· 예약 상태에서만</span>
         </span>
       </div>
 
