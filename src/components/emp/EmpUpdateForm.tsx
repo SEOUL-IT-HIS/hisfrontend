@@ -38,6 +38,7 @@ type EmpUpdateFormState = {
   zipCode: string;
   address: string;
   addressDetail: string;
+  medRoleCode: string;
 };
 
 /** 필드별 인라인 검증 메시지 (EmpRegisterForm과 동일 규칙) */
@@ -51,6 +52,7 @@ type EmpUpdateFormProps = {
   emp: Emp;
   deptCodes: CommonCodeItem[];
   statusCodes: CommonCodeItem[];
+  roleCodes: CommonCodeItem[];
   onClose: () => void;
 };
 
@@ -58,6 +60,7 @@ export default function EmpUpdateForm({
   emp,
   deptCodes,
   statusCodes,
+  roleCodes,
   onClose,
 }: EmpUpdateFormProps) {
   const [form, setForm] = useState<EmpUpdateFormState>({
@@ -70,6 +73,7 @@ export default function EmpUpdateForm({
     zipCode: emp.zipCode ?? "",
     address: emp.address ?? "",
     addressDetail: emp.addressDetail ?? "",
+    medRoleCode: emp.medRoleCode ?? "",
   });
 
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -134,6 +138,7 @@ export default function EmpUpdateForm({
       zipCode: form.zipCode || undefined,
       address: form.address || undefined,
       addressDetail: form.addressDetail.trim() || undefined,
+      medRoleCode: form.medRoleCode || undefined,
     };
     dispatch(fetchEmpUpdateRequest(payload));
   };
@@ -223,18 +228,30 @@ export default function EmpUpdateForm({
           />
         </FormField>
 
-        <FormField label="부서" required htmlFor="deptCode">
-          <Select
-            id="deptCode"
-            value={form.deptCode}
-            placeholder="선택"
-            onChange={(e) => setForm({ ...form, deptCode: e.target.value })}
-            options={toCodeSelectOptions(deptCodes)}
-          />
-          {errors.deptCode && (
-            <p className="text-xs text-red-600">{errors.deptCode}</p>
-          )}
-        </FormField>
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label="부서" required htmlFor="deptCode">
+            <Select
+              id="deptCode"
+              value={form.deptCode}
+              placeholder="선택"
+              onChange={(e) => setForm({ ...form, deptCode: e.target.value })}
+              options={toCodeSelectOptions(deptCodes)}
+            />
+            {errors.deptCode && (
+              <p className="text-xs text-red-600">{errors.deptCode}</p>
+            )}
+          </FormField>
+
+          <FormField label="역할" htmlFor="medRoleCode">
+            <Select
+              id="medRoleCode"
+              value={form.medRoleCode}
+              placeholder="선택"
+              onChange={(e) => setForm({ ...form, medRoleCode: e.target.value })}
+              options={toCodeSelectOptions(roleCodes)}
+            />
+          </FormField>
+        </div>
 
         <FormField label="주소" htmlFor="zipCode">
           <div className="flex gap-2">

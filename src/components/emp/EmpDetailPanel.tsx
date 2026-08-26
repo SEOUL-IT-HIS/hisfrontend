@@ -23,6 +23,7 @@ type EmpDetailPanelProps = {
   empId: string | null;
   deptCodes: CommonCodeItem[];
   statusCodes: CommonCodeItem[];
+  roleCodes: CommonCodeItem[];
 };
 
 function formatDate(value: string | null): string {
@@ -56,6 +57,7 @@ export default function EmpDetailPanel({
   empId,
   deptCodes,
   statusCodes,
+  roleCodes,
 }: EmpDetailPanelProps) {
   const dispatch = useDispatch();
   const selectedEmp = useSelector((state: RootState) => state.emp.selectedEmp);
@@ -174,6 +176,14 @@ export default function EmpDetailPanel({
               value={toCodeLabel(statusCodes, selectedEmp.empStatus)}
             />
             <DetailField
+              label="역할"
+              value={toCodeLabel(roleCodes, selectedEmp.medRoleCode)}
+            />
+            <DetailField
+              label="생년월일"
+              value={formatDate(selectedEmp.birthDate)}
+            />
+            <DetailField
               label="입사일"
               value={formatDate(selectedEmp.hireDate)}
             />
@@ -203,6 +213,7 @@ export default function EmpDetailPanel({
             emp={selectedEmp}
             deptCodes={deptCodes}
             statusCodes={statusCodes}
+            roleCodes={roleCodes}
             onClose={() => setEditOpen(false)}
           />
         ) : null}
