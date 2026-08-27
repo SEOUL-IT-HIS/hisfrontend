@@ -20,7 +20,12 @@ const RISK_LABEL: Record<string, string> = {
   LOW: "저위험",
 };
 
-const RiskAssessmentList = () => {
+type RiskAssessmentListProps = {
+  /** 간호기록관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
+  embedded?: boolean;
+};
+
+const RiskAssessmentList = ({ embedded = false }: RiskAssessmentListProps = {}) => {
   const dispatch = useDispatch<AppDispatch>();
   const riskAssessments = useSelector(selectRiskAssessments);
   const listStatus = useSelector(selectRiskAssessmentListStatus);
@@ -42,12 +47,16 @@ const RiskAssessmentList = () => {
   }, [dispatch]);
 
   return (
-    <div className="mx-auto w-full max-w-6xl p-6">
+    <div className={embedded ? "w-full" : "mx-auto w-full max-w-6xl p-6"}>
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-slate-800">환자위험도평가 목록</h1>
-          <p className="mt-1 text-sm text-slate-500">환자별 위험도 평가 기록입니다.</p>
-        </div>
+        {embedded ? (
+          <div />
+        ) : (
+          <div>
+            <h1 className="text-lg font-semibold text-slate-800">환자위험도평가 목록</h1>
+            <p className="mt-1 text-sm text-slate-500">환자별 위험도 평가 기록입니다.</p>
+          </div>
+        )}
         <Link
           href="/inpatient/nursingrecord/riskassessment/create"
           className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"

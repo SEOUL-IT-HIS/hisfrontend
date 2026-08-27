@@ -8,7 +8,12 @@ import Link from "next/link";
 import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 
-const VitalSignList = () => {
+type VitalSignListProps = {
+  /** 간호기록관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
+  embedded?: boolean;
+};
+
+const VitalSignList = ({ embedded = false }: VitalSignListProps = {}) => {
   const dispatch = useDispatch<AppDispatch>();
   const vitalSigns = useSelector(selectVitalSigns);
   const listStatus = useSelector(selectVitalSignListStatus);
@@ -30,12 +35,16 @@ const VitalSignList = () => {
   }, [dispatch]);
 
   return (
-    <div className="mx-auto w-full max-w-6xl p-6">
+    <div className={embedded ? "w-full" : "mx-auto w-full max-w-6xl p-6"}>
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-slate-800">활력징후 목록</h1>
-          <p className="mt-1 text-sm text-slate-500">환자별 활력징후 측정 기록입니다.</p>
-        </div>
+        {embedded ? (
+          <div />
+        ) : (
+          <div>
+            <h1 className="text-lg font-semibold text-slate-800">활력징후 목록</h1>
+            <p className="mt-1 text-sm text-slate-500">환자별 활력징후 측정 기록입니다.</p>
+          </div>
+        )}
         <Link
           href="/inpatient/nursingrecord/vitalsign/create"
           className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
