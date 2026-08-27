@@ -9,7 +9,7 @@ import TodaySurgeryBoard from "@/components/surgery/schedule/TodaySurgeryBoard";
  */
 export default function Page() {
   return (
-    <div className="mx-auto w-full max-w-5xl p-6">
+    <div className="mx-auto w-full max-w-[1800px] p-6">
       <h1 className="mb-1 text-lg font-semibold text-slate-800">
         수술 현황 모니터링
       </h1>

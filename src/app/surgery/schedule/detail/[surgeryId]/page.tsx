@@ -27,7 +27,7 @@ export default async function Page({ params }: Props) {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-6">
       <PageHeader
         title="배정 상세"
-        description="수술실·집도의·마취의·간호사 배정과 진행 상태를 관리합니다."
+        description="수술실·집도의·마취의·간호사를 배정합니다. 예약 상태에서만 바꿀 수 있습니다."
       />
       <SurgeryScheduleDetail surgeryId={surgeryId} />
     </div>

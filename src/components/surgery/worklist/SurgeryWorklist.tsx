@@ -11,6 +11,7 @@ import {
   Input,
   Pagination,
   Panel,
+  Select,
   StatusBadge,
   type DataTableColumn,
 } from "@/components/common";
@@ -18,6 +19,7 @@ import AnesthesiaRecordPanel from "@/components/surgery/anesthesia/AnesthesiaRec
 import ChecklistPanel from "@/components/surgery/checklist/ChecklistPanel";
 import ConsentPanel from "@/components/surgery/consent/ConsentPanel";
 import OperativeRecordPanel from "@/components/surgery/operativeRecord/OperativeRecordPanel";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   SURGERY_STATUS,
@@ -25,11 +27,15 @@ import {
   type SurgerySearchParams,
 } from "@/features/surgery/schedule/types";
 import {
+  cancelSurgeryRequest,
+  endSurgeryRequest,
   searchSurgeriesRequest,
   selectScheduleError,
   selectScheduleLoading,
+  selectScheduleSaving,
   selectSurgerySearchParams,
   selectSurgerySearchResult,
+  startSurgeryRequest,
 } from "@/features/surgery/schedule/slice";
 
 /**
@@ -58,6 +64,21 @@ import {
  *
  * <p>기록을 쓸 대상이 아니다. 다만 지난 기록을 볼 일은 있어서 "전체"로 넘길 수 있게 뒀다.
  * 완료 건은 남긴다 — 수술기록지는 끝난 뒤에 쓰는 경우가 많다.</p>
+ *
+ * <h3>상태 전이가 여기로 왔다 (2026-08-27)</h3>
+ *
+ * <p>시작·종료·취소 버튼은 배정 상세({@code /surgery/schedule/detail})에 있었다.
+ * 8/25 에 기록 패널을 이 화면으로 넘기면서 상태 버튼만 그대로 두어 생긴 어긋남이다.
+ * 배정 화면은 <b>누가 어디서 할지</b>를 정하는 곳이고, 수술이 <b>실제로 벌어지는</b>
+ * 동안의 조작은 이 화면 몫이다.</p>
+ *
+ * <p>붙여 놓고 보니 순서도 맞는다 — 동의서가 없으면 시작이 막히는데(SL2-217),
+ * 그 동의서를 쓰는 탭이 바로 옆에 있다. 예전에는 동의서를 쓰고 배정 화면으로 건너가
+ * 시작을 눌러야 했다.</p>
+ *
+ * <p><b>취소도 함께 옮겼다.</b> 취소는 예약 상태에서만 되고 오더까지 03 으로 되돌리므로
+ * 배정 쪽 판단으로 볼 여지가 있었다. 다만 상태를 바꾸는 조작이 두 화면에 흩어지면
+ * "어디서 하는 거였지"를 다시 묻게 된다. 상태는 전부 여기, 배정은 전부 저기로 갈랐다.</p>
  */
 
 type Tab = "consent" | "checklist" | "anesthesia" | "record";
@@ -97,12 +118,16 @@ export default function SurgeryWorklist() {
   const result = useSelector(selectSurgerySearchResult);
   const lastParams = useSelector(selectSurgerySearchParams);
   const loading = useSelector(selectScheduleLoading);
+  const saving = useSelector(selectScheduleSaving);
   const error = useSelector(selectScheduleError);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("consent");
   const [showAll, setShowAll] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [cancelReasonCd, setCancelReasonCd] = useState("");
+
+  const { options: cancelOptions } = useCommonCodeOptions("SURGERY_CANCEL_CD");
 
   // 공통 Pagination 은 1-base, 백엔드 Pageable 은 0-base 다(§14.2 와 무관한 라이브러리 차이).
   const [page, setPage] = useState(1);
@@ -153,6 +178,9 @@ export default function SurgeryWorklist() {
     setSelectedId(null);
   }
 
+  const isScheduled = selected?.statusCd === SURGERY_STATUS.SCHEDULED;
+  const isInProgress = selected?.statusCd === SURGERY_STATUS.IN_PROGRESS;
+
   const columns: DataTableColumn<Surgery>[] = [
     {
       key: "surgeryDt",
@@ -166,7 +194,12 @@ export default function SurgeryWorklist() {
       render: (s) => (
         <button
           type="button"
-          onClick={() => setSelectedId(s.surgeryId)}
+          onClick={() => {
+            setSelectedId(s.surgeryId);
+            // 고른 수술이 바뀌면 사유를 비운다 — 안 그러면 A 에 고른 취소 사유가
+            // B 를 골랐을 때 남아 있어, 잘못 눌러도 버튼이 열려 있다
+            setCancelReasonCd("");
+          }}
           className={
             s.surgeryId === selectedId
               ? "text-left font-medium text-sky-600 underline underline-offset-2"
@@ -310,15 +343,73 @@ export default function SurgeryWorklist() {
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-4">
-            <div>
-              <p className="text-sm font-medium text-slate-800">
-                {selected.surgeryName ?? "수술명 미입력"}
-              </p>
-              <p className="text-xs text-slate-500">
-                환자 {selected.patientId} · {selected.surgeryDt}
-                {selected.roomCode ? ` · ${selected.roomCode}` : ""}
-              </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-slate-800">
+                  {selected.surgeryName ?? "수술명 미입력"}
+                  <span className="ml-2 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-normal text-slate-700">
+                    {STATUS_LABEL[selected.statusCd ?? ""] ?? selected.statusCd}
+                  </span>
+                </p>
+                <p className="text-xs text-slate-500">
+                  환자 {selected.patientId} · {selected.surgeryDt}
+                  {selected.roomCode ? ` · ${selected.roomCode}` : ""}
+                </p>
+              </div>
+
+              {/*
+                상태 전이 (2026-08-27 배정 상세에서 이관)
+                예약 → 진행중 → 완료 한 방향으로만 간다. 취소는 예약에서만.
+                백엔드가 같은 규칙으로 막지만(400), 눌러도 오류만 뜨는 버튼을
+                열어두면 사용자는 왜 안 되는지 모른 채 헤맨다.
+              */}
+              <div className="flex shrink-0 items-center gap-2">
+                <Button
+                  disabled={saving || !isScheduled}
+                  onClick={() => dispatch(startSurgeryRequest(selected.surgeryId))}
+                >
+                  수술 시작
+                </Button>
+                <Button
+                  disabled={saving || !isInProgress}
+                  onClick={() => dispatch(endSurgeryRequest(selected.surgeryId))}
+                >
+                  수술 종료
+                </Button>
+
+                {/*
+                  취소 사유는 필수다(SL2-178) — 고르지 않으면 버튼이 잠긴다.
+                  백엔드 @NotBlank 가 400 으로 막으므로 화면에서 먼저 거른다.
+                */}
+                {/* Select 자체가 w-full 이라 폭은 감싸는 쪽에서 준다 */}
+                <div className="w-36">
+                  <Select
+                    aria-label="취소 사유"
+                    placeholder="취소 사유"
+                    options={cancelOptions}
+                    value={cancelReasonCd}
+                    disabled={saving || !isScheduled}
+                    onChange={(e) => setCancelReasonCd(e.target.value)}
+                  />
+                </div>
+                <Button
+                  disabled={saving || !isScheduled || !cancelReasonCd}
+                  onClick={() =>
+                    dispatch(
+                      cancelSurgeryRequest(selected.surgeryId, { cancelReasonCd }),
+                    )
+                  }
+                >
+                  수술 취소
+                </Button>
+              </div>
             </div>
+
+            {isScheduled && cancelOptions.length === 0 ? (
+              <p className="text-xs text-amber-600">
+                취소 사유 코드를 불러오지 못했습니다. admin 서비스를 확인하세요.
+              </p>
+            ) : null}
 
             <div className="flex gap-2">
               {TABS.map((t) => (
