@@ -280,7 +280,7 @@ export default function SurgeryWorklist() {
           emptyMessage={
             showAll
               ? "조건에 맞는 수술이 없습니다."
-              : "기록을 작성할 수술이 없습니다. 요청 배정이 끝나야 목록에 나타납니다."
+              : "기록을 작성할 수술이 없습니다. 수술 요청을 배정해야 목록에 나타납니다."
           }
           minWidthClassName="min-w-[560px]"
         />

@@ -44,9 +44,11 @@ import { ORDER_STATUS, type SurgeryOrder } from "@/features/surgery/order/types"
  *
  * <p><b>반려 사유(SL2-227)</b> — 버튼을 누르면 바로 반려하지 않고 사유를 고르는 창을 띄운다.
  * 되돌릴 수 없는 조작이라 한 번 더 확인받는 편이 낫고, 사유를 남겨야 나중에 "왜 반려됐나"에
- * 답할 수 있다. 사유 코드 그룹(SURGERY_ORDER_REJECT_CD)이 admin 에 아직 없으면 선택지가
- * 비어 보이는데, 그때도 사유 없이 반려할 수 있게 열어둔다 — 코드 등록 전이라고 업무를
- * 막을 수는 없고, 백엔드도 같은 판단으로 그룹이 없으면 검증을 건너뛴다.</p>
+ * 답할 수 있다.</p>
+ *
+ * <p><b>사유는 필수다</b>(2026-08-26). 예전에는 선택이었는데, 사유 코드 그룹
+ * (SURGERY_ORDER_REJECT_CD)이 admin 에 없어 필수로 두면 고를 값이 없었기 때문이다.
+ * 2026-08-25 에 등록해 그 이유가 사라졌고, 수술 취소(SL2-178)와 같은 판단으로 맞췄다.</p>
  */
 export default function SurgeryRequestList() {
   const dispatch = useDispatch<AppDispatch>();
@@ -74,16 +76,12 @@ export default function SurgeryRequestList() {
   }
 
   function confirmReject() {
-    if (!rejectTarget) {
+    // 사유는 필수다(2026-08-26) — 백엔드 @NotBlank 가 400 으로 막으므로 화면에서 먼저 거른다.
+    //   버튼도 잠가 두지만, 폼 제출(Enter)로도 들어올 수 있어 여기서 한 번 더 본다.
+    if (!rejectTarget || !reasonCd) {
       return;
     }
-    dispatch(
-      rejectOrderRequest(
-        rejectTarget.orderId,
-        // 빈 값이면 아예 보내지 않는다 — 백엔드가 본문 없는 호출을 허용한다
-        reasonCd ? { rejectReasonCd: reasonCd } : undefined,
-      ),
-    );
+    dispatch(rejectOrderRequest(rejectTarget.orderId, { rejectReasonCd: reasonCd }));
     closeReject();
   }
 
@@ -172,19 +170,25 @@ export default function SurgeryRequestList() {
           <FormField
             label="반려 사유"
             htmlFor="rejectReasonCd"
+            required
             hint={
               reasonOptions.length === 0
-                ? "사유 코드가 아직 등록되지 않아 사유 없이 반려됩니다."
-                : "선택하지 않으면 사유 없이 반려됩니다."
+                ? "사유 코드를 불러오지 못했습니다. admin 서비스를 확인하세요."
+                : undefined
             }
           >
+            {/*
+              코드를 못 불러와도 셀렉트를 잠그지 않는다 — 예전에는 잠갔는데, 그러면
+              admin 이 잠깐 죽었을 때 반려 업무 자체가 멈춘다. 대신 아래 버튼이
+              값 없이는 안 눌리므로 잘못 보내지는 일은 없다.
+            */}
             <Select
               id="rejectReasonCd"
-              placeholder="사유 선택 안 함"
+              placeholder="선택"
               options={reasonOptions}
               value={reasonCd}
               onChange={(e) => setReasonCd(e.target.value)}
-              disabled={saving || reasonOptions.length === 0}
+              disabled={saving}
             />
           </FormField>
 
@@ -192,6 +196,7 @@ export default function SurgeryRequestList() {
             onCancel={closeReject}
             cancelLabel="닫기"
             submitLabel="반려"
+            submitDisabled={!reasonCd}
             loading={saving}
             loadingLabel="반려 중…"
           />
