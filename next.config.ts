@@ -102,12 +102,21 @@ const nextConfig: NextConfig = {
       },
       // ---------- billing-service (구체 경로 먼저) ----------
       {
-        source: "/api/billing",     
+        source: "/api/billing",
         destination: `${billingApiOrigin}/api/billing`,
       },
       {
         source: "/api/billing/:path*",
         destination: `${billingApiOrigin}/api/billing/:path*`,
+      },
+      // ----------- reception-service (구체 경로 먼저) ----------
+      {
+        source: "/api/reception",
+        destination: `${receptionApiOrigin}/api/reception`,
+      },
+      {
+        source: "/api/reception/:path*",
+        destination: `${receptionApiOrigin}/api/reception/:path*`,
       },
       // ---------- inpatient-service (구체 경로 먼저) ----------
       {

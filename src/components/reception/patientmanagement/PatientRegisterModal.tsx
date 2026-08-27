@@ -19,7 +19,6 @@ import type {
   GenderCd,
   Patient,
   PatientRegisterRequest,
-  PatientStatus,
 } from "@/features/patient/type/patientType";
 import type { AppDispatch, RootState } from "@/store/store";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
@@ -31,11 +30,6 @@ import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeO
  *   등록 성공 후 동작(페이지 이동 대신 콜백 호출)만 다르게 구현한 별도 컴포넌트다.
  */
 
-const patientStatusOptions = [
-  { value: "ACTIVE", label: "활성(ACTIVE)" },
-  { value: "INACTIVE", label: "비활성(INACTIVE)" },
-];
-
 type PatientRegisterFormState = Omit<PatientRegisterRequest, "genderCd"> & {
   genderCd: GenderCd | "";
 };
@@ -45,7 +39,6 @@ const initialForm: PatientRegisterFormState = {
   birthDate: "",
   residentRegNo: "",
   genderCd: "",
-  statusCd: "ACTIVE",
   tempPatientYn: "N",
 };
 
@@ -134,8 +127,7 @@ export default function PatientRegisterModal({
       : !form.patientName.trim() ||
           !form.residentRegNo ||
           !form.birthDate ||
-          !form.genderCd ||
-          !form.statusCd
+          !form.genderCd
         ? "필수 항목을 모두 입력해 주세요."
         : form.patientName.trim().length < 2 ||
             form.patientName.trim().length > 100
@@ -226,8 +218,7 @@ export default function PatientRegisterModal({
       !form.patientName.trim() ||
       !form.birthDate ||
       !form.residentRegNo.trim() ||
-      !form.genderCd ||
-      !form.statusCd.trim()
+      !form.genderCd
     ) {
       setValidationError("모든 필수 항목을 입력해 주세요.");
       return;
@@ -257,7 +248,6 @@ export default function PatientRegisterModal({
         birthDate: form.birthDate,
         residentRegNo: form.residentRegNo.trim(),
         genderCd: form.genderCd as GenderCd,
-        statusCd: form.statusCd,
         tempPatientYn: form.tempPatientYn,
       }),
     );
@@ -434,18 +424,6 @@ export default function PatientRegisterModal({
             />
             임시환자로 등록
           </label>
-        </FormField>
-
-        <FormField label="환자상태관리코드" required htmlFor="modalStatusCd">
-          <Select
-            id="modalStatusCd"
-            value={form.statusCd}
-            options={patientStatusOptions}
-            onChange={(event) =>
-              updateForm("statusCd", event.target.value as PatientStatus)
-            }
-            disabled={registerLoading}
-          />
         </FormField>
 
         {registrationDisabledReason ? (
