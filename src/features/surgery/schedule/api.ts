@@ -116,11 +116,12 @@ export async function updateSurgerySchedule(
 /**
  * 수술 스케줄을 취소한다. (SL2-33)
  *
- * <p>행을 지우지 않고 취소 상태로 전이시킨다(§21.6). 사유 코드는 선택이다.</p>
+ * <p>행을 지우지 않고 취소 상태로 전이시킨다(§21.6). <b>사유 코드는 필수</b>다
+ * (SL2-178) — 비워 보내면 백엔드 @NotBlank 가 400 으로 막는다.</p>
  */
 export async function cancelSurgerySchedule(
   surgeryId: string,
-  request?: CancelSurgeryRequest,
+  request: CancelSurgeryRequest,
 ): Promise<Surgery> {
   const { data } = await apiClient.patch<ApiResponse<Surgery>>(
     `${SCHEDULE_PATH}/${surgeryId}/cancel`,

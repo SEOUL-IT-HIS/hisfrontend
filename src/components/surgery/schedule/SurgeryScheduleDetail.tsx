@@ -6,7 +6,6 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import {
   Alert,
-  Button,
   DataTable,
   FormField,
   Panel,
@@ -14,7 +13,6 @@ import {
   StatusBadge,
   type DataTableColumn,
 } from "@/components/common";
-import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { fetchEmpApi } from "@/features/emp/api/empApi";
 import type { Emp } from "@/features/emp/types/empTypes";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
@@ -28,8 +26,6 @@ import {
 } from "@/features/surgery/schedule/types";
 import {
   assignFieldRequest,
-  cancelSurgeryRequest,
-  endSurgeryRequest,
   fetchHistoryRequest,
   fetchSurgeryRequest,
   selectScheduleError,
@@ -37,7 +33,6 @@ import {
   selectScheduleSaving,
   selectSelectedSurgery,
   selectSurgeryHistory,
-  startSurgeryRequest,
 } from "@/features/surgery/schedule/slice";
 
 /**
@@ -55,6 +50,15 @@ import {
  * 눌렀는데 기록 작성 화면이 나오면 기대와 어긋나고, 무엇보다 {@code /surgery/worklist} 가
  * 같은 패널 셋을 이미 보여주고 있었다. 기록은 워크리스트가, 배정은 여기가 맡는다.
  * (2026-08-25)</p>
+ *
+ * <h3>상태 전이도 마저 넘겼다 (2026-08-27)</h3>
+ *
+ * <p>8/25 에 기록만 옮기고 <b>시작·종료·취소 버튼은 남겨 두었다.</b> 그래서 동의서를
+ * 워크리스트에서 쓰고, 시작하려면 이 화면으로 건너와야 했다. 반쪽만 옮긴 셈이다.</p>
+ *
+ * <p>이제 이 화면은 <b>누가·어디서·언제</b> 할지만 정한다. 수술이 실제로 벌어지는 동안의
+ * 조작은 전부 수술 업무 화면 몫이다. 상태는 여기서 <b>읽기만</b> 한다 — 배정을 고칠 수
+ * 있는지가 상태에 달려 있어(예약에서만 가능) 안 보여줄 수는 없다.</p>
  *
  * <h3>고르면 바로 저장한다</h3>
  *
@@ -97,8 +101,6 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
   const saving = useSelector(selectScheduleSaving);
   const error = useSelector(selectScheduleError);
 
-  const { options: cancelOptions } = useCommonCodeOptions("SURGERY_CANCEL_CD");
-
   // 배정 입력값. 조회 결과가 오면 한 번만 채운다(아래 boundId 참고)
   const [form, setForm] = useState({
     roomCode: "",
@@ -107,7 +109,6 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
     nurseId: "",
   });
   const [boundId, setBoundId] = useState<string | null>(null);
-  const [cancelReasonCd, setCancelReasonCd] = useState("");
 
   // 집도의·마취의·간호사 선택 목록 — admin-service 직원 조회
   //   수술 DB 에는 이름이 없고 식별자만 있다(§21.9). 사용자에게 UUID 를 타이핑하게
@@ -351,62 +352,6 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
         </div>
       </Panel>
 
-      {/* ---- 상태 전이 ---- */}
-      <Panel className="p-5">
-        <h2 className="mb-1 text-sm font-medium text-slate-700">상태</h2>
-        <p className="mb-4 text-xs text-slate-500">
-          예약 → 진행중 → 완료 순으로만 넘어갑니다. 취소는 예약 상태에서만 됩니다.
-        </p>
-
-        <div className="flex flex-wrap items-end gap-3">
-          <Button
-            disabled={saving || !isScheduled}
-            onClick={() => dispatch(startSurgeryRequest(surgeryId))}
-          >
-            수술 시작
-          </Button>
-          <Button
-            disabled={saving || !isInProgress}
-            onClick={() => dispatch(endSurgeryRequest(surgeryId))}
-          >
-            수술 종료
-          </Button>
-
-          <div className="flex items-end gap-2">
-            <FormField
-              label="취소 사유"
-              htmlFor="cancel-reason"
-              hint={
-                cancelOptions.length === 0
-                  ? "사유 코드가 아직 등록되지 않았습니다."
-                  : undefined
-              }
-            >
-              <Select
-                id="cancel-reason"
-                placeholder="선택 안 함"
-                options={cancelOptions}
-                value={cancelReasonCd}
-                disabled={saving || !isScheduled}
-                onChange={(e) => setCancelReasonCd(e.target.value)}
-              />
-            </FormField>
-            <Button
-              disabled={saving || !isScheduled}
-              onClick={() =>
-                dispatch(
-                  cancelSurgeryRequest(surgeryId, {
-                    cancelReasonCd: cancelReasonCd || undefined,
-                  }),
-                )
-              }
-            >
-              수술 취소
-            </Button>
-          </div>
-        </div>
-      </Panel>
-
       {/* ---- 상태변경 이력 ---- */}
       <div>
         <h2 className="mb-3 text-sm font-medium text-slate-700">
@@ -422,13 +367,13 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
         />
       </div>
 
-      {/* 기록은 워크리스트가 맡는다 — 여기서는 길만 열어둔다 */}
+      {/* 기록도 상태 전이도 워크리스트가 맡는다 — 여기서는 길만 열어둔다 */}
       <p className="text-xs text-slate-500">
-        동의서·체크리스트·마취기록·수술기록지는{" "}
+        수술 시작·종료·취소와 동의서·체크리스트·마취기록·수술기록지는{" "}
         <Link href="/surgery/worklist" className="text-sky-600 underline">
           수술 업무
         </Link>{" "}
-        화면에서 작성합니다.
+        화면에서 처리합니다.
       </p>
     </div>
   );

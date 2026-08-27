@@ -15,13 +15,10 @@ import {
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import type { Surgery } from "@/features/surgery/schedule/types";
 import {
-  endSurgeryRequest,
   fetchTodaySurgeriesRequest,
   selectScheduleError,
   selectScheduleLoading,
-  selectScheduleSaving,
   selectTodaySurgeries,
-  startSurgeryRequest,
 } from "@/features/surgery/schedule/slice";
 import { SURGERY_STATUS } from "@/features/surgery/schedule/types";
 
@@ -31,9 +28,10 @@ import { SURGERY_STATUS } from "@/features/surgery/schedule/types";
  * <p>백엔드 {@code GET /api/surgery/schedule/today} 가 오늘 날짜의 수술을 돌려준다.
  * 상태별로 나눠 보여줘, 지금 무엇이 밀려 있고 무엇이 진행 중인지 한눈에 보이게 한다.</p>
  *
- * <p>여기서 시작·종료 버튼을 두는 이유 — 수술 당일에 가장 자주 하는 조작이라
- * 상세 화면까지 들어가지 않고 바로 누를 수 있어야 한다. 상태 전이 규칙은
- * 백엔드가 검증하므로 잘못된 순서로 눌러도 안전하다(SL2-281 전이 검증).</p>
+ * <p><b>보기 전용이다</b>(2026-08-26). 예전에는 시작·종료 버튼을 여기 뒀는데 —
+ * "당일에 가장 자주 하는 조작이라 상세까지 들어가지 않아도 되게" 한다는 이유였다 —
+ * 배정 상세도 같은 전이를 갖고 있어 한 동작이 두 화면에 흩어져 있었다.
+ * 상태를 바꾸는 곳은 그 수술의 상세 하나로 모았다.</p>
  *
  * <p>표·패널·버튼·배지는 components/common 을 쓴다(§12.1).</p>
  *
@@ -46,7 +44,6 @@ export default function TodaySurgeryBoard() {
   const dispatch = useDispatch<AppDispatch>();
   const surgeries = useSelector(selectTodaySurgeries);
   const loading = useSelector(selectScheduleLoading);
-  const saving = useSelector(selectScheduleSaving);
   const error = useSelector(selectScheduleError);
 
   useEffect(() => {
@@ -83,45 +80,24 @@ export default function TodaySurgeryBoard() {
     { key: "actualStartDt", header: "시작", render: (s) => s.actualStartDt ?? "-" },
     { key: "actualEndDt", header: "종료", render: (s) => s.actualEndDt ?? "-" },
     {
-      key: "actions",
-      header: "조작",
-      // 예약(01)이면 시작, 진행중(02)이면 종료만 노출한다
-      render: (s) => {
-        if (s.statusCd === SURGERY_STATUS.SCHEDULED) {
-          return (
-            <Button
-              disabled={saving}
-              className="h-8 px-3 text-xs"
-              onClick={() => dispatch(startSurgeryRequest(s.surgeryId))}
-            >
-              시작
-            </Button>
-          );
-        }
-        if (s.statusCd === SURGERY_STATUS.IN_PROGRESS) {
-          return (
-            <Button
-              variant="secondary"
-              disabled={saving}
-              className="h-8 px-3 text-xs"
-              onClick={() => dispatch(endSurgeryRequest(s.surgeryId))}
-            >
-              종료
-            </Button>
-          );
-        }
-        return <span className="text-xs text-slate-400">-</span>;
-      },
-    },
-    {
       key: "detail",
-      header: "상세",
+      header: "처리",
+      /*
+        상태를 바꾸는 버튼(시작·종료)을 걷어냈다(2026-08-26).
+
+        모니터링은 "지금 수술실이 어떻게 돌아가는지 보는" 화면인데 상태 전이까지
+        갖고 있어서 배정 상세와 같은 일을 두 곳에서 하고 있었다. 둘 다
+        startSurgeryRequest·endSurgeryRequest 를 dispatch 했다.
+
+        더 곤란한 것은 SL2-217 이후다 — 동의서가 없으면 시작이 400 으로 막히는데,
+        여기서 누르면 왜 막혔는지 알 수 없다. 동의서는 수술 업무 화면에 있다.
+        상태를 바꿀 곳은 그 수술의 상세 한 곳으로 모은다.
+      */
       render: (s) => (
-        <Link
-          href={`/surgery/schedule/detail/${s.surgeryId}`}
-          className="text-sky-600 underline"
-        >
-          상세
+        <Link href={`/surgery/schedule/detail/${s.surgeryId}`}>
+          <Button variant="secondary" className="h-8 px-3 text-xs">
+            상세 · 처리
+          </Button>
         </Link>
       ),
     },
