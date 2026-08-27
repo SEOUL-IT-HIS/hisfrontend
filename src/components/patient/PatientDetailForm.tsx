@@ -399,67 +399,67 @@ export default function PatientDetailForm({
                 <div className="sm:col-span-2 lg:col-span-3">
                   <FormField label="주소" htmlFor="zipCode">
                     <div className="space-y-3">
-                    <div className="flex gap-2">
+                      <div className="flex gap-2">
+                        <Input
+                          id="zipCode"
+                          value={zipCode}
+                          onChange={(event) => {
+                            setZipCode(
+                              event.target.value
+                                .replace(/[^0-9]/g, "")
+                                .slice(0, 5),
+                            );
+                            setValidationError(null);
+                          }}
+                          disabled={updateLoading}
+                          inputMode="numeric"
+                          maxLength={5}
+                          placeholder="우편번호"
+                          autoComplete="postal-code"
+                        />
+                        <PostcodeSearchButton
+                          disabled={updateLoading}
+                          onSelect={(result) => {
+                            setZipCode(result.zipCode);
+                            setAddress(result.address);
+                            setValidationError(null);
+                            window.setTimeout(
+                              () =>
+                                document
+                                  .getElementById("addressDetail")
+                                  ?.focus(),
+                              0,
+                            );
+                          }}
+                        />
+                      </div>
                       <Input
-                        id="zipCode"
-                        value={zipCode}
+                        id="address"
+                        value={address}
                         onChange={(event) => {
-                          setZipCode(
-                            event.target.value
-                              .replace(/[^0-9]/g, "")
-                              .slice(0, 5),
-                          );
+                          setAddress(event.target.value);
                           setValidationError(null);
                         }}
                         disabled={updateLoading}
-                        inputMode="numeric"
-                        maxLength={5}
-                        placeholder="우편번호"
-                        autoComplete="postal-code"
+                        maxLength={300}
+                        placeholder="기본주소"
+                        autoComplete="street-address"
                       />
-                      <PostcodeSearchButton
-                        disabled={updateLoading}
-                        onSelect={(result) => {
-                          setZipCode(result.zipCode);
-                          setAddress(result.address);
+                      <Input
+                        id="addressDetail"
+                        value={addressDetail}
+                        onChange={(event) => {
+                          setAddressDetail(event.target.value);
                           setValidationError(null);
-                          window.setTimeout(
-                            () =>
-                              document
-                                .getElementById("addressDetail")
-                                ?.focus(),
-                            0,
-                          );
                         }}
+                        disabled={updateLoading}
+                        maxLength={300}
+                        placeholder="상세주소를 입력하세요 (예: 101동 202호)"
+                        autoComplete="address-line2"
                       />
-                    </div>
-                    <Input
-                      id="address"
-                      value={address}
-                      onChange={(event) => {
-                        setAddress(event.target.value);
-                        setValidationError(null);
-                      }}
-                      disabled={updateLoading}
-                      maxLength={300}
-                      placeholder="기본주소"
-                      autoComplete="street-address"
-                    />
-                    <Input
-                      id="addressDetail"
-                      value={addressDetail}
-                      onChange={(event) => {
-                        setAddressDetail(event.target.value);
-                        setValidationError(null);
-                      }}
-                      disabled={updateLoading}
-                      maxLength={300}
-                      placeholder="상세주소를 입력하세요 (예: 101동 202호)"
-                      autoComplete="address-line2"
-                    />
-                    <p className="text-xs text-slate-400">
-                      우편번호는 숫자 5자리로 입력해 주세요.
-                    </p>
+                      <p className="text-xs text-slate-400">
+                        우편번호는 숫자 5자리로 입력해 주세요.
+                      </p>
                     </div>
                   </FormField>
                 </div>
