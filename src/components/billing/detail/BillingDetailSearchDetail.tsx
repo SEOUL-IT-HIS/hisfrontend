@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { fetchBillingDetailRequest } from "@/features/billing/searchBillingDetail/slice";
-import PaymentRequest from "@/features/billing/payment/PaymentRequest";
+import PaymentRequest from "@/components/billing/payment/PaymentRequest";
 import type { AppDispatch, RootState } from "@/store/store";
 import { Alert, Button, Panel } from "@/components/common";
 
