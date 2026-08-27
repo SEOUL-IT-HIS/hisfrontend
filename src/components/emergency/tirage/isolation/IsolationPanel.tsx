@@ -154,7 +154,7 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
               />
             </FormField>
             <FormField label="결정자ID">
-              <Input name="decidedById" value={form.decidedById} onChange={handleChange} disabled={submitting} maxLength={36} className="max-w-[200px]" />
+              <Input name="decidedById" value={form.decidedById} onChange={handleChange} disabled={submitting} maxLength={36} />
             </FormField>
           </div>
           <div className="mt-3 flex justify-end">

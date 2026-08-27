@@ -180,10 +180,11 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
       ) : (
         <>
           {items.length > 0 ? (
+            // 백엔드가 조회 순서를 보장하지 않으므로(ORDER BY 없음), 프론트에서 최신순으로 직접 정렬한다.
             <ul className="mb-4 space-y-2">
               {items
                 .slice()
-                .reverse()
+                .sort((a, b) => new Date(b.screenedAt).getTime() - new Date(a.screenedAt).getTime())
                 .map((item) => (
                   <li key={item.id} className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm">
                     <span className="font-medium text-slate-700">
@@ -223,7 +224,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
               />
             </FormField>
             <FormField label={form.screenType ? "점수 (0~3)" : "점수"}>
-              <Input type="number" name="score" min={0} max={3} value={form.score} onChange={handleChange} disabled={submitting} className="max-w-[120px]" />
+              <Input type="number" name="score" min={0} max={3} value={form.score} onChange={handleChange} disabled={submitting} />
             </FormField>
             <FormField label="판정 결과">
               <Select
@@ -236,7 +237,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
               />
             </FormField>
             <FormField label="시행자ID">
-              <Input name="screenedById" value={form.screenedById} onChange={handleChange} disabled={submitting} maxLength={36} className="max-w-[200px]" />
+              <Input name="screenedById" value={form.screenedById} onChange={handleChange} disabled={submitting} maxLength={36} />
             </FormField>
           </div>
 

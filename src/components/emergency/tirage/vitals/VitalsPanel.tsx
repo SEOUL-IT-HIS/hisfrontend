@@ -144,25 +144,25 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <FormField label="수축기혈압">
-              <Input type="number" name="systolicBp" value={form.systolicBp} onChange={handleChange} disabled={submitting} className="max-w-[120px]" />
+              <Input type="number" name="systolicBp" value={form.systolicBp} onChange={handleChange} disabled={submitting} />
             </FormField>
             <FormField label="맥박">
-              <Input type="number" name="heartRate" value={form.heartRate} onChange={handleChange} disabled={submitting} className="max-w-[120px]" />
+              <Input type="number" name="heartRate" value={form.heartRate} onChange={handleChange} disabled={submitting} />
             </FormField>
             <FormField label="호흡수">
-              <Input type="number" name="respRate" value={form.respRate} onChange={handleChange} disabled={submitting} className="max-w-[120px]" />
+              <Input type="number" name="respRate" value={form.respRate} onChange={handleChange} disabled={submitting} />
             </FormField>
             <FormField label="체온">
-              <Input type="number" step="0.1" name="temperature" value={form.temperature} onChange={handleChange} disabled={submitting} className="max-w-[120px]" />
+              <Input type="number" step="0.1" name="temperature" value={form.temperature} onChange={handleChange} disabled={submitting} />
             </FormField>
             <FormField label="SpO2">
-              <Input type="number" name="spo2" value={form.spo2} onChange={handleChange} disabled={submitting} className="max-w-[120px]" />
+              <Input type="number" name="spo2" value={form.spo2} onChange={handleChange} disabled={submitting} />
             </FormField>
             <FormField label="GCS">
-              <Input type="number" name="gcs" value={form.gcs} onChange={handleChange} disabled={submitting} className="max-w-[120px]" />
+              <Input type="number" name="gcs" value={form.gcs} onChange={handleChange} disabled={submitting} />
             </FormField>
             <FormField label="측정자ID" className="sm:col-span-3">
-              <Input name="measuredById" value={form.measuredById} onChange={handleChange} disabled={submitting} maxLength={36} className="max-w-xs" />
+              <Input name="measuredById" value={form.measuredById} onChange={handleChange} disabled={submitting} maxLength={36} />
             </FormField>
           </div>
           <div className="mt-3 flex justify-end">
