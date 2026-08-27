@@ -28,7 +28,7 @@ import {
 import { ORDER_STATUS, type SurgeryOrder } from "@/features/surgery/order/types";
 
 /**
- * 수술 요청(오더) 대기 목록 (SL2-225)
+ * 배정 대기 목록 (SL2-225)
  *
  * <p>진료(일반)와 응급실(응급)에서 올라온 <b>요청</b> 중 아직 수술실이 잡히지 않은 건이다.
  * 배정하면 수락(01)이 되어 이 목록에서 빠지고, 그때 비로소 수술이 만들어진다.</p>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import ScheduleList from "@/components/surgery/schedule/ScheduleList";
 
 /**
- * 수술 스케줄링 관리 (SL2-2)
+ * 수술 배정 관리 (SL2-2)
  * 경로: /surgery/schedule — 사이드바 메뉴가 가리키는 주소
  *
  * <p>수술 요청은 진료·응급실이 보낸다(§21.1). 이 화면에는 등록 폼이 없고,
@@ -26,7 +26,7 @@ export default function Page() {
   return (
     <div className="mx-auto w-full max-w-5xl p-6">
       <h1 className="mb-1 text-lg font-semibold text-slate-800">
-        수술 스케줄링 관리
+        수술 배정 관리
       </h1>
 
       {/* 상태 흐름을 먼저 보여준다 — 코드값만으로는 순서가 드러나지 않는다 */}
@@ -53,8 +53,8 @@ export default function Page() {
           href="/surgery/schedule/requests"
           className="rounded-lg border border-slate-200 px-4 py-3 text-sm hover:border-sky-400"
         >
-          <span className="font-medium text-slate-800">수술 요청 대기</span>
-          <span className="ml-2 text-xs text-slate-500">배정 전 요청 목록</span>
+          <span className="font-medium text-slate-800">배정 대기 목록</span>
+          <span className="ml-2 text-xs text-slate-500">아직 배정하지 않은 요청</span>
         </Link>
         <Link
           href="/surgery/monitoring"

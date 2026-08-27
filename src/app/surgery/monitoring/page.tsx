@@ -23,7 +23,7 @@ export default function Page() {
       <p className="mt-10 text-xs text-slate-500">
         전체 일정은{" "}
         <Link href="/surgery/schedule" className="text-sky-600 underline">
-          수술 스케줄링 관리
+          수술 배정 관리
         </Link>{" "}
         에서 볼 수 있습니다.
       </p>
