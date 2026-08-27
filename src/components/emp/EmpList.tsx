@@ -51,7 +51,7 @@ export default function EmpList() {
   /** 왼쪽에서 선택한 직원 PK — 오른쪽 상세 패널에 전달 */
   const [selectedEmpId, setSelectedEmpId] = useState<string | null>(null);
 
-  /** 공통코드: DEPT_CD / EMP_STATUS_CD / MED_ROLE_CD */
+  /** 공통코드: DEPT_CD / EMP_STATUS_CD / ROLE_CD */
   const [deptCodes, setDeptCodes] = useState<CommonCodeItem[]>([]);
   const [statusCodes, setStatusCodes] = useState<CommonCodeItem[]>([]);
   const [roleCodes, setRoleCodes] = useState<CommonCodeItem[]>([]);
@@ -94,7 +94,7 @@ export default function EmpList() {
       const [depts, statuses, roles] = await Promise.all([
         fetchCommonCodeItemsByGroupCode("DEPT_CD"),
         fetchCommonCodeItemsByGroupCode("EMP_STATUS_CD"),
-        fetchCommonCodeItemsByGroupCode("MED_ROLE_CD"),
+        fetchCommonCodeItemsByGroupCode("ROLE_CD"),
       ]);
       setDeptCodes(depts);
       setStatusCodes(statuses);
