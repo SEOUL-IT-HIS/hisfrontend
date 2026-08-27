@@ -14,7 +14,6 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
-  ConfirmDialog,
   FormActions,
   FormField,
   Input,
@@ -47,6 +46,7 @@ type FieldErrors = {
   empPhone?: string;
   hireDate?: string;
   deptCode?: string;
+  rrn?: string;
 };
 
 type EmpRegisterFormProps = {
@@ -72,20 +72,28 @@ export default function EmpRegisterForm({
     medRoleCode: "",
     rrn: "",
   });
+
   const [errors, setErrors] = useState<FieldErrors>({});
-  const error = useSelector((state: RootState) => state.emp.error);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const loading = useSelector((state: RootState) => state.emp.loading);
-  const emps = useSelector((state: RootState) => state.emp.emps);
+  const error = useSelector((state: RootState) => state.emp.error);
   const dispatch = useDispatch<AppDispatch>();
+
   /** true 이면 이번 submit 의 완료를 기다리는 중 */
   const waitClose = useRef(false);
-  /** 이름+연락처가 겹치는 기존 직원이 있어서 등록 여부를 다시 물어보는 중 */
-  const [dupConfirmOpen, setDupConfirmOpen] = useState(false);
 
   /** 주민등록번호 실시간 중복확인 결과 안내 문구 (null이면 아직 확인 안 함) */
   const [rrnCheckMessage, setRrnCheckMessage] = useState<string | null>(null);
+
+  /** 숫자만 남긴 뒤 앞 6자리 뒤에 하이픈을 넣어준다 (예: 900101-1234567) */
+  function formatRrn(value: string) {
+    const digits = value.replace(/[^0-9]/g, "").slice(0, 13);
+    if (digits.length <= 6) {
+      return digits;
+    }
+    return digits.slice(0, 6) + "-" + digits.slice(6);
+  }
 
   /** 주민등록번호 입력칸에서 포커스가 벗어나면 서버에 중복 여부 + 생년월일을 물어본다 */
   async function handleRrnBlur() {
@@ -166,19 +174,14 @@ export default function EmpRegisterForm({
     if (!form.empPhone.trim()) nextErrors.empPhone = "연락처를 입력해주세요.";
     if (!form.hireDate) nextErrors.hireDate = "입사일을 입력해주세요.";
     if (!form.deptCode.trim()) nextErrors.deptCode = "부서를 선택해주세요.";
+    // 주민등록번호가 중복 확인의 유일한 기준이므로 반드시 받는다.
+    if (!form.rrn.trim()) {
+      nextErrors.rrn = "주민등록번호를 입력해주세요.";
+    } else if (form.rrn.replace(/[^0-9]/g, "").length !== 13) {
+      nextErrors.rrn = "주민등록번호 13자리를 모두 입력해주세요.";
+    }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
-
-    // 이름+연락처가 똑같은 기존 직원이 있으면 등록을 막지 않고 한 번 더 확인만 한다.
-    const isDuplicate = emps.some(
-      (emp) =>
-        emp.empName === form.empName.trim() &&
-        emp.empPhone === form.empPhone.trim(),
-    );
-    if (isDuplicate) {
-      setDupConfirmOpen(true);
-      return;
-    }
 
     submitRegister();
   };
@@ -242,19 +245,23 @@ export default function EmpRegisterForm({
 
         <FormField
           label="주민등록번호"
+          required
           htmlFor="rrn"
           hint="중복 확인 용도로만 사용되며, 원본은 저장하지 않고 해시로만 저장됩니다."
         >
           <Input
             id="rrn"
             value={form.rrn}
-            placeholder="예: 9001011234567"
+            placeholder="예: 900101-1234567"
+            inputMode="numeric"
+            maxLength={14}
             onChange={(e) => {
-              setForm({ ...form, rrn: e.target.value });
+              setForm({ ...form, rrn: formatRrn(e.target.value) });
               setRrnCheckMessage(null);
             }}
             onBlur={handleRrnBlur}
           />
+          {errors.rrn && <p className="text-xs text-red-600">{errors.rrn}</p>}
           {rrnCheckMessage && (
             <p
               className={
@@ -344,19 +351,6 @@ export default function EmpRegisterForm({
 
         <FormActions onCancel={onClose} submitLabel="등록" loading={loading} />
       </form>
-
-      <ConfirmDialog
-        open={dupConfirmOpen}
-        title="중복 확인"
-        message={`이미 같은 이름(${form.empName.trim()})과 연락처로 등록된 직원이 있습니다. 그래도 등록하시겠습니까?`}
-        confirmLabel="등록"
-        submitting={loading}
-        onConfirm={() => {
-          setDupConfirmOpen(false);
-          submitRegister();
-        }}
-        onCancel={() => setDupConfirmOpen(false)}
-      />
     </div>
   );
 }
