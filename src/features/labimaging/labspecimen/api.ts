@@ -17,8 +17,13 @@ const SPECIMEN_PATH = "/api/lab-imaging/specimens";
  * 접수 1건의 검체 목록을 조회한다.
  * GET /api/lab-imaging/specimens?receptionNo={receptionNo}
  *
- * ⚠ 접수번호를 주면 백엔드가 judgedYn 필터를 무시하고 그 접수의 검체만 반환한다.
- *   워크리스트 오른쪽 작업 폼은 "이 접수의 검체"만 보면 되므로 이 형태를 쓴다.
+ * ⚠ 판정 여부(judgedYn)는 보내지 않는다. 백엔드에 필터가 있지만 일부러 안 쓴다.
+ *   판정이 끝난 검체도 화면에 회색으로 남겨 "3건 중 2건 판정" 을 보여줘야 하는데,
+ *   서버에서 걸러 받으면 판정한 줄이 사라져 그 화면이 성립하지 않는다.
+ *   접수 하나의 검체는 보통 1~3건이라 전체를 받아도 부담이 없다.
+ *
+ * TODO(ZP2-79 검체 이력 조회, 후반 작업): 접수를 넘나드는 이력 화면이 생기면
+ *   judgedYn 을 쓰는 별도 조회 함수를 여기에 추가한다. (백엔드는 이미 지원)
  */
 export async function fetchSpecimensByReceptionNo(
   receptionNo: string,

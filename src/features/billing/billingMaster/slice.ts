@@ -74,6 +74,10 @@ const billingMasterSlice = createSlice({
       state.createStatus = { loading: false, error: action.payload };
       state.createSuccess = false;
     },
+    resetBillingMasterCreateStatus(state) {
+      state.createStatus = { ...initialStatus };
+      state.createSuccess = false;
+    },
   },
 });
 
@@ -87,6 +91,7 @@ export const {
   registerBillingMasterRequest,
   registerBillingMasterSuccess,
   registerBillingMasterFailure,
+  resetBillingMasterCreateStatus,
 } = billingMasterSlice.actions;
 
 export default billingMasterSlice.reducer;
@@ -103,3 +108,5 @@ export const selectBillingMasterDetailStatus = (state: BillingMasterRoot) =>
   state.billingMaster.detailStatus;
 export const selectBillingMasterCreateStatus = (state: BillingMasterRoot) =>
   state.billingMaster.createStatus;
+export const selectBillingMasterCreateSuccess = (state: BillingMasterRoot) =>
+  state.billingMaster.createSuccess;

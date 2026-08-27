@@ -102,9 +102,14 @@ export type AssignSurgeryOrderRequest = {
   nurseId?: string | null;
 };
 
-/** 반려 요청 (SL2-226). 사유 코드 그룹이 admin 에 없어 비워 보낼 수 있다 */
+/**
+ * 반려 요청 (SL2-226)
+ *
+ * <p><b>사유는 필수다</b>(2026-08-26). 예전에는 코드 그룹이 admin 에 없어 비워 보낼 수
+ * 있었는데, 2026-08-25 에 등록해 그 예외가 사라졌다. 백엔드도 {@code @NotBlank} 다.</p>
+ */
 export type RejectSurgeryOrderRequest = {
-  rejectReasonCd?: CodeValue | null;
+  rejectReasonCd: CodeValue;
 };
 
 /** 오더 목록 검색·페이지 파라미터 (SL2-225) */

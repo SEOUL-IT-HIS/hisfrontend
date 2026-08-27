@@ -21,8 +21,6 @@ export interface LabOrderCreateRequest {
   labOrderNo: string;
   /** 연계시스템코드 (예: "GR2") */
   systemCode: string;
-  /** 환자번호 (화면 표시용 업무번호) */
-  patientNo: string;
   /** 환자ID (patient-service 내부 식별자, 참조/검증용) */
   patientId: string;
   /** 처방의번호 (화면 표시용 업무번호, NULL 허용) */
@@ -85,7 +83,6 @@ export interface LabWorklistItem {
   labReceptionId: string;
   receptionNo: string;
   labOrderNo: string;
-  patientNo: string;
   /** 환자ID — 화면 표시용이 아니라 하위 작업(검체 등록 등) 요청에 담는 값 */
   patientId: string;
   urgencyYn: "Y" | "N";
@@ -204,7 +201,6 @@ export const URGENCY_YN_OPTIONS: ReadonlyArray<{ value: "Y" | "N"; label: string
 export interface LabReceptionContext {
   labReceptionId: string;
   receptionNo: string;
-  patientNo: string;
 }
 
 /**
@@ -212,6 +208,8 @@ export interface LabReceptionContext {
  * 목록(LabReceptionSummary)과 달리 검사항목(labItemCodes)을 담는다.
  */
 export interface LabReceptionDetail extends LabReceptionContext {
+  /** 환자ID — 표시용이 아니라 환자명을 조회하는 열쇠 */
+  patientId: string;
   labOrderNo: string;
   /** 진료구분코드 (공통코드 RCPT_TYPE_CD) */
   treatTypeCode: string;

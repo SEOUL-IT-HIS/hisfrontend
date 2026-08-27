@@ -123,7 +123,6 @@ export default function ConsentWorkPanel({
     dispatch(
       createConsentRequest({
         imageOrderId: reception.imageOrderId,
-        patientNo: reception.patientNo,
         patientId: reception.patientId,
         consentTypeCode: form.consentTypeCode,
         documentTemplateId: form.documentTemplateId.trim(),

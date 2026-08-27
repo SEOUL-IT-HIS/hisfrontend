@@ -138,7 +138,7 @@ export default function ImageScheduleRegisterForm() {
         <p className="text-slate-500">대상 접수</p>
         <p className="mt-1 font-semibold text-slate-700">
           {reception
-            ? `${reception.receptionNo} · 환자 ${reception.patientNo}`
+            ? reception.receptionNo
             : `접수ID ${imageReceptionId || "(없음)"}`}
         </p>
       </Panel>

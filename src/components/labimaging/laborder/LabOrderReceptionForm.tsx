@@ -4,6 +4,7 @@ import { useEffect, useState, type ChangeEvent, type SubmitEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveLabOrderMessage } from "@/features/labimaging/laborder/messages";
 import {
@@ -23,7 +24,6 @@ import { URGENCY_YN_OPTIONS } from "@/features/labimaging/laborder/types";
 const initialForm = {
   labOrderNo: "",
   systemCode: "",
-  patientNo: "",
   patientId: "",
   physicianNo: "",
   physicianId: "",
@@ -81,6 +81,20 @@ export default function LabOrderReceptionForm() {
     setErrors({});
   }
 
+  /*
+   * 입력한 환자ID 가 실제로 누구인지 확인시켜 준다.
+   *
+   * ⚠ 36자(UUID 길이)를 다 채웠을 때만 조회한다.
+   *   타이핑 중에 부르면 글자 하나마다 요청이 나간다.
+   * ⚠ 이름이 안 뜨면 존재하지 않는 환자다. UUID 는 사람이 눈으로 검증할 수 없어서
+   *   이 확인이 없으면 오입력을 서버 응답(LAB998)으로만 알게 된다.
+   */
+  const typedPatientId = form.patientId.trim();
+  const { names: typedPatientNames } = usePatientNames(
+    typedPatientId.length === 36 ? [typedPatientId] : [],
+  );
+  const typedPatientName = typedPatientNames[typedPatientId];
+
   function handleChange(
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) {
@@ -108,7 +122,6 @@ export default function LabOrderReceptionForm() {
     const next: FieldErrors = {};
     if (!form.labOrderNo.trim()) next.labOrderNo = "오더번호는 필수입니다.";
     if (!form.systemCode.trim()) next.systemCode = "시스템코드는 필수입니다.";
-    if (!form.patientNo.trim()) next.patientNo = "환자번호는 필수입니다.";
     if (!form.patientId.trim()) next.patientId = "환자ID는 필수입니다.";
     if (!form.treatTypeCode) next.treatTypeCode = "진료유형을 선택해주세요.";
     if (!form.receivedById.trim()) next.receivedById = "접수자ID는 필수입니다.";
@@ -129,7 +142,6 @@ export default function LabOrderReceptionForm() {
     const request: LabOrderCreateRequest = {
       labOrderNo: form.labOrderNo.trim(),
       systemCode: form.systemCode.trim(),
-      patientNo: form.patientNo.trim(),
       patientId: form.patientId.trim(),
       physicianNo: form.physicianNo.trim() || undefined,
       physicianId: form.physicianId.trim() || undefined,
@@ -188,20 +200,6 @@ export default function LabOrderReceptionForm() {
           ) : null}
         </FormField>
 
-        <FormField label="환자번호" required>
-          <Input
-            name="patientNo"
-            value={form.patientNo}
-            onChange={handleChange}
-            maxLength={20}
-            disabled={creating}
-            placeholder="예: P00012345"
-          />
-          {errors.patientNo ? (
-            <span className="text-xs text-rose-500">{errors.patientNo}</span>
-          ) : null}
-        </FormField>
-
         {/* ⚠ 처방 연동 전까지 접수 담당자가 직접 입력하는 임시 필드.
             연동 완료 시 이 입력칸은 없어지고 POST 바디로 자동 채워진다. */}
         <FormField label="환자ID" required>
@@ -215,6 +213,18 @@ export default function LabOrderReceptionForm() {
           />
           {errors.patientId ? (
             <span className="text-xs text-rose-500">{errors.patientId}</span>
+          ) : null}
+          {/*
+            입력한 UUID 가 누구인지 바로 보여준다.
+            36자를 다 채웠을 때만 조회하므로 타이핑 중에는 요청이 나가지 않는다.
+            UUID 는 눈으로 검증할 수 없어서, 이름이 안 뜨면 잘못 입력한 것이다.
+          */}
+          {typedPatientName ? (
+            <span className="text-xs text-emerald-600">환자: {typedPatientName}</span>
+          ) : form.patientId.trim().length === 36 ? (
+            <span className="text-xs text-amber-600">
+              해당 환자를 찾지 못했습니다. 환자ID를 확인해주세요.
+            </span>
           ) : null}
         </FormField>
 

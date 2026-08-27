@@ -6,10 +6,12 @@ import type { AppDispatch } from "@/store/store";
 import {
   Alert,
   DataTable,
+  Modal,
   Pagination,
   Select,
   type DataTableColumn,
 } from "@/components/common";
+import RoomUpdateForm from "@/components/surgery/room/RoomUpdateForm";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import type { SurgeryRoom } from "@/features/surgery/room/types";
@@ -55,6 +57,9 @@ export default function RoomList() {
   // 공통 Pagination 은 1-base, 백엔드 Pageable 은 0-base 다. 화면 쪽을 1-base 로 두고
   //   보낼 때만 1을 뺀다 — 사용자에게 보이는 번호와 상태값이 어긋나지 않게 하기 위해서다.
   const [page, setPage] = useState(1);
+
+  /** 수정 모달에 열려 있는 수술실. null 이면 닫힌 상태다 */
+  const [editingCode, setEditingCode] = useState<string | null>(null);
 
   // admin 이 꺼져 있으면 options 가 빈 배열이라 선택지가 비어 보인다. 그래도 목록 조회는
   // 그대로 되므로 화면 전체가 죽지는 않는다.
@@ -122,6 +127,21 @@ export default function RoomList() {
         />
       ),
     },
+    {
+      key: "actions",
+      header: "수정",
+      render: (room) => (
+        // 수술실명을 고칠 길이 여기 없었다 — 수정 폼은 있는데 아무도 부르지 않았다.
+        // 장비 목록과 같은 방식(모달)으로 맞춘다.
+        <button
+          type="button"
+          className="text-sky-600 underline"
+          onClick={() => setEditingCode(room.roomCode)}
+        >
+          수정
+        </button>
+      ),
+    },
   ];
 
   return (
@@ -147,6 +167,25 @@ export default function RoomList() {
           />
         </div>
       ) : null}
+
+      {/*
+        editingCode 가 있을 때만 폼을 그린다 — 미리 그려두면 행 수만큼 단건 조회가 나간다.
+        key 를 걸어 다른 수술실을 열면 폼 상태가 초기화되게 한다.
+      */}
+      <Modal
+        open={editingCode !== null}
+        title="수술실 수정"
+        onClose={() => setEditingCode(null)}
+        closeDisabled={saving}
+      >
+        {editingCode ? (
+          <RoomUpdateForm
+            key={editingCode}
+            roomCode={editingCode}
+            onDone={() => setEditingCode(null)}
+          />
+        ) : null}
+      </Modal>
     </div>
   );
 }

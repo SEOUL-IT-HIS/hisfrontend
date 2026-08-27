@@ -90,7 +90,7 @@ const surgeryOrderSlice = createSlice({
         state.saving = true;
         state.error = "";
       },
-      prepare(orderId: string, request?: RejectSurgeryOrderRequest) {
+      prepare(orderId: string, request: RejectSurgeryOrderRequest) {
         return { payload: { orderId, request } };
       },
     },

@@ -158,9 +158,6 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                             <h3 className="text-lg font-bold text-slate-800">
                                 {record.patientName ?? "미상"}
                             </h3>
-                            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-600 border border-slate-200">
-                            {record.patientNo ?? "-"}
-                        </span>
                             {record.departmentName && (
                                 <span className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">
                                 {record.departmentName}

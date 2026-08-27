@@ -28,10 +28,10 @@ const MedicalRecordList = () => {
     const dispatch = useDispatch<AppDispatch>();
 
     const searchParams = useSearchParams();
-    // 1. URL 쿼리 파라미터를 keyword로 변경 (기존 encounterId -> keyword)
+
     const initialKeyword = searchParams.get("keyword") ?? searchParams.get("patientName") ?? "";
 
-    // 2. 검색어 상태관리 변수명 변경
+    // 검색어 상태관리 변수명 변경
     const [keywordInput, setKeywordInput] = useState(initialKeyword);
     const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
 
@@ -44,28 +44,28 @@ const MedicalRecordList = () => {
         shallowEqual
     );
 
-    // 3. 초기 로딩 시 keyword 전달
+    // 초기 로딩 시 keyword 전달
     useEffect(() => {
         dispatch(
             fetchRecordListRequest({ keyword: initialKeyword })
         );
     }, [dispatch, initialKeyword]);
 
-    // 4. 검색 버튼 클릭 시 keyword 전달
+    // 검색 버튼 클릭 시 keyword 전달
     function handleSearch() {
         const keyword = keywordInput.trim();
         setSelectedRecordId(null);
         dispatch(fetchRecordListRequest({ keyword }));
     }
 
-    // 5. 엔터키 누를 때도 검색 가능하도록 처리
+    // 엔터키 누를 때도 검색 가능하도록 처리
     function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
         if (e.key === "Enter") {
             handleSearch();
         }
     }
 
-    // 6. 초기화 버튼 클릭 시 검색어 비우기
+    // 초기화 버튼 클릭 시 검색어 비우기
     function handleReset() {
         setKeywordInput("");
         setSelectedRecordId(null);
@@ -83,7 +83,7 @@ const MedicalRecordList = () => {
                         <Input
                             id="keyword"
                             value={keywordInput}
-                            placeholder="환자명, 환자번호, 주호소 입력"
+                            placeholder="환자명, 주호소 입력"
                             onChange={(e) => setKeywordInput(e.target.value)}
                             onKeyDown={handleKeyDown}
                         />
@@ -106,7 +106,6 @@ const MedicalRecordList = () => {
                     <table className="w-full table-fixed text-left border-collapse text-sm">
                         <thead className="bg-slate-100 border-b border-slate-200 text-slate-700">
                         <tr>
-                            <th className="w-[120px] p-3 font-semibold">환자번호</th>
                             <th className="w-[120px] p-3 font-semibold">환자명</th>
                             <th className="w-[120px] p-3 font-semibold">담당의</th>
                             <th className="w-[120px] p-3 font-semibold">주호소</th>
@@ -119,7 +118,6 @@ const MedicalRecordList = () => {
                         {list && list.length > 0 ? (
                             list.map((record) => (
                                 <tr key={record.recordId} className="hover:bg-slate-50 transition">
-                                    <td className="p-3">{record.patientNo ?? "-"}</td>
                                     <td className="p-3">{record.patientName ?? "미상"}</td>
                                     <td className="p-3">
                                         {record.doctorName ? `${record.doctorName}` : (record.doctorId ?? "-")}
@@ -139,7 +137,7 @@ const MedicalRecordList = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={7} className="p-6 text-center text-slate-500">
+                                <td colSpan={6} className="p-6 text-center text-slate-500">
                                     조회된 진료 기록이 없습니다.
                                 </td>
                             </tr>

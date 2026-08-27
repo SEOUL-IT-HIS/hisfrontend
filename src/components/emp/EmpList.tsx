@@ -51,14 +51,17 @@ export default function EmpList() {
   /** 왼쪽에서 선택한 직원 PK — 오른쪽 상세 패널에 전달 */
   const [selectedEmpId, setSelectedEmpId] = useState<string | null>(null);
 
-  /** 공통코드: DEPT_CD / EMP_STATUS_CD */
+  /** 공통코드: DEPT_CD / EMP_STATUS_CD / ROLE_CD */
   const [deptCodes, setDeptCodes] = useState<CommonCodeItem[]>([]);
   const [statusCodes, setStatusCodes] = useState<CommonCodeItem[]>([]);
+  const [roleCodes, setRoleCodes] = useState<CommonCodeItem[]>([]);
 
   // ----- 검색 조건 (프론트 전용, API 파라미터 아님) -----
   const [keyword, setKeyword] = useState("");
   /** "" = 전체 */
   const [empStatusFilter, setEmpStatusFilter] = useState("");
+  /** "" = 전체 */
+  const [medRoleFilter, setMedRoleFilter] = useState("");
 
   /**
    * 목록 필터
@@ -77,21 +80,25 @@ export default function EmpList() {
         deptName.includes(q);
       const matchStatus =
         empStatusFilter === "" || emp.empStatus === empStatusFilter;
-      return matchKeyword && matchStatus;
+      const matchRole =
+        medRoleFilter === "" || emp.medRoleCode === medRoleFilter;
+      return matchKeyword && matchStatus && matchRole;
     });
-  }, [emps, keyword, empStatusFilter, deptCodes]);
+  }, [emps, keyword, empStatusFilter, medRoleFilter, deptCodes]);
 
   // 화면 진입 시 직원 목록 + 공통코드 조회
   useEffect(() => {
     dispatch(fetchEmpRequest());
 
     async function loadCommonCodes() {
-      const [depts, statuses] = await Promise.all([
+      const [depts, statuses, roles] = await Promise.all([
         fetchCommonCodeItemsByGroupCode("DEPT_CD"),
         fetchCommonCodeItemsByGroupCode("EMP_STATUS_CD"),
+        fetchCommonCodeItemsByGroupCode("ROLE_CD"),
       ]);
       setDeptCodes(depts);
       setStatusCodes(statuses);
+      setRoleCodes(roles);
     }
     void loadCommonCodes();
   }, [dispatch]);
@@ -100,6 +107,7 @@ export default function EmpList() {
   function resetEmpSearch() {
     setKeyword("");
     setEmpStatusFilter("");
+    setMedRoleFilter("");
   }
 
   return (
@@ -155,6 +163,19 @@ export default function EmpList() {
                 />
               </FormField>
               <FormField
+                label="역할"
+                htmlFor="medRoleFilter"
+                className="w-36"
+              >
+                <Select
+                  id="medRoleFilter"
+                  value={medRoleFilter}
+                  placeholder="전체"
+                  onChange={(e) => setMedRoleFilter(e.target.value)}
+                  options={toCodeSelectOptions(roleCodes)}
+                />
+              </FormField>
+              <FormField
                 label="재직상태"
                 htmlFor="empStatusFilter"
                 className="w-36"
@@ -180,6 +201,7 @@ export default function EmpList() {
                   <th className="px-5 py-3 font-medium">사번</th>
                   <th className="px-5 py-3 font-medium">이름</th>
                   <th className="px-5 py-3 font-medium">부서</th>
+                  <th className="px-5 py-3 font-medium">역할</th>
                   <th className="px-5 py-3 font-medium">입사일</th>
                   <th className="px-5 py-3 font-medium">상태</th>
                 </tr>
@@ -188,7 +210,7 @@ export default function EmpList() {
                 {loading && emps.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="px-5 py-20 text-center text-slate-400"
                     >
                       목록을 불러오는 중입니다...
@@ -197,7 +219,7 @@ export default function EmpList() {
                 ) : filteredEmps.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="px-5 py-20 text-center text-slate-400"
                     >
                       {emps.length === 0
@@ -239,6 +261,9 @@ export default function EmpList() {
                           {toCodeLabel(deptCodes, row.deptCode)}
                         </td>
                         <td className="px-5 py-3.5 text-slate-600">
+                          {toCodeLabel(roleCodes, row.medRoleCode)}
+                        </td>
+                        <td className="px-5 py-3.5 text-slate-600">
                           {formatDate(row.hireDate)}
                         </td>
                         <td className="px-5 py-3.5 text-slate-600">
@@ -258,6 +283,7 @@ export default function EmpList() {
           empId={selectedEmpId}
           deptCodes={deptCodes}
           statusCodes={statusCodes}
+          roleCodes={roleCodes}
         />
       </div>
 
@@ -269,6 +295,7 @@ export default function EmpList() {
       >
         <EmpRegisterForm
           deptCodes={deptCodes}
+          roleCodes={roleCodes}
           onClose={() => setRegisterOpen(false)}
         />
       </Modal>

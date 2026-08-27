@@ -1,5 +1,11 @@
-import BillingDetailSearchForm from "@/components/billing/detail/BillingDetailSearchForm";
+import BillingDetailSerchForm from "@/components/billing/billingDetailSerchForm";
 
-export default function BillingDetailPage() {
-  return <BillingDetailSearchForm />;
+const BillingDetail=()=>{
+    return (
+        <div>
+            진료비 상세조회 검색 페이지입니다.
+            <BillingDetailSerchForm />
+        </div>
+    )
 }
+export default BillingDetail;

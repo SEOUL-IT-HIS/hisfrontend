@@ -75,7 +75,7 @@ const defaultAreaIcon = (
   </svg>
 );
 
-function areaIcon(areaKey: string | null) {
+export function areaIcon(areaKey: string | null) {
   if (!areaKey) return defaultAreaIcon;
   return workAreaIcons[areaKey] ?? defaultAreaIcon;
 }
@@ -273,12 +273,18 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
           collapsed ? "items-center" : ""
         }`}
       >
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500 text-sm font-bold text-white shadow-sm shadow-sky-500/25">
-          HIS
-        </div>
+        <Link
+          href="/main"
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500 text-white shadow-sm shadow-sky-500/25 transition-colors hover:bg-sky-600"
+          aria-label="대문으로 이동"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden>
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </Link>
         {!collapsed ? (
           <div>
-            <p className="text-sm font-semibold text-slate-800">테스트 의원</p>
+            <p className="text-sm font-semibold text-slate-800">산대병원</p>
             <p className="text-[11px] text-slate-400">Hospital Workspace</p>
           </div>
         ) : null}

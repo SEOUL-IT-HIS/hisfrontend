@@ -55,6 +55,10 @@ export async function updatePatientApi(
     `/api/patient/${encodeURIComponent(request.patientId)}`,
     {
       patientName: request.patientName.trim(),
+      zipCode: request.zipCode.trim(),
+      address: request.address.trim(),
+      addressDetail: request.addressDetail.trim(),
+      phoneNo: request.phoneNo.trim(),
     },
   );
 

@@ -17,16 +17,19 @@ export type Emp = {
   empName: string;
   empEmail: string | null;
   empPhone: string | null;
-  /** yyyy-MM-dd 또는 ISO 문자열 */
   hireDate: string | null;
-  /** yyyy-MM-dd 또는 ISO 문자열 */
   retireDate: string | null;
-  /** 공통코드 EMP_STATUS_CD 등 */
   empStatus: string | null;
-  /** 공통코드 DEPT_CD 등 */
   deptCode: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  profileImageUrl: string | null;
+  zipCode: string | null;
+  address: string | null;
+  addressDetail: string | null;
+  medRoleCode: string | null;
+  /** 등록 시 주민등록번호에서 추출된 값. 주민등록번호 원본은 어디에도 내려오지 않음 */
+  birthDate: string | null;
 };
 
 /**
@@ -40,6 +43,13 @@ export type EmpRegisterRequest = {
   empPhone?: string;
   hireDate?: string;
   deptCode?: string;
+  zipCode?: string;
+  address?: string;
+  addressDetail?: string;
+  medRoleCode?: string;
+  /** 서버에서 해시로만 변환되어 저장되고, 응답에는 절대 포함되지 않음 */
+  rrn?: string;
+  image?: File;
 };
 
 /**
@@ -54,6 +64,17 @@ export type EmpUpdateRequest = {
   retireDate?: string;
   empStatus?: string;
   deptCode?: string;
+  zipCode?: string;
+  address?: string;
+  addressDetail?: string;
+  medRoleCode?: string;
+  image?: File;
 };
 
 export type EmpApiResponse = ApiResponse<Emp[]>;
+
+/** 주민등록번호 확인 응답 — 원본 번호는 절대 포함되지 않음 */
+export type RrnCheckResult = {
+  duplicate: boolean;
+  birthDate: string | null;
+};
