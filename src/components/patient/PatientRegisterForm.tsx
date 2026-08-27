@@ -523,21 +523,21 @@ export default function PatientRegisterForm() {
               <FormField label="주소" htmlFor="zipCode">
                 <div className="space-y-3">
                   <div className="flex gap-2">
-                  <Input
-                    id="zipCode"
-                    value={form.zipCode}
-                    onChange={(event) =>
-                      updateForm(
-                        "zipCode",
-                        event.target.value.replace(/[^0-9]/g, "").slice(0, 5),
-                      )
-                    }
-                    disabled={registerLoading}
-                    inputMode="numeric"
-                    maxLength={5}
-                    placeholder="우편번호"
-                    autoComplete="postal-code"
-                  />
+                    <Input
+                      id="zipCode"
+                      value={form.zipCode}
+                      onChange={(event) =>
+                        updateForm(
+                          "zipCode",
+                          event.target.value.replace(/[^0-9]/g, "").slice(0, 5),
+                        )
+                      }
+                      disabled={registerLoading}
+                      inputMode="numeric"
+                      maxLength={5}
+                      placeholder="우편번호"
+                      autoComplete="postal-code"
+                    />
                     <PostcodeSearchButton
                       disabled={registerLoading}
                       onSelect={(result) => {

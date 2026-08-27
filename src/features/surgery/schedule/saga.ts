@@ -30,7 +30,7 @@
  * <p>맨 아래 default export 가 이 도메인의 watcher 다. features/surgery/saga.ts 가 이들을
  * 묶고, store/rootSaga.ts 는 수술 전체를 한 줄로만 등록한다(§5.4 공용 파일 최소 수정).</p>
  */
-import { call, put, takeLatest } from "redux-saga/effects";
+import { call, put, select, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import {
   cancelSurgerySchedule,
@@ -64,6 +64,8 @@ import {
   fetchHistorySuccess,
   fetchHistoryFailure,
   assignFieldRequest,
+  selectSurgerySearchParams,
+  selectSurgerySearchResult,
   startSurgeryRequest,
   surgeryMutationFailure,
   surgeryMutationSuccess,
@@ -224,6 +226,28 @@ function* updateSurgerySaga(
 
 // ----- 상태 전이 -----
 
+/**
+ * 워크리스트가 보고 있는 검색 결과를 마지막 조건 그대로 다시 읽는다.
+ *
+ * <p>상태 전이가 배정 상세에서 수술 업무 화면으로 옮겨오면서 필요해졌다(2026-08-27).
+ * 그전까지는 {@code fetchSurgery}(단건)만 다시 읽으면 됐다 — 상세 화면이 그 값을 보고
+ * 있었기 때문이다. 워크리스트는 <b>검색 결과 목록</b>의 행을 보고 버튼을 잠그므로,
+ * 목록을 갱신하지 않으면 시작을 눌러도 행의 statusCd 가 예약(01)에 머문다.
+ * 그러면 잠겨야 할 취소 버튼이 열린 채 남아 400 SUR039 를 받는다 —
+ * 8/26 에 상세 화면에서 똑같이 겪은 일이다.</p>
+ *
+ * <p>한 번도 검색한 적이 없으면(=워크리스트를 연 적이 없으면) 아무것도 하지 않는다.
+ * 조건 없이 다시 읽으면 열지도 않은 화면 때문에 쓸데없는 호출이 나간다.</p>
+ */
+function* refreshWorklistSaga() {
+  const result: PageResponse<Surgery> | null = yield select(
+    selectSurgerySearchResult,
+  );
+  if (!result) return;
+  const params: SurgerySearchParams = yield select(selectSurgerySearchParams);
+  yield put(searchSurgeriesRequest(params));
+}
+
 function* cancelSurgerySaga(
   action: PayloadAction<{
     surgeryId: string;
@@ -237,6 +261,7 @@ function* cancelSurgerySaga(
     yield put(fetchSurgeriesRequest());
     yield put(fetchSurgeryRequest(surgeryId));
     yield put(fetchHistoryRequest(surgeryId));
+    yield* refreshWorklistSaga();
     // 오더 반려는 order saga 가 처리한다 — 수술 취소가 대기 목록을 건드릴 이유가 없다.
     //   요청 단계가 오더로 옮겨져(2026-08-13) 여기 오는 것은 이미 만들어진 수술뿐이다.
   } catch (err) {
@@ -276,6 +301,7 @@ function* startSurgerySaga(action: PayloadAction<string>) {
     //   취소 버튼이 열린 채로 남는다. 실제로 눌러서 400 SUR039 를 받은 일이 있었다.
     yield put(fetchSurgeryRequest(action.payload));
     yield put(fetchHistoryRequest(action.payload));
+    yield* refreshWorklistSaga();
   } catch (err) {
     yield put(
       surgeryMutationFailure(
@@ -292,6 +318,7 @@ function* endSurgerySaga(action: PayloadAction<string>) {
     yield put(fetchTodaySurgeriesRequest());
     yield put(fetchSurgeryRequest(action.payload));
     yield put(fetchHistoryRequest(action.payload));
+    yield* refreshWorklistSaga();
   } catch (err) {
     yield put(
       surgeryMutationFailure(

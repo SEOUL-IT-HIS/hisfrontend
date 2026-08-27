@@ -11,7 +11,12 @@ import {
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import DischargeRequestDetail from "@/components/inpatient/admissiondischarge/discharge/DischargeRequestDetail";
 
-const DischargeTargetList = () => {
+type DischargeTargetListProps = {
+  /** 입퇴원관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
+  embedded?: boolean;
+};
+
+const DischargeTargetList = ({ embedded = false }: DischargeTargetListProps = {}) => {
   const dispatch = useDispatch<AppDispatch>();
   const admissions = useSelector(selectAdmissions);
   const listStatus = useSelector(selectAdmissionListStatus);
@@ -34,11 +39,13 @@ const DischargeTargetList = () => {
   }, [dispatch]);
 
   return (
-    <div className="mx-auto w-full max-w-[1800px] p-6">
-      <div className="mb-6">
-        <h1 className="text-lg font-semibold text-slate-800">퇴원 대상 목록</h1>
-        <p className="mt-1 text-sm text-slate-500">현재 입원중인 퇴원 처리 대상 환자 목록입니다.</p>
-      </div>
+    <div className={embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}>
+      {!embedded && (
+        <div className="mb-6">
+          <h1 className="text-lg font-semibold text-slate-800">퇴원 대상 목록</h1>
+          <p className="mt-1 text-sm text-slate-500">현재 입원중인 퇴원 처리 대상 환자 목록입니다.</p>
+        </div>
+      )}
 
       {listStatus.loading && <p className="text-sm text-slate-500">로딩중...</p>}
       {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
