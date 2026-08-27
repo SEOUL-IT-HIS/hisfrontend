@@ -24,7 +24,12 @@ const STATUS_LABEL: Record<string, string> = {
   RELEASED: "해제됨",
 };
 
-const BedReservationList = () => {
+type BedReservationListProps = {
+  /** 병상관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
+  embedded?: boolean;
+};
+
+const BedReservationList = ({ embedded = false }: BedReservationListProps = {}) => {
   const dispatch = useDispatch<AppDispatch>();
   const bedReservations = useSelector(selectBedReservations);
   const listStatus = useSelector(selectBedReservationListStatus);
@@ -41,12 +46,16 @@ const BedReservationList = () => {
   }, [dispatch]);
 
   return (
-    <div className="mx-auto w-full max-w-[1800px] p-6">
+    <div className={embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}>
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-slate-800">병상 예약 목록</h1>
-          <p className="mt-1 text-sm text-slate-500">등록된 병상 예약 현황입니다.</p>
-        </div>
+        {embedded ? (
+          <div />
+        ) : (
+          <div>
+            <h1 className="text-lg font-semibold text-slate-800">병상 예약 목록</h1>
+            <p className="mt-1 text-sm text-slate-500">등록된 병상 예약 현황입니다.</p>
+          </div>
+        )}
         <Link
           href="/inpatient/bedmanagement/bedreservation/create"
           className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"

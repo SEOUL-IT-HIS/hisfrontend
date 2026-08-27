@@ -1,44 +1,5 @@
-import Link from "next/link";
+import BedManagementHome from "@/components/inpatient/bedmanagement/BedManagementHome";
 
-const MENUS = [
-  
-  {
-    href: "/inpatient/bedmanagement/bedstatus/list",
-    label: "병상 현황",
-    desc: "병상 현황판",
-  },
-  {
-    href: "/inpatient/bedmanagement/bedassignment/list",
-    label: "병상 배정",
-    desc: "병상 배정 목록",
-  },
-  {
-    href: "/inpatient/bedmanagement/bedreservation/list",
-    label: "병상 예약",
-    desc: "병상 예약 목록",
-  },
- 
-];
-
-export default function InpatientPage() {
-  return (
-    <div className="mx-auto w-full max-w-3xl p-6">
-      <h1 className="mb-6 text-lg font-semibold text-slate-800">병상관리</h1>
-      <ul className="flex flex-col gap-3">
-        {MENUS.map((menu) => (
-          <li key={menu.href}>
-            <Link
-              href={menu.href}
-              className="block rounded-lg border border-slate-200 p-4 hover:border-sky-400"
-            >
-              <span className="text-sm font-medium text-slate-800">
-                {menu.label}
-              </span>
-              <span className="ml-2 text-xs text-slate-500">{menu.desc}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+export default function BedManagementPage() {
+  return <BedManagementHome />;
 }
