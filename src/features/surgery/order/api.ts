@@ -99,7 +99,7 @@ export async function assignSurgeryOrder(
  */
 export async function rejectSurgeryOrder(
   orderId: string,
-  request?: RejectSurgeryOrderRequest,
+  request: RejectSurgeryOrderRequest,
 ): Promise<SurgeryOrder> {
   const { data } = await apiClient.patch<ApiResponse<SurgeryOrder>>(
     `${ORDER_PATH}/${orderId}/reject`,

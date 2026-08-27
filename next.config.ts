@@ -20,9 +20,19 @@ const inpatientApiOrigin =
 const outpatientApiOrigin =
   process.env.OUTPATIENT_API_ORIGIN ?? "http://192.168.1.112:8080";
 const emergencyApiOrigin =
-    process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.130:8080";
+  process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.130:8080";
+// surgery-service 만 8080 이 아니라 8383 을 쓴다
+const surgeryApiOrigin =
+  process.env.SURGERY_API_ORIGIN ?? "http://192.168.1.120:8383";
+const receptionApiOrigin =
+  process.env.RECEPTION_API_ORIGIN ?? "http://192.168.1.105:8080";
 const billingApiOrigin =
-    process.env.BILLING_API_ORIGIN ?? "http://192.168.1.143:8989";
+  process.env.BILLING_API_ORIGIN ?? "http://192.168.1.143:8989";
+// pharmacy-service. 담당자 PC 로컬 기본값 (다른 PC에서 접근해야 하면 .env.local 에서
+// PHARMACY_API_ORIGIN 을 본인 LAN IP로 덮어쓰면 됨)
+const pharmacyApiOrigin =
+  process.env.PHARMACY_API_ORIGIN ?? "http://192.168.1.115:8088";
+
 const nextConfig: NextConfig = {
   // LAN IP로 접속할 때 /_next 정적 리소스 403 방지
   // (다른 PC에서 http://192.168.1.149:3000 접속 시 필요)
@@ -37,8 +47,8 @@ const nextConfig: NextConfig = {
     "192.168.1.112",
     "192.168.1.130",
     "192.168.1.120",
-    "192.168.1.143",
     "192.168.1.105",
+    "192.168.1.143",
   ],
   async rewrites() {
     return [
@@ -81,6 +91,15 @@ const nextConfig: NextConfig = {
         source: "/api/lab-imaging/:path*",
         destination: `${labImagingApiOrigin}/api/lab-imaging/:path*`,
       },
+      // ---------- surgery-service (구체 경로 먼저) ----------
+      {
+        source: "/api/surgery",
+        destination: `${surgeryApiOrigin}/api/surgery`,
+      },
+      {
+        source: "/api/surgery/:path*",
+        destination: `${surgeryApiOrigin}/api/surgery/:path*`,
+      },
       // ---------- billing-service (구체 경로 먼저) ----------
       {
         source: "/api/billing",     
@@ -90,6 +109,26 @@ const nextConfig: NextConfig = {
         source: "/api/billing/:path*",
         destination: `${billingApiOrigin}/api/billing/:path*`,
       },
+      // ---------- inpatient-service (구체 경로 먼저) ----------
+      {
+        source: "/api/inpatient",
+        destination: `${inpatientApiOrigin}/api/inpatient`,
+      },
+      {
+        source: "/api/inpatient/:path*",
+        destination: `${inpatientApiOrigin}/api/inpatient/:path*`,
+      },
+
+      // ---------- pharmacy-service (구체 경로 먼저) ----------
+      {
+        source: "/api/pharmacy",
+        destination: `${pharmacyApiOrigin}/api/pharmacy`,
+      },
+      {
+        source: "/api/pharmacy/:path*",
+        destination: `${pharmacyApiOrigin}/api/pharmacy/:path*`,
+      },
+
       // ---------- admin-service (나머지 /api) ----------
       {
         source: "/api/:path*",

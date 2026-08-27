@@ -23,11 +23,23 @@ type EmpDetailPanelProps = {
   empId: string | null;
   deptCodes: CommonCodeItem[];
   statusCodes: CommonCodeItem[];
+  roleCodes: CommonCodeItem[];
 };
 
 function formatDate(value: string | null): string {
   if (!value) return "-";
   return value.slice(0, 10);
+}
+
+function formatAddress(
+    zipCode: string | null,
+    address: string | null,
+    addressDetail: string | null,
+): string {
+  if (!address) return "-";
+  const detail = addressDetail ? ` ${addressDetail}` : "";
+  const zip = zipCode ? ` (${zipCode})` : "";
+  return `${address}${detail}${zip}`;
 }
 
 /**
@@ -45,6 +57,7 @@ export default function EmpDetailPanel({
   empId,
   deptCodes,
   statusCodes,
+  roleCodes,
 }: EmpDetailPanelProps) {
   const dispatch = useDispatch();
   const selectedEmp = useSelector((state: RootState) => state.emp.selectedEmp);
@@ -90,25 +103,40 @@ export default function EmpDetailPanel({
     <Panel>
       {/* 헤더: 선택 직원 정보 + 수정 버튼 */}
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="truncate text-sm font-semibold text-slate-900">
-              {selectedEmp?.empName ?? "직원 상세"}
-            </h2>
-            {selectedEmp ? (
-              <span className="rounded-md bg-sky-50 px-2 py-0.5 font-mono text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/10">
-                {selectedEmp.empNo}
-              </span>
-            ) : null}
+        <div className="flex min-w-0 items-center gap-3">
+          {selectedEmp ? (
+              selectedEmp.profileImageUrl ? (
+                  <img
+                      src={selectedEmp.profileImageUrl}
+                      alt={`${selectedEmp.empName} 사진`}
+                      className="h-12 w-12 flex-shrink-0 rounded-full object-cover"
+                  />
+              ) : (
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-400">
+                    {selectedEmp.empName.slice(0, 1)}
+                  </div>
+              )
+          ) : null}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-sm font-semibold text-slate-900">
+                {selectedEmp?.empName ?? "직원 상세"}
+              </h2>
+              {selectedEmp ? (
+                  <span className="rounded-md bg-sky-50 px-2 py-0.5 font-mono text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/10">
+            {selectedEmp.empNo}
+          </span>
+              ) : null}
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              직원 상세 정보를 확인하고 수정할 수 있습니다
+            </p>
           </div>
-          <p className="mt-1 text-xs text-slate-400">
-            직원 상세 정보를 확인하고 수정할 수 있습니다
-          </p>
         </div>
         {selectedEmp ? (
-          <Button variant="secondary" onClick={() => setEditOpen(true)}>
-            수정
-          </Button>
+            <Button variant="secondary" onClick={() => setEditOpen(true)}>
+              수정
+            </Button>
         ) : null}
       </div>
 
@@ -133,6 +161,12 @@ export default function EmpDetailPanel({
             <DetailField label="이름" value={selectedEmp.empName} />
             <DetailField label="이메일" value={selectedEmp.empEmail ?? "-"} />
             <DetailField label="연락처" value={selectedEmp.empPhone ?? "-"} />
+            <div className="rounded-xl bg-slate-50/80 px-4 py-3 sm:col-span-2">
+              <dt className="text-xs font-medium text-slate-400">주소</dt>
+              <dd className="mt-1 text-sm font-medium text-slate-800">
+                {formatAddress(selectedEmp.zipCode, selectedEmp.address, selectedEmp.addressDetail)}
+              </dd>
+            </div>
             <DetailField
               label="부서"
               value={toCodeLabel(deptCodes, selectedEmp.deptCode)}
@@ -140,6 +174,14 @@ export default function EmpDetailPanel({
             <DetailField
               label="재직상태"
               value={toCodeLabel(statusCodes, selectedEmp.empStatus)}
+            />
+            <DetailField
+              label="역할"
+              value={toCodeLabel(roleCodes, selectedEmp.medRoleCode)}
+            />
+            <DetailField
+              label="생년월일"
+              value={formatDate(selectedEmp.birthDate)}
             />
             <DetailField
               label="입사일"
@@ -171,6 +213,7 @@ export default function EmpDetailPanel({
             emp={selectedEmp}
             deptCodes={deptCodes}
             statusCodes={statusCodes}
+            roleCodes={roleCodes}
             onClose={() => setEditOpen(false)}
           />
         ) : null}

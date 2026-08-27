@@ -1,4 +1,3 @@
-import Link from "next/link";
 import EquipmentList from "@/components/surgery/room/EquipmentList";
 import EquipmentRegisterForm from "@/components/surgery/room/EquipmentRegisterForm";
 import RoomList from "@/components/surgery/room/RoomList";
@@ -11,12 +10,14 @@ import RoomRegisterForm from "@/components/surgery/room/RoomRegisterForm";
  * <p>메뉴 이름대로 둘을 한 화면에 모았다. 장비 등록 시 소속 수술실을 골라야 해서
  * 수술실을 먼저 만들어야 하는데, 화면이 나뉘어 있으면 오가야 한다.</p>
  *
- * <p>기존 {@code /surgery/room/list}·{@code /surgery/equipment/list} 는 그대로 둔다 —
- * 수정 화면에서 목록으로 돌아갈 때 쓰는 경로다.</p>
+ * <p><b>목록 전용 화면을 없앴다</b>(2026-08-24) — {@code /surgery/room/list} 와
+ * {@code /surgery/equipment/list} 가 이 화면과 같은 목록을 또 보여주고 있었다.
+ * 이 화면이 이미 둘을 다 띄우면서 그쪽으로 링크까지 걸어 두어, 같은 목록을 세 군데서
+ * 보게 되는 구조였다. 수정 화면이 돌아올 곳도 이제 여기다.</p>
  */
 export default function Page() {
   return (
-    <div className="mx-auto w-full max-w-5xl p-6">
+    <div className="mx-auto w-full max-w-[1800px] p-6">
       <h1 className="mb-6 text-lg font-semibold text-slate-800">
         수술실 · 수술장비 관리
       </h1>
@@ -44,17 +45,6 @@ export default function Page() {
         </div>
         <EquipmentList />
       </section>
-
-      <p className="mt-10 text-xs text-slate-500">
-        목록만 보려면{" "}
-        <Link href="/surgery/room/list" className="text-sky-600 underline">
-          수술실 목록
-        </Link>{" "}
-        ·{" "}
-        <Link href="/surgery/equipment/list" className="text-sky-600 underline">
-          장비 목록
-        </Link>
-      </p>
     </div>
   );
 }

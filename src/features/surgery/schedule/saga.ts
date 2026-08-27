@@ -30,13 +30,16 @@
  * <p>맨 아래 default export 가 이 도메인의 watcher 다. features/surgery/saga.ts 가 이들을
  * 묶고, store/rootSaga.ts 는 수술 전체를 한 줄로만 등록한다(§5.4 공용 파일 최소 수정).</p>
  */
-import { call, put, takeLatest } from "redux-saga/effects";
+import { call, put, select, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import {
   cancelSurgerySchedule,
   endSurgery,
   getSurgerySchedule,
   getSurgerySchedules,
+  searchSurgeries,
+  getSurgeryHistory,
+  assignSurgeryField,
   getTodaySurgeries,
   startSurgery,
   updateSurgeryProgress,
@@ -54,6 +57,15 @@ import {
   fetchTodaySurgeriesFailure,
   fetchTodaySurgeriesRequest,
   fetchTodaySurgeriesSuccess,
+  searchSurgeriesFailure,
+  searchSurgeriesRequest,
+  searchSurgeriesSuccess,
+  fetchHistoryRequest,
+  fetchHistorySuccess,
+  fetchHistoryFailure,
+  assignFieldRequest,
+  selectSurgerySearchParams,
+  selectSurgerySearchResult,
   startSurgeryRequest,
   surgeryMutationFailure,
   surgeryMutationSuccess,
@@ -61,14 +73,16 @@ import {
   updateSurgeryRequest,
 } from "@/features/surgery/schedule/slice";
 import type {
-  AssignSurgeryRequest,
   CancelSurgeryRequest,
-  RegisterSurgeryRequest,
   Surgery,
   SurgeryListParams,
+  SurgerySearchParams,
+  SurgeryStatusHistory,
+  AssignFieldRequest,
   UpdateProgressRequest,
   UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
+import type { PageResponse } from "@/features/surgery/types";
 import { getSurgeryErrorMessage } from "@/features/surgery/errorMessage";
 
 /**
@@ -90,6 +104,74 @@ function* fetchSurgeriesSaga(
     yield put(
       fetchSurgeriesFailure(
         getSurgeryErrorMessage(err, "수술 일정 조회에 실패했습니다."),
+      ),
+    );
+  }
+}
+
+/** 조건 검색 (SL2-314 기록지 조회 / SL2-334 간호기록 조회) */
+function* searchSurgeriesSaga(
+  action: PayloadAction<SurgerySearchParams | undefined>,
+) {
+  try {
+    const response: PageResponse<Surgery> = yield call(
+      searchSurgeries,
+      action.payload,
+    );
+    yield put(searchSurgeriesSuccess(response));
+  } catch (err) {
+    yield put(
+      searchSurgeriesFailure(
+        getSurgeryErrorMessage(err, "수술 검색에 실패했습니다."),
+      ),
+    );
+  }
+}
+
+/** 상태변경 이력 조회 (SL2-282) */
+function* fetchHistorySaga(
+  action: PayloadAction<{ surgeryId: string; type?: string }>,
+) {
+  try {
+    const response: SurgeryStatusHistory[] = yield call(
+      getSurgeryHistory,
+      action.payload.surgeryId,
+      action.payload.type,
+    );
+    yield put(fetchHistorySuccess(response));
+  } catch (err) {
+    yield put(
+      fetchHistoryFailure(
+        getSurgeryErrorMessage(err, "상태 변경 이력 조회에 실패했습니다."),
+      ),
+    );
+  }
+}
+
+/**
+ * 개별 배정 (SL2-13 / SL2-15 / SL2-43 / SL2-63)
+ *
+ * <p>성공하면 그 수술을 다시 읽는다 — 수술실 배정은 백엔드가 존재·가용을 검증하므로
+ * (SUR036·SUR045) 화면이 짐작해 고치면 거절된 요청도 성공한 것처럼 보인다.
+ * 이력도 함께 갱신한다. 배정 변경이 이력에 남기 때문이다.</p>
+ */
+function* assignFieldSaga(
+  action: PayloadAction<{
+    surgeryId: string;
+    field: "room" | "surgeon" | "anesthesiologist" | "nurse";
+    request: AssignFieldRequest;
+  }>,
+) {
+  try {
+    const { surgeryId, field, request } = action.payload;
+    yield call(assignSurgeryField, surgeryId, field, request);
+    yield put(surgeryMutationSuccess());
+    yield put(fetchSurgeryRequest(surgeryId));
+    yield put(fetchHistoryRequest(surgeryId));
+  } catch (err) {
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "배정 처리에 실패했습니다."),
       ),
     );
   }
@@ -144,10 +226,32 @@ function* updateSurgerySaga(
 
 // ----- 상태 전이 -----
 
+/**
+ * 워크리스트가 보고 있는 검색 결과를 마지막 조건 그대로 다시 읽는다.
+ *
+ * <p>상태 전이가 배정 상세에서 수술 업무 화면으로 옮겨오면서 필요해졌다(2026-08-27).
+ * 그전까지는 {@code fetchSurgery}(단건)만 다시 읽으면 됐다 — 상세 화면이 그 값을 보고
+ * 있었기 때문이다. 워크리스트는 <b>검색 결과 목록</b>의 행을 보고 버튼을 잠그므로,
+ * 목록을 갱신하지 않으면 시작을 눌러도 행의 statusCd 가 예약(01)에 머문다.
+ * 그러면 잠겨야 할 취소 버튼이 열린 채 남아 400 SUR039 를 받는다 —
+ * 8/26 에 상세 화면에서 똑같이 겪은 일이다.</p>
+ *
+ * <p>한 번도 검색한 적이 없으면(=워크리스트를 연 적이 없으면) 아무것도 하지 않는다.
+ * 조건 없이 다시 읽으면 열지도 않은 화면 때문에 쓸데없는 호출이 나간다.</p>
+ */
+function* refreshWorklistSaga() {
+  const result: PageResponse<Surgery> | null = yield select(
+    selectSurgerySearchResult,
+  );
+  if (!result) return;
+  const params: SurgerySearchParams = yield select(selectSurgerySearchParams);
+  yield put(searchSurgeriesRequest(params));
+}
+
 function* cancelSurgerySaga(
   action: PayloadAction<{
     surgeryId: string;
-    request?: CancelSurgeryRequest;
+    request: CancelSurgeryRequest;
   }>,
 ) {
   try {
@@ -155,6 +259,9 @@ function* cancelSurgerySaga(
     yield call(cancelSurgerySchedule, surgeryId, request);
     yield put(surgeryMutationSuccess());
     yield put(fetchSurgeriesRequest());
+    yield put(fetchSurgeryRequest(surgeryId));
+    yield put(fetchHistoryRequest(surgeryId));
+    yield* refreshWorklistSaga();
     // 오더 반려는 order saga 가 처리한다 — 수술 취소가 대기 목록을 건드릴 이유가 없다.
     //   요청 단계가 오더로 옮겨져(2026-08-13) 여기 오는 것은 이미 만들어진 수술뿐이다.
   } catch (err) {
@@ -189,6 +296,12 @@ function* startSurgerySaga(action: PayloadAction<string>) {
     yield call(startSurgery, action.payload);
     yield put(surgeryMutationSuccess());
     yield put(fetchTodaySurgeriesRequest());
+    // 상세 화면이 보는 단건과 이력도 다시 읽는다(2026-08-26).
+    //   이걸 빼면 시작을 눌러도 화면의 statusCd 가 예약(01)에 머물러, 잠겨야 할
+    //   취소 버튼이 열린 채로 남는다. 실제로 눌러서 400 SUR039 를 받은 일이 있었다.
+    yield put(fetchSurgeryRequest(action.payload));
+    yield put(fetchHistoryRequest(action.payload));
+    yield* refreshWorklistSaga();
   } catch (err) {
     yield put(
       surgeryMutationFailure(
@@ -203,6 +316,9 @@ function* endSurgerySaga(action: PayloadAction<string>) {
     yield call(endSurgery, action.payload);
     yield put(surgeryMutationSuccess());
     yield put(fetchTodaySurgeriesRequest());
+    yield put(fetchSurgeryRequest(action.payload));
+    yield put(fetchHistoryRequest(action.payload));
+    yield* refreshWorklistSaga();
   } catch (err) {
     yield put(
       surgeryMutationFailure(
@@ -215,8 +331,11 @@ function* endSurgerySaga(action: PayloadAction<string>) {
 /** 수술 스케줄 관련 요청을 감시한다(최신 요청만 처리) */
 export default function* scheduleSaga() {
   yield takeLatest(fetchSurgeriesRequest.type, fetchSurgeriesSaga);
+  yield takeLatest(searchSurgeriesRequest.type, searchSurgeriesSaga);
   yield takeLatest(fetchTodaySurgeriesRequest.type, fetchTodaySurgeriesSaga);
   yield takeLatest(fetchSurgeryRequest.type, fetchSurgerySaga);
+  yield takeLatest(fetchHistoryRequest.type, fetchHistorySaga);
+  yield takeLatest(assignFieldRequest.type, assignFieldSaga);
   yield takeLatest(updateSurgeryRequest.type, updateSurgerySaga);
   yield takeLatest(cancelSurgeryRequest.type, cancelSurgerySaga);
   yield takeLatest(updateProgressRequest.type, updateProgressSaga);

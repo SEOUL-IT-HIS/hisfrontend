@@ -2,13 +2,13 @@ import { all, fork } from "redux-saga/effects";
 
 // ----- 서비스별 saga (담당자 saga 준비되면 import 후 fork 등록) -----
 // import patientSaga from "@/features/patient/saga";
-// import receptionSaga from "@/features/reception/saga";
+import receptionSaga from "@/features/reception/saga";
 // import billingSaga from "@/features/billing/saga";
 import outpatientSaga from "@/features/outpatient/common/saga";
 import emergencySaga from "@/features/emergency/common/saga";
 import inpatientSaga from "@/features/inpatient/saga";
 import labImagingSaga from "@/features/labimaging/common/saga";
-// import pharmacySaga from "@/features/pharmacy/saga";
+import pharmacySaga from "@/features/pharmacy/saga";
 import surgerySaga from "@/features/surgery/saga";
 // import adminSaga from "@/features/admin/saga";
 import watchCommonCodeItemSaga from "@/features/commonCode/saga/commonCodeItemSaga";
@@ -35,14 +35,14 @@ export default function* rootSaga() {
       fork(labImagingSaga),
     // fork(adminSaga),
     fork(watchPatientSaga),
-    // fork(receptionSaga),
+    fork(receptionSaga),
     fork(billingDetailSaga),
     fork(billingMasterSaga),
     fork(billingPaymentSaga),
      fork(outpatientSaga),
     fork(emergencySaga),
     fork(inpatientSaga),
-    // fork(pharmacySaga),
+    fork(pharmacySaga),
     fork(surgerySaga),
   ]);
 }

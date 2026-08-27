@@ -4,7 +4,12 @@
  * <p>백엔드 SurgeryDto 와 1:1 대응. 날짜 필드 구분에 주의한다(§14.2):
  * `_dt`(DATE)는 yyyy-MM-dd 문자열, `_at`(TIMESTAMP)은 ISO 일시 문자열이다.</p>
  */
-import type { CodeValue, PageParams, YnFlag } from "@/features/surgery/types";
+import type {
+  CodeValue,
+  PageParams,
+  PageResponse,
+  YnFlag,
+} from "@/features/surgery/types";
 
 /**
  * 수술 상태 코드 (SURGERY_STATUS_CD)
@@ -114,13 +119,57 @@ export type AssignSurgeryRequest = {
 };
 
 /**
+ * 개별 배정 요청 (SL2-13 집도의 / SL2-15 수술실 / SL2-43 마취의 / SL2-63 간호사)
+ *
+ * <p>백엔드 {@code AssignmentRequest} 와 짝이다. 넷이 같은 본문을 쓰고 각 엔드포인트가
+ * 자기 필드만 읽는다 — 그래서 보낼 항목 하나만 채우면 된다.</p>
+ *
+ * <p><b>빈 문자열을 보내면 해제</b>다(SL2-166). 단 집도의는 해제할 수 없어 400 이 온다.
+ * 위 {@link AssignSurgeryRequest} 는 오더를 처음 배정할 때 쓰는 것이고, 이쪽은 이미
+ * 만들어진 수술의 배정을 하나씩 고칠 때 쓴다.</p>
+ */
+export type AssignFieldRequest = {
+  roomCode?: string;
+  surgeonId?: string;
+  anesthesiologistId?: string;
+  nurseId?: string;
+};
+
+/**
+ * 상태변경 이력 (SL2-282, SURGERY_STATUS_HISTORY)
+ *
+ * <p>{@code statusType} 이 어느 코드의 변화인지 구분한다 — STATUS(예약→진행중 같은 큰 전이)
+ * 또는 PROGRESS(당일 진행단계).</p>
+ *
+ * <p>{@code changedBy} 는 지금 항상 null 이다. 수술 서비스에 로그인 세션이 없어 서버가
+ * 변경자를 알 수 없다(SL2-303·304 와 같은 벽).</p>
+ */
+export type SurgeryStatusHistory = {
+  historyId: string;
+  surgeryId: string;
+  statusType: string;
+  /** 처음 만들어질 때는 null */
+  beforeCd: CodeValue | null;
+  afterCd: CodeValue;
+  reasonCd: CodeValue | null;
+  changedBy: string | null;
+  /** ISO 일시 (§14.2 `_at`) */
+  changedAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
  * 수술 스케줄 취소 (SL2-33)
  *
- * <p>물리 삭제가 아니라 취소 상태 전이로 처리한다(§21.6). 사유 코드는 선택
- * (백엔드 @RequestBody(required = false)).</p>
+ * <p>물리 삭제가 아니라 취소 상태 전이로 처리한다(§21.6).</p>
+ *
+ * <p><b>사유는 필수다</b>(2026-08-26, SL2-178). 예전에는 선택이었는데, 이 엔드포인트가
+ * 반려를 겸하던 시절의 잔재였다. 반려가 오더로 옮겨간 뒤로는 순수 취소 전용이고,
+ * 되돌릴 수 없는 전이라 왜 취소했는지가 남아야 한다. 백엔드도 {@code @NotBlank} 다.</p>
  */
 export type CancelSurgeryRequest = {
-  cancelReasonCd?: CodeValue;
+  cancelReasonCd: CodeValue;
 };
 
 /** 수술 진행상태 변경 (SL2-39) */
@@ -132,6 +181,27 @@ export type UpdateProgressRequest = {
 export type SurgeryListParams = {
   /** yyyy-MM-dd, 미지정 시 전체 조회 */
   date?: string;
+};
+
+/**
+ * 수술 검색 파라미터 (SL2-314 기록지 조회 / SL2-334 간호기록 조회)
+ *
+ * <p>백엔드 {@code GET /api/surgery/schedule/assignments} 와 짝을 이룬다.
+ * 조건은 전부 선택이고, 비우면 그 조건은 없는 것으로 본다.</p>
+ *
+ * <p><b>환자·집도의를 이름이 아니라 식별자로 받는 이유</b> — 둘 다 다른 서비스가
+ * 소유한 데이터라 수술 DB 에 이름이 없다(§21.9). 이름으로 찾으려면 환자·직원 서비스에서
+ * 먼저 식별자를 받아와야 한다. 지금은 식별자 정확일치만 지원한다.</p>
+ */
+export type SurgerySearchParams = PageParams & {
+  patientId?: string;
+  surgeonId?: string;
+  roomCode?: string;
+  statusCd?: CodeValue;
+  /** 수술일 시작 yyyy-MM-dd */
+  fromDt?: string;
+  /** 수술일 종료 yyyy-MM-dd */
+  toDt?: string;
 };
 
 // 배정 대기 목록 검색 파라미터는 오더로 옮겼다 — features/surgery/order/types.ts
@@ -149,6 +219,17 @@ export type ScheduleState = {
   surgeries: Surgery[];
   todaySurgeries: Surgery[];
   selectedSurgery: Surgery | null;
+  /**
+   * 검색 결과 (SL2-314·334). 아직 검색한 적이 없으면 null 이다.
+   *
+   * <p>surgeries 와 따로 두는 이유 — 그쪽은 조건 없이 받아오는 전체 목록이라 성격이
+   * 다르고, 페이징 정보(총건수·페이지수)도 여기에만 있다.</p>
+   */
+  searchResult: PageResponse<Surgery> | null;
+  /** 마지막 검색 조건. 페이지를 넘길 때 조건을 그대로 유지하려고 들고 있다 */
+  searchParams: SurgerySearchParams;
+  /** 선택한 수술의 상태변경 이력 (SL2-282) */
+  history: SurgeryStatusHistory[];
   loading: boolean;
   saving: boolean;
   /** SUR### 코드 또는 완성 문구 — 노출 직전 resolveSurgeryMessage 로 변환한다(§15.2) */

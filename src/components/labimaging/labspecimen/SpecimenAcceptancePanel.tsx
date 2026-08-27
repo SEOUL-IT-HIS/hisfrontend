@@ -4,6 +4,7 @@ import { useEffect, useState, type ChangeEvent, type SubmitEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveLabSpecimenMessage } from "@/features/labimaging/labspecimen/messages";
 import {
@@ -79,6 +80,12 @@ export default function SpecimenAcceptancePanel({
 
   const rejectReasons = useCommonCodeOptions(SPECIMEN_REJECT_CD);
 
+  /*
+   * ⚠ 판정은 되돌릴 수 없다. 검체 1건당 판정 1건이라 잘못 누르면 LAB022 로 막히고 수정도 안 된다.
+   *   누구 검체를 판정하는지 폼 옆에서 다시 확인할 수 있게 이름을 띄운다.
+   */
+  const { names: patientNames } = usePatientNames([reception.patientId]);
+
   const [selectedSpecimenId, setSelectedSpecimenId] = useState<string>("");
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -92,6 +99,12 @@ export default function SpecimenAcceptancePanel({
     dispatch(fetchSpecimensRequest(reception.receptionNo));
   }, [dispatch, reception.receptionNo]);
 
+  /*
+   * ⚠ 판정 여부를 서버에서 걸러 받지 않고 여기서 나눈다. 백엔드에 judgedYn 필터가 있지만 안 쓴다.
+   *   판정이 끝난 검체도 목록에 회색으로 남겨야 "3건 중 2건 판정" 이 보이는데,
+   *   서버에서 미판정만 받아오면 방금 판정한 줄이 사라져 결과를 확인할 수 없다.
+   *   unjudged 는 "몇 건 남았는지" 세는 용도이고, 표시는 specimens 전체로 한다.
+   */
   const unjudged = specimens.filter((s) => !s.fitnessStatus);
   const selected = specimens.find((s) => s.specimenId === selectedSpecimenId) ?? null;
   const isUnfit = form.fitnessStatus === "UNFIT";
@@ -172,6 +185,13 @@ export default function SpecimenAcceptancePanel({
           판정이 등록되었습니다.
         </Alert>
       ) : null}
+
+      <p className="text-sm text-slate-500">
+        대상 환자{" "}
+        <span className="font-semibold text-slate-800">
+          {patientNames[reception.patientId] ?? "미상"}
+        </span>
+      </p>
 
       {/* ---------- 판정 대상 검체 고르기 ---------- */}
       <div className="flex flex-col gap-2">

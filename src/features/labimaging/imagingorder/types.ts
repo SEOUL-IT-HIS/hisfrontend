@@ -22,8 +22,6 @@ export interface ImageOrderCreateRequest {
   imageOrderNo: string;
   /** 연계시스템코드 (예: "GR2") */
   systemCode: string;
-  /** 환자번호 (화면 표시용 업무번호) */
-  patientNo: string;
   /** 환자ID (patient-service 내부 식별자, 참조/검증용) */
   patientId: string;
   /** 처방의번호 (화면 표시용 업무번호, NULL 허용) */
@@ -63,10 +61,9 @@ export interface ImageOrderCreateResponse {
 export interface ImageReceptionSummary extends ImageReceptionContext {
   imageOrderId: string;
   imageOrderNo: string;
-  patientNo: string;
   /**
    * 환자ID (patient-service 내부 식별자).
-   * 하위 작업(동의 등록 등)이 요청 본문에 담아야 해서 함께 내려온다. 화면 표시용은 patientNo 다.
+   * 하위 작업(동의 등록 등)의 요청 본문에 담고, 화면의 환자명 조회에도 쓴다.
    */
   patientId: string;
   orderStatusCode: string;
@@ -132,7 +129,6 @@ export const RECEPTION_FILTER_OPTIONS: ReadonlyArray<{
 export interface ImageReceptionContext {
   imageReceptionId: string;
   receptionNo: string;
-  patientNo: string;
 }
 
 /**
@@ -140,6 +136,8 @@ export interface ImageReceptionContext {
  * 목록(ImageReceptionSummary)과 달리 촬영항목(imageItemCodes)을 담는다.
  */
 export interface ImageReceptionDetail extends ImageReceptionContext {
+  /** 환자ID — 표시용이 아니라 환자명을 조회하는 열쇠 */
+  patientId: string;
   imageOrderNo: string;
   /** 진료구분코드 (공통코드 RCPT_TYPE_CD) */
   treatTypeCode: string;

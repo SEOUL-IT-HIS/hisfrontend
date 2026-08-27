@@ -284,7 +284,7 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
         </Link>
         {!collapsed ? (
           <div>
-            <p className="text-sm font-semibold text-slate-800">산대의원</p>
+            <p className="text-sm font-semibold text-slate-800">산대병원</p>
             <p className="text-[11px] text-slate-400">Hospital Workspace</p>
           </div>
         ) : null}

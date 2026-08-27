@@ -3,7 +3,7 @@ import SurgeryAssignForm from "@/components/surgery/schedule/SurgeryAssignForm";
 type Props = { params: Promise<{ orderId: string }> };
 
 /**
- * 수술실 배정 화면 (오더 접수 00 → 수락 01)
+ * 배정 등록 화면 (오더 접수 00 → 수락 01)
  * 경로: /surgery/schedule/assign/[orderId] (§8.1 update 계열)
  *
  * <p><b>수술 식별자가 아니라 오더 식별자를 받는다</b>(2026-08-13) — 수술은 배정이
@@ -15,7 +15,7 @@ export default async function Page({ params }: Props) {
 
   return (
     <div className="mx-auto w-full max-w-3xl p-6">
-      <h1 className="mb-6 text-lg font-semibold text-slate-800">수술실 배정</h1>
+      <h1 className="mb-6 text-lg font-semibold text-slate-800">배정 등록</h1>
       <SurgeryAssignForm orderId={orderId} />
     </div>
   );

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, DataTable, Panel } from "@/components/common";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import type { DataTableColumn } from "@/components/common";
 import { resolveImageOrderMessage } from "@/features/labimaging/imagingorder/messages";
 import {
@@ -33,6 +34,8 @@ export default function ConsentScreen() {
   const dispatch = useDispatch<AppDispatch>();
 
   const receptions = useSelector(selectImageReceptions);
+  // 환자번호를 화면에서 뺐으므로 환자 식별은 이름으로 한다.
+  const { names: patientNames } = usePatientNames(receptions.map((r) => r.patientId));
   const loading = useSelector(selectImageReceptionsLoading);
   const error = useSelector(selectImageReceptionsError);
 
@@ -61,7 +64,10 @@ export default function ConsentScreen() {
           }
         >
           {r.imageOrderNo}
-          <span className="ml-2 font-normal text-slate-400">{r.patientNo}</span>
+          {/* 환자번호는 화면에서 쓰지 않는다. 식별은 이름으로. (2026-08-25) */}
+          <span className="ml-2 font-normal text-slate-400">
+            {patientNames[r.patientId] ?? "미상"}
+          </span>
         </button>
       ),
     },
@@ -120,7 +126,8 @@ export default function ConsentScreen() {
                 {selected.imageOrderNo}
               </p>
               <p className="text-sm text-slate-500">
-                환자 {selected.patientNo} · 접수 {selected.receptionNo}
+                환자 {patientNames[selected.patientId] ?? "미상"} · 접수{" "}
+                {selected.receptionNo}
               </p>
             </div>
             {/*

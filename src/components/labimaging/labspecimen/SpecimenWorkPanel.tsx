@@ -12,6 +12,7 @@ import {
   Select,
 } from "@/components/common";
 import type { DataTableColumn } from "@/components/common";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveLabSpecimenMessage } from "@/features/labimaging/labspecimen/messages";
 import {
@@ -75,6 +76,12 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
   // 검체용기코드는 admin 공통코드다. (검체종류는 서비스 내부 Enum 이라 상수 목록을 쓴다)
   const containerCodes = useCommonCodeOptions("SPECIMEN_CONTAINER_CD");
 
+  /*
+   * ⚠ 채취는 환자를 잘못 고르면 되돌릴 수 없는 작업이다.
+   *   위쪽 머리말에도 이름이 있지만, 폼 바로 옆에서 한 번 더 확인할 수 있게 둔다.
+   */
+  const { names: patientNames } = usePatientNames([reception.patientId]);
+
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
 
@@ -111,7 +118,6 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
           labReceptionId: reception.labReceptionId,
           specimenContainerCode: form.specimenContainerCode,
           specimenType: form.specimenType,
-          patientNo: reception.patientNo,
           patientId: reception.patientId,
           collectedAt: form.collectedAt,
           collectedById: form.collectedById.trim(),
@@ -178,6 +184,13 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
         ) : null}
         {createError ? <Alert>{resolveLabSpecimenMessage(createError)}</Alert> : null}
         {containerCodes.error ? <Alert>{containerCodes.error}</Alert> : null}
+
+        <p className="text-sm text-slate-500">
+          대상 환자{" "}
+          <span className="font-semibold text-slate-800">
+            {patientNames[reception.patientId] ?? "미상"}
+          </span>
+        </p>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField label="검체용기" required>

@@ -28,10 +28,22 @@ import { ORDER_STATUS } from "@/features/surgery/order/types";
 import { fetchEmpApi } from "@/features/emp/api/empApi";
 import type { Emp } from "@/features/emp/types/empTypes";
 
-type Props = { orderId: string };
+type Props = {
+  orderId: string;
+  /**
+   * 배정이 끝났을 때 할 일. 대기 목록 화면이 마스터-디테일이 되면서 생겼다(2026-08-27).
+   *
+   * <p>주지 않으면 예전처럼 {@code /surgery/schedule/requests} 로 이동한다 —
+   * {@code /surgery/schedule/assign/[orderId]} 로 직접 들어온 경우다. 대기 목록 안에
+   * 끼워 쓸 때는 이동할 곳이 없으므로(이미 그 화면이다) 선택만 놓으면 된다.</p>
+   */
+  onAssigned?: () => void;
+  /** 취소를 눌렀을 때. 주지 않으면 대기 목록으로 이동한다 */
+  onCancel?: () => void;
+};
 
 /**
- * 수술실 배정 화면 (오더 접수 00 → 수락 01)
+ * 배정 등록 화면 (오더 접수 00 → 수락 01)
  *
  * <p><b>배정이 곧 수락이다</b>(2026-08-13) — 담당자가 하는 일은 수술실을 정하는 것이고,
  * 수술실이 정해지는 순간 요청이 받아들여진 것이므로 오더가 수락으로 바뀌고 그때
@@ -44,7 +56,11 @@ type Props = { orderId: string };
  * <p>수술실 목록은 사용가능(01) 상태만 받아온다. 점검중·폐쇄 수술실은 백엔드도
  * 배정을 거부하므로(SUR045) 선택지에 올리지 않는다.</p>
  */
-export default function SurgeryAssignForm({ orderId }: Props) {
+export default function SurgeryAssignForm({
+  orderId,
+  onAssigned,
+  onCancel,
+}: Props) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const orders = useSelector(selectSurgeryOrders);
@@ -93,10 +109,11 @@ export default function SurgeryAssignForm({ orderId }: Props) {
   useEffect(() => {
     if (submitted.current && !saving && !error) {
       submitted.current = false;
-      router.push("/surgery/schedule/requests");
+      if (onAssigned) onAssigned();
+      else router.push("/surgery/schedule/requests");
     }
     if (!saving && error) submitted.current = false;
-  }, [saving, error, router]);
+  }, [saving, error, router, onAssigned]);
 
   const order = orders.find((o) => o.orderId === orderId);
 
@@ -226,8 +243,10 @@ export default function SurgeryAssignForm({ orderId }: Props) {
       {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
       <FormActions
-        onCancel={() => router.push("/surgery/schedule/requests")}
-        cancelLabel="대기 목록"
+        onCancel={
+          onCancel ?? (() => router.push("/surgery/schedule/requests"))
+        }
+        cancelLabel={onCancel ? "선택 해제" : "대기 목록"}
         submitLabel="배정 확정"
         loading={saving}
         loadingLabel="배정 중…"
