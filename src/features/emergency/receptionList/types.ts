@@ -2,7 +2,7 @@ export type ReceptionListItem = {
     receptionNo: string;
     patientName: string;
     receivedAt: string;
-    ktasLevel: string;
+    ktasLevelCode: string;
 };
 
 export type ReceptionListState = {

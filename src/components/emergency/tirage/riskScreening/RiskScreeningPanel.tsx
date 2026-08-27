@@ -40,7 +40,7 @@ const resultBadgeClass: Record<string, string> = {
 };
 
 const SCREEN_TOOL_GUIDE: Record<string, string> = {
-  SEPSIS: "qSOFA — 호흡수≥22 · 의식저하(GCS<15) · 수축기혈압≤100 중 2개 이상이면 고위험(POSITIVE)",
+  SEPSIS: "qSOFA — 빈호흡(호흡수≥22) · 의식저하(GCS<15) · 저혈압(수축기혈압≤100) 중 2개 이상이면 고위험(POSITIVE)",
   STROKE: "FAST — 안면마비 · 팔처짐 · 발음이상 중 하나라도 있으면 양성(POSITIVE)",
 };
 
@@ -90,25 +90,25 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
             {
               met:
                 latestVitals.respRate !== null && latestVitals.respRate !== undefined && latestVitals.respRate >= 22,
-              label: `빈호흡 (호흡수 ${latestVitals.respRate ?? "-"}회/분)`,
+              label: `호흡수 ${latestVitals.respRate ?? "-"}회/분 (빈호흡 기준 ≥22)`,
             },
             {
               met: latestVitals.gcs !== null && latestVitals.gcs !== undefined && latestVitals.gcs < 15,
-              label: `의식저하 (GCS ${latestVitals.gcs ?? "-"})`,
+              label: `GCS ${latestVitals.gcs ?? "-"} (의식저하 기준 <15)`,
             },
             {
               met:
                 latestVitals.systolicBp !== null &&
                 latestVitals.systolicBp !== undefined &&
                 latestVitals.systolicBp <= 100,
-              label: `저혈압 (수축기 ${latestVitals.systolicBp ?? "-"}mmHg)`,
+              label: `수축기혈압 ${latestVitals.systolicBp ?? "-"}mmHg (저혈압 기준 ≤100)`,
             },
           ];
-          const metCriteria = criteria.filter((c) => c.met);
+          const metCount = criteria.filter((c) => c.met).length;
           return {
-            score: metCriteria.length,
-            resultCode: metCriteria.length >= 2 ? "POSITIVE" : "NEGATIVE",
-            reasons: metCriteria.map((c) => c.label),
+            score: metCount,
+            resultCode: metCount >= 2 ? "POSITIVE" : "NEGATIVE",
+            criteria,
           } as const;
         })()
       : null;
@@ -126,11 +126,12 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
   const fastSuggestion =
     form.screenType === "STROKE"
       ? (() => {
-          const checked = FAST_CHECK_ITEMS.filter((item) => fastChecks[item.key]);
+          const criteria = FAST_CHECK_ITEMS.map((item) => ({ met: fastChecks[item.key], label: item.label }));
+          const metCount = criteria.filter((c) => c.met).length;
           return {
-            score: checked.length,
-            resultCode: checked.length >= 1 ? "POSITIVE" : "NEGATIVE",
-            reasons: checked.map((item) => item.label),
+            score: metCount,
+            resultCode: metCount >= 1 ? "POSITIVE" : "NEGATIVE",
+            criteria,
           } as const;
         })()
       : null;
@@ -270,21 +271,27 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
           ) : null}
 
           {qsofaSuggestion || fastSuggestion ? (
-            <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-              <span>
-                자동계산: {(qsofaSuggestion ?? fastSuggestion)!.score}점 (
-                {(qsofaSuggestion ?? fastSuggestion)!.resultCode === "POSITIVE" ? "양성 권장" : "음성 권장"})
-                {(qsofaSuggestion ?? fastSuggestion)!.reasons.length > 0
-                  ? ` — 해당: ${(qsofaSuggestion ?? fastSuggestion)!.reasons.join(", ")}`
-                  : ""}
-              </span>
-              <button
-                type="button"
-                onClick={qsofaSuggestion ? applyQsofaSuggestion : applyFastSuggestion}
-                className="shrink-0 rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white"
-              >
-                적용
-              </button>
+            <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">
+                  자동계산: {(qsofaSuggestion ?? fastSuggestion)!.score}점 (
+                  {(qsofaSuggestion ?? fastSuggestion)!.resultCode === "POSITIVE" ? "양성 권장" : "음성 권장"})
+                </span>
+                <button
+                  type="button"
+                  onClick={qsofaSuggestion ? applyQsofaSuggestion : applyFastSuggestion}
+                  className="shrink-0 rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white"
+                >
+                  적용
+                </button>
+              </div>
+              <ul className="mt-1.5 space-y-0.5">
+                {(qsofaSuggestion ?? fastSuggestion)!.criteria.map((c, i) => (
+                  <li key={i} className={c.met ? "font-medium text-emerald-700" : "text-slate-400"}>
+                    {c.met ? "✓" : "·"} {c.label}
+                  </li>
+                ))}
+              </ul>
             </div>
           ) : null}
 
