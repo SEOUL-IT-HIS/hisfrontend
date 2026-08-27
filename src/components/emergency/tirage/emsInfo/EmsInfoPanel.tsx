@@ -63,7 +63,9 @@ export default function EmsInfoPanel({ receptionNo, className = "" }: EmsInfoPan
         </div>
       ) : !searched || items.length === 0 ? (
         <p className="rounded-lg bg-slate-50 px-3 py-6 text-center text-sm text-slate-400">
-          EMS 사전정보가 없습니다. 도보/직접 내원 등 119 이송이 아닌 접수 건일 수 있습니다.
+          EMS 사전정보가 없습니다.
+          <br />
+          도보/직접 내원 등 119 이송이 아닌 접수 건일 수 있습니다.
         </p>
       ) : (
         <div className="space-y-3">

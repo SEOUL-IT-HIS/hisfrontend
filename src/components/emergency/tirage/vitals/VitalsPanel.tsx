@@ -14,7 +14,7 @@ import {
   selectVitalsSubmitError,
   selectVitalsSubmitting,
 } from "@/features/emergency/triage/vitals/slice";
-import { formatDateTime } from "@/features/emergency/utils";
+import { formatDateTime, formatVitalDisplay } from "@/features/emergency/utils";
 
 type VitalsPanelProps = {
   receptionNo: string;
@@ -60,7 +60,11 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
     }
   }
 
-  const latest = items.length > 0 ? items[items.length - 1] : null;
+  // 백엔드가 조회 순서를 보장하지 않으므로(ORDER BY 없음), 프론트에서 측정시각 기준으로 직접 정렬한다.
+  const sortedItems = [...items].sort(
+    (a, b) => new Date(a.measuredAt).getTime() - new Date(b.measuredAt).getTime(),
+  );
+  const latest = sortedItems.length > 0 ? sortedItems[sortedItems.length - 1] : null;
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
@@ -107,13 +111,17 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
       ) : (
         <>
           {latest ? (
-            <dl className="mb-4 grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-3 text-sm sm:grid-cols-6">
-              <div><dt className="text-xs text-slate-500">수축기혈압</dt><dd>{latest.systolicBp ?? "-"}</dd></div>
-              <div><dt className="text-xs text-slate-500">맥박</dt><dd>{latest.heartRate ?? "-"}</dd></div>
+            <dl className="mb-4 grid grid-cols-4 gap-2 rounded-lg bg-slate-50 p-3 text-sm sm:grid-cols-7">
+              <div>
+                <dt className="text-xs text-slate-500">&nbsp;</dt>
+                <dd className="text-slate-400">{formatDateTime(latest.measuredAt)}</dd>
+              </div>
+              <div><dt className="text-xs text-slate-500">수축기혈압</dt><dd>{formatVitalDisplay("systolicBp", latest.systolicBp)}</dd></div>
+              <div><dt className="text-xs text-slate-500">맥박</dt><dd>{formatVitalDisplay("heartRate", latest.heartRate)}</dd></div>
               <div><dt className="text-xs text-slate-500">호흡수</dt><dd>{latest.respRate ?? "-"}</dd></div>
-              <div><dt className="text-xs text-slate-500">체온</dt><dd>{latest.temperature ?? "-"}</dd></div>
-              <div><dt className="text-xs text-slate-500">SpO2</dt><dd>{latest.spo2 ?? "-"}</dd></div>
-              <div><dt className="text-xs text-slate-500">GCS</dt><dd>{latest.gcs ?? "-"}</dd></div>
+              <div><dt className="text-xs text-slate-500">체온</dt><dd>{formatVitalDisplay("temperature", latest.temperature, "℃")}</dd></div>
+              <div><dt className="text-xs text-slate-500">SpO2</dt><dd>{formatVitalDisplay("spo2", latest.spo2, "%")}</dd></div>
+              <div><dt className="text-xs text-slate-500">GCS</dt><dd>{formatVitalDisplay("gcs", latest.gcs)}</dd></div>
             </dl>
           ) : (
             <p className="mb-4 rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-400">
@@ -121,9 +129,9 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
             </p>
           )}
 
-          {items.length > 1 ? (
+          {sortedItems.length > 1 ? (
             <ul className="mb-4 space-y-1 text-xs text-slate-500">
-              {items.slice(0, -1).reverse().map((item) => (
+              {sortedItems.slice(0, -1).reverse().map((item) => (
                 <li key={item.id}>
                   {formatDateTime(item.measuredAt)} · BP {item.systolicBp ?? "-"} · HR {item.heartRate ?? "-"} · RR{" "}
                   {item.respRate ?? "-"} · SpO2 {item.spo2 ?? "-"} · GCS {item.gcs ?? "-"}
@@ -136,25 +144,25 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <FormField label="수축기혈압">
-              <Input type="number" name="systolicBp" value={form.systolicBp} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="systolicBp" value={form.systolicBp} onChange={handleChange} disabled={submitting} className="max-w-[120px]" />
             </FormField>
             <FormField label="맥박">
-              <Input type="number" name="heartRate" value={form.heartRate} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="heartRate" value={form.heartRate} onChange={handleChange} disabled={submitting} className="max-w-[120px]" />
             </FormField>
             <FormField label="호흡수">
-              <Input type="number" name="respRate" value={form.respRate} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="respRate" value={form.respRate} onChange={handleChange} disabled={submitting} className="max-w-[120px]" />
             </FormField>
             <FormField label="체온">
-              <Input type="number" step="0.1" name="temperature" value={form.temperature} onChange={handleChange} disabled={submitting} />
+              <Input type="number" step="0.1" name="temperature" value={form.temperature} onChange={handleChange} disabled={submitting} className="max-w-[120px]" />
             </FormField>
             <FormField label="SpO2">
-              <Input type="number" name="spo2" value={form.spo2} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="spo2" value={form.spo2} onChange={handleChange} disabled={submitting} className="max-w-[120px]" />
             </FormField>
             <FormField label="GCS">
-              <Input type="number" name="gcs" value={form.gcs} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="gcs" value={form.gcs} onChange={handleChange} disabled={submitting} className="max-w-[120px]" />
             </FormField>
             <FormField label="측정자ID" className="sm:col-span-3">
-              <Input name="measuredById" value={form.measuredById} onChange={handleChange} disabled={submitting} maxLength={36} />
+              <Input name="measuredById" value={form.measuredById} onChange={handleChange} disabled={submitting} maxLength={36} className="max-w-xs" />
             </FormField>
           </div>
           <div className="mt-3 flex justify-end">

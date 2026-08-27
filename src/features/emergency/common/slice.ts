@@ -5,6 +5,7 @@ import vitalsReducer from "@/features/emergency/triage/vitals/slice";
 import isolationReducer from "@/features/emergency/triage/isolation/slice";
 import riskScreeningReducer from "@/features/emergency/triage/riskScreening/slice";
 import commonCodeReducer from "@/features/emergency/commonCode/slice";
+import receptionListReducer from "@/features/emergency/receptionList/slice";
 
 /**
  * emergency 도메인 결합 reducer
@@ -19,6 +20,7 @@ const emergencyReducer = combineReducers({
   isolation: isolationReducer,
   riskScreening: riskScreeningReducer,
   commonCode: commonCodeReducer,
+  receptionList : receptionListReducer,
 });
 
 export default emergencyReducer;

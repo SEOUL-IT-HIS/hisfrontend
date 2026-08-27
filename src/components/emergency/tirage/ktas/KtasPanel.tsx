@@ -167,7 +167,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
               />
             </FormField>
             <FormField label="사유" className="sm:col-span-2">
-              <Input name="reason" value={form.reason} onChange={handleChange} disabled={submitting} maxLength={200} />
+              <Input name="reason" value={form.reason} onChange={handleChange} disabled={submitting} maxLength={200} className="max-w-md" />
             </FormField>
             <FormField label="분류자ID">
               <Input
@@ -176,6 +176,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
                 onChange={handleChange}
                 disabled={submitting}
                 maxLength={36}
+                className="max-w-[200px]"
               />
             </FormField>
           </div>

@@ -6,7 +6,7 @@ import TriagePanelHost from "@/components/emergency/common/TriagePanelHost";
  */
 export default function Page() {
   return (
-    <div className="mx-auto h-full w-full max-w-6xl p-6">
+    <div className="h-full w-full p-6">
       <h1 className="mb-6 text-lg font-semibold text-slate-800">상태평가 (Triage)</h1>
       <TriagePanelHost />
     </div>

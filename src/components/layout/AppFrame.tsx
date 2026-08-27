@@ -15,10 +15,14 @@ type AppFrameProps = {
 const BARE_PATHS = ["/login"];
 const ACTIVITY_CHECK_INTERVAL = 1000 * 60 * 5;
 
+/** 로컬 개발 전용: admin-service 없이 화면만 보고 싶을 때 .env.local 에서 true 로 설정 */
+const SKIP_AUTH = process.env.NEXT_PUBLIC_SKIP_AUTH === "true";
+
 /**
  * 공통 레이아웃 프레임
  * - /login : AppShell 없이 폼만
  * - 그 외 : 세션 확인(GET /api/auth/me) 후 인증되면 Sidebar+Header, 아니면 /login 이동
+ *   (SKIP_AUTH=true 면 이 확인을 건너뛰고 바로 AppShell 렌더링)
  */
 export default function AppFrame({ children }: AppFrameProps) {
   const pathname = usePathname();
@@ -57,6 +61,7 @@ export default function AppFrame({ children }: AppFrameProps) {
 
   // ① 아직 로그인 여부를 모르면(authUser 없음) 서버에 물어본다 (GET /api/auth/me)
   useEffect(() => {
+    if (SKIP_AUTH) return;
     if (isBare) {
       meChecked.current = false;
       hadSession.current = false;
@@ -102,6 +107,7 @@ export default function AppFrame({ children }: AppFrameProps) {
   // ② ①의 확인 결과가 "로그인 안 되어 있음"으로 나오면 로그인 화면으로 보낸다
   // hadSession이 true였다면 "쓰다가 만료된 것"이므로 안내 문구가 붙는 경로로 보낸다
   useEffect(() => {
+    if (SKIP_AUTH) return;
     if (isBare) return;
     if (authUser) return;
     if (authLoading) return;
@@ -121,7 +127,8 @@ export default function AppFrame({ children }: AppFrameProps) {
 
   // 아직 로그인 여부를 모르는 상태(위 ①이 진행 중)와, 확인 결과 로그인이 안 된 상태(곧 ②가 리다이렉트 시킴)
   // 둘 다 authUser가 없다 — 어느 쪽이든 보호된 화면(AppShell)을 잠깐이라도 보여주면 안 되므로 로딩 화면만 표시한다.
-  if (!authUser) {
+  // (SKIP_AUTH=true 면 이 판단 자체를 건너뛰고 바로 AppShell을 렌더링한다)
+  if (!SKIP_AUTH && !authUser) {
     return (
       <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
         확인 중...
