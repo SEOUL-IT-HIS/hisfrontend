@@ -13,7 +13,7 @@ export const fetchPrescriptionList = async (
     return response.data.data;
 };
 
-// 처방 상세 조회 API (처방 ID 기준)
+// 처방 상세 조회 API
 export const fetchPrescriptionDetail = async (
     prescriptionId: string
 ): Promise<PrescriptionDto> => {

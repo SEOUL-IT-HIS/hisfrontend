@@ -74,7 +74,7 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
                             {prescription.patientName ?? "미상"}
                         </h3>
                         <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-600 border border-slate-200">
-                            {prescription.patientNo ?? prescription.patientId}
+                            {prescription.patientId}
                         </span>
                         <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-600 border border-slate-200">
                             진료ID: {prescription.encounterId}

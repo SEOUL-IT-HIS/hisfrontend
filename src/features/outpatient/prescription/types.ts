@@ -1,4 +1,4 @@
-// 처방 상세 항목 (약품/검사/처치 등)
+// 처방 상세 항목
 export interface PrescriptionItemDto {
     itemId: string;             // 상세항목ID
     prescriptionId: string;     // 처방ID
@@ -11,13 +11,12 @@ export interface PrescriptionItemDto {
     detailInfo?: string;        // 상세정보
 }
 
-// 처방 (백엔드 PrescriptionDto 와 1:1 매칭)
+// 처방
 export interface PrescriptionDto {
     prescriptionId: string;            // 처방ID
     encounterId: string;               // 진료ID
     patientId: string;                 // 환자ID
-    patientNo?: string | null;         // 환자번호 (PAT 연동)
-    patientName?: string | null;       // 환자명 (PAT 연동)
+    patientName?: string | null;       // 환자명
     serviceType?: string | null;       // 진료구분
     status: string;                    // 처방상태
     prescribedAt: string;              // 처방일시
@@ -44,7 +43,18 @@ export interface PrescriptionDto {
     items?: PrescriptionItemDto[] | null;
 }
 
-// 처방 목록 조회 파라미터 (환자명/환자번호/환자ID 통합 검색어)
+// 처방 목록 조회 파라미터 (환자명/환자ID 통합 검색어)
 export interface PrescriptionSearchParams {
     keyword?: string;
+}
+
+// 처방 등록 요청
+export interface PrescriptionItemInput {
+    prescriptionType: string;   // 약품, 검사, 수술
+    itemCode: string;
+    itemName: string;
+    dosage?: string;
+    frequency?: string;
+    durationDays?: string;
+    detailInfo?: string;
 }

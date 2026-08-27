@@ -3,18 +3,9 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
-import {
-    Alert,
-    Button,
-    DataTable,
-    Input,
-    PageHeader,
-    SearchBar,
-} from "@/components/common";
-import type { DataTableColumn } from "@/components/common";
+import { Alert, Button, Input } from "@/components/common";
 import PrescriptionDetail from "@/components/outpatient/prescription/PrescriptionDetail";
 import { fetchPrescriptionListRequest } from "@/features/outpatient/prescription/slice";
-import type { PrescriptionDto } from "@/features/outpatient/prescription/types";
 import type { AppDispatch, RootState } from "@/store/store";
 
 const getStatusText = (status: string) => {
@@ -85,56 +76,77 @@ const PrescriptionList = () => {
         dispatch(fetchPrescriptionListRequest({ keyword: "" }));
     }
 
-    const columns: DataTableColumn<PrescriptionDto>[] = [
-        {
-            key: "patient",
-            header: "환자명(환자ID)",
-            render: (row) => (row.patientName ? `${row.patientName}(${row.patientId})` : row.patientId),
-        },
-        { key: "serviceType", header: "진료구분", render: (row) => row.serviceType ?? "-" },
-        { key: "orderMethod", header: "처방유형", render: (row) => row.orderMethod ?? "-" },
-        { key: "priorityCode", header: "우선순위", render: (row) => row.priorityCode ?? "-" },
-        { key: "status", header: "상태", render: (row) => getStatusText(row.status) },
-        { key: "prescribedAt", header: "처방일시", render: (row) => formatDateTime(row.prescribedAt) },
-        {
-            key: "actions",
-            header: "관리",
-            render: (row) => (
-                <Button
-                    variant="secondary"
-                    onClick={() => setSelectedPrescriptionId(row.prescriptionId)}
-                >
-                    상세보기
-                </Button>
-            ),
-        },
-    ];
-
     return (
-        <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-            <h1 className="px-1 text-2xl font-bold text-slate-800">처방 조회</h1>
+        <div className="flex h-full min-h-0 flex-col gap-3 p-3">
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+                <h1 className="text-lg font-bold text-slate-800">처방 조회</h1>
 
-            <SearchBar onSearch={handleSearch} onReset={handleReset}>
-                <Input
-                    id="keyword"
-                    value={keywordInput}
-                    placeholder="환자명, 환자ID 입력"
-                    onChange={(e) => setKeywordInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="max-w-xs"
-                />
-            </SearchBar>
+                <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                        <Input
+                            id="keyword"
+                            value={keywordInput}
+                            placeholder="환자명 입력"
+                            onChange={(e) => setKeywordInput(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                        />
+                    </div>
+                    <Button variant="secondary" onClick={handleReset}>
+                        초기화
+                    </Button>
+                    <Button variant="primary" onClick={handleSearch}>
+                        조회
+                    </Button>
+                </div>
+            </div>
 
             {error && <Alert variant="error">{error}</Alert>}
 
-            <DataTable
-                columns={columns}
-                rows={list}
-                rowKey={(row) => row.prescriptionId}
-                loading={loading}
-                loadingMessage="처방 내역을 불러오는 중입니다..."
-                emptyMessage="조회된 처방 내역이 없습니다."
-            />
+            {loading ? (
+                <p className="p-4 text-center text-slate-500">처방 내역을 불러오는 중입니다...</p>
+            ) : (
+                <div className="min-h-[450px] overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+                    <table className="w-full table-fixed text-left border-collapse text-sm">
+                        <thead className="bg-slate-100 border-b border-slate-200 text-slate-700">
+                        <tr>
+                            <th className="w-[120px] p-3 font-semibold">환자명</th>
+                            <th className="w-[120px] p-3 font-semibold">진료구분</th>
+                            <th className="w-[120px] p-3 font-semibold">우선순위</th>
+                            <th className="w-[120px] p-3 font-semibold">상태</th>
+                            <th className="w-[120px] p-3 font-semibold">처방일시</th>
+                            <th className="w-[120px] p-3 font-semibold">관리</th>
+                        </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 text-slate-800">
+                        {list && list.length > 0 ? (
+                            list.map((prescription) => (
+                                <tr key={prescription.prescriptionId} className="hover:bg-slate-50 transition">
+                                    <td className="p-3">{prescription.patientName ?? prescription.patientId}</td>
+                                    <td className="p-3">{prescription.serviceType ?? "-"}</td>
+                                    <td className="p-3">{prescription.priorityCode ?? "-"}</td>
+                                    <td className="p-3">{getStatusText(prescription.status)}</td>
+                                    <td className="p-3">{formatDateTime(prescription.prescribedAt)}</td>
+                                    <td className="p-3">
+                                        <Button
+                                            variant="secondary"
+                                            onClick={() => setSelectedPrescriptionId(prescription.prescriptionId)}
+                                        >
+                                            상세보기
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={6} className="p-6 text-center text-slate-500">
+                                    조회된 처방 내역이 없습니다.
+                                </td>
+                            </tr>
+                        )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             <PrescriptionDetail
                 prescriptionId={selectedPrescriptionId}
