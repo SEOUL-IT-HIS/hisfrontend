@@ -198,7 +198,7 @@ const scheduleSlice = createSlice({
         state.saving = true;
         state.error = "";
       },
-      prepare(surgeryId: string, request?: CancelSurgeryRequest) {
+      prepare(surgeryId: string, request: CancelSurgeryRequest) {
         return { payload: { surgeryId, request } };
       },
     },

@@ -227,7 +227,7 @@ function* updateSurgerySaga(
 function* cancelSurgerySaga(
   action: PayloadAction<{
     surgeryId: string;
-    request?: CancelSurgeryRequest;
+    request: CancelSurgeryRequest;
   }>,
 ) {
   try {
