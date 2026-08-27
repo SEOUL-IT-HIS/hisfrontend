@@ -32,7 +32,9 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
         dispatch(fetchReceptionListRequest());
     }, [dispatch]);
 
-    const filtered = items.filter((item) => item.patientName.includes(keyword));
+    // 백엔드가 조회 순서를 보장하지 않으므로(ORDER BY 없음), 접수번호 오름차순(먼저 접수한 환자 순)으로 직접 정렬한다.
+    const sortedItems = [...items].sort((a, b) => a.receptionNo.localeCompare(b.receptionNo));
+    const filtered = sortedItems.filter((item) => item.patientName.includes(keyword));
     const totalPages = Math.max(Math.ceil(filtered.length / PAGE_SIZE), 1);
     const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -40,7 +42,7 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
         { key: "receptionNo", header: "접수번호", render: (r) => r.receptionNo },
         { key: "receivedAt", header: "접수시간", render: (r) => r.receivedAt },
         { key: "patientName", header: "환자명", render: (r) => r.patientName },
-        { key: "ktas", header: "KTAS", render: (r) => <KtasLevelBadge level={r.ktasLevel} /> },
+        { key: "ktas", header: "KTAS", render: (r) => <KtasLevelBadge level={r.ktasLevelCode} /> },
     ];
 
     return (

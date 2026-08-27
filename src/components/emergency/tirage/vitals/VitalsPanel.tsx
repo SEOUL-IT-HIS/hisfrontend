@@ -118,7 +118,7 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
               </div>
               <div><dt className="text-xs text-slate-500">수축기혈압</dt><dd>{formatVitalDisplay("systolicBp", latest.systolicBp)}</dd></div>
               <div><dt className="text-xs text-slate-500">맥박</dt><dd>{formatVitalDisplay("heartRate", latest.heartRate)}</dd></div>
-              <div><dt className="text-xs text-slate-500">호흡수</dt><dd>{latest.respRate ?? "-"}</dd></div>
+              <div><dt className="text-xs text-slate-500">호흡수</dt><dd>{formatVitalDisplay("respRate", latest.respRate)}</dd></div>
               <div><dt className="text-xs text-slate-500">체온</dt><dd>{formatVitalDisplay("temperature", latest.temperature, "℃")}</dd></div>
               <div><dt className="text-xs text-slate-500">SpO2</dt><dd>{formatVitalDisplay("spo2", latest.spo2, "%")}</dd></div>
               <div><dt className="text-xs text-slate-500">GCS</dt><dd>{formatVitalDisplay("gcs", latest.gcs)}</dd></div>

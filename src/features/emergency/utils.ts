@@ -33,6 +33,11 @@ const VITAL_CRITICAL_RULES : Record<string, CriticalRule[]> = {
     {min: 120, label: "빈맥"},
   ],
 
+  respRate: [
+    {max: 10, label: "서호흡"},
+    {min: 24, label: "빈호흡"},
+  ],
+
   gcs: [{max: 8,  label: "중증 의식 저하"}],
 };
 
