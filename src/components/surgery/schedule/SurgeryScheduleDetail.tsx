@@ -372,19 +372,25 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
             수술 종료
           </Button>
 
+          {/*
+            취소 사유는 필수다(SL2-178). 고르지 않으면 버튼이 잠긴다 —
+            그냥 보내면 백엔드 @NotBlank 가 400 으로 막아, 사용자는 왜 안 되는지 모른 채
+            오류만 본다. 화면에서 미리 막는 편이 낫다.
+          */}
           <div className="flex items-end gap-2">
             <FormField
               label="취소 사유"
               htmlFor="cancel-reason"
+              required
               hint={
                 cancelOptions.length === 0
-                  ? "사유 코드가 아직 등록되지 않았습니다."
+                  ? "사유 코드를 불러오지 못했습니다. admin 서비스를 확인하세요."
                   : undefined
               }
             >
               <Select
                 id="cancel-reason"
-                placeholder="선택 안 함"
+                placeholder="선택"
                 options={cancelOptions}
                 value={cancelReasonCd}
                 disabled={saving || !isScheduled}
@@ -392,11 +398,11 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
               />
             </FormField>
             <Button
-              disabled={saving || !isScheduled}
+              disabled={saving || !isScheduled || !cancelReasonCd}
               onClick={() =>
                 dispatch(
                   cancelSurgeryRequest(surgeryId, {
-                    cancelReasonCd: cancelReasonCd || undefined,
+                    cancelReasonCd,
                   }),
                 )
               }

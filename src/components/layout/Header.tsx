@@ -31,7 +31,7 @@ export default function Header() {
           <h1 className="text-sm font-semibold tracking-tight text-slate-900">
             Hospital Information System
           </h1>
-          <p className="text-[11px] text-slate-400">산대의원 · Admin Console</p>
+          <p className="text-[11px] text-slate-400">산대병원 · Admin Console</p>
         </div>
       </div>
 

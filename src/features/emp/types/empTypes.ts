@@ -27,6 +27,9 @@ export type Emp = {
   zipCode: string | null;
   address: string | null;
   addressDetail: string | null;
+  medRoleCode: string | null;
+  /** 등록 시 주민등록번호에서 추출된 값. 주민등록번호 원본은 어디에도 내려오지 않음 */
+  birthDate: string | null;
 };
 
 /**
@@ -43,6 +46,9 @@ export type EmpRegisterRequest = {
   zipCode?: string;
   address?: string;
   addressDetail?: string;
+  medRoleCode?: string;
+  /** 서버에서 해시로만 변환되어 저장되고, 응답에는 절대 포함되지 않음 */
+  rrn?: string;
   image?: File;
 };
 
@@ -61,7 +67,14 @@ export type EmpUpdateRequest = {
   zipCode?: string;
   address?: string;
   addressDetail?: string;
+  medRoleCode?: string;
   image?: File;
 };
 
 export type EmpApiResponse = ApiResponse<Emp[]>;
+
+/** 주민등록번호 확인 응답 — 원본 번호는 절대 포함되지 않음 */
+export type RrnCheckResult = {
+  duplicate: boolean;
+  birthDate: string | null;
+};

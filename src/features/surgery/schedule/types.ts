@@ -162,11 +162,14 @@ export type SurgeryStatusHistory = {
 /**
  * 수술 스케줄 취소 (SL2-33)
  *
- * <p>물리 삭제가 아니라 취소 상태 전이로 처리한다(§21.6). 사유 코드는 선택
- * (백엔드 @RequestBody(required = false)).</p>
+ * <p>물리 삭제가 아니라 취소 상태 전이로 처리한다(§21.6).</p>
+ *
+ * <p><b>사유는 필수다</b>(2026-08-26, SL2-178). 예전에는 선택이었는데, 이 엔드포인트가
+ * 반려를 겸하던 시절의 잔재였다. 반려가 오더로 옮겨간 뒤로는 순수 취소 전용이고,
+ * 되돌릴 수 없는 전이라 왜 취소했는지가 남아야 한다. 백엔드도 {@code @NotBlank} 다.</p>
  */
 export type CancelSurgeryRequest = {
-  cancelReasonCd?: CodeValue;
+  cancelReasonCd: CodeValue;
 };
 
 /** 수술 진행상태 변경 (SL2-39) */

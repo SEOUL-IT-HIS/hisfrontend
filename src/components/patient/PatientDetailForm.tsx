@@ -24,6 +24,7 @@ import {
 } from "@/features/patient/slice/patientSlice";
 import { getGenderLabel } from "@/features/patient/util/genderCode";
 import type { AppDispatch, RootState } from "@/store/store";
+import PostcodeSearchButton from "./PostcodeSearchButton";
 
 type PatientDetailFormProps = {
   patientId: string;
@@ -31,12 +32,24 @@ type PatientDetailFormProps = {
 
 const formatDateTime = (value: string) => value.replace("T", " ").slice(0, 19);
 
+const formatPhoneNo = (value: string) => {
+  const digits = value.replace(/[^0-9]/g, "").slice(0, 11);
+
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+};
+
 export default function PatientDetailForm({
   patientId,
 }: PatientDetailFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const [editing, setEditing] = useState(false);
   const [patientName, setPatientName] = useState("");
+  const [zipCode, setZipCode] = useState("");
+  const [address, setAddress] = useState("");
+  const [addressDetail, setAddressDetail] = useState("");
+  const [phoneNo, setPhoneNo] = useState("");
   const [deathEditing, setDeathEditing] = useState(false);
   const [deathYn, setDeathYn] = useState<"Y" | "N">("N");
   const [deathDtm, setDeathDtm] = useState("");
@@ -71,6 +84,10 @@ export default function PatientDetailForm({
     }
 
     setPatientName(patientDetail.patientName);
+    setZipCode(patientDetail.zipCode ?? "");
+    setAddress(patientDetail.address ?? "");
+    setAddressDetail(patientDetail.addressDetail ?? "");
+    setPhoneNo(formatPhoneNo(patientDetail.phoneNo ?? ""));
     setValidationError(null);
     dispatch(resetPatientUpdate());
     dispatch(resetPatientDeactivation());
@@ -83,6 +100,10 @@ export default function PatientDetailForm({
     }
 
     setPatientName(patientDetail.patientName);
+    setZipCode(patientDetail.zipCode ?? "");
+    setAddress(patientDetail.address ?? "");
+    setAddressDetail(patientDetail.addressDetail ?? "");
+    setPhoneNo(formatPhoneNo(patientDetail.phoneNo ?? ""));
     setValidationError(null);
     dispatch(resetPatientUpdate());
     setEditing(false);
@@ -138,6 +159,10 @@ export default function PatientDetailForm({
     event.preventDefault();
 
     const normalizedPatientName = patientName.trim();
+    const normalizedZipCode = zipCode.trim();
+    const normalizedAddress = address.trim();
+    const normalizedAddressDetail = addressDetail.trim();
+    const normalizedPhoneNo = phoneNo.replace(/[^0-9]/g, "");
 
     if (
       normalizedPatientName.length < 2 ||
@@ -147,8 +172,26 @@ export default function PatientDetailForm({
       return;
     }
 
-    if (patientDetail && normalizedPatientName === patientDetail.patientName) {
-      setValidationError("변경된 환자명이 없습니다.");
+    if (normalizedZipCode && !/^\d{5}$/.test(normalizedZipCode)) {
+      setValidationError("우편번호는 숫자 5자리로 입력해 주세요.");
+      return;
+    }
+
+    if (normalizedPhoneNo && !/^\d{9,11}$/.test(normalizedPhoneNo)) {
+      setValidationError("연락처는 숫자 9~11자리로 입력해 주세요.");
+      return;
+    }
+
+    const hasChanges =
+      patientDetail &&
+      (normalizedPatientName !== patientDetail.patientName ||
+        normalizedZipCode !== (patientDetail.zipCode ?? "") ||
+        normalizedAddress !== (patientDetail.address ?? "") ||
+        normalizedAddressDetail !== (patientDetail.addressDetail ?? "") ||
+        normalizedPhoneNo !== (patientDetail.phoneNo ?? ""));
+
+    if (!hasChanges) {
+      setValidationError("변경된 환자 정보가 없습니다.");
       return;
     }
 
@@ -158,6 +201,10 @@ export default function PatientDetailForm({
       updatePatientRequest({
         patientId,
         patientName: normalizedPatientName,
+        zipCode: normalizedZipCode,
+        address: normalizedAddress,
+        addressDetail: normalizedAddressDetail,
+        phoneNo: normalizedPhoneNo,
       }),
     );
   };
@@ -347,6 +394,117 @@ export default function PatientDetailForm({
               />
 
               <DetailItem label="생년월일" value={patientDetail.birthDate} />
+
+              {isEditing ? (
+                <div className="sm:col-span-2 lg:col-span-3">
+                  <FormField label="주소" htmlFor="zipCode">
+                    <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <Input
+                        id="zipCode"
+                        value={zipCode}
+                        onChange={(event) => {
+                          setZipCode(
+                            event.target.value
+                              .replace(/[^0-9]/g, "")
+                              .slice(0, 5),
+                          );
+                          setValidationError(null);
+                        }}
+                        disabled={updateLoading}
+                        inputMode="numeric"
+                        maxLength={5}
+                        placeholder="우편번호"
+                        autoComplete="postal-code"
+                      />
+                      <PostcodeSearchButton
+                        disabled={updateLoading}
+                        onSelect={(result) => {
+                          setZipCode(result.zipCode);
+                          setAddress(result.address);
+                          setValidationError(null);
+                          window.setTimeout(
+                            () =>
+                              document
+                                .getElementById("addressDetail")
+                                ?.focus(),
+                            0,
+                          );
+                        }}
+                      />
+                    </div>
+                    <Input
+                      id="address"
+                      value={address}
+                      onChange={(event) => {
+                        setAddress(event.target.value);
+                        setValidationError(null);
+                      }}
+                      disabled={updateLoading}
+                      maxLength={300}
+                      placeholder="기본주소"
+                      autoComplete="street-address"
+                    />
+                    <Input
+                      id="addressDetail"
+                      value={addressDetail}
+                      onChange={(event) => {
+                        setAddressDetail(event.target.value);
+                        setValidationError(null);
+                      }}
+                      disabled={updateLoading}
+                      maxLength={300}
+                      placeholder="상세주소를 입력하세요 (예: 101동 202호)"
+                      autoComplete="address-line2"
+                    />
+                    <p className="text-xs text-slate-400">
+                      우편번호는 숫자 5자리로 입력해 주세요.
+                    </p>
+                    </div>
+                  </FormField>
+                </div>
+              ) : (
+                <>
+                  <DetailItem label="우편번호" value={patientDetail.zipCode ?? "-"} />
+                  <DetailItem label="기본주소" value={patientDetail.address ?? "-"} />
+                  <DetailItem
+                    label="상세주소"
+                    value={patientDetail.addressDetail ?? "-"}
+                  />
+                </>
+              )}
+
+              {isEditing ? (
+                <div>
+                  <dt className="text-xs font-medium text-slate-400">연락처</dt>
+                  <dd className="mt-1">
+                    <Input
+                      id="phoneNo"
+                      value={phoneNo}
+                      onChange={(event) => {
+                        setPhoneNo(
+                          formatPhoneNo(event.target.value),
+                        );
+                        setValidationError(null);
+                      }}
+                      disabled={updateLoading}
+                      inputMode="tel"
+                      maxLength={13}
+                      placeholder="010-1234-5678"
+                      autoComplete="tel"
+                    />
+                  </dd>
+                </div>
+              ) : (
+                <DetailItem
+                  label="연락처"
+                  value={
+                    patientDetail.phoneNo
+                      ? formatPhoneNo(patientDetail.phoneNo)
+                      : "-"
+                  }
+                />
+              )}
 
               <DetailItem
                 label="등록일시"

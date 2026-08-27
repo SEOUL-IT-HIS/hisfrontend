@@ -9,6 +9,7 @@ export type PatientStatus = "ACTIVE" | "INACTIVE";
 export type GenderCd = "01" | "02" | "03" | "04";
 export type Yn = "Y" | "N";
 
+
 /** GET /api/patient/list 검색조건 */
 export type PatientSearchCondition = {
   patientName?: string;
@@ -23,6 +24,10 @@ export type PatientRegisterRequest = {
   residentRegNo: string;
   genderCd: GenderCd;
   tempPatientYn: Yn;
+  zipCode: string;
+  address: string;
+  addressDetail: string;
+  phoneNo: string;
 };
 
 /** POST /api/patient/register 응답 데이터 */
@@ -33,6 +38,10 @@ export type Patient = {
   genderCd: GenderCd;
   statusCd: PatientStatus;
   tempPatientYn: Yn;
+  zipCode: string | null;
+  address: string | null;
+  addressDetail: string | null;
+  phoneNo: string | null;
   createdAt: string;
 };
 
@@ -62,6 +71,10 @@ export type PatientDetail = {
   tempPatientYn: Yn;
   deathYn: Yn;
   deathDtm: string | null;
+  zipCode: string | null;
+  address: string | null;
+  addressDetail: string | null;
+  phoneNo: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -75,6 +88,10 @@ export type PatientDuplicateCheckRequest = {
 export type PatientUpdateRequest = {
   patientId: string;
   patientName: string;
+  zipCode: string;
+  address: string;
+  addressDetail: string;
+  phoneNo: string;
 };
 
 /** PATCH /api/patient/{patientId}/death-status 요청 */

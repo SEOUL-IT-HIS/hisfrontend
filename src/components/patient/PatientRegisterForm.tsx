@@ -22,10 +22,19 @@ import type {
 } from "@/features/patient/type/patientType";
 import type { AppDispatch, RootState } from "@/store/store";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
+import PostcodeSearchButton from "./PostcodeSearchButton";
 
 type PatientRegisterFormState = Omit<PatientRegisterRequest, "genderCd"> & {
   genderCd: GenderCd | "";
 };
+
+function formatPhoneNo(value: string): string {
+  const digits = value.replace(/[^0-9]/g, "").slice(0, 11);
+
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
 
 function getBirthDateFromResidentRegNo(residentRegNo: string): string | null {
   if (!/^\d{13}$/.test(residentRegNo)) {
@@ -78,6 +87,10 @@ const initialForm: PatientRegisterFormState = {
   residentRegNo: "",
   genderCd: "",
   tempPatientYn: "N",
+  zipCode: "",
+  address: "",
+  addressDetail: "",
+  phoneNo: "",
 };
 
 export default function PatientRegisterForm() {
@@ -110,12 +123,12 @@ export default function PatientRegisterForm() {
     : duplicateCheckLoading
       ? "주민등록번호 중복 확인 중입니다."
       : !form.patientName.trim() ||
-          !form.residentRegNo ||
-          !form.birthDate ||
-          !form.genderCd
+        !form.residentRegNo ||
+        !form.birthDate ||
+        !form.genderCd
         ? "필수 항목을 모두 입력해 주세요."
         : form.patientName.trim().length < 2 ||
-            form.patientName.trim().length > 100
+          form.patientName.trim().length > 100
           ? "환자명은 2자 이상 100자 이하로 입력해 주세요."
           : residentRegNoError
             ? residentRegNoError
@@ -154,7 +167,11 @@ export default function PatientRegisterForm() {
         form.residentRegNo !== "" ||
         form.birthDate !== "" ||
         form.genderCd !== "" ||
-        form.tempPatientYn !== initialForm.tempPatientYn;
+        form.tempPatientYn !== initialForm.tempPatientYn ||
+        form.zipCode !== "" ||
+        form.address.trim() !== "" ||
+        form.addressDetail.trim() !== "" ||
+        form.phoneNo !== "";
 
       if (!hasUnsavedChanges || submitted) {
         return;
@@ -253,6 +270,18 @@ export default function PatientRegisterForm() {
       return;
     }
 
+    if (form.zipCode && !/^\d{5}$/.test(form.zipCode)) {
+      setValidationError("우편번호는 숫자 5자리로 입력해 주세요.");
+      return;
+    }
+
+    const normalizedPhoneNo = form.phoneNo.replace(/[^0-9]/g, "");
+
+    if (normalizedPhoneNo && !/^\d{9,11}$/.test(normalizedPhoneNo)) {
+      setValidationError("연락처는 숫자 9~11자리로 입력해 주세요.");
+      return;
+    }
+
     if (duplicated === null) {
       setValidationError("주민등록번호 중복 확인을 먼저 진행해 주세요.");
       return;
@@ -272,6 +301,10 @@ export default function PatientRegisterForm() {
         residentRegNo: form.residentRegNo.trim(),
         genderCd: form.genderCd as GenderCd,
         tempPatientYn: form.tempPatientYn,
+        zipCode: form.zipCode.trim(),
+        address: form.address.trim(),
+        addressDetail: form.addressDetail.trim(),
+        phoneNo: normalizedPhoneNo,
       }),
     );
   };
@@ -282,7 +315,11 @@ export default function PatientRegisterForm() {
       form.residentRegNo !== "" ||
       form.birthDate !== "" ||
       form.genderCd !== "" ||
-      form.tempPatientYn !== initialForm.tempPatientYn;
+      form.tempPatientYn !== initialForm.tempPatientYn ||
+      form.zipCode !== "" ||
+      form.address.trim() !== "" ||
+      form.addressDetail.trim() !== "" ||
+      form.phoneNo !== "";
 
     if (
       hasUnsavedChanges &&
@@ -300,7 +337,11 @@ export default function PatientRegisterForm() {
       form.residentRegNo !== "" ||
       form.birthDate !== "" ||
       form.genderCd !== "" ||
-      form.tempPatientYn !== initialForm.tempPatientYn;
+      form.tempPatientYn !== initialForm.tempPatientYn ||
+      form.zipCode !== "" ||
+      form.address.trim() !== "" ||
+      form.addressDetail.trim() !== "" ||
+      form.phoneNo !== "";
 
     if (
       hasUnsavedChanges &&
@@ -472,6 +513,92 @@ export default function PatientRegisterForm() {
               신원 확인 전 임시 등록이 필요한 환자에게 사용합니다.
             </p>
           </FormField>
+
+          <div className="border-t border-slate-200 pt-4">
+            <h2 className="mb-4 text-base font-semibold text-slate-800">
+              주소 및 연락처
+            </h2>
+
+            <div className="space-y-4">
+              <FormField label="주소" htmlFor="zipCode">
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                  <Input
+                    id="zipCode"
+                    value={form.zipCode}
+                    onChange={(event) =>
+                      updateForm(
+                        "zipCode",
+                        event.target.value.replace(/[^0-9]/g, "").slice(0, 5),
+                      )
+                    }
+                    disabled={registerLoading}
+                    inputMode="numeric"
+                    maxLength={5}
+                    placeholder="우편번호"
+                    autoComplete="postal-code"
+                  />
+                    <PostcodeSearchButton
+                      disabled={registerLoading}
+                      onSelect={(result) => {
+                        updateForm("zipCode", result.zipCode);
+                        updateForm("address", result.address);
+                        window.setTimeout(
+                          () => document.getElementById("addressDetail")?.focus(),
+                          0,
+                        );
+                      }}
+                    />
+                  </div>
+                  <Input
+                    id="address"
+                    value={form.address}
+                    onChange={(event) => updateForm("address", event.target.value)}
+                    disabled={registerLoading}
+                    maxLength={300}
+                    placeholder="기본주소"
+                    autoComplete="street-address"
+                  />
+                  <Input
+                    id="addressDetail"
+                    value={form.addressDetail}
+                    onChange={(event) =>
+                      updateForm("addressDetail", event.target.value)
+                    }
+                    disabled={registerLoading}
+                    maxLength={300}
+                    placeholder="상세주소를 입력하세요 (예: 101동 202호)"
+                    autoComplete="address-line2"
+                  />
+                  <p className="text-xs text-slate-400">
+                    우편번호는 숫자 5자리로 입력해 주세요.
+                  </p>
+                </div>
+              </FormField>
+
+              <FormField
+                label="연락처"
+                htmlFor="phoneNo"
+                hint="010-1234-5678 형식으로 입력해 주세요."
+              >
+                <Input
+                  id="phoneNo"
+                  value={form.phoneNo}
+                  onChange={(event) =>
+                    updateForm(
+                      "phoneNo",
+                      formatPhoneNo(event.target.value),
+                    )
+                  }
+                  disabled={registerLoading}
+                  inputMode="tel"
+                  maxLength={13}
+                  placeholder="010-1234-5678"
+                  autoComplete="tel"
+                />
+              </FormField>
+            </div>
+          </div>
 
           {registrationDisabledReason ? (
             <p className="text-right text-xs text-slate-500" role="status">

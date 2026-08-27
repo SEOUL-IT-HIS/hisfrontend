@@ -16,6 +16,7 @@ import type {
   EmpApiResponse,
   EmpRegisterRequest,
   EmpUpdateRequest,
+  RrnCheckResult,
 } from "../types/empTypes";
 
 /** 직원 전체 목록 조회 */
@@ -28,6 +29,15 @@ export async function fetchEmpApi(): Promise<Emp[]> {
 export async function fetchEmpDetailApi(empId: string): Promise<Emp> {
   const response = await apiClient.get<ApiResponse<Emp>>(
     `/api/emp/detail/${empId}`,
+  );
+  return response.data.data;
+}
+
+/** 주민등록번호 확인 — 중복 여부 + 생년월일만 돌아옴 (원본 번호는 응답에 없음) */
+export async function checkRrnApi(rrn: string): Promise<RrnCheckResult> {
+  const response = await apiClient.post<ApiResponse<RrnCheckResult>>(
+    "/api/emp/check-rrn",
+    { rrn },
   );
   return response.data.data;
 }

@@ -46,7 +46,7 @@ const STATUS_LABEL: { key: string; label: string }[] = [
 
 /** 지금 손이 필요한 곳으로 가는 길만 둔다 — 전체 메뉴는 사이드바가 갖는다 */
 const SHORTCUTS = [
-  { href: "/surgery/schedule/requests", label: "요청 배정" },
+  { href: "/surgery/schedule/requests", label: "수술 요청 대기" },
   { href: "/surgery/worklist", label: "수술 업무" },
   { href: "/surgery/monitoring", label: "수술 현황" },
 ];

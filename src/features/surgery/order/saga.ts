@@ -116,7 +116,7 @@ function* assignOrderSaga(
 function* rejectOrderSaga(
   action: PayloadAction<{
     orderId: string;
-    request?: RejectSurgeryOrderRequest;
+    request: RejectSurgeryOrderRequest;
   }>,
 ) {
   try {
