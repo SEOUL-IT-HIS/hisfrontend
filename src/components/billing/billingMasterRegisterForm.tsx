@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { registerBillingMasterRequest } from "@/features/billing/billingMaster/slice";
+import {
+  registerBillingMasterRequest,
+  resetBillingMasterCreateStatus,
+  selectBillingMasterCreateSuccess,
+} from "@/features/billing/billingMaster/slice";
 import { Alert, FormActions, FormField, Input, Panel } from "@/components/common";
 import type { AppDispatch, RootState } from "@/store/store";
 
@@ -33,11 +37,14 @@ const BillingMasterRegisterForm = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error } = useSelector((state: RootState) => state.billingMaster.createStatus);
+  const createSuccess = useSelector(selectBillingMasterCreateSuccess);
 
   const [form, setForm] = useState<BillingMasterFormState>(initialForm);
+  const [submitted, setSubmitted] = useState(false);
 
-  /** true 이면 "이번 제출"에 대한 결과를 기다리는 중 — 재방문 시 남아있는 이전 상태로 오작동 방지 */
-  const waitResult = useRef(false);
+  useEffect(() => {
+    dispatch(resetBillingMasterCreateStatus());
+  }, [dispatch]);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -45,23 +52,19 @@ const BillingMasterRegisterForm = () => {
   };
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    waitResult.current = true;
+    e.preventDefault(); // 화면 새로고침 방지
+    setSubmitted(true);
     dispatch(registerBillingMasterRequest(form));
   };
 
-  // 등록 결과 반영: 실패면 에러만 보여주고 폼 유지, 성공이면 목록으로 이동
-  // (성공 피드백이 없으면 사용자가 재클릭해 같은 값으로 중복 등록을 시도하게 된다)
+  // 등록 성공 시 폼/상태 초기화 후 등록 전 목록 화면으로 이동
   useEffect(() => {
-    if (!waitResult.current) return;
-    if (loading) return;
-    if (error) {
-      waitResult.current = false;
-      return;
+    if (submitted && createSuccess) {
+      dispatch(resetBillingMasterCreateStatus());
+      setForm(initialForm);
+      router.push("/billing/statistics");
     }
-    waitResult.current = false;
-    router.push("/billing/statistics");
-  }, [loading, error, router]);
+  }, [dispatch, createSuccess, router, submitted]);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
