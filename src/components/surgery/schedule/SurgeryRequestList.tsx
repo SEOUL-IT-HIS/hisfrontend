@@ -117,16 +117,20 @@ export default function SurgeryRequestList() {
       header: "처리",
       render: (o) => (
         <div className="flex items-center gap-2">
-          <Link
-            href={`/surgery/schedule/assign/${o.orderId}`}
-            className="text-sky-600 underline"
-          >
-            배정
+          {/*
+            배정을 버튼으로 바꿨다(2026-08-26) — 밑줄 링크였는데, 같은 칸의 '반려'는
+            버튼이라 생김새가 갈렸다. 배정이 더 중요한 동작인데 오히려 약해 보였다.
+            이동이 일어나므로 Link 를 감싸 접근성(새 탭 열기 등)은 그대로 둔다.
+          */}
+          <Link href={`/surgery/schedule/assign/${o.orderId}`}>
+            <Button variant="primary" className="h-8 px-3">
+              배정
+            </Button>
           </Link>
           <Button
-            variant="ghost"
+            variant="secondary"
             disabled={saving}
-            className="h-8 px-2"
+            className="h-8 px-3"
             onClick={() => setRejectTarget(o)}
           >
             반려
