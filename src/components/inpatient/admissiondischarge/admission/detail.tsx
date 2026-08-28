@@ -17,7 +17,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  REQUESTED: "요청됨",
+  REQUESTED: "입원대기",
   ADMITTED: "입원중",
   DISCHARGE_REQUESTED: "퇴원 신청",
   DISCHARGED: "퇴원 완료",

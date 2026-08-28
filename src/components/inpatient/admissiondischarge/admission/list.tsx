@@ -24,7 +24,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 // admission.status 값 → 화면에 보여줄 한글 라벨
 const STATUS_LABEL: Record<string, string> = {
-  REQUESTED: "요청됨",
+  REQUESTED: "입원대기",
   ADMITTED: "입원중",
   DISCHARGE_REQUESTED: "퇴원 신청",
   DISCHARGED: "퇴원 완료",
@@ -45,6 +45,7 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
   const bedAssignments = useSelector(selectBedAssignments); // 병상배정 목록 배열
   const patients = useSelector((state: RootState) => state.patient.patients); // 환자 목록 배열
   const [selectedId, setSelectedId] = useState<string | null>(null); // 지금 클릭해서 선택된 입원건 id (없으면 null)
+  const [showDischarged, setShowDischarged] = useState(false);
 
   // patientId → patientName 변환용 Map. patients가 안 바뀌면 재계산 안 하도록 useMemo로 캐싱
   const patientNameById = useMemo(
@@ -64,6 +65,10 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
   const isBedAssigned = (admissionId: string) => // 입원건별 배정 여부를 판단합니다.
     bedAssignments.some((ba) => ba.admissionId === admissionId && ba.releasedAt === null); // 아직 퇴상 처리 안 된(releasedAt === null) 배정이 있으면 배정 완료로 간주
 
+    const visibleAdmissions = showDischarged
+  ? admissions
+  : admissions.filter((a) => a.status !== "DISCHARGED");
+
   return (
     // embedded면 탭 컨테이너 폭에 맞춰 꽉 채우고, 아니면 단독 페이지용 중앙정렬+여백
     <div className={embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}>
@@ -77,13 +82,23 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
             <p className="mt-1 text-sm text-slate-500">입원 접수된 환자 목록입니다.</p>
           </div>
         )}
-        {/* 등록 화면으로 이동하는 링크 — embedded 여부와 상관없이 항상 노출 */}
-        <Link
-          href="/inpatient/admissiondischarge/admission/create"
-          className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-        >
-          입원 요청 등록
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* 기본값(false)일 땐 퇴원완료 건을 숨김 — 누르면 showDischarged를 뒤집어서 전체/필터 상태를 토글 */}
+          <button
+            type="button"
+            onClick={() => setShowDischarged((v) => !v)}
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            {showDischarged ? "퇴원완료 숨기기" : "퇴원완료 보기"}
+          </button>
+          {/* 등록 화면으로 이동하는 링크 — embedded 여부와 상관없이 항상 노출 */}
+          <Link
+            href="/inpatient/admissiondischarge/admission/create"
+            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
+          >
+            입원 요청 등록
+          </Link>
+        </div>
       </div>
 
       {/* fetch 진행 상태에 따른 안내 문구 — 로딩중이거나 에러면 아래 테이블 자체를 안 그림 */}
@@ -110,7 +125,7 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {/* admissions 배열 길이만큼 <tr>을 하나씩 찍어냄. admissions가 비어있으면 아무 행도 안 그려짐 */}
-                {admissions.map((admission) => (
+                {visibleAdmissions.map((admission) => (
                   <tr
                     key={admission.admissionId} // React가 각 행을 구분하는 고유값 — 배열 렌더링엔 필수
                     onClick={() => setSelectedId(admission.admissionId)} // 클릭하면 이 행의 id를 선택 상태로 저장
@@ -154,8 +169,8 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
                 ))}
               </tbody>
             </table>
-            {/* 입원 데이터가 하나도 없을 때만 안내 문구 표시 */}
-            {admissions.length === 0 && (
+            {/* 필터링된 목록이 하나도 없을 때만 안내 문구 표시 */}
+            {visibleAdmissions.length === 0 && (
               <p className="px-4 py-6 text-center text-sm text-slate-500">입원 데이터가 없습니다.</p>
             )}
           </div>
