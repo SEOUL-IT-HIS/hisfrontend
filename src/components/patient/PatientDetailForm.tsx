@@ -241,7 +241,7 @@ export default function PatientDetailForm({
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-3">
+    <div className="flex min-h-full flex-col gap-3 p-3">
       <PageHeader
         title="환자 상세"
         actions={
@@ -361,11 +361,6 @@ export default function PatientDetailForm({
                   />
                 </dd>
               </div>
-
-              <DetailItem
-                label="임시환자 여부"
-                value={patientDetail.tempPatientYn === "Y" ? "예" : "아니요"}
-              />
 
               <DetailItem
                 label="사망 여부"
