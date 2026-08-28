@@ -363,11 +363,6 @@ export default function PatientDetailForm({
               </div>
 
               <DetailItem
-                label="임시환자 여부"
-                value={patientDetail.tempPatientYn === "Y" ? "예" : "아니요"}
-              />
-
-              <DetailItem
                 label="사망 여부"
                 value={patientDetail.deathYn === "Y" ? "사망" : "사망정보 없음"}
               />
