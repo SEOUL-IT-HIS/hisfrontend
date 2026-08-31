@@ -86,6 +86,9 @@ export default function EmpRegisterForm({
   /** 주민등록번호 실시간 중복확인 결과 안내 문구 (null이면 아직 확인 안 함) */
   const [rrnCheckMessage, setRrnCheckMessage] = useState<string | null>(null);
 
+  /** 우편번호 스크립트가 다 받아졌는지 (false면 주소 검색 버튼을 못 누르게 막는다) */
+  const [postcodeReady, setPostcodeReady] = useState(false);
+
   /** 숫자만 남긴 뒤 앞 6자리 뒤에 하이픈을 넣어준다 (예: 900101-1234567) */
   function formatRrn(value: string) {
     const digits = value.replace(/[^0-9]/g, "").slice(0, 13);
@@ -205,7 +208,11 @@ export default function EmpRegisterForm({
 
   return (
     <div className="space-y-5">
-      <Script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" strategy="afterInteractive" />
+      <Script
+        src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
+        strategy="afterInteractive"
+        onReady={() => setPostcodeReady(true)}
+      />
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       <form onSubmit={onSubmit} className="space-y-4">
@@ -318,9 +325,10 @@ export default function EmpRegisterForm({
             <button
                 type="button"
                 onClick={handleAddressSearch}
-                className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                disabled={!postcodeReady}
+                className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:bg-slate-50 disabled:text-slate-400"
             >
-              주소 검색
+              {postcodeReady ? "주소 검색" : "로딩 중…"}
             </button>
           </div>
           <Input value={form.address} placeholder="기본주소" disabled className="mt-2" />
