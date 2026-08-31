@@ -27,7 +27,8 @@ export type Emp = {
   zipCode: string | null;
   address: string | null;
   addressDetail: string | null;
-  medRoleCode: string | null;
+  /** EMP_ROLE 에 배정된 역할 ID 목록. 지금은 1인 1역이라 최대 1개 */
+  roleIds: string[] | null;
   /** 등록 시 주민등록번호에서 추출된 값. 주민등록번호 원본은 어디에도 내려오지 않음 */
   birthDate: string | null;
 };
@@ -46,7 +47,10 @@ export type EmpRegisterRequest = {
   zipCode?: string;
   address?: string;
   addressDetail?: string;
-  medRoleCode?: string;
+  /** 새 방식 — 서버가 EMP_ROLE 에 반영한다. 드롭다운이라 항상 1개 */
+  roleIds?: string[];
+  /** 역할을 배정한 관리자 empId (로그인 사용자) */
+  assignedBy?: string;
   /** 서버에서 해시로만 변환되어 저장되고, 응답에는 절대 포함되지 않음 */
   rrn?: string;
   image?: File;
@@ -67,7 +71,10 @@ export type EmpUpdateRequest = {
   zipCode?: string;
   address?: string;
   addressDetail?: string;
-  medRoleCode?: string;
+  /** 새 방식 — 서버가 EMP_ROLE 에 반영한다. 드롭다운이라 항상 1개 */
+  roleIds?: string[];
+  /** 역할을 배정한 관리자 empId (로그인 사용자) */
+  assignedBy?: string;
   image?: File;
 };
 
