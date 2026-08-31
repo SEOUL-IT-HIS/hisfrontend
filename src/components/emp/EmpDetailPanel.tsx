@@ -15,7 +15,8 @@ import { Alert, Button, Modal, Panel } from "@/components/common";
 import EmpUpdateForm from "@/components/emp/EmpUpdateForm";
 import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemTypes";
 import { fetchEmpDetailRequest } from "@/features/emp/slice/empSlice";
-import { toCodeLabel } from "@/features/emp/utils/empCodeLabel";
+import { toCodeLabel, toRoleLabel } from "@/features/emp/utils/empCodeLabel";
+import type { RoleType } from "@/features/emp/types/roleType";
 import type { RootState } from "@/store/store";
 
 type EmpDetailPanelProps = {
@@ -23,7 +24,7 @@ type EmpDetailPanelProps = {
   empId: string | null;
   deptCodes: CommonCodeItem[];
   statusCodes: CommonCodeItem[];
-  roleCodes: CommonCodeItem[];
+  roles: RoleType[];
 };
 
 function formatDate(value: string | null): string {
@@ -57,7 +58,7 @@ export default function EmpDetailPanel({
   empId,
   deptCodes,
   statusCodes,
-  roleCodes,
+  roles,
 }: EmpDetailPanelProps) {
   const dispatch = useDispatch();
   const selectedEmp = useSelector((state: RootState) => state.emp.selectedEmp);
@@ -177,7 +178,7 @@ export default function EmpDetailPanel({
             />
             <DetailField
               label="역할"
-              value={toCodeLabel(roleCodes, selectedEmp.medRoleCode)}
+              value={toRoleLabel(roles, (selectedEmp.roleIds ?? [])[0])}
             />
             <DetailField
               label="생년월일"
@@ -213,7 +214,7 @@ export default function EmpDetailPanel({
             emp={selectedEmp}
             deptCodes={deptCodes}
             statusCodes={statusCodes}
-            roleCodes={roleCodes}
+            roles={roles}
             onClose={() => setEditOpen(false)}
           />
         ) : null}

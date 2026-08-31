@@ -22,7 +22,11 @@ import {
 import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemTypes";
 import { checkRrnApi } from "@/features/emp/api/empApi";
 import { fetchEmpRegisterRequest } from "@/features/emp/slice/empSlice";
-import { toCodeSelectOptions } from "@/features/emp/utils/empCodeLabel";
+import {
+  toCodeSelectOptions,
+  toRoleSelectOptions,
+} from "@/features/emp/utils/empCodeLabel";
+import type { RoleType } from "@/features/emp/types/roleType";
 import type { EmpRegisterRequest } from "@/features/emp/types/empTypes";
 import type { AppDispatch, RootState } from "@/store/store";
 import Script from "next/script";
@@ -36,7 +40,8 @@ type EmpRegisterFormState = {
   zipCode: string;
   address: string;
   addressDetail: string;
-  medRoleCode: string;
+  /** 드롭다운에서 고른 역할 PK (ROLE.ROLE_ID) */
+  roleId: string;
   rrn: string;
 };
 
@@ -51,13 +56,13 @@ type FieldErrors = {
 
 type EmpRegisterFormProps = {
   deptCodes: CommonCodeItem[];
-  roleCodes: CommonCodeItem[];
+  roles: RoleType[];
   onClose: () => void;
 };
 
 export default function EmpRegisterForm({
   deptCodes,
-  roleCodes,
+  roles,
   onClose,
 }: EmpRegisterFormProps) {
   const [form, setForm] = useState<EmpRegisterFormState>({
@@ -69,7 +74,7 @@ export default function EmpRegisterForm({
     zipCode: "",
     address: "",
     addressDetail: "",
-    medRoleCode: "",
+    roleId: "",
     rrn: "",
   });
 
@@ -78,6 +83,8 @@ export default function EmpRegisterForm({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const loading = useSelector((state: RootState) => state.emp.loading);
   const error = useSelector((state: RootState) => state.emp.error);
+  /** 역할 배정자(assignedBy)로 보낼 로그인 사용자 */
+  const authUser = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch<AppDispatch>();
 
   /** true 이면 이번 submit 의 완료를 기다리는 중 */
@@ -159,7 +166,8 @@ export default function EmpRegisterForm({
       zipCode: form.zipCode || undefined,
       address: form.address || undefined,
       addressDetail: form.addressDetail.trim() || undefined,
-      medRoleCode: form.medRoleCode || undefined,
+      roleIds: form.roleId ? [form.roleId] : undefined,
+      assignedBy: authUser?.empId,
       rrn: form.rrn.trim() || undefined,
     };
   }
@@ -308,13 +316,13 @@ export default function EmpRegisterForm({
             )}
           </FormField>
 
-          <FormField label="역할" htmlFor="medRoleCode">
+          <FormField label="역할" htmlFor="roleId">
             <Select
-              id="medRoleCode"
-              value={form.medRoleCode}
+              id="roleId"
+              value={form.roleId}
               placeholder="선택"
-              onChange={(e) => setForm({ ...form, medRoleCode: e.target.value })}
-              options={toCodeSelectOptions(roleCodes)}
+              onChange={(e) => setForm({ ...form, roleId: e.target.value })}
+              options={toRoleSelectOptions(roles)}
             />
           </FormField>
         </div>
