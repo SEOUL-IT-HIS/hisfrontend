@@ -34,7 +34,7 @@ import { ORDER_STATUS, type SurgeryOrder } from "@/features/surgery/order/types"
  * <p>진료(일반)와 응급실(응급)에서 올라온 <b>요청</b> 중 아직 수술실이 잡히지 않은 건이다.
  * 배정하면 수락(01)이 되어 이 목록에서 빠지고, 그때 비로소 수술이 만들어진다.</p>
  *
- * <p><b>수술이 아니라 오더를 본다</b>(2026-08-13) — 예전에는 요청도 수술 행이라
+ * <p><b>수술이 아니라 오더를 본다</b> — 예전에는 요청도 수술 행이라
  * 이 화면이 수술 목록을 상태로 걸러 보여줬다. 이제 SURGERY_ORDER 를 본다.
  * 반려된 요청은 수술이 되지 않으므로 수술 통계에 섞이지 않는다.</p>
  *
@@ -47,11 +47,11 @@ import { ORDER_STATUS, type SurgeryOrder } from "@/features/surgery/order/types"
  * 되돌릴 수 없는 조작이라 한 번 더 확인받는 편이 낫고, 사유를 남겨야 나중에 "왜 반려됐나"에
  * 답할 수 있다.</p>
  *
- * <p><b>사유는 필수다</b>(2026-08-26). 예전에는 선택이었는데, 사유 코드 그룹
+ * <p><b>사유는 필수다</b>. 예전에는 선택이었는데, 사유 코드 그룹
  * (SURGERY_ORDER_REJECT_CD)이 admin 에 없어 필수로 두면 고를 값이 없었기 때문이다.
  * 2026-08-25 에 등록해 그 이유가 사라졌고, 수술 취소(SL2-178)와 같은 판단으로 맞췄다.</p>
  *
- * <h3>배정 폼을 옆에 붙였다 (2026-08-27)</h3>
+ * <h3>배정 폼을 옆에 붙였다</h3>
  *
  * <p>배정 버튼이 {@code /surgery/schedule/assign/[orderId]} 로 <b>페이지를 옮겼다.</b>
  * 대기 건을 연달아 처리하려면 목록 → 배정 → 목록 을 반복하게 되고, 돌아올 때마다
@@ -93,7 +93,7 @@ export default function SurgeryRequestList() {
   }
 
   function confirmReject() {
-    // 사유는 필수다(2026-08-26) — 백엔드 @NotBlank 가 400 으로 막으므로 화면에서 먼저 거른다.
+    // 사유는 필수다 — 백엔드 @NotBlank 가 400 으로 막으므로 화면에서 먼저 거른다.
     //   버튼도 잠가 두지만, 폼 제출(Enter)로도 들어올 수 있어 여기서 한 번 더 본다.
     if (!rejectTarget || !reasonCd) {
       return;
@@ -129,7 +129,7 @@ export default function SurgeryRequestList() {
       render: (o) => (
         <div className="flex items-center gap-2">
           {/*
-            배정은 이제 이동이 아니라 <b>선택</b>이다(2026-08-27) — 오른쪽 폼이 이 오더를
+            배정은 이제 이동이 아니라 <b>선택</b>이다 — 오른쪽 폼이 이 오더를
             보게 한다. 버튼 모양은 8/26 그대로 둔다. 같은 칸의 '반려'가 버튼이라
             링크로 두면 더 중요한 동작이 오히려 약해 보였다.
           */}

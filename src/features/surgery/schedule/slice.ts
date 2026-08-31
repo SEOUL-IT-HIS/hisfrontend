@@ -43,7 +43,7 @@ import type { PageResponse } from "@/features/surgery/types";
  * payload 로 묶어주므로, 컴포넌트에서는 {@code dispatch(액션(id, request))} 처럼 자연스럽게 부른다.</p>
  *
  * <p>surgeries(전체)·todaySurgeries(금일)를 각각 들고 있다. 배정 대기 요청은
- * 수술이 아니라 오더라서 features/surgery/order 가 따로 관리한다(2026-08-13).
+ * 수술이 아니라 오더라서 features/surgery/order 가 따로 관리한다.
  * 같은 Surgery 배열이지만 조회 조건이 달라, 한 배열을 돌려쓰면 화면을 오갈 때 목록이 뒤섞인다.</p>
  */
 const initialState: ScheduleState = {

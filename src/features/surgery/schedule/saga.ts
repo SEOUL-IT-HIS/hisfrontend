@@ -229,7 +229,7 @@ function* updateSurgerySaga(
 /**
  * 워크리스트가 보고 있는 검색 결과를 마지막 조건 그대로 다시 읽는다.
  *
- * <p>상태 전이가 배정 상세에서 수술 업무 화면으로 옮겨오면서 필요해졌다(2026-08-27).
+ * <p>상태 전이가 배정 상세에서 수술 업무 화면으로 옮겨오면서 필요해졌다.
  * 그전까지는 {@code fetchSurgery}(단건)만 다시 읽으면 됐다 — 상세 화면이 그 값을 보고
  * 있었기 때문이다. 워크리스트는 <b>검색 결과 목록</b>의 행을 보고 버튼을 잠그므로,
  * 목록을 갱신하지 않으면 시작을 눌러도 행의 statusCd 가 예약(01)에 머문다.
@@ -263,7 +263,7 @@ function* cancelSurgerySaga(
     yield put(fetchHistoryRequest(surgeryId));
     yield* refreshWorklistSaga();
     // 오더 반려는 order saga 가 처리한다 — 수술 취소가 대기 목록을 건드릴 이유가 없다.
-    //   요청 단계가 오더로 옮겨져(2026-08-13) 여기 오는 것은 이미 만들어진 수술뿐이다.
+    // 요청 단계가 오더로 옮겨져 여기 오는 것은 이미 만들어진 수술뿐이다.
   } catch (err) {
     yield put(
       surgeryMutationFailure(
@@ -296,7 +296,7 @@ function* startSurgerySaga(action: PayloadAction<string>) {
     yield call(startSurgery, action.payload);
     yield put(surgeryMutationSuccess());
     yield put(fetchTodaySurgeriesRequest());
-    // 상세 화면이 보는 단건과 이력도 다시 읽는다(2026-08-26).
+    // 상세 화면이 보는 단건과 이력도 다시 읽는다.
     //   이걸 빼면 시작을 눌러도 화면의 statusCd 가 예약(01)에 머물러, 잠겨야 할
     //   취소 버튼이 열린 채로 남는다. 실제로 눌러서 400 SUR039 를 받은 일이 있었다.
     yield put(fetchSurgeryRequest(action.payload));

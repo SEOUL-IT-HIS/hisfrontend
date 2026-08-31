@@ -20,7 +20,7 @@ import {
 } from "@/features/surgery/schedule/slice";
 
 /**
- * 수술관리 진입 화면 (2026-08-24)
+ * 수술관리 진입 화면
  *
  * <h3>왜 링크 나열을 걷어냈나</h3>
  *

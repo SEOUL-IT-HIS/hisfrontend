@@ -6,7 +6,7 @@ import SurgeryHome from "@/components/surgery/SurgeryHome";
  *
  * <p>경로: /surgery (§8.1 app/{service}/page.tsx)</p>
  *
- * <p><b>메뉴 카드 나열을 걷어냈다</b>(2026-08-24) — 사이드바와 같은 목록을 한 번 더
+ * <p><b>메뉴 카드 나열을 걷어냈다</b> — 사이드바와 같은 목록을 한 번 더
  * 보여주고 있었다. 사이드바를 줄이면 이 화면만 옛 메뉴를 계속 들고 있어 어긋나기도 했다.
  * 지금은 배정 대기 건수와 금일 수술 현황을 보여준다.</p>
  *

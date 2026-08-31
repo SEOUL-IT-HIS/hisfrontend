@@ -98,7 +98,7 @@ export async function getSurgerySchedule(surgeryId: string): Promise<Surgery> {
 }
 
 // 수술 요청 등록(SL2-36)·응급 등록(SL2-44)·배정 대기 목록(SL2-225)·일괄 배정(SL2-15)은
-//   오더로 옮겼다 — features/surgery/order/api.ts (2026-08-13 결정).
+// 오더로 옮겼다 — features/surgery/order/api.ts.
 //   수술은 오더가 수락(배정)될 때 만들어지므로, 수술을 직접 만드는 함수는 여기 없다.
 
 /** 수술 스케줄을 수정한다. (SL2-37) */
