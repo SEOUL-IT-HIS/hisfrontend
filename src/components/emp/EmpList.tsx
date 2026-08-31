@@ -28,10 +28,14 @@ import {
 } from "@/components/common";
 import { fetchCommonCodeItemsByGroupCode } from "@/features/commonCode/api/commonCodeItemApi";
 import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemTypes";
+import { fetchRoleListApi } from "@/features/emp/api/roleApi";
+import type { RoleType } from "@/features/emp/types/roleType";
 import { fetchEmpRequest } from "@/features/emp/slice/empSlice";
 import {
   toCodeLabel,
   toCodeSelectOptions,
+  toRoleLabel,
+  toRoleSelectOptions,
 } from "@/features/emp/utils/empCodeLabel";
 import type { RootState } from "@/store/store";
 
@@ -51,17 +55,18 @@ export default function EmpList() {
   /** 왼쪽에서 선택한 직원 PK — 오른쪽 상세 패널에 전달 */
   const [selectedEmpId, setSelectedEmpId] = useState<string | null>(null);
 
-  /** 공통코드: DEPT_CD / EMP_STATUS_CD / ROLE_CD */
+  /** 공통코드: DEPT_CD / EMP_STATUS_CD */
   const [deptCodes, setDeptCodes] = useState<CommonCodeItem[]>([]);
   const [statusCodes, setStatusCodes] = useState<CommonCodeItem[]>([]);
-  const [roleCodes, setRoleCodes] = useState<CommonCodeItem[]>([]);
+  /** 역할은 공통코드가 아니라 ROLE 테이블에서 내려온다 */
+  const [roles, setRoles] = useState<RoleType[]>([]);
 
   // ----- 검색 조건 (프론트 전용, API 파라미터 아님) -----
   const [keyword, setKeyword] = useState("");
   /** "" = 전체 */
   const [empStatusFilter, setEmpStatusFilter] = useState("");
   /** "" = 전체 */
-  const [medRoleFilter, setMedRoleFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
 
   /**
    * 목록 필터
@@ -81,33 +86,33 @@ export default function EmpList() {
       const matchStatus =
         empStatusFilter === "" || emp.empStatus === empStatusFilter;
       const matchRole =
-        medRoleFilter === "" || emp.medRoleCode === medRoleFilter;
+        roleFilter === "" || (emp.roleIds ?? []).includes(roleFilter);
       return matchKeyword && matchStatus && matchRole;
     });
-  }, [emps, keyword, empStatusFilter, medRoleFilter, deptCodes]);
+  }, [emps, keyword, empStatusFilter, roleFilter, deptCodes]);
 
   // 화면 진입 시 직원 목록 + 공통코드 조회
   useEffect(() => {
     dispatch(fetchEmpRequest());
 
-    async function loadCommonCodes() {
-      const [depts, statuses, roles] = await Promise.all([
+    async function loadCodes() {
+      const [depts, statuses, roleList] = await Promise.all([
         fetchCommonCodeItemsByGroupCode("DEPT_CD"),
         fetchCommonCodeItemsByGroupCode("EMP_STATUS_CD"),
-        fetchCommonCodeItemsByGroupCode("ROLE_CD"),
+        fetchRoleListApi(),
       ]);
       setDeptCodes(depts);
       setStatusCodes(statuses);
-      setRoleCodes(roles);
+      setRoles(roleList);
     }
-    void loadCommonCodes();
+    void loadCodes();
   }, [dispatch]);
 
   /** 검색 조건만 초기화 (목록 데이터는 유지) */
   function resetEmpSearch() {
     setKeyword("");
     setEmpStatusFilter("");
-    setMedRoleFilter("");
+    setRoleFilter("");
   }
 
   return (
@@ -164,15 +169,15 @@ export default function EmpList() {
               </FormField>
               <FormField
                 label="역할"
-                htmlFor="medRoleFilter"
+                htmlFor="roleFilter"
                 className="w-36"
               >
                 <Select
-                  id="medRoleFilter"
-                  value={medRoleFilter}
+                  id="roleFilter"
+                  value={roleFilter}
                   placeholder="전체"
-                  onChange={(e) => setMedRoleFilter(e.target.value)}
-                  options={toCodeSelectOptions(roleCodes)}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  options={toRoleSelectOptions(roles)}
                 />
               </FormField>
               <FormField
@@ -261,7 +266,7 @@ export default function EmpList() {
                           {toCodeLabel(deptCodes, row.deptCode)}
                         </td>
                         <td className="px-5 py-3.5 text-slate-600">
-                          {toCodeLabel(roleCodes, row.medRoleCode)}
+                          {toRoleLabel(roles, (row.roleIds ?? [])[0])}
                         </td>
                         <td className="px-5 py-3.5 text-slate-600">
                           {formatDate(row.hireDate)}
@@ -283,7 +288,7 @@ export default function EmpList() {
           empId={selectedEmpId}
           deptCodes={deptCodes}
           statusCodes={statusCodes}
-          roleCodes={roleCodes}
+          roles={roles}
         />
       </div>
 
@@ -295,7 +300,7 @@ export default function EmpList() {
       >
         <EmpRegisterForm
           deptCodes={deptCodes}
-          roleCodes={roleCodes}
+          roles={roles}
           onClose={() => setRegisterOpen(false)}
         />
       </Modal>

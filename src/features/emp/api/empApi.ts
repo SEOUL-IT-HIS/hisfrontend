@@ -67,7 +67,7 @@ export async function fetchEmpRegisterApi(
 /**
  * 직원 수정
  * - Path: empId
- * - Body: empName, empEmail, empPhone, retireDate, empStatus, deptCode (dto 파트)
+ * - Body: empName, empEmail, empPhone, retireDate, empStatus, deptCode, roleIds, assignedBy (dto 파트)
  * - image: 선택 시에만 image 파트로 같이 전송
  */
 export async function fetchEmpUpdateApi(empData: EmpUpdateRequest): Promise<Emp> {

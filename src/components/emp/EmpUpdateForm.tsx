@@ -17,7 +17,11 @@ import {
 } from "@/components/common";
 import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemTypes";
 import { fetchEmpUpdateRequest } from "@/features/emp/slice/empSlice";
-import { toCodeSelectOptions } from "@/features/emp/utils/empCodeLabel";
+import {
+  toCodeSelectOptions,
+  toRoleSelectOptions,
+} from "@/features/emp/utils/empCodeLabel";
+import type { RoleType } from "@/features/emp/types/roleType";
 import type { Emp, EmpUpdateRequest } from "@/features/emp/types/empTypes";
 import type { AppDispatch, RootState } from "@/store/store";
 import Script from "next/script";
@@ -38,7 +42,8 @@ type EmpUpdateFormState = {
   zipCode: string;
   address: string;
   addressDetail: string;
-  medRoleCode: string;
+  /** 드롭다운에서 고른 역할 PK (ROLE.ROLE_ID) */
+  roleId: string;
 };
 
 /** 필드별 인라인 검증 메시지 (EmpRegisterForm과 동일 규칙) */
@@ -52,7 +57,7 @@ type EmpUpdateFormProps = {
   emp: Emp;
   deptCodes: CommonCodeItem[];
   statusCodes: CommonCodeItem[];
-  roleCodes: CommonCodeItem[];
+  roles: RoleType[];
   onClose: () => void;
 };
 
@@ -60,7 +65,7 @@ export default function EmpUpdateForm({
   emp,
   deptCodes,
   statusCodes,
-  roleCodes,
+  roles,
   onClose,
 }: EmpUpdateFormProps) {
   const [form, setForm] = useState<EmpUpdateFormState>({
@@ -73,11 +78,14 @@ export default function EmpUpdateForm({
     zipCode: emp.zipCode ?? "",
     address: emp.address ?? "",
     addressDetail: emp.addressDetail ?? "",
-    medRoleCode: emp.medRoleCode ?? "",
+    // 지금은 1인 1역이라 배정된 역할 중 첫 번째만 드롭다운에 세팅한다.
+    roleId: (emp.roleIds ?? [])[0] ?? "",
   });
 
   const [errors, setErrors] = useState<FieldErrors>({});
   const error = useSelector((state: RootState) => state.emp.error);
+  /** 역할 배정자(assignedBy)로 보낼 로그인 사용자 */
+  const authUser = useSelector((state: RootState) => state.auth.user);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(emp.profileImageUrl);
   const loading = useSelector((state: RootState) => state.emp.loading);
@@ -138,7 +146,9 @@ export default function EmpUpdateForm({
       zipCode: form.zipCode || undefined,
       address: form.address || undefined,
       addressDetail: form.addressDetail.trim() || undefined,
-      medRoleCode: form.medRoleCode || undefined,
+      // 빈 배열이면 서버가 배정된 역할을 전부 지운다 (드롭다운을 "선택"으로 되돌린 경우)
+      roleIds: form.roleId ? [form.roleId] : [],
+      assignedBy: authUser?.empId,
     };
     dispatch(fetchEmpUpdateRequest(payload));
   };
@@ -242,13 +252,13 @@ export default function EmpUpdateForm({
             )}
           </FormField>
 
-          <FormField label="역할" htmlFor="medRoleCode">
+          <FormField label="역할" htmlFor="roleId">
             <Select
-              id="medRoleCode"
-              value={form.medRoleCode}
+              id="roleId"
+              value={form.roleId}
               placeholder="선택"
-              onChange={(e) => setForm({ ...form, medRoleCode: e.target.value })}
-              options={toCodeSelectOptions(roleCodes)}
+              onChange={(e) => setForm({ ...form, roleId: e.target.value })}
+              options={toRoleSelectOptions(roles)}
             />
           </FormField>
         </div>
