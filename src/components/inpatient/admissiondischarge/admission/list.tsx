@@ -12,11 +12,22 @@ import { fetchBedAssignmentsRequest, selectBedAssignments } from "@/features/inp
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice"; // 환자 목록(또 다른 feature 슬라이스, patient-service 쪽)
 import AdmissionDetail from "@/components/inpatient/admissiondischarge/admission/detail"; // 마스터-디테일의 "디테일" 쪽 컴포넌트
 import Link from "next/link"; // 페이지 이동용 링크 컴포넌트(a 태그의 Next.js 버전)
+const FILTERS = [
+  { key: "all", label: "전체" },
+  { key: "needsAssignment", label: "배정 필요" },
+  { key: "waitingAssigned", label: "입원대기(배정완료)" },
+  { key: "admitted", label: "입원중" },
+  { key: "dischargeRequested", label: "퇴원 신청" },
+  { key: "discharged", label: "퇴원 완료" },
+];
+type FilterKey = (typeof FILTERS)[number]["key"];
 
 // admission.status 값 → 배지 배경/글자 색상 Tailwind 클래스
 // 백엔드 AdmissionEntity.status가 단순 문자열이라, 여기 키값은 백엔드 값과 철자가 정확히 같아야 매칭됨
 const STATUS_BADGE: Record<string, string> = {
   REQUESTED: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
+  NEEDS_ASSIGNMENT: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
+  WAITING_ASSIGNED: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200",
   ADMITTED: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
   DISCHARGE_REQUESTED: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
   DISCHARGED: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
@@ -25,6 +36,8 @@ const STATUS_BADGE: Record<string, string> = {
 // admission.status 값 → 화면에 보여줄 한글 라벨
 const STATUS_LABEL: Record<string, string> = {
   REQUESTED: "입원대기",
+  NEEDS_ASSIGNMENT: "배정 필요",
+  WAITING_ASSIGNED: "입원대기(배정완료)",
   ADMITTED: "입원중",
   DISCHARGE_REQUESTED: "퇴원 신청",
   DISCHARGED: "퇴원 완료",
@@ -45,7 +58,7 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
   const bedAssignments = useSelector(selectBedAssignments); // 병상배정 목록 배열
   const patients = useSelector((state: RootState) => state.patient.patients); // 환자 목록 배열
   const [selectedId, setSelectedId] = useState<string | null>(null); // 지금 클릭해서 선택된 입원건 id (없으면 null)
-  const [showDischarged, setShowDischarged] = useState(false);
+  const [filterKey, setFilterKey] = useState<FilterKey>("needsAssignment"); // 현재 선택된 필터 키(기본값: 배정 필요)
 
   // patientId → patientName 변환용 Map. patients가 안 바뀌면 재계산 안 하도록 useMemo로 캐싱
   const patientNameById = useMemo(
@@ -65,9 +78,24 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
   const isBedAssigned = (admissionId: string) => // 입원건별 배정 여부를 판단합니다.
     bedAssignments.some((ba) => ba.admissionId === admissionId && ba.releasedAt === null); // 아직 퇴상 처리 안 된(releasedAt === null) 배정이 있으면 배정 완료로 간주
 
-    const visibleAdmissions = showDischarged
-  ? admissions
-  : admissions.filter((a) => a.status !== "DISCHARGED");
+   const visibleAdmissions = useMemo(() => {
+  switch (filterKey) {
+    case "needsAssignment":
+      return admissions.filter((a) => a.status === "REQUESTED" && !isBedAssigned(a.admissionId));
+    case "waitingAssigned":
+      return admissions.filter((a) => a.status === "REQUESTED" && isBedAssigned(a.admissionId));
+    case "admitted":
+      return admissions.filter((a) => a.status === "ADMITTED");
+    case "dischargeRequested":
+      return admissions.filter((a) => a.status === "DISCHARGE_REQUESTED");
+    case "discharged":
+      return admissions.filter((a) => a.status === "DISCHARGED");
+    default:
+      return admissions;
+  }
+}, [admissions, bedAssignments, filterKey]);
+
+
 
   return (
     // embedded면 탭 컨테이너 폭에 맞춰 꽉 채우고, 아니면 단독 페이지용 중앙정렬+여백
@@ -83,14 +111,21 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
           </div>
         )}
         <div className="flex items-center gap-2">
-          {/* 기본값(false)일 땐 퇴원완료 건을 숨김 — 누르면 showDischarged를 뒤집어서 전체/필터 상태를 토글 */}
-          <button
-            type="button"
-            onClick={() => setShowDischarged((v) => !v)}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
-          >
-            {showDischarged ? "퇴원완료 숨기기" : "퇴원완료 보기"}
-          </button>
+          {/* 상태+병상배정 조합을 "할 일" 단위로 묶은 필터 탭 */}
+          <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setFilterKey(f.key)}
+                className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  filterKey === f.key ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
           {/* 등록 화면으로 이동하는 링크 — embedded 여부와 상관없이 항상 노출 */}
           <Link
             href="/inpatient/admissiondischarge/admission/create"
@@ -158,6 +193,10 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
                       {isBedAssigned(admission.admissionId) ? (
                         <span className="inline-flex items-center whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
                           배정완료
+                        </span>
+                      ) : admission.status === "ADMITTED" ? (
+                        <span className="inline-flex items-center whitespace-nowrap rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-200">
+                          미배정 (확인 필요)
                         </span>
                       ) : (
                         <span className="inline-flex items-center whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
