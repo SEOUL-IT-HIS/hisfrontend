@@ -41,7 +41,7 @@ export function usePatientNames(patientIds: string[]) {
         setError("");
       } catch (e) {
         // 이름을 못 불러와도 화면은 계속 동작해야 한다. 이름 자리만 비워진다.
-        setError(e instanceof Error ? e.message : "환자명을 불러오지 못했습니다.");
+        setError(e instanceof Error ? e.message : "Failed to load patient names.");
       } finally {
         setLoading(false);
       }

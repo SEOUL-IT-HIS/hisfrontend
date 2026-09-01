@@ -98,13 +98,13 @@ export default function ImageScheduleRegisterForm() {
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!form.roomCode.trim()) next.roomCode = "촬영실코드는 필수입니다.";
-    if (!form.equipmentCode.trim()) next.equipmentCode = "촬영장비코드는 필수입니다.";
-    if (!form.scheduledAt) next.scheduledAt = "촬영 예정일시는 필수입니다.";
+    if (!form.roomCode.trim()) next.roomCode = "Exam room code is required.";
+    if (!form.equipmentCode.trim()) next.equipmentCode = "Equipment code is required.";
+    if (!form.scheduledAt) next.scheduledAt = "Scheduled imaging date and time is required.";
     if (!form.contraindicationCheckCode.trim())
-      next.contraindicationCheckCode = "금기확인결과코드는 필수입니다.";
+      next.contraindicationCheckCode = "Contraindication check result is required.";
     if (!form.confirmedById.trim())
-      next.confirmedById = "확정담당자ID는 필수입니다.";
+      next.confirmedById = "Confirming staff ID is required.";
     return next;
   }
 
@@ -135,20 +135,20 @@ export default function ImageScheduleRegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Panel className="px-4 py-3 text-sm">
-        <p className="text-slate-500">대상 접수</p>
+        <p className="text-slate-500">Target Reception</p>
         <p className="mt-1 font-semibold text-slate-700">
           {reception
             ? reception.receptionNo
-            : `접수ID ${imageReceptionId || "(없음)"}`}
+            : `Reception ID ${imageReceptionId || "(none)"}`}
         </p>
       </Panel>
 
       {lastCreated ? (
         <Alert variant="success">
           {mode === "create"
-            ? "영상 일정이 등록되었습니다."
-            : "영상 일정이 재등록되었습니다."}{" "}
-          (일정ID: {lastCreated.imageScheduleId})
+            ? "Imaging schedule has been registered."
+            : "Imaging schedule has been rescheduled."}{" "}
+          (Schedule ID: {lastCreated.imageScheduleId})
         </Alert>
       ) : null}
       {createError ? (
@@ -163,19 +163,19 @@ export default function ImageScheduleRegisterForm() {
             onClick={() => setMode(m)}
             disabled={creating}
           >
-            {m === "create" ? "신규 등록" : "재등록"}
+            {m === "create" ? "New" : "Reschedule"}
           </Button>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label="촬영실코드" required>
+        <FormField label="Exam Room Code" required>
           <Select
             name="roomCode"
             value={form.roomCode}
             onChange={handleChange}
             options={examRooms.options}
-            placeholder={examRooms.loading ? "불러오는 중..." : "선택"}
+            placeholder={examRooms.loading ? "Loading..." : "Select"}
             disabled={creating || examRooms.loading}
           />
           {errors.roomCode ? (
@@ -186,13 +186,13 @@ export default function ImageScheduleRegisterForm() {
           ) : null}
         </FormField>
 
-        <FormField label="촬영장비코드" required>
+        <FormField label="Equipment Code" required>
           <Select
             name="equipmentCode"
             value={form.equipmentCode}
             onChange={handleChange}
             options={equipments.options}
-            placeholder={equipments.loading ? "불러오는 중..." : "선택"}
+            placeholder={equipments.loading ? "Loading..." : "Select"}
             disabled={creating || equipments.loading}
           />
           {errors.equipmentCode ? (
@@ -204,9 +204,9 @@ export default function ImageScheduleRegisterForm() {
         </FormField>
 
         <FormField
-          label="촬영 예정일시"
+          label="Scheduled Imaging"
           required
-          hint="촬영을 시행할 날짜와 시각입니다. 확정한 시각은 자동 기록됩니다."
+          hint="Date and time the imaging will be performed. The confirmation time is recorded automatically."
         >
           <Input
             type="datetime-local"
@@ -220,7 +220,7 @@ export default function ImageScheduleRegisterForm() {
           ) : null}
         </FormField>
 
-        <FormField label="예약여부">
+        <FormField label="Appointment">
           <Select
             name="reservationYn"
             value={form.reservationYn}
@@ -230,13 +230,13 @@ export default function ImageScheduleRegisterForm() {
           />
         </FormField>
 
-        <FormField label="금기확인결과코드" required>
+        <FormField label="Contraindication Result" required>
           <Select
             name="contraindicationCheckCode"
             value={form.contraindicationCheckCode}
             onChange={handleChange}
             options={contraindications.options}
-            placeholder={contraindications.loading ? "불러오는 중..." : "선택"}
+            placeholder={contraindications.loading ? "Loading..." : "Select"}
             disabled={creating || contraindications.loading}
           />
           {errors.contraindicationCheckCode ? (
@@ -249,21 +249,21 @@ export default function ImageScheduleRegisterForm() {
           ) : null}
         </FormField>
 
-        <FormField label="확정담당자ID" required>
+        <FormField label="Confirming Staff ID" required>
           <Input
             name="confirmedById"
             value={form.confirmedById}
             onChange={handleChange}
             maxLength={20}
             disabled={creating}
-            placeholder="예: STF00021"
+            placeholder="e.g. STF00021"
           />
           {errors.confirmedById ? (
             <span className="text-xs text-rose-500">{errors.confirmedById}</span>
           ) : null}
         </FormField>
 
-        <FormField label="금기사항 확인 메모" className="sm:col-span-2">
+        <FormField label="Contraindication Notes" className="sm:col-span-2">
           <textarea
             name="contraindicationNote"
             value={form.contraindicationNote}
@@ -271,7 +271,7 @@ export default function ImageScheduleRegisterForm() {
             maxLength={500}
             disabled={creating}
             rows={3}
-            placeholder="선택 입력"
+            placeholder="Optional"
             className={textareaClass}
           />
         </FormField>
@@ -279,8 +279,9 @@ export default function ImageScheduleRegisterForm() {
 
       <FormActions
         onCancel={() => router.push("/labimaging/imagingorder/receptions")}
-        cancelLabel="목록으로"
-        submitLabel={mode === "create" ? "일정 등록" : "일정 재등록"}
+        cancelLabel="To List"
+        submitLabel={mode === "create" ? "Schedule" : "Reschedule"}
+        loadingLabel="Processing…"
         loading={creating}
         submitDisabled={!imageReceptionId}
       />

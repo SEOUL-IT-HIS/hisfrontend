@@ -5,12 +5,12 @@
  * 백엔드 응답 message 가 코드(LAB###)로 내려오면 이 사전으로 문구 변환 후 노출한다. (요청서 1.1)
  */
 export const IMAGE_ORDER_MESSAGES = {
-  LAB005: "영상 접수가 생성되었습니다.",
-  LAB006: "조회된 영상 오더가 없습니다.",
-  LAB007: "이미 접수된 오더입니다.",
-  LAB017: "유효하지 않은 코드값입니다.",
-  LAB998: "필수 항목이 누락되었거나 형식이 올바르지 않습니다.",
-  LAB999: "처리 중 오류가 발생했습니다.",
+  LAB005: "Imaging reception has been created.",
+  LAB006: "No imaging orders found.",
+  LAB007: "This order has already been received.",
+  LAB017: "Invalid code value.",
+  LAB998: "A required field is missing or has an invalid format.",
+  LAB999: "An error occurred while processing the request.",
 } as const;
 
 export type ImageOrderMessageCode = keyof typeof IMAGE_ORDER_MESSAGES;

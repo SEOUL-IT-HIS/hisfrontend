@@ -60,7 +60,7 @@ export default function ReceptionExcludeDialog({
   return (
     <Modal
       open={open}
-      title="워크리스트에서 제외"
+      title="Exclude from Worklist"
       titleId="reception-exclude-title"
       closeDisabled={submitting}
       onClose={handleCancel}
@@ -68,31 +68,31 @@ export default function ReceptionExcludeDialog({
       footer={
         <>
           <Button variant="secondary" onClick={handleCancel} disabled={submitting}>
-            취소
+            Cancel
           </Button>
           <Button variant="danger" onClick={handleConfirm} disabled={submitting}>
-            {submitting ? "처리 중..." : "제외"}
+            {submitting ? "Processing..." : "Exclude"}
           </Button>
         </>
       }
     >
       <div className="space-y-4">
         <p className="text-sm text-slate-700">
-          접수 <span className="font-semibold">{receptionNo}</span> 를 워크리스트에서 뺍니다.
+          Reception <span className="font-semibold">{receptionNo}</span> will be removed from the worklist.
           <br />
-          삭제가 아니라 &quot;제외됨&quot; 목록으로 옮기는 것이며, 언제든 다시 복구할 수 있습니다.
+          This does not delete it. The reception moves to the Excluded list and can be restored at any time.
         </p>
 
-        <FormField label="제외 사유" required hint="예: 환자 미방문으로 검사 취소 / 오더 착오 접수">
+        <FormField label="Exclusion Reason" required hint="e.g. Patient did not show up / order received in error">
           <Input
             value={reason}
             onChange={handleChange}
             maxLength={200}
             disabled={submitting}
-            placeholder="목록 제외 사유를 남겨주세요"
+            placeholder="Enter a reason for exclusion"
           />
           {invalid ? (
-            <span className="text-xs text-rose-500">제외 사유는 필수입니다.</span>
+            <span className="text-xs text-rose-500">Exclusion reason is required.</span>
           ) : null}
         </FormField>
       </div>

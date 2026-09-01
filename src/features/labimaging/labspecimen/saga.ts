@@ -40,7 +40,7 @@ function* fetchSpecimensSaga(action: PayloadAction<string>) {
     yield put(fetchSpecimensSuccess(list));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "검체 목록 조회에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to load specimen list.";
     yield put(fetchSpecimensFailure(message));
   }
 }
@@ -59,7 +59,7 @@ function* createSpecimenSaga(
     yield put(fetchSpecimensRequest(receptionNo));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "검체 등록에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to register specimen.";
     yield put(createSpecimenFailure(message));
   }
 }
@@ -86,7 +86,7 @@ function* acceptSpecimenSaga(
     yield put(fetchSpecimensRequest(receptionNo));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "적합성 판정에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to submit fitness assessment.";
     yield put(acceptSpecimenFailure(message));
   }
 }
@@ -110,7 +110,7 @@ function* lookupSpecimenByBarcodeSaga(action: PayloadAction<string>) {
     yield put(lookupSpecimenByBarcodeSuccess(specimen));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "바코드 조회에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to look up barcode.";
     yield put(lookupSpecimenByBarcodeFailure(message));
   }
 }
