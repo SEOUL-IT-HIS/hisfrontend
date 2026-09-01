@@ -10,6 +10,7 @@ import {
 } from "@/features/inpatient/bedmanagement/bedassignment/slice";
 import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import BedAssignmentDetail from "@/components/inpatient/bedmanagement/bedassignment/detail";
 
@@ -24,8 +25,13 @@ const BedAssignmentList = ({ embedded = false }: BedAssignmentListProps = {}) =>
   const listStatus = useSelector(selectBedAssignmentListStatus);
   const admissions = useSelector(selectAdmissions);
   const patients = useSelector((state: RootState) => state.patient.patients);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const searchParams = useSearchParams();
+  const highlightParam = searchParams.get("highlight");
+  const [selectedId, setSelectedId] = useState<number | null>(
+  highlightParam ? Number(highlightParam) : null
+  );
 
+  
 // 1단계: admissionId → patientId
 // BED_ASSIGNMENT와 ADMISSION은 같은 DB(inpatient-service)에 있는 테이블이라,
 // 백엔드에서 SQL(MyBatis든 JPA의 @Query JOIN이든) 한 번으로 합쳐서 patientId까지
