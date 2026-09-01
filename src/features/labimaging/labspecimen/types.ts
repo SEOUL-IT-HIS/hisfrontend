@@ -117,6 +117,30 @@ export interface SpecimenAcceptanceSummary {
   recollectionRequestedYn: "Y" | "N";
 }
 
+/**
+ * 바코드 대조 결과 (ZP2-75)
+ *
+ * ⚠ 서버가 판단하지 않는 값이다. 서버는 바코드로 검체를 찾아 주기만 하고,
+ *   그게 "지금 보고 있는 접수의 검체인지"는 화면만 알 수 있어 여기서 정한다.
+ *   그래서 메시지 코드(LAB###)가 아니라 화면 전용 구분값이다.
+ *
+ * ⚠ OTHER_RECEPTION 은 접수가 다르다는 뜻이고, 그것이 곧 환자·오더가 다르다는 뜻이다.
+ *   SPECIMEN → LAB_RECEPTION → LAB_ORDER → patient_id 로 이어지므로
+ *   접수번호가 같으면 환자와 오더도 같다. 환자를 따로 조회할 필요가 없다.
+ */
+export type BarcodeMatchKind =
+  /** 이 접수의 미판정 검체 — 판정 대상으로 고른다 */
+  | "OK"
+  /** 다른 접수의 검체 — 고르지 않고 그 검체의 접수번호를 알려준다 */
+  | "OTHER_RECEPTION"
+  /** 이 접수의 검체지만 이미 판정이 끝남 — 고르지 않는다 (검체 1건당 판정 1건) */
+  | "JUDGED";
+
+export interface BarcodeMatch {
+  kind: BarcodeMatchKind;
+  specimen: SpecimenSummary;
+}
+
 /** 검체 slice 상태 */
 export interface SpecimenState {
   /** 선택한 접수의 검체 목록 */
@@ -135,4 +159,13 @@ export interface SpecimenState {
   acceptError: string;
   /** 마지막 판정 성공 결과 — 성공 안내와 워크리스트 갱신 신호로 쓴다 */
   lastAccepted: SpecimenAcceptanceSummary | null;
+
+  /** 바코드 조회 (ZP2-75) */
+  barcodeLookupLoading: boolean;
+  barcodeLookupError: string;
+  /**
+   * 바코드로 찾은 검체. 대조 결과와 무관하게 조회된 원본을 담는다.
+   * 다른 접수의 검체여도 지운 뒤 담지 않는다 — 그 검체의 접수번호를 화면에 알려줘야 하기 때문이다.
+   */
+  barcodeLookupResult: SpecimenSummary | null;
 }
