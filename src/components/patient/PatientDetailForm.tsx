@@ -15,10 +15,12 @@ import {
 } from "@/components/common";
 import {
   deactivatePatientRequest,
+  convertTemporaryPatientRequest,
   fetchPatientDetailRequest,
   resetPatientDeactivation,
   resetPatientDeathUpdate,
   resetPatientUpdate,
+  resetTemporaryPatientConversion,
   updatePatientDeathRequest,
   updatePatientRequest,
 } from "@/features/patient/slice/patientSlice";
@@ -31,6 +33,34 @@ type PatientDetailFormProps = {
 };
 
 const formatDateTime = (value: string) => value.replace("T", " ").slice(0, 19);
+
+const getBirthDateFromResidentRegNo = (residentRegNo: string) => {
+  if (!/^\d{13}$/.test(residentRegNo)) return null;
+
+  const typeCode = residentRegNo.charAt(6);
+  const century = ["1", "2", "5", "6"].includes(typeCode)
+    ? 1900
+    : ["3", "4", "7", "8"].includes(typeCode)
+      ? 2000
+      : null;
+
+  if (century === null) return null;
+
+  const year = century + Number(residentRegNo.slice(0, 2));
+  const month = Number(residentRegNo.slice(2, 4));
+  const day = Number(residentRegNo.slice(4, 6));
+  const date = new Date(year, month - 1, day);
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+};
 
 const formatPhoneNo = (value: string) => {
   const digits = value.replace(/[^0-9]/g, "").slice(0, 11);
@@ -53,6 +83,11 @@ export default function PatientDetailForm({
   const [deathEditing, setDeathEditing] = useState(false);
   const [deathYn, setDeathYn] = useState<"Y" | "N">("N");
   const [deathDtm, setDeathDtm] = useState("");
+  const [conversionEditing, setConversionEditing] = useState(false);
+  const [conversionPatientName, setConversionPatientName] = useState("");
+  const [conversionResidentRegNo, setConversionResidentRegNo] = useState("");
+  const [conversionBirthDate, setConversionBirthDate] = useState("");
+  const [conversionGenderCd, setConversionGenderCd] = useState<"01" | "02" | "03" | "04">("03");
   const [validationError, setValidationError] = useState<string | null>(null);
   const {
     patientDetail,
@@ -67,6 +102,9 @@ export default function PatientDetailForm({
     deathUpdateLoading,
     deathUpdateError,
     deathUpdateSuccess,
+    temporaryConversionLoading,
+    temporaryConversionError,
+    temporaryConversionSuccess,
   } = useSelector((state: RootState) => state.patient);
 
   const isEditing = editing && !updateSuccess;
@@ -75,6 +113,7 @@ export default function PatientDetailForm({
     dispatch(resetPatientUpdate());
     dispatch(resetPatientDeactivation());
     dispatch(resetPatientDeathUpdate());
+    dispatch(resetTemporaryPatientConversion());
     dispatch(fetchPatientDetailRequest(patientId));
   }, [dispatch, patientId]);
 
@@ -126,6 +165,62 @@ export default function PatientDetailForm({
   const cancelDeathEditing = () => {
     setDeathEditing(false);
     dispatch(resetPatientDeathUpdate());
+  };
+
+  const startTemporaryConversion = () => {
+    if (!patientDetail || patientDetail.tempPatientYn !== "Y") return;
+
+    setConversionPatientName("");
+    setConversionResidentRegNo("");
+    setConversionBirthDate("");
+    setConversionGenderCd(patientDetail.genderCd);
+    setValidationError(null);
+    dispatch(resetTemporaryPatientConversion());
+    setConversionEditing(true);
+  };
+
+  const cancelTemporaryConversion = () => {
+    setConversionEditing(false);
+    setValidationError(null);
+    dispatch(resetTemporaryPatientConversion());
+  };
+
+  const submitTemporaryConversion = () => {
+    const normalizedName = conversionPatientName.trim();
+
+    if (normalizedName.length < 2 || normalizedName.length > 100) {
+      setValidationError("환자명은 2자 이상 100자 이하로 입력해 주세요.");
+      return;
+    }
+
+    if (!/^\d{13}$/.test(conversionResidentRegNo)) {
+      setValidationError("주민등록번호 13자리를 입력해 주세요.");
+      return;
+    }
+
+    const calculatedBirthDate = getBirthDateFromResidentRegNo(
+      conversionResidentRegNo,
+    );
+
+    if (!calculatedBirthDate || calculatedBirthDate !== conversionBirthDate) {
+      setValidationError("올바른 주민등록번호를 입력해 주세요.");
+      return;
+    }
+
+    if (!window.confirm("입력한 정보로 정식환자 전환을 진행하시겠습니까?")) {
+      return;
+    }
+
+    setValidationError(null);
+    dispatch(
+      convertTemporaryPatientRequest({
+        patientId,
+        patientName: normalizedName,
+        residentRegNo: conversionResidentRegNo,
+        birthDate: conversionBirthDate,
+        genderCd: conversionGenderCd,
+      }),
+    );
   };
 
   const deactivatePatient = () => {
@@ -281,16 +376,53 @@ export default function PatientDetailForm({
         <Alert variant="success">사망정보가 수정되었습니다.</Alert>
       ) : null}
 
+      {temporaryConversionError ? (
+        <Alert variant="error">{temporaryConversionError}</Alert>
+      ) : null}
+
+      {temporaryConversionSuccess ? (
+        <Alert variant="success">정식환자 전환이 완료되었습니다.</Alert>
+      ) : null}
+
+      {patientDetail?.tempPatientYn === "Y" ? (
+        <Alert>
+          신원이 확인되지 않은 임시환자입니다. 신원 확인 후 정식환자로
+          전환해 주세요.
+        </Alert>
+      ) : null}
+
       {patientDetail ? (
         <Panel>
           <form onSubmit={submitUpdate}>
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <h2 className="text-base font-semibold text-slate-800">
-                {patientDetail.patientName} 환자 정보
-              </h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base font-semibold text-slate-800">
+                  {patientDetail.patientName} 환자 정보
+                </h2>
+                {patientDetail.tempPatientYn === "Y" ? (
+                  <span className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
+                    임시환자
+                  </span>
+                ) : null}
+                {patientDetail.deathYn === "Y" ? (
+                  <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
+                    사망
+                  </span>
+                ) : null}
+              </div>
 
               {!isEditing ? (
                 <div className="flex gap-2">
+                  {patientDetail.tempPatientYn === "Y" ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={startTemporaryConversion}
+                      disabled={temporaryConversionLoading}
+                    >
+                      정식환자 전환
+                    </Button>
+                  ) : null}
                   {patientDetail.statusCd === "ACTIVE" ? (
                     <Button
                       type="button"
@@ -367,6 +499,13 @@ export default function PatientDetailForm({
                 value={patientDetail.deathYn === "Y" ? "사망" : "사망정보 없음"}
               />
 
+              {patientDetail.tempPatientYn === "Y" ? (
+                <DetailItem
+                  label="임시등록 사유"
+                  value={patientDetail.tempRegisterReason ?? "-"}
+                />
+              ) : null}
+
               {patientDetail.deathYn === "Y" ? (
                 <DetailItem
                   label="사망일시"
@@ -380,7 +519,7 @@ export default function PatientDetailForm({
 
               <DetailItem
                 label="주민등록번호"
-                value={patientDetail.residentRegNo}
+                value={patientDetail.residentRegNo || "-"}
               />
 
               <DetailItem
@@ -388,7 +527,10 @@ export default function PatientDetailForm({
                 value={getGenderLabel(patientDetail.genderCd)}
               />
 
-              <DetailItem label="생년월일" value={patientDetail.birthDate} />
+              <DetailItem
+                label="생년월일"
+                value={patientDetail.birthDate ?? "-"}
+              />
 
               {isEditing ? (
                 <div className="sm:col-span-2 lg:col-span-3">
@@ -533,6 +675,106 @@ export default function PatientDetailForm({
               </div>
             ) : null}
           </form>
+
+          {conversionEditing && patientDetail.tempPatientYn === "Y" ? (
+            <div className="border-t border-slate-200">
+              <div className="px-5 py-4">
+                <h2 className="text-base font-semibold text-slate-800">
+                  정식환자 전환
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  환자 ID와 기존 기록은 유지되고 임시환자 표시만 해제됩니다.
+                </p>
+              </div>
+
+              <div className="grid gap-4 border-t border-slate-100 p-5 sm:grid-cols-2">
+                <FormField label="실제 환자명" required>
+                  <Input
+                    value={conversionPatientName}
+                    onChange={(event) => {
+                      setConversionPatientName(event.target.value);
+                      setValidationError(null);
+                    }}
+                    disabled={temporaryConversionLoading}
+                    minLength={2}
+                    maxLength={100}
+                    autoFocus
+                  />
+                </FormField>
+
+                <FormField label="주민등록번호" required>
+                  <Input
+                    value={conversionResidentRegNo}
+                    onChange={(event) => {
+                      const residentRegNo = event.target.value
+                        .replace(/[^0-9]/g, "")
+                        .slice(0, 13);
+                      setConversionResidentRegNo(residentRegNo);
+                      setConversionBirthDate(
+                        getBirthDateFromResidentRegNo(residentRegNo) ?? "",
+                      );
+                      setValidationError(null);
+                    }}
+                    disabled={temporaryConversionLoading}
+                    inputMode="numeric"
+                    maxLength={13}
+                    placeholder="숫자 13자리"
+                    autoComplete="off"
+                  />
+                </FormField>
+
+                <FormField
+                  label="생년월일"
+                  required
+                  hint="주민등록번호에서 자동으로 계산됩니다."
+                >
+                  <Input
+                    type="date"
+                    value={conversionBirthDate}
+                    readOnly
+                    disabled={temporaryConversionLoading}
+                  />
+                </FormField>
+
+                <FormField label="성별" required>
+                  <Select
+                    value={conversionGenderCd}
+                    onChange={(event) =>
+                      setConversionGenderCd(
+                        event.target.value as "01" | "02" | "03" | "04",
+                      )
+                    }
+                    options={[
+                      { value: "01", label: "남성" },
+                      { value: "02", label: "여성" },
+                      { value: "03", label: "미상" },
+                      { value: "04", label: "기타" },
+                    ]}
+                    disabled={temporaryConversionLoading}
+                  />
+                </FormField>
+
+                <div className="flex justify-end gap-2 sm:col-span-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={cancelTemporaryConversion}
+                    disabled={temporaryConversionLoading}
+                  >
+                    취소
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={submitTemporaryConversion}
+                    disabled={temporaryConversionLoading}
+                  >
+                    {temporaryConversionLoading ? "전환 중..." : "전환"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div className="border-t border-slate-200">
             <div className="flex items-center justify-between px-5 py-4">

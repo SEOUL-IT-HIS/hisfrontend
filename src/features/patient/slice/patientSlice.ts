@@ -9,6 +9,7 @@ import type {
   PatientUpdateRequest,
   PatientDeactivateRequest,
   PatientDeathUpdateRequest,
+  PatientTemporaryConversionRequest,
 } from "../type/patientType";
 
 type PatientState = {
@@ -32,6 +33,9 @@ type PatientState = {
   deathUpdateLoading: boolean;
   deathUpdateError: string | null;
   deathUpdateSuccess: boolean;
+  temporaryConversionLoading: boolean;
+  temporaryConversionError: string | null;
+  temporaryConversionSuccess: boolean;
 };
 
 const initialState: PatientState = {
@@ -55,6 +59,9 @@ const initialState: PatientState = {
   deathUpdateLoading: false,
   deathUpdateError: null,
   deathUpdateSuccess: false,
+  temporaryConversionLoading: false,
+  temporaryConversionError: null,
+  temporaryConversionSuccess: false,
 };
 
 const patientSlice = createSlice({
@@ -120,6 +127,38 @@ const patientSlice = createSlice({
       state.updateLoading = false;
       state.updateError = null;
       state.updateSuccess = false;
+    },
+
+    convertTemporaryPatientRequest(
+      state,
+      _action: PayloadAction<PatientTemporaryConversionRequest>,
+    ) {
+      void _action;
+      state.temporaryConversionLoading = true;
+      state.temporaryConversionError = null;
+      state.temporaryConversionSuccess = false;
+    },
+
+    convertTemporaryPatientSuccess(
+      state,
+      action: PayloadAction<PatientDetail>,
+    ) {
+      state.temporaryConversionLoading = false;
+      state.temporaryConversionError = null;
+      state.temporaryConversionSuccess = true;
+      state.patientDetail = action.payload;
+    },
+
+    convertTemporaryPatientFailure(state, action: PayloadAction<string>) {
+      state.temporaryConversionLoading = false;
+      state.temporaryConversionError = action.payload;
+      state.temporaryConversionSuccess = false;
+    },
+
+    resetTemporaryPatientConversion(state) {
+      state.temporaryConversionLoading = false;
+      state.temporaryConversionError = null;
+      state.temporaryConversionSuccess = false;
     },
 
     updatePatientDeathRequest(
@@ -249,6 +288,10 @@ export const {
   updatePatientDeathSuccess,
   updatePatientDeathFailure,
   resetPatientDeathUpdate,
+  convertTemporaryPatientRequest,
+  convertTemporaryPatientSuccess,
+  convertTemporaryPatientFailure,
+  resetTemporaryPatientConversion,
 } = patientSlice.actions;
 
 export default patientSlice.reducer;

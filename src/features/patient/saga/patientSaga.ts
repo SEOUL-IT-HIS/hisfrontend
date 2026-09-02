@@ -8,6 +8,7 @@ import {
   updatePatientApi,
   deactivatePatientApi,
   updatePatientDeathApi,
+  convertTemporaryPatientApi,
 } from "../api/patientApi";
 import {
   checkPatientDuplicateFailure,
@@ -31,6 +32,9 @@ import {
   updatePatientDeathFailure,
   updatePatientDeathRequest,
   updatePatientDeathSuccess,
+  convertTemporaryPatientFailure,
+  convertTemporaryPatientRequest,
+  convertTemporaryPatientSuccess,
 } from "../slice/patientSlice";
 import type {
   Patient,
@@ -147,6 +151,26 @@ function* updatePatientDeathSaga(
   }
 }
 
+function* convertTemporaryPatientSaga(
+  action: ReturnType<typeof convertTemporaryPatientRequest>,
+) {
+  try {
+    const patient: PatientDetail = yield call(
+      convertTemporaryPatientApi,
+      action.payload,
+    );
+
+    yield put(convertTemporaryPatientSuccess(patient));
+  } catch (error) {
+    const message = getPatientErrorMessage(
+      error,
+      "정식환자 전환에 실패했습니다.",
+    );
+
+    yield put(convertTemporaryPatientFailure(message));
+  }
+}
+
 function* deactivatePatientSaga(
   action: ReturnType<typeof deactivatePatientRequest>,
 ) {
@@ -203,6 +227,11 @@ export default function* patientSaga() {
   yield takeLatest(fetchPatientDetailRequest.type, fetchPatientDetailSaga);
 
   yield takeLatest(updatePatientRequest.type, updatePatientSaga);
+
+  yield takeLatest(
+    convertTemporaryPatientRequest.type,
+    convertTemporaryPatientSaga,
+  );
 
   yield takeLatest(updatePatientDeathRequest.type, updatePatientDeathSaga);
 
