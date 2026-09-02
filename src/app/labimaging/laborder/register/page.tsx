@@ -10,7 +10,7 @@ import LabOrderReceptionForm from "@/components/labimaging/laborder/LabOrderRece
 export default function Page() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
-      <PageHeader title="검사오더 접수" description="외부 시스템에서 발생한 검사 오더를 접수합니다." />
+      <PageHeader title="Lab Order Reception" description="Receive lab orders raised by external systems." />
       <LabOrderReceptionForm />
     </div>
   );

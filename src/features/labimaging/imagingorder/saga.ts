@@ -34,7 +34,7 @@ function* createImageOrderSaga(action: PayloadAction<ImageOrderCreateRequest>) {
     yield put(createImageOrderSuccess(response));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "영상 오더 접수에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to create imaging reception.";
     yield put(createImageOrderFailure(message));
   }
 }
@@ -51,7 +51,7 @@ function* fetchImageReceptionsSaga(
     yield put(fetchImageReceptionsSuccess(list));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "접수 목록 조회에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to load reception list.";
     yield put(fetchImageReceptionsFailure(message));
   }
 }
@@ -65,7 +65,7 @@ function* fetchImageReceptionByNoSaga(action: PayloadAction<string>) {
     yield put(fetchImageReceptionByNoSuccess(reception));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "접수 조회에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to load reception.";
     yield put(fetchImageReceptionByNoFailure(message));
   }
 }

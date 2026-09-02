@@ -16,36 +16,36 @@
 export type SpecimenType = "BLOOD" | "URINE" | "STOOL" | "SPUTUM";
 
 export const SPECIMEN_TYPE_LABELS: Record<SpecimenType, string> = {
-  BLOOD: "혈액",
-  URINE: "소변",
-  STOOL: "대변",
-  SPUTUM: "객담",
+  BLOOD: "Blood",
+  URINE: "Urine",
+  STOOL: "Stool",
+  SPUTUM: "Sputum",
 };
 
 export const SPECIMEN_TYPE_OPTIONS: ReadonlyArray<{
   value: SpecimenType;
   label: string;
 }> = [
-  { value: "BLOOD", label: "혈액" },
-  { value: "URINE", label: "소변" },
-  { value: "STOOL", label: "대변" },
-  { value: "SPUTUM", label: "객담" },
+  { value: "BLOOD", label: "Blood" },
+  { value: "URINE", label: "Urine" },
+  { value: "STOOL", label: "Stool" },
+  { value: "SPUTUM", label: "Sputum" },
 ];
 
 /** 적합상태 — 백엔드 labspecimen/entity/FitnessStatus enum 미러링. 미판정이면 값이 없다. */
 export type FitnessStatus = "FIT" | "UNFIT";
 
 export const FITNESS_STATUS_LABELS: Record<FitnessStatus, string> = {
-  FIT: "적합",
-  UNFIT: "부적합",
+  FIT: "Fit",
+  UNFIT: "Unfit",
 };
 
 export const FITNESS_STATUS_OPTIONS: ReadonlyArray<{
   value: FitnessStatus;
   label: string;
 }> = [
-  { value: "FIT", label: "적합" },
-  { value: "UNFIT", label: "부적합" },
+  { value: "FIT", label: "Fit" },
+  { value: "UNFIT", label: "Unfit" },
 ];
 
 /** 재채취 요청 여부. 공통코드가 아니라 API 계약상 고정값이라 상수로 둔다. */
@@ -53,8 +53,8 @@ export const RECOLLECTION_YN_OPTIONS: ReadonlyArray<{
   value: "Y" | "N";
   label: string;
 }> = [
-  { value: "N", label: "요청 안 함" },
-  { value: "Y", label: "재채취 요청" },
+  { value: "N", label: "Not requested" },
+  { value: "Y", label: "Request recollection" },
 ];
 
 /** 검체 등록 요청 — 백엔드 SpecimenCreateRequestDto */

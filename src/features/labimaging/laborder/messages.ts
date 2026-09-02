@@ -5,18 +5,18 @@
  * 백엔드 응답 message 가 코드(LAB###)로 내려오면 이 사전으로 문구 변환 후 노출한다. (요청서 1.1)
  */
 export const LAB_ORDER_MESSAGES = {
-  LAB001: "검사 접수가 생성되었습니다.",
-  LAB002: "조회된 검사 오더가 없습니다.",
-  LAB003: "접수 조회가 성공했습니다.",
-  LAB004: "이미 접수된 오더입니다.",
-  LAB013: "검사접수 정보를 찾을 수 없습니다.",
-  LAB023: "워크리스트 조회에 성공했습니다.",
-  LAB024: "접수를 워크리스트에서 제외했습니다.",
-  LAB025: "접수를 워크리스트로 복구했습니다.",
-  LAB026: "제외된 접수가 아니어서 복구할 수 없습니다.",
-  LAB017: "유효하지 않은 코드값입니다.",
-  LAB998: "필수 항목이 누락되었거나 형식이 올바르지 않습니다.",
-  LAB999: "처리 중 오류가 발생했습니다.",
+  LAB001: "Lab reception has been created.",
+  LAB002: "No lab orders found.",
+  LAB003: "Reception loaded successfully.",
+  LAB004: "This order has already been received.",
+  LAB013: "Lab reception not found.",
+  LAB023: "Worklist loaded successfully.",
+  LAB024: "Reception has been excluded from the worklist.",
+  LAB025: "Reception has been restored to the worklist.",
+  LAB026: "This reception is not excluded, so it cannot be restored.",
+  LAB017: "Invalid code value.",
+  LAB998: "A required field is missing or has an invalid format.",
+  LAB999: "An error occurred while processing the request.",
 } as const;
 
 export type LabOrderMessageCode = keyof typeof LAB_ORDER_MESSAGES;

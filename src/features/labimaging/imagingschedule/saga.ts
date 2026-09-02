@@ -29,7 +29,7 @@ function* createImageScheduleSaga(
     yield put(createImageScheduleSuccess(response));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "영상 일정 등록에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to register imaging schedule.";
     yield put(createImageScheduleFailure(message));
   }
 }
@@ -50,7 +50,7 @@ function* rescheduleImageScheduleSaga(
     yield put(rescheduleImageScheduleSuccess(response));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "영상 일정 변경(재조정)에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to reschedule imaging schedule.";
     yield put(rescheduleImageScheduleFailure(message));
   }
 }

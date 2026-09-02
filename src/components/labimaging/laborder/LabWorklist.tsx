@@ -66,10 +66,10 @@ function formatDateTime(value?: string) {
 type WorkTab = "schedule" | "specimen" | "acceptance" | "result";
 
 const WORK_TABS: ReadonlyArray<{ value: WorkTab; label: string; enabled: boolean }> = [
-  { value: "schedule", label: "일정", enabled: true },
-  { value: "specimen", label: "검체", enabled: true },
-  { value: "acceptance", label: "적합성 판정", enabled: true },
-  { value: "result", label: "결과", enabled: false },
+  { value: "schedule", label: "Schedule", enabled: true },
+  { value: "specimen", label: "Specimen", enabled: true },
+  { value: "acceptance", label: "Fitness Check", enabled: true },
+  { value: "result", label: "Result", enabled: false },
 ];
 
 export default function LabWorklist() {
@@ -128,14 +128,14 @@ export default function LabWorklist() {
   const columns: DataTableColumn<LabWorklistItem>[] = [
     {
       key: "receivedAt",
-      header: "접수시각",
+      header: "Received",
       render: (r) => (
         <span className="text-slate-500">{formatDateTime(r.receivedAt)}</span>
       ),
     },
     {
       key: "receptionNo",
-      header: "접수 / 환자",
+      header: "Reception / Patient",
       render: (r) => (
         // 행 선택은 접수번호 클릭으로 한다. (공통 DataTable 은 행 클릭을 지원하지 않는다)
         <button
@@ -150,11 +150,11 @@ export default function LabWorklist() {
           {r.receptionNo}
           {/* 환자 식별은 이름으로 한다. 환자번호는 화면에서 쓰지 않기로 했다. (2026-08-25) */}
           <span className="ml-2 font-normal text-slate-500">
-            {patientNames[r.patientId] ?? "환자 미상"}
+            {patientNames[r.patientId] ?? "Unknown patient"}
           </span>
           {r.urgencyYn === "Y" ? (
             <span className="ml-2 rounded bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-600">
-              긴급
+              Urgent
             </span>
           ) : null}
         </button>
@@ -162,16 +162,16 @@ export default function LabWorklist() {
     },
     {
       key: "progress",
-      header: "진행",
+      header: "Progress",
       render: (r) => <WorklistProgress item={r} />,
     },
     {
       key: "nextStep",
-      header: "다음 할 일",
+      header: "Next Step",
       render: (r) =>
         r.receptionStatusCode === "EXCLUDED" ? (
           <span className="text-slate-400" title={r.exclusionReason}>
-            제외됨
+            Excluded
           </span>
         ) : (
           <span className="font-medium text-slate-700">
@@ -190,7 +190,7 @@ export default function LabWorklist() {
             onClick={() => dispatch(restoreReceptionRequest(r.receptionNo, filter))}
             disabled={exclusionSubmitting}
           >
-            복구
+            Restore
           </Button>
         ) : (
           <Button
@@ -198,7 +198,7 @@ export default function LabWorklist() {
             onClick={() => setExcludeTarget(r.receptionNo)}
             disabled={exclusionSubmitting}
           >
-            제외
+            Exclude
           </Button>
         ),
     },
@@ -226,7 +226,7 @@ export default function LabWorklist() {
             onClick={() => dispatch(fetchLabWorklistRequest(filter))}
             disabled={loading}
           >
-            새로고침
+            Refresh
           </Button>
         </div>
 
@@ -239,10 +239,11 @@ export default function LabWorklist() {
           rowKey={(r) => r.labReceptionId}
           loading={loading}
           minWidthClassName="min-w-[680px]"
+          loadingMessage="Loading..."
           emptyMessage={
             filter === "EXCLUDED"
-              ? "제외된 접수가 없습니다."
-              : "처리할 접수가 없습니다."
+              ? "No excluded receptions."
+              : "No receptions to process."
           }
         />
       </div>
@@ -251,7 +252,7 @@ export default function LabWorklist() {
       <Panel className="min-h-0 flex-1 p-5">
         {selected === null ? (
           <div className="flex h-full items-center justify-center text-sm text-slate-400">
-            왼쪽 목록에서 접수번호를 클릭하세요.
+            Select a reception number from the list on the left.
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -266,7 +267,7 @@ export default function LabWorklist() {
                   variant={tab === t.value ? "primary" : "secondary"}
                   onClick={() => setTab(t.value)}
                   disabled={!t.enabled}
-                  title={t.enabled ? undefined : "아직 구현되지 않은 단계입니다."}
+                  title={t.enabled ? undefined : "This step is not implemented yet."}
                 >
                   {t.label}
                 </Button>
@@ -297,7 +298,7 @@ export default function LabWorklist() {
               />
             ) : (
               <div className="text-sm text-slate-400">
-                아직 구현되지 않은 단계입니다.
+                This step is not implemented yet.
               </div>
             )}
           </div>

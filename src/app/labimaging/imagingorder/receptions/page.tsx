@@ -11,8 +11,8 @@ export default function Page() {
   return (
     <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-4 p-6">
       <PageHeader
-        title="영상 접수 목록"
-        description="일정을 등록하거나 이미 잡힌 일정을 재조정할 접수를 고릅니다."
+        title="Imaging Receptions"
+        description="Select a reception to schedule, or to reschedule an existing appointment."
       />
       <ImageReceptionListForm />
     </div>

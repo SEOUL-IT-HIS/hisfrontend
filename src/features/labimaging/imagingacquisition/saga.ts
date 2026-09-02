@@ -32,7 +32,7 @@ function* fetchConsentsSaga(action: PayloadAction<string>) {
     yield put(fetchConsentsSuccess({ imageOrderId, consents: list }));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "동의 이력 조회에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to load consent history.";
     yield put(fetchConsentsFailure(message));
   }
 }
@@ -49,7 +49,7 @@ function* createConsentSaga(action: PayloadAction<ConsentCreateRequest>) {
     yield put(fetchConsentsRequest(request.imageOrderId));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "동의 등록에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to register consent.";
     yield put(createConsentFailure(message));
   }
 }
