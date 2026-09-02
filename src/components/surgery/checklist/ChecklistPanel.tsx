@@ -153,6 +153,28 @@ export default function ChecklistPanel({ surgeryId }: Props) {
   };
 
   /**
+   * 그 단계의 항목을 한꺼번에 켜거나 끈다.
+   *
+   * <p>이미 전부 켜져 있으면 전부 끈다. 켜는 버튼과 끄는 버튼을 따로 두면
+   * 둘 중 하나는 늘 아무 일도 하지 않는 상태로 놓여 있게 된다.</p>
+   *
+   * <p><b>이 버튼이 안전 확인을 무의미하게 만들지 않느냐</b> — 항목 체크를 요구하는
+   * 이유는 사용자가 한 번 훑어보게 하려는 것이지, 다섯 번 클릭하게 하려는 것이 아니다.
+   * 지금 체크 상태는 어차피 저장되지도 않는다(SURGERY_CHECKLIST 가 단계와 완료
+   * 여부만 갖는다). 항목별 확인을 진짜로 기록에 남기려면 테이블이 필요하고,
+   * 그것이 SL2-263·270·276 이다 — 그게 생기기 전까지 이 버튼과 하나씩 누르는 것은
+   * 남는 데이터가 똑같다.</p>
+   */
+  const toggleAll = (phase: ChecklistPhase) => {
+    const checks = PHASES.find((p) => p.code === phase)?.checks ?? [];
+    const turnOff = allChecked(phase);
+    setChecked((prev) => ({
+      ...prev,
+      [phase]: turnOff ? new Set<string>() : new Set(checks),
+    }));
+  };
+
+  /**
    * 이 단계를 시작할 수 있는가.
    * Sign In 은 첫 단계라 항상 열려 있고, 나머지는 앞 단계가 완료돼야 한다.
    */
@@ -223,22 +245,35 @@ export default function ChecklistPanel({ surgeryId }: Props) {
                     작성 시작
                   </Button>
                 ) : (
-                  <Button
-                    variant={completed ? "secondary" : "primary"}
-                    // 완료하려면 항목을 전부 체크해야 한다. 되돌리기(완료 취소)는 그대로 열어둔다 —
-                    // 잘못 눌렀을 때 풀 방법이 없으면 행을 지우게 된다(§21.6).
-                    disabled={saving || (!completed && !allChecked(phase.code))}
-                    className="shrink-0"
-                    onClick={() =>
-                      dispatch(
-                        updateChecklistRequest(surgeryId, item.checklistId, {
-                          completedYn: completed ? NO : YES,
-                        }),
-                      )
-                    }
-                  >
-                    {completed ? "완료 취소" : "확인 완료"}
-                  </Button>
+                  <div className="flex shrink-0 flex-col items-stretch gap-1.5">
+                    <Button
+                      variant={completed ? "secondary" : "primary"}
+                      // 완료하려면 항목을 전부 체크해야 한다. 되돌리기(완료 취소)는 그대로 열어둔다 —
+                      // 잘못 눌렀을 때 풀 방법이 없으면 행을 지우게 된다(§21.6).
+                      disabled={saving || (!completed && !allChecked(phase.code))}
+                      onClick={() =>
+                        dispatch(
+                          updateChecklistRequest(surgeryId, item.checklistId, {
+                            completedYn: completed ? NO : YES,
+                          }),
+                        )
+                      }
+                    >
+                      {completed ? "완료 취소" : "확인 완료"}
+                    </Button>
+
+                    {/* 완료된 단계는 항목 목록을 접어 두므로 이 버튼도 둘 이유가 없다 */}
+                    {!completed ? (
+                      <Button
+                        variant="secondary"
+                        className="h-7 px-2 text-xs"
+                        disabled={saving}
+                        onClick={() => toggleAll(phase.code)}
+                      >
+                        {allChecked(phase.code) ? "전체 해제" : "전체 체크"}
+                      </Button>
+                    ) : null}
+                  </div>
                 )}
               </div>
 

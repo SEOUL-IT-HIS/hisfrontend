@@ -31,6 +31,8 @@ export const SURGERY_MESSAGES = {
   SUR056: "이미 등록된 수술항목 코드입니다.",
   SUR057: "해당 수술 요청이 존재하지 않습니다.",
   SUR058: "이미 처리된 수술 요청입니다.",
+  SUR059:
+    "배정이 확정된 수술은 변경할 수 없습니다. 바꾸려면 수술을 취소하고 다시 요청받아야 합니다.",
 } as const;
 
 export type SurgeryMessageCode = keyof typeof SURGERY_MESSAGES;
