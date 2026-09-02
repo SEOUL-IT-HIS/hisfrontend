@@ -190,6 +190,16 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
   }
 
   /**
+   * 접힌 사이드바에서 업무영역 아이콘을 눌렀을 때.
+   * 예전에는 영역의 menuUrl 로 이동했는데, 원무처럼 홈 화면이 없는 영역이 생기면서
+   * "사이드바를 펼치고 그 영역을 열어준다" 로 바꿨다.
+   */
+  function openAreaFromCollapsed(key: string) {
+    setCollapsed(false);
+    setOpenAreas((prev) => ({ ...prev, [key]: true }));
+  }
+
+  /**
    * 원무 영역의 자식(접수관리, 환자관리, 수납관리 ...)부터 재귀적으로 그린다.
    * 자식이 없으면 리프 링크, 있으면 자기 자신도 토글 가능한 그룹으로 그리고
    * (menuUrl이 있으면 "{이름} 홈" 링크를 맨 위에 추가) children을 다시 이 함수로 그린다.
@@ -251,7 +261,7 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
                       : "text-slate-500 hover:bg-white/90 hover:text-slate-800"
                   }`}
                 >
-                  {node.menuName} 홈
+                  {node.menuName} Home
                 </Link>
               </li>
             ) : null}
@@ -305,15 +315,15 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
           const key = areaStateKey(item);
           const areaActive = isWorkAreaActive(pathname, item);
           const expanded = openAreas[key];
-          const homeHref = item.menuUrl ?? "#";
 
           if (collapsed) {
             return (
-              <Link
+              <button
                 key={item.menuId}
-                href={homeHref}
+                type="button"
+                onClick={() => openAreaFromCollapsed(key)}
                 title={item.menuName}
-                className={`flex flex-col items-center gap-1 rounded-xl px-1 py-2.5 text-[11px] transition-colors ${
+                className={`flex w-full flex-col items-center gap-1 rounded-xl px-1 py-2.5 text-[11px] transition-colors ${
                   areaActive
                     ? "bg-white font-semibold text-sky-700 shadow-sm ring-1 ring-sky-100"
                     : "hover:bg-white/80 hover:text-slate-800"
@@ -323,7 +333,7 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
                   {areaIcon(item.areaKey)}
                 </span>
                 <span className="text-center leading-tight">{item.menuName}</span>
-              </Link>
+              </button>
             );
           }
 
@@ -369,7 +379,7 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
                             : "text-slate-500 hover:bg-white/90 hover:text-slate-800"
                         }`}
                       >
-                        {item.menuName} 홈
+                        {item.menuName} Home
                       </Link>
                     </li>
                   ) : null}
