@@ -232,6 +232,12 @@ export default function ConsentWorkPanel({
 
           <FormField label="Consent Date" required>
             <Input
+              /*
+                ⚠ 날짜 위젯의 안내 문구("연도-월-일 --:--")는 우리 문자열이 아니라 브라우저가 그린다.
+                  Chrome 은 그 언어를 element 가 물려받은 lang 으로 정하는데, 루트가 <html lang="ko"> 라
+                  한글로 나온다. 루트 레이아웃은 공용(가이드 5.3)이라 손대지 않고 이 입력칸에만 en 을 건다.
+              */
+              lang="en"
               type="date"
               name="consentDt"
               value={form.consentDt}
