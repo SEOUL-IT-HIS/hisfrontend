@@ -55,11 +55,33 @@ type FormState = typeof initialForm;
 type FieldErrors = Partial<Record<keyof FormState, string>>;
 type Mode = "create" | "reschedule";
 
-export default function ImageScheduleRegisterForm() {
+type Props = {
+  /** 대상 접수ID. 없으면 URL 경로변수에서 읽는다. (단독 페이지로 열렸을 때) */
+  imageReceptionId?: string;
+  /** 신규/재등록 초기 선택. 대상 접수에 일정이 있으면 "reschedule" 을 넘긴다. */
+  defaultMode?: Mode;
+  /** 대상 접수 요약 박스 표시 여부. 워크리스트 패널에서는 위쪽 머리말과 겹쳐서 끈다. */
+  showReceptionSummary?: boolean;
+  /** 취소 동작. 없으면 접수 목록으로 이동한다. */
+  onCancel?: () => void;
+};
+
+export default function ImageScheduleRegisterForm({
+  imageReceptionId: imageReceptionIdProp,
+  defaultMode = "create",
+  showReceptionSummary = true,
+  onCancel,
+}: Props = {}) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  /*
+   * 훅은 조건부로 부를 수 없어 useParams 는 항상 호출한다.
+   * 워크리스트 패널에서 쓸 때는 URL 이 /worklist 라 값이 없고, 그때는 프롭이 대상을 정한다.
+   * (검사 쪽 LabScheduleRegisterForm 과 같은 구조)
+   */
   const params = useParams<{ imageReceptionId: string }>();
-  const imageReceptionId = params?.imageReceptionId ?? "";
+  const imageReceptionId = imageReceptionIdProp ?? params?.imageReceptionId ?? "";
 
   const selected = useSelector(selectSelectedImageReception);
   const reception =
@@ -73,7 +95,7 @@ export default function ImageScheduleRegisterForm() {
   const equipments = useCommonCodeOptions("EQUIPMENT_CD");
   const contraindications = useCommonCodeOptions("CONTRAINDICATION_CD");
 
-  const [mode, setMode] = useState<Mode>("create");
+  const [mode, setMode] = useState<Mode>(defaultMode);
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [lastResetId, setLastResetId] = useState<string | null>(null);
@@ -134,14 +156,17 @@ export default function ImageScheduleRegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Panel className="px-4 py-3 text-sm">
-        <p className="text-slate-500">Target Reception</p>
-        <p className="mt-1 font-semibold text-slate-700">
-          {reception
-            ? reception.receptionNo
-            : `Reception ID ${imageReceptionId || "(none)"}`}
-        </p>
-      </Panel>
+      {/* 워크리스트 패널에서는 위쪽 머리말이 같은 내용을 보여줘서 끈다. */}
+      {showReceptionSummary ? (
+        <Panel className="px-4 py-3 text-sm">
+          <p className="text-slate-500">Target Reception</p>
+          <p className="mt-1 font-semibold text-slate-700">
+            {reception
+              ? reception.receptionNo
+              : `Reception ID ${imageReceptionId || "(none)"}`}
+          </p>
+        </Panel>
+      ) : null}
 
       {lastCreated ? (
         <Alert variant="success">
@@ -209,6 +234,12 @@ export default function ImageScheduleRegisterForm() {
           hint="Date and time the imaging will be performed. The confirmation time is recorded automatically."
         >
           <Input
+            /*
+              ⚠ 날짜 위젯의 안내 문구("연도-월-일 --:--")는 우리 문자열이 아니라 브라우저가 그린다.
+                Chrome 은 그 언어를 element 가 물려받은 lang 으로 정하는데, 루트가 <html lang="ko"> 라
+                한글로 나온다. 루트 레이아웃은 공용(가이드 5.3)이라 손대지 않고 이 입력칸에만 en 을 건다.
+            */
+            lang="en"
             type="datetime-local"
             name="scheduledAt"
             value={form.scheduledAt}
@@ -278,8 +309,9 @@ export default function ImageScheduleRegisterForm() {
       </div>
 
       <FormActions
-        onCancel={() => router.push("/labimaging/imagingorder/receptions")}
-        cancelLabel="To List"
+        // 패널에서는 화면을 옮기면 안 되므로 호출하는 쪽이 동작을 넘긴다.
+        onCancel={onCancel ?? (() => router.push("/labimaging/imagingorder/receptions"))}
+        cancelLabel={onCancel ? "Clear Selection" : "To List"}
         submitLabel={mode === "create" ? "Schedule" : "Reschedule"}
         loadingLabel="Processing…"
         loading={creating}

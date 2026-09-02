@@ -89,6 +89,12 @@ export interface ImageOrderState {
   /** 일정 화면으로 넘길 컨텍스트 (검사 쪽과 동일 규약) */
   selectedReception: ImageReceptionContext | null;
 
+  /**
+   * 워크리스트에서 고른 행의 접수번호. 빈 문자열이면 선택 없음.
+   * ⚠ 위 selectedReception 과 다른 상태다. 합치지 않는 이유는 slice 주석 참고.
+   */
+  selectedWorklistReceptionNo: string;
+
   /** 접수 상세 조회 결과 (촬영항목 포함) */
   receptionDetail: ImageReceptionDetail | null;
   receptionLoading: boolean;
