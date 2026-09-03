@@ -5,7 +5,8 @@ export interface PrescriptionItemDto {
     prescriptionType?: string;  // 처방구분 (약품/검사/수술 등)
     itemCode: string;           // 항목코드
     itemName: string;           // 항목명
-    dosage?: string;            // 용량
+    dosage?: number;            // 용량 (1회 투여량, 백엔드 Double과 맞춤)
+    dosageFormCd?: string;      // 투약 형태 코드
     frequency?: string;         // 횟수
     durationDays?: string;      // 투약일수
     detailInfo?: string;        // 상세정보
@@ -53,7 +54,8 @@ export interface PrescriptionItemInput {
     prescriptionType: string;   // 약품, 검사, 수술
     itemCode: string;
     itemName: string;
-    dosage?: string;
+    dosage?: number;            // 1회 투여량 (백엔드 Double과 맞춤)
+    dosageFormCd?: string;      // 투약 형태 코드
     frequency?: string;
     durationDays?: string;
     detailInfo?: string;

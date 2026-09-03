@@ -13,18 +13,18 @@ const getStatusText = (status: string) => {
         case 'REQUESTED':
         case 'ORDERED':
         case 'PENDING':
-            return '처방대기';
+            return 'Pending'; // 처방대기
         case 'ISSUED':
         case 'IN_PROGRESS':
-            return '처방중';
+            return 'In Progress'; // 처방중
         case 'COMPLETED':
-            return '처방완료';
+            return 'Completed'; // 처방완료
         case 'HOLD':
-            return '보류';
+            return 'On Hold'; // 보류
         case 'DISCONTINUED':
-            return '중단';
+            return 'Discontinued'; // 중단
         case 'CANCELLED':
-            return '취소';
+            return 'Cancelled'; // 취소
         default:
             return status; // 정의되지 않은 값이면 원본 출력
     }
@@ -79,23 +79,27 @@ const PrescriptionList = () => {
     return (
         <div className="flex h-full min-h-0 flex-col gap-3 p-3">
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
-                <h1 className="text-lg font-bold text-slate-800">처방 조회</h1>
+                {/* 처방 조회 */}
+                <h1 className="text-lg font-bold text-slate-800">Prescriptions</h1>
 
                 <div className="flex items-center gap-2">
                     <div className="flex-1">
                         <Input
                             id="keyword"
                             value={keywordInput}
-                            placeholder="환자명 입력"
+                            // 환자명 입력
+                            placeholder="Enter patient name"
                             onChange={(e) => setKeywordInput(e.target.value)}
                             onKeyDown={handleKeyDown}
                         />
                     </div>
                     <Button variant="secondary" onClick={handleReset}>
-                        초기화
+                        {/* 초기화 */}
+                        Reset
                     </Button>
                     <Button variant="primary" onClick={handleSearch}>
-                        조회
+                        {/* 조회 */}
+                        Search
                     </Button>
                 </div>
             </div>
@@ -103,18 +107,20 @@ const PrescriptionList = () => {
             {error && <Alert variant="error">{error}</Alert>}
 
             {loading ? (
-                <p className="p-4 text-center text-slate-500">처방 내역을 불러오는 중입니다...</p>
+                // 처방 내역을 불러오는 중입니다...
+                <p className="p-4 text-center text-slate-500">Loading prescriptions...</p>
             ) : (
                 <div className="min-h-[450px] overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
                     <table className="w-full table-fixed text-left border-collapse text-sm">
                         <thead className="bg-slate-100 border-b border-slate-200 text-slate-700">
                         <tr>
-                            <th className="w-[120px] p-3 font-semibold">환자명</th>
-                            <th className="w-[120px] p-3 font-semibold">진료구분</th>
-                            <th className="w-[120px] p-3 font-semibold">우선순위</th>
-                            <th className="w-[120px] p-3 font-semibold">상태</th>
-                            <th className="w-[120px] p-3 font-semibold">처방일시</th>
-                            <th className="w-[120px] p-3 font-semibold">관리</th>
+                            {/* 환자명 / 진료구분 / 우선순위 / 상태 / 처방일시 / 관리 */}
+                            <th className="w-[120px] p-3 font-semibold">Patient</th>
+                            <th className="w-[120px] p-3 font-semibold">Service Type</th>
+                            <th className="w-[120px] p-3 font-semibold">Priority</th>
+                            <th className="w-[120px] p-3 font-semibold">Status</th>
+                            <th className="w-[120px] p-3 font-semibold">Prescribed At</th>
+                            <th className="w-[120px] p-3 font-semibold">Actions</th>
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -131,7 +137,8 @@ const PrescriptionList = () => {
                                             variant="secondary"
                                             onClick={() => setSelectedPrescriptionId(prescription.prescriptionId)}
                                         >
-                                            상세보기
+                                            {/* 상세보기 */}
+                                            View
                                         </Button>
                                     </td>
                                 </tr>
@@ -139,7 +146,8 @@ const PrescriptionList = () => {
                         ) : (
                             <tr>
                                 <td colSpan={6} className="p-6 text-center text-slate-500">
-                                    조회된 처방 내역이 없습니다.
+                                    {/* 조회된 처방 내역이 없습니다. */}
+                                    No prescriptions found.
                                 </td>
                             </tr>
                         )}

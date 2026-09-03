@@ -17,11 +17,11 @@ const getStatusText = (status: string) => {
     switch (status) {
         case 'WAITING':
         case 'PENDING':
-            return '대기중';
+            return 'Waiting'; // 대기중
         case 'IN_PROGRESS':
-            return '진료중';
+            return 'In Progress'; // 진료중
         case 'COMPLETED':
-            return '진료완료';
+            return 'Completed'; // 진료완료
         default:
             return status;
     }
@@ -73,7 +73,7 @@ const EncounterList = () => {
             setAssessmentNote("");
             setPlanNote("");
             setPrescriptionItems([]);
-            setSaveMessage("진료 기록이 저장되었습니다.");
+            setSaveMessage("Medical record saved."); // 진료 기록이 저장되었습니다.
         }
         prevCreateLoading.current = createLoading;
     }, [createLoading, createError]);
@@ -119,9 +119,11 @@ const EncounterList = () => {
 
     return (
         <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-            <h1 className="px-1 text-2xl font-bold text-slate-800">외래진료 통합 차트</h1>
+            {/* 외래진료 통합 차트 */}
+            <h1 className="px-1 text-2xl font-bold text-slate-800">Outpatient Care Chart</h1>
+            {/* 환자의 당일 외래 진료 기록을 작성하고, 처방 및 과거 진료 이력을 통합 조회할 수 있습니다. */}
             <p className="px-1 text-sm text-slate-500">
-                환자의 당일 외래 진료 기록을 작성하고, 처방 및 과거 진료 이력을 통합 조회할 수 있습니다.
+                Create today&apos;s outpatient medical records and view prescriptions and past visit history in one place.
             </p>
             {error && <Alert variant="error">{error}</Alert>}
 
@@ -130,18 +132,21 @@ const EncounterList = () => {
                 {/* 당일 외래 환자 목록 (너비 약 40%) */}
                 <div className="w-3/12 flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
                     <div className="bg-slate-100 p-3 border-b border-slate-200 font-semibold text-slate-700">
-                        당일 외래 환자 목록
+                        {/* 당일 외래 환자 목록 */}
+                        Today&apos;s Outpatient List
                     </div>
                     {loading ? (
-                        <p className="p-4 text-center text-slate-500">환자 목록을 불러오는 중입니다...</p>
+                        // 환자 목록을 불러오는 중입니다...
+                        <p className="p-4 text-center text-slate-500">Loading patient list...</p>
                     ) : (
                         <div className="flex-1 overflow-y-auto">
                             <table className="w-full text-left border-collapse text-sm">
                                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 sticky top-0">
                                 <tr>
-                                    <th className="w-[100px] p-3 font-semibold">환자명</th>
-                                    <th className="w-[100px] p-3 font-semibold">진료과</th>
-                                    <th className="w-[100px] p-3 font-semibold">상태</th>
+                                    {/* 환자명 / 진료과 / 상태 */}
+                                    <th className="w-[100px] p-3 font-semibold">Patient</th>
+                                    <th className="w-[100px] p-3 font-semibold">Department</th>
+                                    <th className="w-[100px] p-3 font-semibold">Status</th>
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -167,7 +172,8 @@ const EncounterList = () => {
                                 ) : (
                                     <tr>
                                         <td colSpan={4} className="p-6 text-center text-slate-500">
-                                            조회된 환자가 없습니다.
+                                            {/* 조회된 환자가 없습니다. */}
+                                            No patients found.
                                         </td>
                                     </tr>
                                 )}
@@ -190,7 +196,8 @@ const EncounterList = () => {
                                     : 'border-transparent text-slate-500 hover:text-slate-700'
                             }`}
                         >
-                            진료 작성
+                            {/* 진료 작성 */}
+                            New Record
                         </button>
                         <button
                             onClick={() => setActiveTab('HISTORY')}
@@ -200,7 +207,8 @@ const EncounterList = () => {
                                     : 'border-transparent text-slate-500 hover:text-slate-700'
                             }`}
                         >
-                            진료기록 조회
+                            {/* 진료기록 조회 */}
+                            Medical Records
                         </button>
                         <button
                             onClick={() => setActiveTab('PRESCRIPTION')}
@@ -210,7 +218,8 @@ const EncounterList = () => {
                                     : 'border-transparent text-slate-500 hover:text-slate-700'
                             }`}
                         >
-                            처방 조회
+                            {/* 처방 조회 */}
+                            Prescriptions
                         </button>
                     </div>
 
@@ -222,7 +231,8 @@ const EncounterList = () => {
                                 <span className="ml-2 text-xs text-slate-500">({selectedEncounter.patientId})</span>
                             </div>
                             <div className="text-xs text-slate-600">
-                                내원일: {selectedEncounter.visitDate} | 진료과: {selectedEncounter.departmentCode}
+                                {/* 내원일: ... | 진료과: ... */}
+                                Visit Date: {selectedEncounter.visitDate} | Department: {selectedEncounter.departmentCode}
                             </div>
                         </div>
                     )}
@@ -234,49 +244,57 @@ const EncounterList = () => {
                             <div className="flex flex-col gap-4 flex-1">
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                        주호소 ( 내원 원인 )
+                                        {/* 주호소 ( 내원 원인 ) */}
+                                        Chief Complaint (Reason for Visit)
                                     </label>
                                     <input
                                         type="text"
                                         value={chiefComplaint}
                                         onChange={(e) => setChiefComplaint(e.target.value)}
-                                        placeholder="예: 기침 및 발열 증상 (3일 전부터 시작)"
+                                        // 예: 기침 및 발열 증상 (3일 전부터 시작)
+                                        placeholder="e.g., Cough and fever (started 3 days ago)"
                                         className="w-full rounded-md border border-slate-300 p-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                        진찰내용
+                                        {/* 진찰내용 */}
+                                        Examination Notes
                                     </label>
                                     <textarea
                                         value={examinationNote}
                                         onChange={(e) => setExaminationNote(e.target.value)}
-                                        placeholder="진찰 소견, 신체검진 결과 등을 작성해 주세요."
+                                        // 진찰 소견, 신체검진 결과 등을 작성해 주세요.
+                                        placeholder="Enter examination findings, physical exam results, etc."
                                         className="w-full rounded-md border border-slate-300 p-2 text-sm min-h-[80px] outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                        진료소견
+                                        {/* 진단명 */}
+                                        Diagnosis
                                     </label>
                                     <textarea
                                         value={assessmentNote}
                                         onChange={(e) => setAssessmentNote(e.target.value)}
-                                        placeholder="진단명 및 평가 소견을 작성해 주세요."
+                                        // 진단명 및 평가 소견을 작성해 주세요.
+                                        placeholder="Enter the diagnosis and assessment."
                                         className="w-full rounded-md border border-slate-300 p-2 text-sm min-h-[80px] outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                                     />
                                 </div>
 
                                 <div className="flex-1 flex flex-col">
                                     <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                        치료계획
+                                        {/* 치료계획 */}
+                                        Treatment Plan
                                     </label>
                                     <textarea
                                         value={planNote}
                                         onChange={(e) => setPlanNote(e.target.value)}
-                                        placeholder="처방 및 향후 치료 계획을 작성해 주세요."
+                                        // 처방 및 향후 치료 계획을 작성해 주세요.
+                                        placeholder="Enter the prescription and future treatment plan."
                                         className="w-full flex-1 rounded-md border border-slate-300 p-2 text-sm min-h-[80px] outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                                     />
                                 </div>
@@ -288,13 +306,15 @@ const EncounterList = () => {
 
                                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
                                     <Button variant="primary" onClick={handleSaveChart} disabled={createLoading}>
-                                        {createLoading ? "저장 중..." : "진료 저장"}
+                                        {/* 저장 중... / 진료 저장 */}
+                                        {createLoading ? "Saving..." : "Save Record"}
                                     </Button>
                                 </div>
                             </div>
                         ) : (
                             <div className="flex h-full min-h-[300px] items-center justify-center text-slate-400 text-sm">
-                                좌측 목록에서 진료할 환자를 선택해 주세요.
+                                {/* 좌측 목록에서 진료할 환자를 선택해 주세요. */}
+                                Select a patient from the list on the left.
                             </div>
                         )
                     ) : activeTab === 'PRESCRIPTION' ? (
