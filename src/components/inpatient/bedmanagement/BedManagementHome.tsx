@@ -6,9 +6,9 @@ import BedAssignmentList from "@/components/inpatient/bedmanagement/bedassignmen
 import BedReservationList from "@/components/inpatient/bedmanagement/bedreservation/list";
 
 const TABS = [
-  { key: "status", label: "병상 현황" },
-  { key: "assignment", label: "병상 배정" },
-  { key: "reservation", label: "병상 예약" },
+  { key: "status", label: "Bed Status" },
+  { key: "assignment", label: "Bed Assignment" },
+  { key: "reservation", label: "Bed Reservation" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -19,8 +19,8 @@ const BedManagementHome = () => {
   return (
     <div className="mx-auto w-full max-w-[1800px] p-6">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-slate-800">병상관리</h1>
-        <p className="mt-1 text-sm text-slate-500">병상 현황, 배정, 예약을 한 화면에서 확인합니다.</p>
+        <h1 className="text-lg font-semibold text-slate-800">Bed Management</h1>
+        <p className="mt-1 text-sm text-slate-500">View bed status, assignments, and reservations in one screen.</p>
       </div>
 
       <div className="mb-6 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">

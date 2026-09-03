@@ -22,10 +22,10 @@ const STATUS_BADGE: Record<string, string> = {
 
 // 입원 상태 → 화면에 보여줄 한글 라벨
 const STATUS_LABEL: Record<string, string> = {
-  REQUESTED: "입원대기",
-  ADMITTED: "입원중",
-  DISCHARGE_REQUESTED: "퇴원 신청",
-  DISCHARGED: "퇴원 완료",
+  REQUESTED: "Waiting for Admission",
+  ADMITTED: "Admitted",
+  DISCHARGE_REQUESTED: "Discharge Requested",
+  DISCHARGED: "Discharged",
 };
 
 const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
@@ -64,8 +64,8 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
     <div className="w-full p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-slate-800">입원 상세</h1>
-          <p className="mt-1 text-sm text-slate-500">입원 접수 정보와 병상 배정 진행 상태입니다.</p>
+          <h1 className="text-lg font-semibold text-slate-800">Admission Details</h1>
+          <p className="mt-1 text-sm text-slate-500">Admission registration information and bed assignment progress.</p>
         </div>
         {/* 목록 옆에 끼워 넣었을 때(onClose가 전달된 경우)만 노출 */}
         {onClose && (
@@ -74,12 +74,12 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
             onClick={onClose}
             className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
           >
-            선택 해제
+            Deselect
           </button>
         )}
       </div>
 
-      {loading && <p className="text-sm text-slate-500">로딩중...</p>}
+      {loading && <p className="text-sm text-slate-500">Loading...</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {!loading && admission && (
@@ -98,31 +98,31 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
             </div>
             <div>
               <div className={INFO_ROW}>
-                <span className="text-slate-500">입원과ID</span>
+                <span className="text-slate-500">Admission Dept ID</span>
                 <span className="text-slate-800">{admission.admissionDeptId}</span>
               </div>
               <div className={INFO_ROW}>
-                <span className="text-slate-500">입원경로</span>
+                <span className="text-slate-500">Admission Route</span>
                 <span className="text-slate-800">{admission.admissionRoute}</span>
               </div>
               <div className={INFO_ROW}>
-                <span className="text-slate-500">입원날짜</span>
+                <span className="text-slate-500">Admission Date</span>
                 <span className="text-slate-800">{admission.admissionDate}</span>
               </div>
               <div className={INFO_ROW}>
-                <span className="text-slate-500">환자ID</span>
+                <span className="text-slate-500">Patient ID</span>
                 <span className="text-slate-800">{admission.patientId}</span>
               </div>
               <div className={INFO_ROW}>
-                <span className="text-slate-500">의사ID</span>
+                <span className="text-slate-500">Doctor ID</span>
                 <span className="text-slate-800">{admission.doctorId}</span>
               </div>
               <div className={INFO_ROW}>
-                <span className="text-slate-500">생성일시</span>
+                <span className="text-slate-500">Created At</span>
                 <span className="text-slate-800">{admission.createdAt}</span>
               </div>
               <div className={INFO_ROW}>
-                <span className="text-slate-500">수정일시</span>
+                <span className="text-slate-500">Updated At</span>
                 <span className="text-slate-800">{admission.updatedAt}</span>
               </div>
             </div>
@@ -131,7 +131,7 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
           {/* "다음 단계" 카드 — 이미 퇴원 완료된 건은 더 진행할 액션이 없으므로 카드 자체를 숨김 */}
           {admission.status !== "DISCHARGED" && (
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="mb-3 text-sm font-medium text-slate-800">다음 단계</p>
+              <p className="mb-3 text-sm font-medium text-slate-800">Next Step</p>
               <div className="flex flex-wrap gap-2">
                 {/* REQUESTED 상태일 때만 "입원 확정" 노출. 병상이 배정된 건만 실제로 눌러서 ADMITTED로 전환 가능 —
                     배정 없이 입원중 상태만 먼저 되는 걸 막기 위해 hasActiveBedAssignment를 조건에 추가함.
@@ -142,11 +142,11 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
                       onClick={() => dispatch(changeStatusRequest({ admissionId, status: "ADMITTED" }))}
                       className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
                     >
-                      입원 확정
+                      Confirm Admission
                     </button>
                   ) : (
                     <span className="inline-flex items-center rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-500">
-                      병상 배정 후 확정 가능
+                      Assign a bed before confirming
                     </span>
                   )
                 )}
@@ -155,14 +155,14 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
                     (admissionId를 쿼리파라미터로 넘겨서 그 화면에서 다시 선택 안 해도 되게 함) */}
                 {hasActiveBedAssignment ? (
                   <span className="inline-flex items-center rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-500">
-                    병상 배정 완료됨
+                    Bed Assigned
                   </span>
                 ) : (
                   <Link
                     href={`/inpatient/bedmanagement/bedassignment/create?admissionId=${admissionId}`}
                     className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
                   >
-                    병상 배정하기
+                    Assign Bed
                   </Link>
                 )}
               </div>

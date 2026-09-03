@@ -18,10 +18,10 @@ const STATUS_BADGE: Record<string, string> = {
 
 // 병상 상태 코드 → 화면에 보여줄 한글 라벨
 const STATUS_LABEL: Record<string, string> = {
-  EMPTY: "빈 병상",
-  OCCUPIED: "사용중",
-  RESERVED: "예약됨",
-  MAINTENANCE: "유지보수",
+  EMPTY: "Empty",
+  OCCUPIED: "Occupied",
+  RESERVED: "Reserved",
+  MAINTENANCE: "Maintenance",
 };
 
 type BedStatusListProps = {
@@ -46,10 +46,10 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
 
   // 상태 필터 드롭다운에 들어갈 선택지(코드값 + 한글 설명)
   const items=[
-    {id:1, name: 'EMPTY', description: '빈 병상'},
-    {id:2, name: 'OCCUPIED', description: '사용중인 병상'},
-    {id:3, name: 'RESERVED', description: '예약된 병상'},
-    {id:4, name: 'MAINTENANCE', description: '유지보수 중인 병상'},
+    {id:1, name: 'EMPTY', description: 'Empty Bed'},
+    {id:2, name: 'OCCUPIED', description: 'Occupied Bed'},
+    {id:3, name: 'RESERVED', description: 'Reserved Bed'},
+    {id:4, name: 'MAINTENANCE', description: 'Under Maintenance'},
   ];
 
 
@@ -92,8 +92,8 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
           <div />
         ) : (
           <div>
-            <h1 className="text-lg font-semibold text-slate-800">병상 현황</h1>
-            <p className="mt-1 text-sm text-slate-500">전체 병상의 실시간 사용 현황입니다.</p>
+            <h1 className="text-lg font-semibold text-slate-800">Bed Status</h1>
+            <p className="mt-1 text-sm text-slate-500">Real-time usage status of all beds.</p>
           </div>
         )}
         <div className="flex items-center gap-2">
@@ -102,7 +102,7 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
             onChange={(e) => setSearchStatus(e.target.value)}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
           >
-            <option value="">전체</option>
+            <option value="">All</option>
             {items.map((item) => (
               <option key={item.id} value={item.name}>
                 {item.description}
@@ -115,18 +115,18 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
             onClick={() => setViewMode((v) => (v === "list" ? "room" : "list"))}
             className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
           >
-            {viewMode === "list" ? "병실별 보기" : "목록으로 보기"}
+            {viewMode === "list" ? "View by Room" : "View as List"}
           </button>
           <Link
             href="/inpatient/bedmanagement/bedassignment/create"
             className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
           >
-            배정 등록
+            Register Assignment
           </Link>
         </div>
       </div>
 
-      {listStatus.loading && <p className="text-sm text-slate-500">로딩중...</p>}
+      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
       {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
 
       {!listStatus.loading && !listStatus.error && (
@@ -137,12 +137,12 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                    <th className="whitespace-nowrap px-4 py-3">환자명</th>
-                    <th className="whitespace-nowrap px-4 py-3">환자ID</th>
-                    <th className="whitespace-nowrap px-4 py-3">병상ID</th>
-                    <th className="whitespace-nowrap px-4 py-3">병실번호</th>
-                    <th className="whitespace-nowrap px-4 py-3">병상번호</th>
-                    <th className="whitespace-nowrap px-4 py-3">병상상태</th>
+                    <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
+                    <th className="whitespace-nowrap px-4 py-3">Patient ID</th>
+                    <th className="whitespace-nowrap px-4 py-3">Bed ID</th>
+                    <th className="whitespace-nowrap px-4 py-3">Room No.</th>
+                    <th className="whitespace-nowrap px-4 py-3">Bed No.</th>
+                    <th className="whitespace-nowrap px-4 py-3">Bed Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -154,9 +154,9 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
                     >
                       <td className="whitespace-nowrap px-4 py-3 text-slate-800">
                         {/* patientId가 없으면(빈 병상) "없음", 있으면 Map에서 이름 조회(아직 patients 로딩 전이면 "조회중...") */}
-                        {bed.patientId ? (patientNameById.get(bed.patientId) ?? '조회중...') : '없음'}
+                        {bed.patientId ? (patientNameById.get(bed.patientId) ?? 'Loading...') : 'None'}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bed.patientId ?? '없음'}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bed.patientId ?? 'None'}</td>
                       <td className="whitespace-nowrap px-4 py-3 font-medium text-sky-700">{bed.bedId}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bed.roomNo}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bed.bedNo}</td>
@@ -175,7 +175,7 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
                 </tbody>
               </table>
               {filteredBeds.length === 0 && (
-                <p className="px-4 py-6 text-center text-sm text-slate-500">병상 데이터가 없습니다.</p>
+                <p className="px-4 py-6 text-center text-sm text-slate-500">No bed data available.</p>
               )}
             </div>
           ) : (
@@ -183,7 +183,7 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
               {/* 병실번호 순으로 카드 하나씩, 카드 안에 그 병실 소속 병상들을 나열 */}
               {Array.from(bedsByRoom.entries()).map(([roomNo, beds]) => (
                 <div key={roomNo} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <p className="mb-3 text-sm font-medium text-slate-800">{roomNo}호</p>
+                  <p className="mb-3 text-sm font-medium text-slate-800">Room {roomNo}</p>
                   <div className="flex flex-wrap gap-2">
                     {beds.map((bed) => (
                       <button
@@ -194,10 +194,10 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
                           STATUS_BADGE[bed.bedStatus] ?? "bg-slate-100 text-slate-600 ring-slate-200"
                         } ${selectedBedId === bed.bedId ? "outline outline-2 outline-offset-1 outline-sky-500" : ""}`}
                       >
-                        <span className="font-medium">{bed.bedNo}번</span>
+                        <span className="font-medium">Bed {bed.bedNo}</span>
                         <span>{STATUS_LABEL[bed.bedStatus] ?? bed.bedStatus}</span>
                         {bed.patientId && (
-                          <span className="truncate">{patientNameById.get(bed.patientId) ?? "조회중..."}</span>
+                          <span className="truncate">{patientNameById.get(bed.patientId) ?? "Loading..."}</span>
                         )}
                       </button>
                     ))}
@@ -206,7 +206,7 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
               ))}
               {bedsByRoom.size === 0 && (
                 <p className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
-                  병상 데이터가 없습니다.
+                  No bed data available.
                 </p>
               )}
             </div>

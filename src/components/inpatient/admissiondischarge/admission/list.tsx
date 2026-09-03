@@ -13,12 +13,12 @@ import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import AdmissionDetail from "@/components/inpatient/admissiondischarge/admission/detail"; // 마스터-디테일의 "디테일" 쪽 컴포넌트
 import Link from "next/link"; // 페이지 이동용 링크 컴포넌트(a 태그의 Next.js 버전)
 const FILTERS = [
-  { key: "all", label: "전체" },
-  { key: "needsAssignment", label: "배정 필요" },
-  { key: "waitingAssigned", label: "입원대기(배정완료)" },
-  { key: "admitted", label: "입원중" },
-  { key: "dischargeRequested", label: "퇴원 신청" },
-  { key: "discharged", label: "퇴원 완료" },
+  { key: "all", label: "All" },
+  { key: "needsAssignment", label: "Assignment Needed" },
+  { key: "waitingAssigned", label: "Waiting (Bed Assigned)" },
+  { key: "admitted", label: "Admitted" },
+  { key: "dischargeRequested", label: "Discharge Requested" },
+  { key: "discharged", label: "Discharged" },
 ];
 type FilterKey = (typeof FILTERS)[number]["key"];
 
@@ -35,12 +35,12 @@ const STATUS_BADGE: Record<string, string> = {
 
 // admission.status 값 → 화면에 보여줄 한글 라벨
 const STATUS_LABEL: Record<string, string> = {
-  REQUESTED: "입원대기",
-  NEEDS_ASSIGNMENT: "배정 필요",
-  WAITING_ASSIGNED: "입원대기(배정완료)",
-  ADMITTED: "입원중",
-  DISCHARGE_REQUESTED: "퇴원 신청",
-  DISCHARGED: "퇴원 완료",
+  REQUESTED: "Waiting for Admission",
+  NEEDS_ASSIGNMENT: "Assignment Needed",
+  WAITING_ASSIGNED: "Waiting (Bed Assigned)",
+  ADMITTED: "Admitted",
+  DISCHARGE_REQUESTED: "Discharge Requested",
+  DISCHARGED: "Discharged",
 };
 
 // 이 컴포넌트가 밖에서 받을 수 있는 값들의 타입 정의
@@ -106,8 +106,8 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
           <div />
         ) : (
           <div>
-            <h1 className="text-lg font-semibold text-slate-800">입원 목록</h1>
-            <p className="mt-1 text-sm text-slate-500">입원 접수된 환자 목록입니다.</p>
+            <h1 className="text-lg font-semibold text-slate-800">Admission List</h1>
+            <p className="mt-1 text-sm text-slate-500">List of patients registered for admission.</p>
           </div>
         )}
         <div className="flex items-center gap-2">
@@ -131,13 +131,13 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
             href="/inpatient/admissiondischarge/admission/create"
             className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
           >
-            입원 요청 등록
+            Register Admission Request
           </Link>
         </div>
       </div>
 
       {/* fetch 진행 상태에 따른 안내 문구 — 로딩중이거나 에러면 아래 테이블 자체를 안 그림 */}
-      {listStatus.loading && <p className="text-sm text-slate-500">로딩중...</p>}
+      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
       {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
 
       {!listStatus.loading && !listStatus.error && (
@@ -147,15 +147,15 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                  <th className="whitespace-nowrap px-4 py-3">입원ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">환자명</th>
-                  <th className="whitespace-nowrap px-4 py-3">입원과ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">입원경로</th>
-                  <th className="whitespace-nowrap px-4 py-3">입원날짜</th>
-                  <th className="whitespace-nowrap px-4 py-3">환자ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">의사ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">상태</th>
-                  <th className="whitespace-nowrap px-4 py-3">병상배정</th>
+                  <th className="whitespace-nowrap px-4 py-3">Admission ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
+                  <th className="whitespace-nowrap px-4 py-3">Admission Dept ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Admission Route</th>
+                  <th className="whitespace-nowrap px-4 py-3">Admission Date</th>
+                  <th className="whitespace-nowrap px-4 py-3">Patient ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Doctor ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Status</th>
+                  <th className="whitespace-nowrap px-4 py-3">Bed Assignment</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -171,7 +171,7 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
                     <td className="whitespace-nowrap px-4 py-3 font-medium text-sky-700">{admission.admissionId}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-800">
                       {/* patientId로 Map 조회 → 이름이 아직 없으면(patients 로딩 전) "조회중..." 표시 */}
-                      {patientNameById.get(admission.patientId) ?? "조회중..."}
+                      {patientNameById.get(admission.patientId) ?? "Looking up..."}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDeptId}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionRoute}</td>
@@ -192,15 +192,15 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
                       {/* isBedAssigned() 결과에 따라 배지 두 종류 중 하나만 보여줌 */}
                       {isBedAssigned(admission.admissionId) ? (
                         <span className="inline-flex items-center whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                          배정완료
+                          Assigned
                         </span>
                       ) : admission.status === "ADMITTED" ? (
                         <span className="inline-flex items-center whitespace-nowrap rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-200">
-                          미배정 (확인 필요)
+                          Unassigned (Check Required)
                         </span>
                       ) : (
                         <span className="inline-flex items-center whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
-                          미배정
+                          Unassigned
                         </span>
                       )}
                     </td>
@@ -210,7 +210,7 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
             </table>
             {/* 필터링된 목록이 하나도 없을 때만 안내 문구 표시 */}
             {visibleAdmissions.length === 0 && (
-              <p className="px-4 py-6 text-center text-sm text-slate-500">입원 데이터가 없습니다.</p>
+              <p className="px-4 py-6 text-center text-sm text-slate-500">No admission data available.</p>
             )}
           </div>
 
