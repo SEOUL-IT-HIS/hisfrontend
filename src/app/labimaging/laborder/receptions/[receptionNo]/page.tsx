@@ -8,7 +8,7 @@ import LabReceptionDetail from "@/components/labimaging/laborder/LabReceptionDet
 export default function Page() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-6">
-      <PageHeader title="검사 접수 상세" description="접수 정보와 확정된 검사 예정일시를 확인합니다." />
+      <PageHeader title="Lab Reception Detail" description="Review the reception details and the confirmed test date and time." />
       <LabReceptionDetail />
     </div>
   );

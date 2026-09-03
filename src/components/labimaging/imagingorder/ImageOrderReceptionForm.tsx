@@ -94,13 +94,13 @@ export default function ImageOrderReceptionForm() {
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!form.imageOrderNo.trim()) next.imageOrderNo = "오더번호는 필수입니다.";
-    if (!form.systemCode.trim()) next.systemCode = "시스템코드는 필수입니다.";
-    if (!form.patientId.trim()) next.patientId = "환자ID는 필수입니다.";
-    if (!form.treatTypeCode) next.treatTypeCode = "진료유형을 선택해주세요.";
-    if (!form.receivedById.trim()) next.receivedById = "접수자ID는 필수입니다.";
+    if (!form.imageOrderNo.trim()) next.imageOrderNo = "Order number is required.";
+    if (!form.systemCode.trim()) next.systemCode = "System code is required.";
+    if (!form.patientId.trim()) next.patientId = "Patient ID is required.";
+    if (!form.treatTypeCode) next.treatTypeCode = "Select a treatment type.";
+    if (!form.receivedById.trim()) next.receivedById = "Receptionist ID is required.";
     if (items.every((item) => !item.imageItemCode.trim())) {
-      next.orderItems = "촬영항목을 최소 1건 입력해주세요.";
+      next.orderItems = "Enter at least one imaging item.";
     }
     return next;
   }
@@ -134,33 +134,33 @@ export default function ImageOrderReceptionForm() {
     <form onSubmit={handleSubmit} className="space-y-6">
       {lastCreated ? (
         <Alert variant="success">
-          영상 접수가 생성되었습니다. (접수번호: {lastCreated.receptionNo})
+          Imaging reception created. (Reception No: {lastCreated.receptionNo})
         </Alert>
       ) : null}
       {createError ? <Alert>{resolveImageOrderMessage(createError)}</Alert> : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label="오더번호" required>
+        <FormField label="Order No." required>
           <Input
             name="imageOrderNo"
             value={form.imageOrderNo}
             onChange={handleChange}
             maxLength={20}
             disabled={creating}
-            placeholder="예: EXT-IO-20260715-001"
+            placeholder="e.g. EXT-IO-20260715-001"
           />
           {errors.imageOrderNo ? (
             <span className="text-xs text-rose-500">{errors.imageOrderNo}</span>
           ) : null}
         </FormField>
 
-        <FormField label="시스템코드" required>
+        <FormField label="System Code" required>
           <Select
             name="systemCode"
             value={form.systemCode}
             onChange={handleChange}
             options={systemCodes.options}
-            placeholder={systemCodes.loading ? "불러오는 중..." : "선택"}
+            placeholder={systemCodes.loading ? "Loading..." : "Select"}
             disabled={creating || systemCodes.loading}
           />
           {errors.systemCode ? (
@@ -173,49 +173,49 @@ export default function ImageOrderReceptionForm() {
 
         {/* ⚠ 처방 연동 전까지 접수 담당자가 직접 입력하는 임시 필드.
             연동 완료 시 이 입력칸은 없어지고 POST 바디로 자동 채워진다. */}
-        <FormField label="환자ID" required>
+        <FormField label="Patient ID" required>
           <Input
             name="patientId"
             value={form.patientId}
             onChange={handleChange}
             maxLength={36}
             disabled={creating}
-            placeholder="예: 3f7b1a20-6c2e-4e7a-9e2a-8b1f2c3d4e5f"
+            placeholder="e.g. 3f7b1a20-6c2e-4e7a-9e2a-8b1f2c3d4e5f"
           />
           {errors.patientId ? (
             <span className="text-xs text-rose-500">{errors.patientId}</span>
           ) : null}
         </FormField>
 
-        <FormField label="처방의번호">
+        <FormField label="Physician No.">
           <Input
             name="physicianNo"
             value={form.physicianNo}
             onChange={handleChange}
             maxLength={20}
             disabled={creating}
-            placeholder="선택 입력"
+            placeholder="Optional"
           />
         </FormField>
 
-        <FormField label="처방의ID">
+        <FormField label="Physician ID">
           <Input
             name="physicianId"
             value={form.physicianId}
             onChange={handleChange}
             maxLength={36}
             disabled={creating}
-            placeholder="선택 입력"
+            placeholder="Optional"
           />
         </FormField>
 
-        <FormField label="진료유형" required>
+        <FormField label="Treatment Type" required>
           <Select
             name="treatTypeCode"
             value={form.treatTypeCode}
             onChange={handleChange}
             options={treatTypes.options}
-            placeholder={treatTypes.loading ? "불러오는 중..." : "선택"}
+            placeholder={treatTypes.loading ? "Loading..." : "Select"}
             disabled={creating || treatTypes.loading}
           />
           {errors.treatTypeCode ? (
@@ -226,7 +226,7 @@ export default function ImageOrderReceptionForm() {
           ) : null}
         </FormField>
 
-        <FormField label="긴급여부">
+        <FormField label="Urgency">
           <Select
             name="urgencyYn"
             value={form.urgencyYn}
@@ -236,14 +236,14 @@ export default function ImageOrderReceptionForm() {
           />
         </FormField>
 
-        <FormField label="접수자ID" required className="sm:col-span-2">
+        <FormField label="Receptionist ID" required className="sm:col-span-2">
           <Input
             name="receivedById"
             value={form.receivedById}
             onChange={handleChange}
             maxLength={20}
             disabled={creating}
-            placeholder="예: staff-uuid-001"
+            placeholder="e.g. staff-uuid-001"
           />
           {errors.receivedById ? (
             <span className="text-xs text-rose-500">{errors.receivedById}</span>
@@ -255,10 +255,10 @@ export default function ImageOrderReceptionForm() {
       <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-slate-700">
-            촬영항목 <span className="text-rose-500">*</span>
+            Imaging Items <span className="text-rose-500">*</span>
           </p>
           <Button variant="secondary" onClick={addItemRow} disabled={creating}>
-            + 항목 추가
+            + Add Item
           </Button>
         </div>
 
@@ -269,7 +269,7 @@ export default function ImageOrderReceptionForm() {
                 value={item.imageItemCode}
                 onChange={(e) => handleItemChange(index, e.target.value)}
                 options={imageItems.options}
-                placeholder={imageItems.loading ? "불러오는 중..." : "촬영항목 선택"}
+                placeholder={imageItems.loading ? "Loading..." : "Imaging Items Select"}
                 disabled={creating || imageItems.loading}
               />
             </div>
@@ -277,9 +277,9 @@ export default function ImageOrderReceptionForm() {
               variant="secondary"
               onClick={() => removeItemRow(index)}
               disabled={creating || items.length <= 1}
-              aria-label="항목 삭제"
+              aria-label="Delete item"
             >
-              삭제
+              Delete
             </Button>
           </div>
         ))}
@@ -293,7 +293,7 @@ export default function ImageOrderReceptionForm() {
 
       <div className="flex justify-end">
         <Button type="submit" disabled={creating}>
-          {creating ? "접수 중..." : "접수"}
+          {creating ? "Receiving..." : "Receive"}
         </Button>
       </div>
     </form>

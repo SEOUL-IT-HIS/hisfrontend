@@ -95,11 +95,11 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
             <span className="text-lg font-semibold">+</span>
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-700">그룹을 선택하세요</p>
+            <p className="text-sm font-semibold text-slate-700">Select a group</p>
             <p className="mt-1 text-xs leading-5 text-slate-400">
-              왼쪽 목록에서 그룹을 클릭하면
+              Click a group in the list on the left
               <br />
-              해당 그룹의 코드 항목이 여기에 표시됩니다.
+              to see its items here.
             </p>
           </div>
         </div>
@@ -119,20 +119,20 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
             <span className="rounded-md bg-sky-50 px-2 py-0.5 font-mono text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/10">
               {group.groupCode}
             </span>
-            <StatusBadge value={group.useYn} />
+            <StatusBadge value={group.useYn} activeLabel="Active" inactiveLabel="Inactive" />
           </div>
           <p className="mt-1 text-xs text-slate-400">
-            항목 {filteredItems.length}
-            {filteredItems.length !== items.length ? ` / ${items.length}` : ""}건
-            · 그룹 정보와 코드 항목을 이 패널에서 관리합니다
+            {filteredItems.length}
+            {filteredItems.length !== items.length ? ` / ${items.length}` : ""}
+            {" items · Manage group info and its items here"}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Button variant="secondary" onClick={() => setGroupEditOpen(true)}>
-            그룹 수정
+            Edit Group
           </Button>
           <Button variant="primary" onClick={() => setRegisterOpen(true)}>
-            항목 등록
+            Add Item
           </Button>
         </div>
       </div>
@@ -141,31 +141,31 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
       <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3">
         <div className="flex flex-wrap items-end gap-3">
           <FormField
-            label="검색어"
+            label="Search"
             htmlFor="itemKeyword"
             className="min-w-[200px] flex-1"
           >
             <Input
               id="itemKeyword"
               value={keyword}
-              placeholder="코드값 / 코드명"
+              placeholder="Code Value / Code Name"
               onChange={(e) => setKeyword(e.target.value)}
             />
           </FormField>
-          <FormField label="사용여부" htmlFor="itemUseYn" className="w-36">
+          <FormField label="Status" htmlFor="itemUseYn" className="w-36">
             <Select
               id="itemUseYn"
               value={useYnFilter}
-              placeholder="전체"
+              placeholder="All"
               onChange={(e) => setUseYnFilter(e.target.value)}
               options={[
-                { value: "Y", label: "사용 (Y)" },
-                { value: "N", label: "미사용 (N)" },
+                { value: "Y", label: "Active (Y)" },
+                { value: "N", label: "Inactive (N)" },
               ]}
             />
           </FormField>
           <Button type="button" variant="secondary" onClick={resetItemSearch}>
-            초기화
+            Reset
           </Button>
         </div>
       </div>
@@ -181,29 +181,29 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
         <table className="w-full min-w-[520px] text-left text-sm">
           <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/95 backdrop-blur">
             <tr className="text-xs uppercase tracking-wide text-slate-400">
-              <th className="px-5 py-3 font-medium">코드값</th>
-              <th className="px-5 py-3 font-medium">코드명</th>
-              <th className="w-28 px-5 py-3 font-medium">상태</th>
-              <th className="w-20 px-5 py-3 font-medium text-right">작업</th>
+              <th className="px-5 py-3 font-medium">Code Value</th>
+              <th className="px-5 py-3 font-medium">Code Name</th>
+              <th className="w-28 px-5 py-3 font-medium">Status</th>
+              <th className="w-20 px-5 py-3 font-medium text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
                 <td colSpan={4} className="px-5 py-20 text-center text-slate-400">
-                  목록을 불러오는 중입니다...
+                  Loading items...
                 </td>
               </tr>
             ) : filteredItems.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-5 py-20 text-center">
                   <p className="text-sm font-medium text-slate-600">
-                    {items.length === 0 ? "항목이 없습니다" : "검색 조건에 맞는 항목이 없습니다"}
+                    {items.length === 0 ? "No items yet" : "No items match your search"}
                   </p>
                   <p className="mt-1 text-xs text-slate-400">
                     {items.length === 0
-                      ? "상단의 항목 등록으로 첫 코드를 추가하세요."
-                      : "검색어나 사용여부를 바꿔 보세요."}
+                      ? "Add your first item with the Add Item button above."
+                      : "Try a different keyword or status."}
                   </p>
                 </td>
               </tr>
@@ -220,7 +220,7 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
                   </td>
                   <td className="truncate px-5 py-3.5 text-slate-700">{item.codeName}</td>
                   <td className="w-28 px-5 py-3.5">
-                    <StatusBadge value={item.useYn} />
+                    <StatusBadge value={item.useYn} activeLabel="Active" inactiveLabel="Inactive" />
                   </td>
                   <td className="w-20 px-5 py-3.5 text-right">
                     <button
@@ -228,7 +228,7 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
                       className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-sky-700 transition-colors hover:bg-sky-50"
                       onClick={() => setEditItem(item)}
                     >
-                      수정
+                      Edit
                     </button>
                   </td>
                 </tr>
@@ -241,7 +241,7 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
       {/* ----- Modals ----- */}
       <Modal
         open={registerOpen}
-        title="공통코드 항목 등록"
+        title="Add Code Item"
         onClose={() => setRegisterOpen(false)}
       >
         <CommonCodeItemRegisterForm
@@ -252,7 +252,7 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
 
       <Modal
         open={groupEditOpen}
-        title="공통코드 그룹 수정"
+        title="Edit Code Group"
         onClose={() => setGroupEditOpen(false)}
       >
         <CommonCodeGroupUpdateForm
@@ -263,7 +263,7 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
 
       <Modal
         open={editItem != null}
-        title="공통코드 항목 수정"
+        title="Edit Code Item"
         onClose={() => setEditItem(null)}
       >
         {editItem ? (

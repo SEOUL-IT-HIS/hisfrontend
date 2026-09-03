@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { fetchBillingDetailRequest } from "@/features/billing/searchBillingDetail/slice";
-import PaymentRequest from "@/features/billing/payment/PaymentRequest";
+import PaymentRequest from "@/components/billing/payment/PaymentRequest";
 import type { AppDispatch, RootState } from "@/store/store";
 import { Alert, Button, Panel } from "@/components/common";
 
@@ -108,8 +108,8 @@ const BillingDetailSearchDetail = ({ billingId }: BillingDetailSearchDetailProps
           <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
             <DetailField label="환자ID" value={detail.patientId} />
             <DetailField label="환자명" value={detail.patientName} />
-            <DetailField label="연락처" value={detail.tel} />
-            <DetailField label="주소" value={detail.addr} />
+            <DetailField label="연락처" value={detail.phoneNo} />
+            <DetailField label="주소" value={detail.address} />
             <DetailField label="외래 진료비" value={formatAmount(detail.outpatientAmount)} />
             <DetailField label="입퇴원 진료비" value={formatAmount(detail.inpatientAmount)} />
             <DetailField label="총 진료비" value={formatAmount(detail.totalAmount)} emphasize />

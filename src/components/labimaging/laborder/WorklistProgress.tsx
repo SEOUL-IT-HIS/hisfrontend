@@ -44,19 +44,19 @@ export default function WorklistProgress({ item }: { item: LabWorklistItem }) {
 
   return (
     <div className="flex flex-wrap items-center gap-1">
-      <StepChip label={scheduled ? "일정" : "일정 −"} tone={scheduled ? "done" : "pending"} />
+      <StepChip label={scheduled ? "Schedule" : "Schedule −"} tone={scheduled ? "done" : "pending"} />
       <StepChip
-        label={hasSpecimen ? `검체 ${item.specimenCount}` : "검체 −"}
+        label={hasSpecimen ? `Specimen ${item.specimenCount}` : "Specimen −"}
         tone={hasSpecimen ? "done" : "pending"}
       />
       <StepChip
-        label={hasSpecimen ? `판정 ${item.judgedCount}/${item.specimenCount}` : "판정 −"}
+        label={hasSpecimen ? `Assessed ${item.judgedCount}/${item.specimenCount}` : "Assessed −"}
         tone={allJudged ? "done" : "pending"}
       />
       {item.recollectionRequestedYn === "Y" ? (
-        <StepChip label="재채취" tone="alert" />
+        <StepChip label="Recollection" tone="alert" />
       ) : null}
-      <StepChip label="결과" tone="disabled" />
+      <StepChip label="Result" tone="disabled" />
     </div>
   );
 }

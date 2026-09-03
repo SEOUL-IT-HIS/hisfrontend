@@ -19,8 +19,9 @@ const inpatientApiOrigin =
   process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.140:8080";
 const outpatientApiOrigin =
   process.env.OUTPATIENT_API_ORIGIN ?? "http://192.168.1.112:8080";
+// emergency-service 만 8080 이 아니라 8085 를 쓴다
 const emergencyApiOrigin =
-  process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.130:8080";
+  process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.130:8085";
 // surgery-service 만 8080 이 아니라 8383 을 쓴다
 const surgeryApiOrigin =
   process.env.SURGERY_API_ORIGIN ?? "http://192.168.1.120:8383";
@@ -102,12 +103,21 @@ const nextConfig: NextConfig = {
       },
       // ---------- billing-service (구체 경로 먼저) ----------
       {
-        source: "/api/billing",     
+        source: "/api/billing",
         destination: `${billingApiOrigin}/api/billing`,
       },
       {
         source: "/api/billing/:path*",
         destination: `${billingApiOrigin}/api/billing/:path*`,
+      },
+      // ----------- reception-service (구체 경로 먼저) ----------
+      {
+        source: "/api/reception",
+        destination: `${receptionApiOrigin}/api/reception`,
+      },
+      {
+        source: "/api/reception/:path*",
+        destination: `${receptionApiOrigin}/api/reception/:path*`,
       },
       // ---------- inpatient-service (구체 경로 먼저) ----------
       {

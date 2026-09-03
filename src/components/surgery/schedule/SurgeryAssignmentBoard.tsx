@@ -31,7 +31,7 @@ import {
 } from "@/features/surgery/schedule/slice";
 
 /**
- * 수술 배정 관리 — 마스터-디테일 (2026-08-27)
+ * 수술 배정 관리 — 마스터-디테일
  *
  * <h3>왜 구조를 바꿨나</h3>
  *

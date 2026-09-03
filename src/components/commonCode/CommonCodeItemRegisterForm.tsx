@@ -78,43 +78,43 @@ export default function CommonCodeItemRegisterForm({
 
       <form onSubmit={onSubmit} className="space-y-4">
         <FormField
-          label="코드값"
+          label="Code Value"
           required
           htmlFor="codeValue"
-          hint="등록 후 변경할 수 없습니다."
+          hint="Cannot be changed after registration."
         >
           <Input
             id="codeValue"
             value={form.codeValue}
-            placeholder="예: 01"
+            placeholder="e.g. 01"
             onChange={(e) => setForm({ ...form, codeValue: e.target.value })}
           />
         </FormField>
 
-        <FormField label="코드명" required htmlFor="codeName">
+        <FormField label="Code Name" required htmlFor="codeName">
           <Input
             id="codeName"
             value={form.codeName}
-            placeholder="예: 내과"
+            placeholder="e.g. Internal Medicine"
             onChange={(e) => setForm({ ...form, codeName: e.target.value })}
           />
         </FormField>
 
-        <FormField label="사용여부" required htmlFor="useYn">
+        <FormField label="Status" required htmlFor="useYn">
           <Select
             id="useYn"
             value={form.useYn}
             onChange={(e) => setForm({ ...form, useYn: e.target.value })}
             options={[
-              { value: "Y", label: "사용 (Y)" },
-              { value: "N", label: "미사용 (N)" },
+              { value: "Y", label: "Active (Y)" },
+              { value: "N", label: "Inactive (N)" },
             ]}
           />
         </FormField>
 
         <FormActions
           onCancel={onClose}
-          submitLabel="등록"
+          submitLabel="Register"
           loading={loading}
         />
       </form>

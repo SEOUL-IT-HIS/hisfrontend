@@ -24,10 +24,11 @@ export type PatientRegisterRequest = {
   residentRegNo: string;
   genderCd: GenderCd;
   tempPatientYn: Yn;
-  zipCode: string;
-  address: string;
-  addressDetail: string;
-  phoneNo: string;
+  tempRegisterReason?: string;
+  zipCode?: string;
+  address?: string;
+  addressDetail?: string;
+  phoneNo?: string;
 };
 
 /** POST /api/patient/register 응답 데이터 */
@@ -51,7 +52,7 @@ export type PatientListItem = {
   patientName: string;
   /** 마스킹된 주민등록번호 (예: 000813-4******) */
   residentRegNo: string;
-  birthDate: string;
+  birthDate: string | null;
   genderCd: GenderCd;
   statusCd: PatientStatus;
   tempPatientYn: Yn;
@@ -65,10 +66,11 @@ export type PatientDetail = {
   patientId: string;
   patientName: string;
   residentRegNo: string;
-  birthDate: string;
+  birthDate: string | null;
   genderCd: GenderCd;
   statusCd: PatientStatus;
   tempPatientYn: Yn;
+  tempRegisterReason: string | null;
   deathYn: Yn;
   deathDtm: string | null;
   zipCode: string | null;
@@ -92,6 +94,14 @@ export type PatientUpdateRequest = {
   address: string;
   addressDetail: string;
   phoneNo: string;
+};
+
+export type PatientTemporaryConversionRequest = {
+  patientId: string;
+  patientName: string;
+  residentRegNo: string;
+  birthDate: string;
+  genderCd: GenderCd;
 };
 
 /** PATCH /api/patient/{patientId}/death-status 요청 */
@@ -122,3 +132,5 @@ export type PatientDeactivateApiResponse = ApiResponse<PatientDetail>;
 
 /** PATCH /api/patient/{patientId}/death-status 응답 */
 export type PatientDeathUpdateApiResponse = ApiResponse<PatientDetail>;
+
+export type PatientTemporaryConversionApiResponse = ApiResponse<PatientDetail>;

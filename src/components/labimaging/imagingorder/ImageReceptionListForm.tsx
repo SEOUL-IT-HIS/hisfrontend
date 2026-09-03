@@ -56,35 +56,35 @@ export default function ImageReceptionListForm() {
   const columns: DataTableColumn<ImageReceptionSummary>[] = [
     {
       key: "receptionNo",
-      header: "접수번호",
+      header: "Reception No.",
       render: (r) => <span className="font-semibold text-slate-700">{r.receptionNo}</span>,
     },
-    { key: "imageOrderNo", header: "오더번호", render: (r) => r.imageOrderNo },
+    { key: "imageOrderNo", header: "Order No.", render: (r) => r.imageOrderNo },
     // 환자번호는 화면에서 쓰지 않기로 해서 이름으로 대체했다. (2026-08-25)
     {
       key: "patientName",
-      header: "환자",
-      render: (r) => patientNames[r.patientId] ?? "미상",
+      header: "Patient",
+      render: (r) => patientNames[r.patientId] ?? "Unknown",
     },
     {
       key: "scheduledAt",
-      header: "촬영 예정일시",
+      header: "Scheduled Imaging",
       render: (r) =>
         r.scheduledAt ? (
           formatScheduledAt(r.scheduledAt)
         ) : (
-          <span className="text-slate-400">미등록</span>
+          <span className="text-slate-400">Not scheduled</span>
         ),
     },
-    { key: "orderStatusCode", header: "오더상태", render: (r) => r.orderStatusCode },
+    { key: "orderStatusCode", header: "Order Status", render: (r) => r.orderStatusCode },
     {
       key: "receptionStatusCode",
-      header: "접수상태",
+      header: "Reception Status",
       render: (r) => r.receptionStatusCode,
     },
     {
       key: "actions",
-      header: "액션",
+      header: "Actions",
       className: "text-right",
       render: (r) => (
         <div className="flex justify-end gap-2">
@@ -92,10 +92,10 @@ export default function ImageReceptionListForm() {
             href={`/labimaging/imagingorder/receptions/${encodeURIComponent(r.receptionNo)}`}
             className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
           >
-            상세
+            Detail
           </Link>
           <Button onClick={() => goSchedule(r)}>
-            {r.scheduledAt ? "일정 재등록" : "일정 등록"}
+            {r.scheduledAt ? "Reschedule" : "Schedule"}
           </Button>
         </div>
       ),
@@ -124,7 +124,7 @@ export default function ImageReceptionListForm() {
           onClick={() => dispatch(fetchImageReceptionsRequest(filter))}
           disabled={loading}
         >
-          새로고침
+          Refresh
         </Button>
       </div>
 
@@ -133,12 +133,13 @@ export default function ImageReceptionListForm() {
         rows={receptions}
         rowKey={(r) => r.imageReceptionId}
         loading={loading}
+        loadingMessage="Loading..."
         emptyMessage={
           filter === "Y"
-            ? "일정이 등록된 접수가 없습니다."
+            ? "No scheduled receptions."
             : filter === "N"
-              ? "일정 등록 대상 접수가 없습니다."
-              : "영상 접수가 없습니다."
+              ? "No receptions awaiting scheduling."
+              : "No imaging receptions."
         }
       />
     </div>

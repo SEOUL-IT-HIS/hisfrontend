@@ -10,7 +10,7 @@ import RoomRegisterForm from "@/components/surgery/room/RoomRegisterForm";
  * <p>메뉴 이름대로 둘을 한 화면에 모았다. 장비 등록 시 소속 수술실을 골라야 해서
  * 수술실을 먼저 만들어야 하는데, 화면이 나뉘어 있으면 오가야 한다.</p>
  *
- * <p><b>목록 전용 화면을 없앴다</b>(2026-08-24) — {@code /surgery/room/list} 와
+ * <p><b>목록 전용 화면을 없앴다</b> — {@code /surgery/room/list} 와
  * {@code /surgery/equipment/list} 가 이 화면과 같은 목록을 또 보여주고 있었다.
  * 이 화면이 이미 둘을 다 띄우면서 그쪽으로 링크까지 걸어 두어, 같은 목록을 세 군데서
  * 보게 되는 구조였다. 수정 화면이 돌아올 곳도 이제 여기다.</p>

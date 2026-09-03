@@ -7,9 +7,7 @@ import type { AppDispatch } from "@/store/store";
 import {
   Alert,
   DataTable,
-  FormField,
   Panel,
-  Select,
   StatusBadge,
   type DataTableColumn,
 } from "@/components/common";
@@ -25,12 +23,10 @@ import {
   type SurgeryStatusHistory,
 } from "@/features/surgery/schedule/types";
 import {
-  assignFieldRequest,
   fetchHistoryRequest,
   fetchSurgeryRequest,
   selectScheduleError,
   selectScheduleLoading,
-  selectScheduleSaving,
   selectSelectedSurgery,
   selectSurgeryHistory,
 } from "@/features/surgery/schedule/slice";
@@ -48,10 +44,9 @@ import {
  * <p>예전에는 이 화면이 동의서·마취기록·수술기록지를 보여줬다. 그런데 여기는
  * {@code /surgery/schedule} 아래, 즉 <b>배정·일정 영역</b>이다. 일정 목록에서 수술을
  * 눌렀는데 기록 작성 화면이 나오면 기대와 어긋나고, 무엇보다 {@code /surgery/worklist} 가
- * 같은 패널 셋을 이미 보여주고 있었다. 기록은 워크리스트가, 배정은 여기가 맡는다.
- * (2026-08-25)</p>
+ * 같은 패널 셋을 이미 보여주고 있었다. 기록은 워크리스트가, 배정은 여기가 맡는다.</p>
  *
- * <h3>상태 전이도 마저 넘겼다 (2026-08-27)</h3>
+ * <h3>상태 전이도 마저 넘겼다</h3>
  *
  * <p>8/25 에 기록만 옮기고 <b>시작·종료·취소 버튼은 남겨 두었다.</b> 그래서 동의서를
  * 워크리스트에서 쓰고, 시작하려면 이 화면으로 건너와야 했다. 반쪽만 옮긴 셈이다.</p>
@@ -60,21 +55,26 @@ import {
  * 조작은 전부 수술 업무 화면 몫이다. 상태는 여기서 <b>읽기만</b> 한다 — 배정을 고칠 수
  * 있는지가 상태에 달려 있어(예약에서만 가능) 안 보여줄 수는 없다.</p>
  *
- * <h3>고르면 바로 저장한다</h3>
+ * <h3>배정도 읽기만 한다</h3>
  *
- * <p>처음에는 셀렉트마다 '저장' 버튼을 뒀는데, 같은 성격의 조작을 하는 {@code RoomList}·
- * {@code EquipmentList} 는 버튼 없이 {@code onChange} 에서 바로 보내고 있었다. 한 서비스
- * 안에서 어떤 화면은 고르면 끝, 어떤 화면은 고르고 또 눌러야 하는 상태였다.
- * 버튼을 없애 그쪽에 맞췄다. (2026-08-26)</p>
+ * <p>얼마 전까지 이 화면에서 수술실·집도의·마취의·간호사를 셀렉트로 바꿀 수 있었다.
+ * 고르면 바로 개별 배정 API 로 날아갔다.</p>
  *
- * <p>항목별로 <b>따로</b> 보내는 것은 그대로다 — 백엔드가 수술실·집도의·마취의·간호사를
- * 각각 다른 PATCH 로 받고(SL2-166), 한 번에 묶어 보내면 수술실만 바꾸려는데 마취의까지
- * 다시 보내게 되어 그 사이 다른 사람이 바꾼 값을 덮어쓴다.</p>
+ * <p>그 기능을 없앴다. 이유는 두 가지다.</p>
  *
- * <h3>집도의만 비울 수 없다</h3>
+ * <p>첫째, <b>아무 흔적도 남지 않았다.</b> 개별 배정 API 는 이력을 기록하지 않아서
+ * 수술실이 3번에서 5번으로 바뀌어도 아래 이력 표에는 아무것도 뜨지 않았다.
+ * 같은 화면에 이력 표를 두고 그 표에 안 잡히는 변경 수단을 나란히 놓고 있었던 셈이다.</p>
  *
- * <p>수술에 집도의가 없는 상태는 업무상 성립하지 않아 백엔드가 막는다. 나머지 셋은
- * 비워 저장하면 배정이 해제된다.</p>
+ * <p>둘째, <b>배정 승인 때 걸어 둔 검증이 무너졌다.</b> 마취를 시행하는 수술이라
+ * 마취의를 필수로 받아 놓고는, 여기서 마취의를 '미배정'으로 되돌릴 수 있었다.</p>
+ *
+ * <p>이제 배정은 <b>승인하는 순간 한 번에 확정</b>되고(배정 대기 목록의 배정 폼),
+ * 그 뒤로는 바꿀 수 없다. 백엔드도 SUR059 로 거절한다. 잘못 배정했으면 수술 업무에서
+ * 취소하고 다시 요청받는다 — 그 경로는 사유가 남고 진료 쪽도 결과를 안다.</p>
+ *
+ * <p>그래서 이 화면은 지금 <b>전부 읽기 전용</b>이다. 배정 조합과 그 수술이 어떤 상태
+ * 변화를 거쳐 왔는지를 보여주는 것이 하는 일의 전부다.</p>
  */
 
 type Props = { surgeryId: string };
@@ -98,21 +98,11 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
   const history = useSelector(selectSurgeryHistory);
   const rooms = useSelector(selectRooms);
   const loading = useSelector(selectScheduleLoading);
-  const saving = useSelector(selectScheduleSaving);
   const error = useSelector(selectScheduleError);
 
-  // 배정 입력값. 조회 결과가 오면 한 번만 채운다(아래 boundId 참고)
-  const [form, setForm] = useState({
-    roomCode: "",
-    surgeonId: "",
-    anesthesiologistId: "",
-    nurseId: "",
-  });
-  const [boundId, setBoundId] = useState<string | null>(null);
-
-  // 집도의·마취의·간호사 선택 목록 — admin-service 직원 조회
-  //   수술 DB 에는 이름이 없고 식별자만 있다(§21.9). 사용자에게 UUID 를 타이핑하게
-  //   할 수는 없으므로 배정 화면(SurgeryAssignForm)과 같은 방식으로 목록을 받아 고르게 한다.
+  // 직원 목록 — 이름을 보여주기 위해서만 받는다.
+  //   수술 DB 에는 이름이 없고 식별자만 있어서(§21.9), 이것 없이는 화면에 숫자만 뜬다.
+  //   고르게 하려는 것이 아니다 — 배정은 여기서 바꿀 수 없다.
   const [employees, setEmployees] = useState<Emp[]>([]);
   const [empError, setEmpError] = useState("");
 
@@ -139,18 +129,6 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
     };
   }, []);
 
-  // 조회 결과가 도착하면 초기값을 채운다. effect 가 아니라 렌더 중에 처리하는 이유 —
-  // 사용자가 고치는 중인 값을 뒤늦게 도착한 응답이 덮어쓰지 않게 하기 위해서다.
-  if (surgery && surgery.surgeryId !== boundId) {
-    setBoundId(surgery.surgeryId);
-    setForm({
-      roomCode: surgery.roomCode ?? "",
-      surgeonId: surgery.surgeonId ?? "",
-      anesthesiologistId: surgery.anesthesiologistId ?? "",
-      nurseId: surgery.nurseId ?? "",
-    });
-  }
-
   if (loading && !surgery) {
     return <p className="text-sm text-slate-500">불러오는 중입니다…</p>;
   }
@@ -158,29 +136,19 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
     return <Alert>{resolveSurgeryMessage(error || "SUR035")}</Alert>;
   }
 
-  const isScheduled = surgery.statusCd === SURGERY_STATUS.SCHEDULED;
-  const isInProgress = surgery.statusCd === SURGERY_STATUS.IN_PROGRESS;
+  /** 수술실 코드를 이름으로. 못 찾으면 코드라도 보여준다 — 빈칸보다는 낫다 */
+  const roomLabel = (code?: string | null) => {
+    if (!code) return "미배정";
+    const room = (rooms?.items ?? []).find((r) => r.roomCode === code);
+    return room ? `${room.roomName} (${room.roomCode})` : code;
+  };
 
-  /**
-   * 배정은 <b>예약(01) 상태에서만</b> 고칠 수 있다.
-   *
-   * <p>처음에는 진행중도 열어뒀는데, 백엔드가 400 SUR039 로 막는 것을 실제 호출로
-   * 확인했다(2026-08-25). 환자가 이미 수술대에 있는데 수술실을 바꾸는 것은 업무상
-   * 성립하지 않는다. 열어두면 눌러도 오류만 뜨므로 화면에서도 잠근다.</p>
-   */
-  const editable = isScheduled;
-
-  // 사용가능(01)한 방만 고르게 하되, 지금 배정된 방은 상태와 무관하게 남긴다 —
-  // 빼면 셀렉트가 현재 값을 표시하지 못해 미배정처럼 보인다.
-  const roomOptions = (rooms?.items ?? [])
-    .filter((r) => r.statusCd === "01" || r.roomCode === surgery.roomCode)
-    .map((r) => ({ value: r.roomCode, label: `${r.roomName} (${r.roomCode})` }));
-
-  // admin-service 는 empId 가 number, 수술은 VARCHAR2(36) 문자열이라 변환해 보낸다
-  const employeeOptions = employees.map((e) => ({
-    value: String(e.empId),
-    label: `${e.empName} (${e.empNo})`,
-  }));
+  /** 직원 ID 를 이름으로. admin 의 empId 는 number, 수술은 문자열이라 맞춰 비교한다 */
+  const empLabel = (id?: string | null) => {
+    if (!id) return "미배정";
+    const emp = employees.find((e) => String(e.empId) === id);
+    return emp ? `${emp.empName} (${emp.empNo})` : id;
+  };
 
   const historyColumns: DataTableColumn<SurgeryStatusHistory>[] = [
     {
@@ -256,100 +224,41 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
         </dl>
       </Panel>
 
-      {/* ---- 배정 ---- */}
+      {/* ---- 배정 (읽기 전용) ---- */}
       <Panel className="p-5">
         <h2 className="mb-1 text-sm font-medium text-slate-700">배정</h2>
         <p className="mb-4 text-xs text-slate-500">
-          고르면 바로 저장됩니다. 집도의를 뺀 셋은 비워 두면 배정이 해제됩니다.
-          {!editable
-            ? isInProgress
-              ? " 진행중인 수술은 배정을 바꿀 수 없습니다."
-              : " 끝난 수술은 배정을 바꿀 수 없습니다."
-            : ""}
+          배정은 요청을 승인할 때 확정되며 이후에는 바꿀 수 없습니다. 바꿔야 하면{" "}
+          <Link href="/surgery/worklist" className="text-sky-600 underline">
+            수술 업무
+          </Link>
+          에서 수술을 취소하고 진료 쪽에서 다시 요청받아야 합니다.
         </p>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="수술실" htmlFor="a-room">
-            <Select
-              id="a-room"
-              placeholder="미배정"
-              options={roomOptions}
-              value={form.roomCode}
-              disabled={saving || !editable}
-              onChange={(e) => {
-                setForm({ ...form, roomCode: e.target.value });
-                dispatch(
-                  assignFieldRequest(surgeryId, "room", {
-                    roomCode: e.target.value,
-                  }),
-                );
-              }}
-            />
-          </FormField>
-
-          <FormField
-            label="집도의"
-            htmlFor="a-surgeon"
-            required
-            hint="비울 수 없습니다."
-          >
-            <Select
-              id="a-surgeon"
-              placeholder="선택"
-              options={employeeOptions}
-              value={form.surgeonId}
-              disabled={saving || !editable}
-              onChange={(e) => {
-                setForm({ ...form, surgeonId: e.target.value });
-                // 빈 값은 보내지 않는다 — 집도의 해제는 백엔드가 막으므로(400)
-                // 그대로 보내면 사용자는 "선택"을 골랐을 뿐인데 오류만 본다.
-                // RoomList 의 턴오버가 쓰는 것과 같은 방식이다.
-                if (!e.target.value) return;
-                dispatch(
-                  assignFieldRequest(surgeryId, "surgeon", {
-                    surgeonId: e.target.value,
-                  }),
-                );
-              }}
-            />
-          </FormField>
-
-          <FormField label="마취의" htmlFor="a-anes">
-            <Select
-              id="a-anes"
-              placeholder="미배정"
-              options={employeeOptions}
-              value={form.anesthesiologistId}
-              disabled={saving || !editable}
-              onChange={(e) => {
-                setForm({ ...form, anesthesiologistId: e.target.value });
-                dispatch(
-                  assignFieldRequest(surgeryId, "anesthesiologist", {
-                    anesthesiologistId: e.target.value,
-                  }),
-                );
-              }}
-            />
-          </FormField>
-
-          <FormField label="간호사" htmlFor="a-nurse">
-            <Select
-              id="a-nurse"
-              placeholder="미배정"
-              options={employeeOptions}
-              value={form.nurseId}
-              disabled={saving || !editable}
-              onChange={(e) => {
-                setForm({ ...form, nurseId: e.target.value });
-                dispatch(
-                  assignFieldRequest(surgeryId, "nurse", {
-                    nurseId: e.target.value,
-                  }),
-                );
-              }}
-            />
-          </FormField>
-        </div>
+        <dl className="grid gap-x-6 gap-y-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <dt className="text-slate-500">수술실</dt>
+            <dd className="text-slate-800">{roomLabel(surgery.roomCode)}</dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">집도의</dt>
+            <dd className="text-slate-800">{empLabel(surgery.surgeonId)}</dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">마취의</dt>
+            <dd className="text-slate-800">
+              {/* 무마취 시술은 마취의가 없는 것이 정상이다 — '미배정'으로 보이면
+                  누락으로 읽히므로 사유를 밝혀 준다 */}
+              {surgery.anesthesiaYn === "N"
+                ? "해당 없음 (무마취 시술)"
+                : empLabel(surgery.anesthesiologistId)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">간호사</dt>
+            <dd className="text-slate-800">{empLabel(surgery.nurseId)}</dd>
+          </div>
+        </dl>
       </Panel>
 
       {/* ---- 상태변경 이력 ---- */}

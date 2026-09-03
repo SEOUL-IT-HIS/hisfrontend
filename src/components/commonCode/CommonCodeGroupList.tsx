@@ -84,14 +84,14 @@ export default function CommonCodeGroupList() {
         <div>
           <p className="text-xs font-semibold tracking-[0.14em] text-sky-600">SYSTEM</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
-            공통코드
+            Common Codes
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            그룹을 선택한 뒤 항목을 등록·수정합니다.
+            Select a group to add or edit its items.
           </p>
         </div>
         <Button variant="primary" onClick={() => setRegisterOpen(true)}>
-          그룹 등록
+          Add Group
         </Button>
       </header>
 
@@ -102,9 +102,9 @@ export default function CommonCodeGroupList() {
         <Panel>
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white px-5 py-4">
             <div>
-              <h2 className="text-sm font-semibold text-slate-900">코드 그룹</h2>
+              <h2 className="text-sm font-semibold text-slate-900">Code Groups</h2>
               <p className="mt-0.5 text-xs text-slate-400">
-                행 클릭 시 항목 패널이 열립니다
+                Click a row to open the item panel
               </p>
             </div>
             {/* 필터 결과 건수 / 전체 건수 */}
@@ -118,31 +118,31 @@ export default function CommonCodeGroupList() {
           <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3">
             <div className="flex flex-wrap items-end gap-3">
               <FormField
-                label="검색어"
+                label="Search"
                 htmlFor="groupKeyword"
                 className="min-w-[200px] flex-1"
               >
                 <Input
                   id="groupKeyword"
                   value={keyword}
-                  placeholder="그룹코드 / 그룹명"
+                  placeholder="Group Code / Group Name"
                   onChange={(e) => setKeyword(e.target.value)}
                 />
               </FormField>
-              <FormField label="사용여부" htmlFor="groupUseYn" className="w-36">
+              <FormField label="Status" htmlFor="groupUseYn" className="w-36">
                 <Select
                   id="groupUseYn"
                   value={useYnFilter}
-                  placeholder="전체"
+                  placeholder="All"
                   onChange={(e) => setUseYnFilter(e.target.value)}
                   options={[
-                    { value: "Y", label: "사용 (Y)" },
-                    { value: "N", label: "미사용 (N)" },
+                    { value: "Y", label: "Active (Y)" },
+                    { value: "N", label: "Inactive (N)" },
                   ]}
                 />
               </FormField>
               <Button type="button" variant="secondary" onClick={resetGroupSearch}>
-                초기화
+                Reset
               </Button>
             </div>
           </div>
@@ -151,24 +151,24 @@ export default function CommonCodeGroupList() {
             <table className="w-full min-w-[440px] text-left text-sm">
               <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/95 backdrop-blur">
                 <tr className="text-xs uppercase tracking-wide text-slate-400">
-                  <th className="px-5 py-3 font-medium">그룹코드</th>
-                  <th className="px-5 py-3 font-medium">그룹명</th>
-                  <th className="w-28 px-5 py-3 font-medium">상태</th>
+                  <th className="px-5 py-3 font-medium">Group Code</th>
+                  <th className="px-5 py-3 font-medium">Group Name</th>
+                  <th className="w-28 px-5 py-3 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
                     <td colSpan={3} className="px-5 py-20 text-center text-slate-400">
-                      목록을 불러오는 중입니다...
+                      Loading groups...
                     </td>
                   </tr>
                 ) : filteredGroups.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="px-5 py-20 text-center text-slate-400">
                       {groups.length === 0
-                        ? "등록된 그룹이 없습니다. 우측 상단에서 그룹을 등록하세요."
-                        : "검색 조건에 맞는 그룹이 없습니다."}
+                        ? "No groups yet. Register one with the Add Group button at the top right."
+                        : "No groups match your search."}
                     </td>
                   </tr>
                 ) : (
@@ -202,7 +202,7 @@ export default function CommonCodeGroupList() {
                           {row.groupName}
                         </td>
                         <td className="w-28 px-5 py-3.5">
-                          <StatusBadge value={row.useYn} />
+                          <StatusBadge value={row.useYn} activeLabel="Active" inactiveLabel="Inactive" />
                         </td>
                       </tr>
                     );
@@ -220,7 +220,7 @@ export default function CommonCodeGroupList() {
       {/* 그룹 등록 Modal */}
       <Modal
         open={registerOpen}
-        title="공통코드 그룹 등록"
+        title="Add Code Group"
         onClose={() => setRegisterOpen(false)}
       >
         <CommonCodeGroupRegisterForm onClose={() => setRegisterOpen(false)} />

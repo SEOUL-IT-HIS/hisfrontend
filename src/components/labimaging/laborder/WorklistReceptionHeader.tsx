@@ -75,43 +75,43 @@ export default function WorklistReceptionHeader({
         <p className="text-base font-semibold text-slate-800">
           {reception.receptionNo}
           <span className="ml-2 text-sm font-normal text-slate-500">
-            {patientName ?? "환자 미상"}
+            {patientName ?? "Unknown patient"}
           </span>
           {reception.urgencyYn === "Y" ? (
             <span className="ml-2 rounded bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-600">
-              긴급
+              Urgent
             </span>
           ) : null}
         </p>
 
         {/* 무슨 검사인지 — 검체 종류·용기를 고르는 판단 근거라 가장 눈에 띄게 둔다. */}
         <p className="mt-2 text-sm">
-          <span className="text-slate-400">검사항목 </span>
+          <span className="text-slate-400">Test Items </span>
           <span className="font-semibold text-slate-800">
-            {labItems || (matched ? "-" : "불러오는 중…")}
+            {labItems || (matched ? "-" : "Loading…")}
           </span>
         </p>
 
         <p className="mt-1 text-xs text-slate-400">
-          오더 {reception.labOrderNo}
+          Order {reception.labOrderNo}
           {matched ? (
             <>
               {" · "}
               {toCodeLabel(treatTypes.options, matched.treatTypeCode)}
-              {matched.physicianNo ? ` · 처방의 ${matched.physicianNo}` : null}
+              {matched.physicianNo ? ` · Physician ${matched.physicianNo}` : null}
             </>
           ) : null}
         </p>
         <p className="mt-0.5 text-xs text-slate-400">
-          접수 {formatDateTime(reception.receivedAt)}
+          Received {formatDateTime(reception.receivedAt)}
           {reception.scheduledAt
-            ? ` · 검사예정 ${formatDateTime(reception.scheduledAt)}`
-            : " · 일정 미등록"}
+            ? ` · Scheduled ${formatDateTime(reception.scheduledAt)}`
+            : " · Not scheduled"}
         </p>
 
         {reception.receptionStatusCode === "EXCLUDED" ? (
           <p className="mt-1 text-xs text-amber-600">
-            제외됨 — {reception.exclusionReason}
+            Excluded — {reception.exclusionReason}
           </p>
         ) : null}
       </div>
@@ -121,10 +121,10 @@ export default function WorklistReceptionHeader({
           href={`/labimaging/laborder/receptions/${encodeURIComponent(reception.receptionNo)}`}
           className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
         >
-          전체 상세
+          Full Detail
         </Link>
         <Button variant="ghost" onClick={() => dispatch(clearWorklistSelection())}>
-          선택 해제
+          Clear Selection
         </Button>
       </div>
     </div>

@@ -6,8 +6,8 @@ export type SearchPatient = {
 export type SearchPatientResult = {
   patientId: string;
   patientName: string;
-  addr: string;
-  tel: string;
+  address: string;
+  phoneNo: string;
   birthDate: string;
   itemName: string;
 
@@ -27,8 +27,8 @@ export type BillingDetail = {
 
   patientId: string;
   patientName: string;
-  tel: string;
-  addr: string;
+  phoneNo: string;
+  address: string;
   birthDate: string;
 }
 

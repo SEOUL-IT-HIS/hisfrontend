@@ -24,9 +24,19 @@ import type { AppDispatch, RootState } from "@/store/store";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import PostcodeSearchButton from "./PostcodeSearchButton";
 
-type PatientRegisterFormState = Omit<PatientRegisterRequest, "genderCd"> & {
+type PatientRegisterFormState = Omit<
+  PatientRegisterRequest,
+  "genderCd" | "zipCode" | "address" | "addressDetail" | "phoneNo"
+> & {
   genderCd: GenderCd | "";
+  zipCode: string;
+  address: string;
+  addressDetail: string;
+  phoneNo: string;
 };
+// Omit은 기존 타입에서 특정 속성을 제외하는 TypeScript 유틸리티 타입
+// &는 교차 타입(Intersection Type) : 두 타입 합치기
+// |는 유니온 타입(Union Type) : 둘 중 하나 허용
 
 function formatPhoneNo(value: string): string {
   const digits = value.replace(/[^0-9]/g, "").slice(0, 11);
@@ -40,11 +50,18 @@ function getBirthDateFromResidentRegNo(residentRegNo: string): string | null {
   if (!/^\d{13}$/.test(residentRegNo)) {
     return null;
   }
+  // /^\d{13}$/ : 정규표현식(Regular Expression)
+  // : 문자열의 처음부터 끝까지 숫자로만 이루어져 있고, 그 숫자가 정확히 13개인가?
+  // ^ : 문자열의 시작, \d : 숫자 0~9, {13} : 앞의 숫자가 정확히 13개, $ : 문자열의 끝
+  // test()는 문자열이 정규표현식 조건에 맞는지 검사하는 함수, 결과는 boolean
 
   const yearPart = Number(residentRegNo.slice(0, 2));
   const month = Number(residentRegNo.slice(2, 4));
   const day = Number(residentRegNo.slice(4, 6));
   const typeCode = residentRegNo.charAt(6);
+  // slice(시작위치, 끝위치) : 문자열의 일부분을 잘라내는 함수(시작위치는 포함, 끝위치는 포함 X)
+  // charAt() : 문자열의 특정 위치에 있는 문자 하나를 가져오는 함수
+  // 차례대로 출생년도, 출생월, 출생일, 출생 세기 판정코드
 
   const centuryByTypeCode: Record<string, number> = {
     "1": 1900,
@@ -56,6 +73,7 @@ function getBirthDateFromResidentRegNo(residentRegNo: string): string | null {
     "7": 2000,
     "8": 2000,
   };
+  // Record : 객체의 key와 value가 어떤 타입인지 지정하는 TypeScript 유틸리티 타입
 
   const century = centuryByTypeCode[typeCode];
 
@@ -65,6 +83,8 @@ function getBirthDateFromResidentRegNo(residentRegNo: string): string | null {
 
   const year = century + yearPart;
   const date = new Date(year, month - 1, day);
+  // year 예시 : 1900 + 99, 2000 + 00
+  // date 예시 : 2000 , 8 - 1, 13 , 이때 -1을 하는 이유는 Date는 1월이 0부터 시작이기 때문
 
   if (
     date.getFullYear() !== year ||
@@ -73,6 +93,9 @@ function getBirthDateFromResidentRegNo(residentRegNo: string): string | null {
   ) {
     return null;
   }
+  // 실제로 생성된 날짜의 연도가 원래 계산한 연도와 다른가?
+  // || : OR(또는) 연산자
+  // getDate() : 몇 일인지와 getDay() : 요일을 가져오는 함수
 
   return [
     year,
@@ -87,6 +110,7 @@ const initialForm: PatientRegisterFormState = {
   residentRegNo: "",
   genderCd: "",
   tempPatientYn: "N",
+  tempRegisterReason: "",
   zipCode: "",
   address: "",
   addressDetail: "",
@@ -109,6 +133,8 @@ export default function PatientRegisterForm() {
     error,
   } = useSelector((state: RootState) => state.patient);
 
+  const isTemporaryPatient = form.tempPatientYn === "Y";
+
   const residentRegNoError =
     form.residentRegNo.length === 0
       ? null
@@ -122,19 +148,22 @@ export default function PatientRegisterForm() {
     ? null
     : duplicateCheckLoading
       ? "주민등록번호 중복 확인 중입니다."
-      : !form.patientName.trim() ||
-        !form.residentRegNo ||
-        !form.birthDate ||
-        !form.genderCd
+      : !form.genderCd ||
+        (isTemporaryPatient
+          ? !form.tempRegisterReason?.trim()
+          : !form.patientName.trim() ||
+            !form.residentRegNo ||
+            !form.birthDate)
         ? "필수 항목을 모두 입력해 주세요."
-        : form.patientName.trim().length < 2 ||
-          form.patientName.trim().length > 100
+        : form.patientName.trim() &&
+            (form.patientName.trim().length < 2 ||
+              form.patientName.trim().length > 100)
           ? "환자명은 2자 이상 100자 이하로 입력해 주세요."
           : residentRegNoError
             ? residentRegNoError
-            : duplicated === null
+            : form.residentRegNo && duplicated === null
               ? "등록하려면 주민등록번호 중복확인을 완료해 주세요."
-              : duplicated
+              : form.residentRegNo && duplicated
                 ? "이미 등록된 주민등록번호입니다."
                 : null;
 
@@ -168,6 +197,7 @@ export default function PatientRegisterForm() {
         form.birthDate !== "" ||
         form.genderCd !== "" ||
         form.tempPatientYn !== initialForm.tempPatientYn ||
+        Boolean(form.tempRegisterReason?.trim()) ||
         form.zipCode !== "" ||
         form.address.trim() !== "" ||
         form.addressDetail.trim() !== "" ||
@@ -203,6 +233,21 @@ export default function PatientRegisterForm() {
           birthDate,
         };
       }
+      // 환자 등록 폼에서 특정 입력값이 변경되었을 때 form 상태를 업데이트하는 함수
+      // residentRegNo가 변경되면 주민등록번호를 저장하는 동시에 생년월일도 자동으로 계산해서 birthDate에 저장
+      // keyof : 해당 타입이 가지고 있는 속성 이름들을 타입으로 가져오는 TypeScript 연산자
+      // K는 제네릭 타입 변수
+      // extends : K는 반드시 PatientRegisterFormState의 속성 이름 중 하나여야 한다라고 제한
+      // field는 어떤 입력 항목을 변경할 것인지 나타내는 값
+      // value는 해당 필드에 새로 저장할 값
+      // PatientRegisterFormState[K] : K에 해당하는 PatientRegisterFormState 속성의 타입을 사용
+      // previous : 변경하기 전의 기존 form 상태
+      // 주민등록번호만 별도로 처리하는 이유는 주민등록번호가 변경되면 birthDate도 같이 변경해야 하기 때문
+      // value as string : value를 string 타입으로 취급
+      // getBirthDateFromResidentRegNo(residentRegNo) : 주민등록번호를 전달해서 생년월일을 계산
+      // ?? : Nullish Coalescing Operator, Null 병합 연산자 : null 또는 undefined이면 오른쪽 값을 사용
+      // ...previous : Spread 문법 : 기존 form의 모든 속성을 새로운 객체에 복사
+      // 주민등록번호 하나를 입력했는데 residentRegNo와 birthDate 두 상태가 동시에 업데이트되는 것
 
       return {
         ...previous,
@@ -251,19 +296,33 @@ export default function PatientRegisterForm() {
   const submitPatient = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!form.genderCd) {
+      setValidationError("모든 필수 항목을 입력해 주세요.");
+      return;
+    }
+
     if (
-      !form.patientName.trim() ||
-      !form.birthDate ||
-      !form.residentRegNo.trim() ||
-      !form.genderCd
+      isTemporaryPatient &&
+      !form.tempRegisterReason?.trim()
+    ) {
+      setValidationError("임시등록 사유를 입력해 주세요.");
+      return;
+    }
+
+    if (
+      !isTemporaryPatient &&
+      (!form.patientName.trim() ||
+        !form.birthDate ||
+        !form.residentRegNo.trim())
     ) {
       setValidationError("모든 필수 항목을 입력해 주세요.");
       return;
     }
 
     if (
-      form.patientName.trim().length < 2 ||
-      form.patientName.trim().length > 100
+      form.patientName.trim() &&
+      (form.patientName.trim().length < 2 ||
+        form.patientName.trim().length > 100)
     ) {
       setPatientNameTouched(true);
       setValidationError("환자명은 2자 이상 100자 이하로 입력해 주세요.");
@@ -282,7 +341,7 @@ export default function PatientRegisterForm() {
       return;
     }
 
-    if (duplicated === null) {
+    if (form.residentRegNo && duplicated === null) {
       setValidationError("주민등록번호 중복 확인을 먼저 진행해 주세요.");
       return;
     }
@@ -301,6 +360,9 @@ export default function PatientRegisterForm() {
         residentRegNo: form.residentRegNo.trim(),
         genderCd: form.genderCd as GenderCd,
         tempPatientYn: form.tempPatientYn,
+        tempRegisterReason: isTemporaryPatient
+          ? form.tempRegisterReason?.trim()
+          : undefined,
         zipCode: form.zipCode.trim(),
         address: form.address.trim(),
         addressDetail: form.addressDetail.trim(),
@@ -316,6 +378,7 @@ export default function PatientRegisterForm() {
       form.birthDate !== "" ||
       form.genderCd !== "" ||
       form.tempPatientYn !== initialForm.tempPatientYn ||
+      Boolean(form.tempRegisterReason?.trim()) ||
       form.zipCode !== "" ||
       form.address.trim() !== "" ||
       form.addressDetail.trim() !== "" ||
@@ -338,6 +401,7 @@ export default function PatientRegisterForm() {
       form.birthDate !== "" ||
       form.genderCd !== "" ||
       form.tempPatientYn !== initialForm.tempPatientYn ||
+      Boolean(form.tempRegisterReason?.trim()) ||
       form.zipCode !== "" ||
       form.address.trim() !== "" ||
       form.addressDetail.trim() !== "" ||
@@ -379,7 +443,62 @@ export default function PatientRegisterForm() {
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <form onSubmit={submitPatient} className="space-y-4">
-          <FormField label="환자명" required htmlFor="patientName">
+          <FormField label="환자 구분">
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={isTemporaryPatient}
+                onChange={(event) => {
+                  const temporary = event.target.checked;
+                  setForm((previous) => ({
+                    ...previous,
+                    tempPatientYn: temporary ? "Y" : "N",
+                    genderCd:
+                      temporary && !previous.genderCd
+                        ? "03"
+                        : previous.genderCd,
+                    tempRegisterReason: temporary
+                      ? previous.tempRegisterReason
+                      : "",
+                  }));
+                  setValidationError(null);
+                  dispatch(resetPatientRegistration());
+                }}
+                disabled={registerLoading}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              임시환자로 등록
+            </label>
+            <p className="mt-1 text-xs text-slate-500">
+              신원 확인 전 최소 정보로 등록할 때 사용합니다.
+            </p>
+          </FormField>
+
+          {isTemporaryPatient ? (
+            <FormField
+              label="임시등록 사유"
+              required
+              htmlFor="tempRegisterReason"
+            >
+              <Input
+                id="tempRegisterReason"
+                value={form.tempRegisterReason ?? ""}
+                onChange={(event) =>
+                  updateForm("tempRegisterReason", event.target.value)
+                }
+                disabled={registerLoading}
+                maxLength={200}
+                placeholder="예: 신원미상, 의식불명, 보호자 부재"
+              />
+            </FormField>
+          ) : null}
+
+          <FormField
+            label="환자명"
+            required={!isTemporaryPatient}
+            htmlFor="patientName"
+            hint={isTemporaryPatient ? "미입력 시 임시환자명이 자동 생성됩니다." : undefined}
+          >
             <Input
               id="patientName"
               value={form.patientName}
@@ -391,9 +510,10 @@ export default function PatientRegisterForm() {
               autoComplete="name"
             />
 
-            {patientNameTouched && !form.patientName.trim() ? (
+            {patientNameTouched && !isTemporaryPatient && !form.patientName.trim() ? (
               <p className="text-sm text-red-600">환자명을 입력해 주세요.</p>
             ) : patientNameTouched &&
+              form.patientName.trim() &&
               (form.patientName.trim().length < 2 ||
                 form.patientName.trim().length > 100) ? (
               <p className="text-sm text-red-600">
@@ -402,7 +522,11 @@ export default function PatientRegisterForm() {
             ) : null}
           </FormField>
 
-          <FormField label="주민등록번호" required htmlFor="residentRegNo">
+          <FormField
+            label="주민등록번호"
+            required={!isTemporaryPatient}
+            htmlFor="residentRegNo"
+          >
             <div className="flex gap-2">
               <Input
                 id="residentRegNo"
@@ -462,7 +586,7 @@ export default function PatientRegisterForm() {
 
           <FormField
             label="생년월일"
-            required
+            required={!isTemporaryPatient}
             htmlFor="birthDate"
             hint={
               form.birthDate
@@ -493,25 +617,6 @@ export default function PatientRegisterForm() {
             {genderCodes.error ? (
               <span className="text-xs text-rose-500">{genderCodes.error}</span>
             ) : null}
-          </FormField>
-
-          <FormField label="환자 구분">
-            <label className="flex items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={form.tempPatientYn === "Y"}
-                onChange={(event) =>
-                  updateForm("tempPatientYn", event.target.checked ? "Y" : "N")
-                }
-                disabled={registerLoading}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              임시환자로 등록
-            </label>
-
-            <p className="mt-1 text-xs text-slate-500">
-              신원 확인 전 임시 등록이 필요한 환자에게 사용합니다.
-            </p>
           </FormField>
 
           <div className="border-t border-slate-200 pt-4">

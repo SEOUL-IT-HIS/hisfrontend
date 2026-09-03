@@ -31,7 +31,7 @@ import type { Emp } from "@/features/emp/types/empTypes";
 type Props = {
   orderId: string;
   /**
-   * 배정이 끝났을 때 할 일. 대기 목록 화면이 마스터-디테일이 되면서 생겼다(2026-08-27).
+   * 배정이 끝났을 때 할 일. 대기 목록 화면이 마스터-디테일이 되면서 생겼다.
    *
    * <p>주지 않으면 예전처럼 {@code /surgery/schedule/requests} 로 이동한다 —
    * {@code /surgery/schedule/assign/[orderId]} 로 직접 들어온 경우다. 대기 목록 안에
@@ -45,16 +45,30 @@ type Props = {
 /**
  * 배정 등록 화면 (오더 접수 00 → 수락 01)
  *
- * <p><b>배정이 곧 수락이다</b>(2026-08-13) — 담당자가 하는 일은 수술실을 정하는 것이고,
+ * <p><b>배정이 곧 수락이다</b> — 담당자가 하는 일은 수술실을 정하는 것이고,
  * 수술실이 정해지는 순간 요청이 받아들여진 것이므로 오더가 수락으로 바뀌고 그때
  * 수술이 만들어진다. 그래서 이 화면 이전에는 수술이 존재하지 않는다.</p>
  *
  * <p>환자와 집도의는 진료·응급실이 확정한 값이라 읽기 전용으로만 보여준다 — 배정
- * 단계에서 바꾸면 요청 자체가 뒤바뀐다. 집도의 변경이 필요하면 배정 후 수술 쪽
- * 개별 배정 API 로 처리한다.</p>
+ * 단계에서 바꾸면 요청 자체가 뒤바뀐다.</p>
  *
  * <p>수술실 목록은 사용가능(01) 상태만 받아온다. 점검중·폐쇄 수술실은 백엔드도
  * 배정을 거부하므로(SUR045) 선택지에 올리지 않는다.</p>
+ *
+ * <h3>여기서 배정이 끝난다</h3>
+ *
+ * <p>예전에는 수술실만 정하고 <b>"나중에 배정"</b>으로 마취의·간호사를 비워 둘 수
+ * 있었다. 나중에 배정 상세 화면에서 채우면 된다는 전제였는데, 그 결과 수술실만 잡힌
+ * 건과 팀까지 다 잡힌 건이 목록에서 똑같이 "예약"으로 보였다 — 배정이 끝났는지
+ * 아닌지를 아무도 알 수 없었다.</p>
+ *
+ * <p>이제 <b>이 폼을 넘기는 순간 배정이 확정</b>되고 그 뒤로는 바꿀 수 없다.
+ * 개별 배정 API 는 SUR059 로 거절한다. 그래서 여기서 전부 고르게 한다.</p>
+ *
+ * <p><b>마취 여부를 묻는 이유</b> — 마취의를 무조건 필수로 걸면 무마취 시술
+ * (단순 봉합, 표재성 종물 제거 등)이 배정 자체가 안 된다. 그렇다고 계속 선택값으로
+ * 두면 "마취의를 넣는 걸 잊은 것"과 "원래 마취가 없는 것"을 구분할 수 없다.
+ * 그래서 마취 여부를 먼저 선언하게 하고, 시행(Y)일 때만 마취의를 요구한다.</p>
  */
 export default function SurgeryAssignForm({
   orderId,
@@ -69,11 +83,14 @@ export default function SurgeryAssignForm({
   const availableRooms = useSelector(selectAvailableRooms);
 
   const [roomCode, setRoomCode] = useState("");
+  // 마취 여부는 기본값을 두지 않는다 — 고르지 않고 지나칠 수 있으면 물어보는 의미가 없다
+  const [anesthesiaYn, setAnesthesiaYn] = useState<"" | "Y" | "N">("");
   const [anesthesiologistId, setAnesthesiologistId] = useState("");
   const [nurseId, setNurseId] = useState("");
   const [surgeryDt, setSurgeryDt] = useState("");
   const [boundOrderId, setBoundOrderId] = useState<string | null>(null);
-  const [roomError, setRoomError] = useState("");
+  /** 필드별 오류 문구. 비어 있으면 통과다 */
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [employees, setEmployees] = useState<Emp[]>([]);
   const [employeeLoadError, setEmployeeLoadError] = useState("");
   // 저장 완료를 감지해 대기 목록으로 되돌리기 위한 플래그
@@ -135,20 +152,40 @@ export default function SurgeryAssignForm({
     label: `${employee.empName} (${employee.empNo})`,
   }));
 
+  /*
+    백엔드도 같은 규칙을 본다(@NotBlank 와 requireAnesthesiologistWhenAnesthetized).
+    여기서 먼저 막는 이유는 한 번에 어디가 비었는지 보여주기 위해서다 — 서버는 첫
+    위반에서 멈추고 SUR038 하나만 돌려준다(§15.3).
+  */
+  function validate() {
+    const errors: Record<string, string> = {};
+    if (!roomCode) errors.roomCode = "수술실을 선택해주세요.";
+    if (!anesthesiaYn) errors.anesthesiaYn = "마취 여부를 선택해주세요.";
+    if (anesthesiaYn === "Y" && !anesthesiologistId) {
+      errors.anesthesiologistId =
+        "마취를 시행하는 수술은 마취의를 배정해야 합니다.";
+    }
+    if (!nurseId) errors.nurseId = "간호사를 선택해주세요.";
+    return errors;
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!roomCode) {
-      setRoomError("수술실을 선택해주세요.");
-      return;
-    }
-    setRoomError("");
+    const errors = validate();
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     submitted.current = true;
     dispatch(
       assignOrderRequest(orderId, {
         roomCode,
         surgeryDt: surgeryDt || undefined,
-        anesthesiologistId: anesthesiologistId || null,
-        nurseId: nurseId || null,
+        // 위 검증을 통과했으므로 빈 값이 아니다
+        anesthesiaYn: anesthesiaYn as "Y" | "N",
+        // 무마취면 마취의를 보내지 않는다. 화면에서 고를 수도 없다.
+        anesthesiologistId:
+          anesthesiaYn === "Y" ? anesthesiologistId : null,
+        nurseId,
       }),
     );
   }
@@ -182,11 +219,16 @@ export default function SurgeryAssignForm({
         </dl>
       </Panel>
 
+      <Alert variant="info">
+        배정은 확정하면 바꿀 수 없습니다. 잘못 배정하면 수술을 취소하고 다시
+        요청받아야 하니, 넘기기 전에 확인해 주세요.
+      </Alert>
+
       <FormField
         label="수술실"
         required
         htmlFor="roomCode"
-        hint="수술실이 정해지면 요청이 수락되고 수술이 만들어집니다."
+        hint="점검중·폐쇄 수술실은 목록에 나오지 않습니다."
       >
         <Select
           id="roomCode"
@@ -196,8 +238,8 @@ export default function SurgeryAssignForm({
           onChange={(e) => setRoomCode(e.target.value)}
           disabled={saving}
         />
-        {roomError ? (
-          <span className="text-xs text-rose-600">{roomError}</span>
+        {fieldErrors.roomCode ? (
+          <span className="text-xs text-rose-600">{fieldErrors.roomCode}</span>
         ) : null}
       </FormField>
 
@@ -215,30 +257,77 @@ export default function SurgeryAssignForm({
         />
       </FormField>
 
-      <FormField label="마취의" htmlFor="anesthesiologistId">
+      <FormField
+        label="마취 여부"
+        required
+        htmlFor="anesthesiaYn"
+        hint="마취과가 붙지 않는 시술(단순 봉합 등)이면 '미시행'을 고릅니다."
+      >
         <Select
-          id="anesthesiologistId"
-          placeholder="나중에 배정"
-          options={employeeOptions}
-          value={anesthesiologistId}
-          onChange={(e) => setAnesthesiologistId(e.target.value)}
+          id="anesthesiaYn"
+          placeholder="선택"
+          options={[
+            { value: "Y", label: "시행 — 마취의 배정 필요" },
+            { value: "N", label: "미시행 — 무마취 시술" },
+          ]}
+          value={anesthesiaYn}
+          onChange={(e) => {
+            const next = e.target.value as "" | "Y" | "N";
+            setAnesthesiaYn(next);
+            // 미시행으로 바꾸면 이미 고른 마취의를 지운다 —
+            // 화면에서 사라진 값이 그대로 실려 나가지 않게 한다
+            if (next !== "Y") setAnesthesiologistId("");
+          }}
           disabled={saving}
         />
-        {employeeLoadError ? (
-          <span className="text-xs text-rose-600">{employeeLoadError}</span>
+        {fieldErrors.anesthesiaYn ? (
+          <span className="text-xs text-rose-600">
+            {fieldErrors.anesthesiaYn}
+          </span>
         ) : null}
       </FormField>
 
-      <FormField label="간호사" htmlFor="nurseId">
+      {/* 마취의는 시행(Y)일 때만 묻는다 — 무마취인데 칸이 남아 있으면 채워야 하나 헷갈린다 */}
+      {anesthesiaYn === "Y" ? (
+        <FormField label="마취의" required htmlFor="anesthesiologistId">
+          <Select
+            id="anesthesiologistId"
+            placeholder="마취의 선택"
+            options={employeeOptions}
+            value={anesthesiologistId}
+            onChange={(e) => setAnesthesiologistId(e.target.value)}
+            disabled={saving}
+          />
+          {fieldErrors.anesthesiologistId ? (
+            <span className="text-xs text-rose-600">
+              {fieldErrors.anesthesiologistId}
+            </span>
+          ) : null}
+        </FormField>
+      ) : null}
+
+      <FormField
+        label="간호사"
+        required
+        htmlFor="nurseId"
+        hint="무마취 시술이라도 기구·거즈 수량을 확인할 사람이 필요합니다."
+      >
         <Select
           id="nurseId"
-          placeholder="나중에 배정"
+          placeholder="간호사 선택"
           options={employeeOptions}
           value={nurseId}
           onChange={(e) => setNurseId(e.target.value)}
           disabled={saving}
         />
+        {fieldErrors.nurseId ? (
+          <span className="text-xs text-rose-600">{fieldErrors.nurseId}</span>
+        ) : null}
       </FormField>
+
+      {employeeLoadError ? (
+        <span className="text-xs text-rose-600">{employeeLoadError}</span>
+      ) : null}
 
       {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 

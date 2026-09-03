@@ -9,12 +9,10 @@ import type { ApiResponse, PageResponse } from "@/features/surgery/types";
 import type {
   CancelSurgeryRequest,
   Surgery,
-  AssignFieldRequest,
   SurgeryListParams,
   SurgerySearchParams,
   SurgeryStatusHistory,
   UpdateProgressRequest,
-  UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
 
 const SCHEDULE_PATH = "/api/surgery/schedule";
@@ -61,27 +59,6 @@ export async function getSurgeryHistory(
   return data.data ?? [];
 }
 
-/**
- * 개별 배정 (SL2-13 집도의 / SL2-15 수술실 / SL2-43 마취의 / SL2-63 간호사)
- *
- * <p>백엔드가 넷 다 같은 {@code AssignmentRequest} 를 받고 자기 필드만 읽는다.
- * 그래서 한 함수로 묶고 어느 항목인지는 경로로 구분한다.</p>
- *
- * <p><b>값을 비워 보내면 해제</b>다(SL2-166). 다만 집도의는 해제할 수 없어
- * 빈 값을 보내면 400 이 온다 — 수술에 집도의가 없는 상태는 성립하지 않는다.</p>
- */
-export async function assignSurgeryField(
-  surgeryId: string,
-  field: "room" | "surgeon" | "anesthesiologist" | "nurse",
-  request: AssignFieldRequest,
-): Promise<Surgery> {
-  const { data } = await apiClient.patch<ApiResponse<Surgery>>(
-    `${SCHEDULE_PATH}/${surgeryId}/${field}`,
-    request,
-  );
-  return data.data;
-}
-
 /** 금일 수술 현황을 조회한다. (SL2-40 모니터링) */
 export async function getTodaySurgeries(): Promise<Surgery[]> {
   const { data } = await apiClient.get<ApiResponse<Surgery[]>>(
@@ -98,20 +75,8 @@ export async function getSurgerySchedule(surgeryId: string): Promise<Surgery> {
 }
 
 // 수술 요청 등록(SL2-36)·응급 등록(SL2-44)·배정 대기 목록(SL2-225)·일괄 배정(SL2-15)은
-//   오더로 옮겼다 — features/surgery/order/api.ts (2026-08-13 결정).
+// 오더로 옮겼다 — features/surgery/order/api.ts.
 //   수술은 오더가 수락(배정)될 때 만들어지므로, 수술을 직접 만드는 함수는 여기 없다.
-
-/** 수술 스케줄을 수정한다. (SL2-37) */
-export async function updateSurgerySchedule(
-  surgeryId: string,
-  request: UpdateSurgeryRequest,
-): Promise<Surgery> {
-  const { data } = await apiClient.put<ApiResponse<Surgery>>(
-    `${SCHEDULE_PATH}/${surgeryId}`,
-    request,
-  );
-  return data.data;
-}
 
 /**
  * 수술 스케줄을 취소한다. (SL2-33)
