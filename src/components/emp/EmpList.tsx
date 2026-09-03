@@ -123,14 +123,14 @@ export default function EmpList() {
             ADMIN
           </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
-            직원 관리
+            Employees
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            직원을 선택한 뒤 상세를 확인하고 수정합니다.
+            Select an employee to view or edit their details.
           </p>
         </div>
         <Button variant="primary" onClick={() => setRegisterOpen(true)}>
-          직원 등록
+          Add Employee
         </Button>
       </header>
 
@@ -141,9 +141,9 @@ export default function EmpList() {
         <Panel>
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white px-5 py-4">
             <div>
-              <h2 className="text-sm font-semibold text-slate-900">직원 목록</h2>
+              <h2 className="text-sm font-semibold text-slate-900">Employee List</h2>
               <p className="mt-0.5 text-xs text-slate-400">
-                행 클릭 시 상세 패널이 열립니다
+                Click a row to open the detail panel
               </p>
             </div>
             <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white">
@@ -156,45 +156,45 @@ export default function EmpList() {
           <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3">
             <div className="flex flex-wrap items-end gap-3">
               <FormField
-                label="검색어"
+                label="Search"
                 htmlFor="empKeyword"
                 className="min-w-[200px] flex-1"
               >
                 <Input
                   id="empKeyword"
                   value={keyword}
-                  placeholder="사번 / 이름 / 부서명"
+                  placeholder="Emp No. / Name / Department"
                   onChange={(e) => setKeyword(e.target.value)}
                 />
               </FormField>
               <FormField
-                label="역할"
+                label="Role"
                 htmlFor="roleFilter"
                 className="w-36"
               >
                 <Select
                   id="roleFilter"
                   value={roleFilter}
-                  placeholder="전체"
+                  placeholder="All"
                   onChange={(e) => setRoleFilter(e.target.value)}
                   options={toRoleSelectOptions(roles)}
                 />
               </FormField>
               <FormField
-                label="재직상태"
+                label="Status"
                 htmlFor="empStatusFilter"
                 className="w-36"
               >
                 <Select
                   id="empStatusFilter"
                   value={empStatusFilter}
-                  placeholder="전체"
+                  placeholder="All"
                   onChange={(e) => setEmpStatusFilter(e.target.value)}
                   options={toCodeSelectOptions(statusCodes)}
                 />
               </FormField>
               <Button type="button" variant="secondary" onClick={resetEmpSearch}>
-                초기화
+                Reset
               </Button>
             </div>
           </div>
@@ -203,12 +203,12 @@ export default function EmpList() {
             <table className="w-full min-w-[520px] text-left text-sm">
               <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/95 backdrop-blur">
                 <tr className="text-xs uppercase tracking-wide text-slate-400">
-                  <th className="px-5 py-3 font-medium">사번</th>
-                  <th className="px-5 py-3 font-medium">이름</th>
-                  <th className="px-5 py-3 font-medium">부서</th>
-                  <th className="px-5 py-3 font-medium">역할</th>
-                  <th className="px-5 py-3 font-medium">입사일</th>
-                  <th className="px-5 py-3 font-medium">상태</th>
+                  <th className="px-5 py-3 font-medium">Emp No.</th>
+                  <th className="px-5 py-3 font-medium">Name</th>
+                  <th className="px-5 py-3 font-medium">Department</th>
+                  <th className="px-5 py-3 font-medium">Role</th>
+                  <th className="px-5 py-3 font-medium">Hire Date</th>
+                  <th className="px-5 py-3 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -218,7 +218,7 @@ export default function EmpList() {
                       colSpan={6}
                       className="px-5 py-20 text-center text-slate-400"
                     >
-                      목록을 불러오는 중입니다...
+                      Loading employees...
                     </td>
                   </tr>
                 ) : filteredEmps.length === 0 ? (
@@ -228,8 +228,8 @@ export default function EmpList() {
                       className="px-5 py-20 text-center text-slate-400"
                     >
                       {emps.length === 0
-                        ? "등록된 직원이 없습니다. 우측 상단에서 직원을 등록하세요."
-                        : "검색 조건에 맞는 직원이 없습니다."}
+                        ? "No employees yet. Register one with the Add Employee button at the top right."
+                        : "No employees match your search."}
                     </td>
                   </tr>
                 ) : (
@@ -295,7 +295,7 @@ export default function EmpList() {
       {/* 직원 등록 Modal */}
       <Modal
         open={registerOpen}
-        title="직원 등록"
+        title="Add Employee"
         onClose={() => setRegisterOpen(false)}
       >
         <EmpRegisterForm

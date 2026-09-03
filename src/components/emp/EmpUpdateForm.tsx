@@ -127,9 +127,9 @@ export default function EmpUpdateForm({
     e.preventDefault();
 
     const nextErrors: FieldErrors = {};
-    if (!form.empName.trim()) nextErrors.empName = "이름을 입력해주세요.";
-    if (!form.empPhone.trim()) nextErrors.empPhone = "연락처를 입력해주세요.";
-    if (!form.deptCode.trim()) nextErrors.deptCode = "부서를 선택해주세요.";
+    if (!form.empName.trim()) nextErrors.empName = "Please enter a name.";
+    if (!form.empPhone.trim()) nextErrors.empPhone = "Please enter a phone number.";
+    if (!form.deptCode.trim()) nextErrors.deptCode = "Please select a department.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -178,18 +178,18 @@ export default function EmpUpdateForm({
 
       <form onSubmit={onSubmit} className="space-y-4">
         <FormField
-          label="사번"
+          label="Emp No."
           htmlFor="empNo"
-          hint="식별키라 변경할 수 없습니다."
+          hint="Identifier — cannot be changed."
         >
           <Input id="empNo" value={emp.empNo} disabled />
         </FormField>
 
-        <FormField label="이름" required htmlFor="empName">
+        <FormField label="Name" required htmlFor="empName">
           <Input
             id="empName"
             value={form.empName}
-            placeholder="이름을 입력하세요"
+            placeholder="Enter a name"
             onChange={(e) => setForm({ ...form, empName: e.target.value })}
           />
           {errors.empName && (
@@ -197,21 +197,21 @@ export default function EmpUpdateForm({
           )}
         </FormField>
 
-        <FormField label="이메일" htmlFor="empEmail">
+        <FormField label="Email" htmlFor="empEmail">
           <Input
             id="empEmail"
             type="email"
             value={form.empEmail}
-            placeholder="예: kim@hospital.com"
+            placeholder="e.g. kim@hospital.com"
             onChange={(e) => setForm({ ...form, empEmail: e.target.value })}
           />
         </FormField>
 
-        <FormField label="연락처" required htmlFor="empPhone">
+        <FormField label="Phone" required htmlFor="empPhone">
           <Input
             id="empPhone"
             value={form.empPhone}
-            placeholder="예: 010-1234-5678"
+            placeholder="e.g. 010-1234-5678"
             onChange={(e) => setForm({ ...form, empPhone: e.target.value })}
           />
           {errors.empPhone && (
@@ -219,7 +219,7 @@ export default function EmpUpdateForm({
           )}
         </FormField>
 
-        <FormField label="퇴사일" htmlFor="retireDate">
+        <FormField label="Retire Date" htmlFor="retireDate">
           <Input
             id="retireDate"
             type="date"
@@ -228,22 +228,22 @@ export default function EmpUpdateForm({
           />
         </FormField>
 
-        <FormField label="재직상태" htmlFor="empStatus">
+        <FormField label="Status" htmlFor="empStatus">
           <Select
             id="empStatus"
             value={form.empStatus}
-            placeholder="선택"
+            placeholder="Select"
             onChange={(e) => setForm({ ...form, empStatus: e.target.value })}
             options={toCodeSelectOptions(statusCodes)}
           />
         </FormField>
 
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="부서" required htmlFor="deptCode">
+          <FormField label="Department" required htmlFor="deptCode">
             <Select
               id="deptCode"
               value={form.deptCode}
-              placeholder="선택"
+              placeholder="Select"
               onChange={(e) => setForm({ ...form, deptCode: e.target.value })}
               options={toCodeSelectOptions(deptCodes)}
             />
@@ -252,38 +252,38 @@ export default function EmpUpdateForm({
             )}
           </FormField>
 
-          <FormField label="역할" htmlFor="roleId">
+          <FormField label="Role" htmlFor="roleId">
             <Select
               id="roleId"
               value={form.roleId}
-              placeholder="선택"
+              placeholder="Select"
               onChange={(e) => setForm({ ...form, roleId: e.target.value })}
               options={toRoleSelectOptions(roles)}
             />
           </FormField>
         </div>
 
-        <FormField label="주소" htmlFor="zipCode">
+        <FormField label="Address" htmlFor="zipCode">
           <div className="flex gap-2">
-            <Input id="zipCode" value={form.zipCode} placeholder="우편번호" disabled />
+            <Input id="zipCode" value={form.zipCode} placeholder="Zip Code" disabled />
             <button
                 type="button"
                 onClick={handleAddressSearch}
                 className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
             >
-              주소 검색
+              Find Address
             </button>
           </div>
-          <Input value={form.address} placeholder="기본주소" disabled className="mt-2" />
+          <Input value={form.address} placeholder="Street address" disabled className="mt-2" />
           <Input
               value={form.addressDetail}
-              placeholder="상세주소를 입력하세요 (예: 101동 202호)"
+              placeholder="Enter address detail (e.g. Bldg 101, Unit 202)"
               onChange={(e) => setForm({ ...form, addressDetail: e.target.value })}
               className="mt-2"
           />
         </FormField>
 
-        <FormField label="사진" htmlFor="image">
+        <FormField label="Photo" htmlFor="image">
           <input
               id="image"
               type="file"
@@ -294,13 +294,13 @@ export default function EmpUpdateForm({
           {imagePreview ? (
               <img
                   src={imagePreview}
-                  alt="미리보기"
+                  alt="Preview"
                   className="mt-2 h-20 w-20 rounded-full object-cover"
               />
           ) : null}
         </FormField>
 
-        <FormActions onCancel={onClose} submitLabel="수정" loading={loading} />
+        <FormActions onCancel={onClose} submitLabel="Save" loading={loading} />
       </form>
     </div>
   );
