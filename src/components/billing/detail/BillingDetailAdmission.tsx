@@ -22,28 +22,28 @@ const billingDetailAdmission = () => {
     
     return (
         <div>
-            {loading && <p>로딩중...</p>}
+            {loading && <p>Loading...</p>}
             {error && <p>{error}</p>}
             {!loading && detail && (
             <>
-           <div>입퇴원 상세 조회 :</div>
-           <div>수납ID :</div>
-           <div>환자ID :</div>
-           <div>방문ID :</div>
-           <div>입원ID :</div>
-           <div>수납상세ID :</div>
-           <div>수납기준ID :</div>
-           <div>서비스 구분 코드 :</div>
-           <div>원본 레코드 ID :</div>
-           <div>수량 :</div>
-           <div>단가 :</div>
-           <div>금액 :</div>
-           <div>수납상태 :</div>
-           <div>발생시점 :</div>
-           <div>등록일시 :</div>
-           <div>수정일시 :</div>
-           <div>수기코드 :</div>
-           <div>항목명 :</div>
+           <div>Admission Detail:</div>
+           <div>Billing ID:</div>
+           <div>Patient ID:</div>
+           <div>Visit ID:</div>
+           <div>Admission ID:</div>
+           <div>Billing Detail ID:</div>
+           <div>Billing Master ID:</div>
+           <div>Source Service Code:</div>
+           <div>Source Record ID:</div>
+           <div>Quantity:</div>
+           <div>Unit Price:</div>
+           <div>Amount:</div>
+           <div>Detail Status:</div>
+           <div>Occurred At:</div>
+           <div>Created At:</div>
+           <div>Updated At:</div>
+           <div>Fee Code:</div>
+           <div>Item Name:</div>
 
            </>
             )}

@@ -5,15 +5,17 @@ import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { fetchBillingDetailRequest } from "@/features/billing/searchBillingDetail/slice";
 import PaymentRequest from "@/components/billing/payment/PaymentRequest";
 import type { AppDispatch, RootState } from "@/store/store";
-import { Alert, Button, Panel } from "@/components/common";
+import { Alert, Button, DataTable, Panel } from "@/components/common";
+import type { DataTableColumn } from "@/components/common";
+import type { BillingDetailItem } from "@/features/billing/searchBillingDetail/types";
 
 type BillingDetailSearchDetailProps = {
   billingId: string | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  READY: "미수납",
-  SUCCESS: "수납완료",
+  READY: "Unpaid",
+  SUCCESS: "Paid",
 };
 
 const STATUS_TONE: Record<string, string> = {
@@ -21,9 +23,58 @@ const STATUS_TONE: Record<string, string> = {
   SUCCESS: "bg-emerald-50 text-emerald-700 ring-emerald-600/15",
 };
 
+const BILLING_TYPE_LABEL: Record<string, string> = {
+  OUTPATIENT: "Outpatient",
+  INPATIENT: "Inpatient",
+};
+
 function formatAmount(value: number): string {
-  return `${value.toLocaleString()}원`;
+  return `₩${value.toLocaleString()}`;
 }
+
+function formatAmountText(value: string): string {
+  const amount = Number(value);
+  return Number.isNaN(amount) ? value : `₩${amount.toLocaleString()}`;
+}
+
+const ITEM_COLUMNS: DataTableColumn<BillingDetailItem>[] = [
+  { key: "occurredAt", header: "Occurred At", render: (row) => row.occurredAt },
+  {
+    key: "billingType",
+    header: "Type",
+    render: (row) => BILLING_TYPE_LABEL[row.billingType] ?? row.billingType,
+  },
+  { key: "feeCode", header: "Fee Code", render: (row) => row.feeCode },
+  { key: "itemName", header: "Item Name", render: (row) => row.itemName },
+  { key: "quantity", header: "Quantity", render: (row) => row.quantity, className: "text-right" },
+  {
+    key: "unitPrice",
+    header: "Unit Price",
+    render: (row) => formatAmountText(row.unitPrice),
+    className: "text-right",
+  },
+  {
+    key: "amount",
+    header: "Amount",
+    render: (row) => (
+      <span className="font-semibold text-slate-800">{formatAmountText(row.amount)}</span>
+    ),
+    className: "text-right",
+  },
+  {
+    key: "detailStatus",
+    header: "Status",
+    render: (row) => (
+      <span
+        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
+          STATUS_TONE[row.detailStatus] ?? "bg-slate-100 text-slate-500 ring-slate-500/10"
+        }`}
+      >
+        {STATUS_LABEL[row.detailStatus] ?? row.detailStatus}
+      </span>
+    ),
+  },
+];
 
 const BillingDetailSearchDetail = ({ billingId }: BillingDetailSearchDetailProps) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -54,11 +105,11 @@ const BillingDetailSearchDetail = ({ billingId }: BillingDetailSearchDetailProps
             <span className="text-lg font-semibold">+</span>
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-700">환자를 선택하세요</p>
+            <p className="text-sm font-semibold text-slate-700">Select a patient</p>
             <p className="mt-1 text-xs leading-5 text-slate-400">
-              왼쪽 목록에서 상세보기를 클릭하면
+              Click view details in the list on the left
               <br />
-              진료비 상세 정보가 여기에 표시됩니다.
+              to see the billing detail information here.
             </p>
           </div>
         </div>
@@ -72,7 +123,7 @@ const BillingDetailSearchDetail = ({ billingId }: BillingDetailSearchDetailProps
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="truncate text-sm font-semibold text-slate-900">
-              {detail?.patientName ?? "진료비 상세"}
+              {detail?.patientName ?? "Billing Detail"}
             </h2>
             {detail ? (
               <span
@@ -84,11 +135,11 @@ const BillingDetailSearchDetail = ({ billingId }: BillingDetailSearchDetailProps
               </span>
             ) : null}
           </div>
-          <p className="mt-1 text-xs text-slate-400">진료비 상세 내역을 확인하고 결제를 진행합니다</p>
+          <p className="mt-1 text-xs text-slate-400">Review billing details and proceed to payment</p>
         </div>
         {detail && detail.billingStatus === "READY" ? (
           <Button variant="primary" onClick={() => setPaymentOpen(true)}>
-            결제화면
+            Payment
           </Button>
         ) : null}
       </div>
@@ -101,24 +152,37 @@ const BillingDetailSearchDetail = ({ billingId }: BillingDetailSearchDetailProps
 
       <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
         {loading ? (
-          <p className="py-16 text-center text-sm text-slate-400">상세 정보를 불러오는 중입니다...</p>
+          <p className="py-16 text-center text-sm text-slate-400">Loading detail information...</p>
         ) : detail == null ? (
-          <p className="py-16 text-center text-sm text-slate-400">상세 정보가 없습니다.</p>
+          <p className="py-16 text-center text-sm text-slate-400">No detail information available.</p>
         ) : (
           <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-            <DetailField label="환자ID" value={detail.patientId} />
-            <DetailField label="환자명" value={detail.patientName} />
-            <DetailField label="연락처" value={detail.phoneNo} />
-            <DetailField label="주소" value={detail.address} />
-            <DetailField label="외래 진료비" value={formatAmount(detail.outpatientAmount)} />
-            <DetailField label="입퇴원 진료비" value={formatAmount(detail.inpatientAmount)} />
-            <DetailField label="총 진료비" value={formatAmount(detail.totalAmount)} emphasize />
+            <DetailField label="PatientId" value={detail.patientId} />
+            <DetailField label="PatientName" value={detail.patientName} />
+            <DetailField label="PhoneNo" value={detail.phoneNo} />
+            <DetailField label="Address" value={detail.address} />
+            <DetailField label="OutpatientAmount" value={formatAmount(detail.outpatientAmount)} />
+            <DetailField label="InpatientAmount" value={formatAmount(detail.inpatientAmount)} />
+            <DetailField label="TotalAmount" value={formatAmount(detail.totalAmount)} emphasize />
             <DetailField
-              label="수납 상태"
+              label="BillingStatus"
               value={STATUS_LABEL[detail.billingStatus] ?? detail.billingStatus}
             />
           </dl>
         )}
+
+        {!loading && detail ? (
+          <div className="mt-6">
+            <h3 className="mb-2 text-sm font-semibold text-slate-900">Billing Detail Items</h3>
+            <DataTable
+              columns={ITEM_COLUMNS}
+              rows={detail.items}
+              rowKey={(row) => `${row.occurredAt}-${row.feeCode}-${row.quantity}-${row.unitPrice}-${row.amount}`}
+              emptyMessage="No billing detail items."
+              minWidthClassName="min-w-[760px]"
+            />
+          </div>
+        ) : null}
       </div>
 
       {detail ? (

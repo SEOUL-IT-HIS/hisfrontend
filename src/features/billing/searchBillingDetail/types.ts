@@ -14,6 +14,19 @@ export type SearchPatientResult = {
   billingId: string;
   billingStatus: string;
 }
+/** 진료비 상세조회 결과의 상세 항목(수납상세) 1행 */
+export type BillingDetailItem = {
+  billingType: string;
+  quantity: string;
+  unitPrice: string;
+  amount: string;
+  detailStatus: string;
+  occurredAt: string;
+
+  feeCode: string;
+  itemName: string;
+}
+
 /** 진료비 상세조회 결과 행 */
 export type BillingDetail = {
   billingId: string;
@@ -30,6 +43,8 @@ export type BillingDetail = {
   phoneNo: string;
   address: string;
   birthDate: string;
+
+  items: BillingDetailItem[];
 }
 
 /** 진료비 입원 상세조회 */

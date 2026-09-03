@@ -9,8 +9,8 @@ type BillingDetailSearchListProps = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-    READY: "미수납",
-    SUCCESS: "수납완료",
+    READY: "Unpaid",
+    SUCCESS: "Paid",
 };
 
 const billingDetailSearchList = ({ patient, selected, onSelect }: BillingDetailSearchListProps) => {

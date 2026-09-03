@@ -30,11 +30,11 @@ export default function BillingDetailSearchForm({
         <Panel>
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white px-5 py-4">
                 <div>
-                    <h2 className="text-sm font-semibold text-slate-900">환자 검색</h2>
-                    <p className="mt-0.5 text-xs text-slate-400">행 클릭 시 오른쪽에 상세가 열립니다</p>
+                    <h2 className="text-sm font-semibold text-slate-900">Search Patient</h2>
+                    <p className="mt-0.5 text-xs text-slate-400">Click a row to view details on the right</p>
                 </div>
                 <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white">
-                    {searchPatient.length}건
+                    {searchPatient.length} results
                 </span>
             </div>
 
@@ -46,15 +46,15 @@ export default function BillingDetailSearchForm({
                 className="border-b border-slate-100 bg-slate-50/60 px-5 py-3"
             >
                 <div className="flex flex-wrap items-end gap-3">
-                    <FormField label="환자명" htmlFor="patientName" className="min-w-[200px] flex-1">
+                    <FormField label="Patient Name" htmlFor="patientName" className="min-w-[200px] flex-1">
                         <Input
                             id="patientName"
                             value={patientName}
-                            placeholder="환자명을 입력하세요"
+                            placeholder="Enter patient name"
                             onChange={(event) => setPatientName(event.target.value)}
                         />
                     </FormField>
-                    <Button type="submit" variant="primary">환자 검색</Button>
+                    <Button type="submit" variant="primary">Search</Button>
                 </div>
             </form>
 
@@ -68,25 +68,25 @@ export default function BillingDetailSearchForm({
                 <table className="w-full min-w-[640px] text-left text-sm">
                     <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/95 backdrop-blur">
                         <tr className="text-xs uppercase tracking-wide text-slate-400">
-                            <th className="px-5 py-3 font-medium">환자명</th>
-                            <th className="px-5 py-3 font-medium">생년월일</th>
-                            <th className="px-5 py-3 font-medium">연락처</th>
-                            <th className="px-5 py-3 font-medium">주소</th>
-                            <th className="px-5 py-3 font-medium">진료항목</th>
-                            <th className="px-5 py-3 font-medium">수납상태</th>
+                            <th className="px-5 py-3 font-medium">Name</th>
+                            <th className="px-5 py-3 font-medium">Birth Date</th>
+                            <th className="px-5 py-3 font-medium">Phone</th>
+                            <th className="px-5 py-3 font-medium">Address</th>
+                            <th className="px-5 py-3 font-medium">Item</th>
+                            <th className="px-5 py-3 font-medium">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
                                 <td colSpan={6} className="px-5 py-20 text-center text-slate-400">
-                                    조회 중입니다...
+                                    Loading...
                                 </td>
                             </tr>
                         ) : searchPatient.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className="px-5 py-20 text-center text-slate-400">
-                                    검색 결과가 없습니다.
+                                    No results found.
                                 </td>
                             </tr>
                         ) : (
