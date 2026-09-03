@@ -58,15 +58,15 @@ export default function PatientSearchModal({
   }
 
   const columns: DataTableColumn<PatientSearchItem>[] = [
-    { key: "patientName", header: "환자명", render: (p) => p.patientName },
-    { key: "birthDate", header: "생년월일", render: (p) => p.birthDate },
-    { key: "genderCd", header: "성별", render: (p) => p.genderCd },
+    { key: "patientName", header: "Patient Name", render: (p) => p.patientName },
+    { key: "birthDate", header: "Date of Birth", render: (p) => p.birthDate },
+    { key: "genderCd", header: "Gender", render: (p) => p.genderCd },
     {
       key: "action",
       header: "",
       render: (p) => (
         <Button variant="secondary" onClick={() => handleSelect(p)}>
-          선택
+          Select
         </Button>
       ),
     },
@@ -75,7 +75,7 @@ export default function PatientSearchModal({
   return (
     <Modal
       open={open}
-      title="환자 검색"
+      title="Search Patient"
       onClose={handleClose}
       maxWidthClassName="max-w-2xl"
     >
@@ -83,7 +83,7 @@ export default function PatientSearchModal({
         <div className="flex gap-2">
           <Input
             value={patientName}
-            placeholder="환자명을 입력하세요"
+            placeholder="Enter patient name"
             onChange={(e) => setPatientName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -93,7 +93,7 @@ export default function PatientSearchModal({
             }}
           />
           <Button type="button" variant="primary" onClick={handleSearch}>
-            검색
+            Search
           </Button>
         </div>
 
@@ -104,8 +104,8 @@ export default function PatientSearchModal({
           rows={results}
           rowKey={(p) => p.patientId}
           loading={loading}
-          loadingMessage="환자를 검색하는 중입니다..."
-          emptyMessage="검색된 환자가 없습니다."
+          loadingMessage="Searching for patients..."
+          emptyMessage="No patients found."
         />
       </div>
     </Modal>

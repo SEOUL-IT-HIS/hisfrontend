@@ -115,29 +115,29 @@ export default function PatientRegisterModal({
     form.residentRegNo.length === 0
       ? null
       : form.residentRegNo.length < 13
-        ? "주민등록번호 13자리를 입력해 주세요."
+        ? "Please enter all 13 digits of the resident registration number."
         : getBirthDateFromResidentRegNo(form.residentRegNo) === null
-          ? "올바른 주민등록번호 형식이 아닙니다."
+          ? "Invalid resident registration number format."
           : null;
 
   const registrationDisabledReason = registerLoading
     ? null
     : duplicateCheckLoading
-      ? "주민등록번호 중복 확인 중입니다."
+      ? "Checking for duplicate resident registration number…"
       : !form.patientName.trim() ||
           !form.residentRegNo ||
           !form.birthDate ||
           !form.genderCd
-        ? "필수 항목을 모두 입력해 주세요."
+        ? "Please fill in all required fields."
         : form.patientName.trim().length < 2 ||
             form.patientName.trim().length > 100
-          ? "환자명은 2자 이상 100자 이하로 입력해 주세요."
+          ? "Patient name must be between 2 and 100 characters."
           : residentRegNoError
             ? residentRegNoError
             : duplicated === null
-              ? "등록하려면 주민등록번호 중복확인을 완료해 주세요."
+              ? "Please complete the duplicate check before registering."
               : duplicated
-                ? "이미 등록된 주민등록번호입니다."
+                ? "This resident registration number is already registered."
                 : null;
 
   const isRegistrationDisabled =
@@ -199,11 +199,11 @@ export default function PatientRegisterModal({
 
   const checkDuplicate = () => {
     if (form.residentRegNo.length !== 13) {
-      setValidationError("주민등록번호 13자리를 입력해 주세요.");
+      setValidationError("Please enter all 13 digits of the resident registration number.");
       return;
     }
     if (getBirthDateFromResidentRegNo(form.residentRegNo) === null) {
-      setValidationError("올바른 주민등록번호 형식이 아닙니다.");
+      setValidationError("Invalid resident registration number format.");
       return;
     }
     dispatch(
@@ -220,7 +220,7 @@ export default function PatientRegisterModal({
       !form.residentRegNo.trim() ||
       !form.genderCd
     ) {
-      setValidationError("모든 필수 항목을 입력해 주세요.");
+      setValidationError("Please fill in all required fields.");
       return;
     }
     if (
@@ -228,15 +228,15 @@ export default function PatientRegisterModal({
       form.patientName.trim().length > 100
     ) {
       setPatientNameTouched(true);
-      setValidationError("환자명은 2자 이상 100자 이하로 입력해 주세요.");
+      setValidationError("Patient name must be between 2 and 100 characters.");
       return;
     }
     if (duplicated === null) {
-      setValidationError("주민등록번호 중복 확인을 먼저 진행해 주세요.");
+      setValidationError("Please check for duplicate resident registration number first.");
       return;
     }
     if (duplicated) {
-      setValidationError("이미 등록된 주민등록번호입니다.");
+      setValidationError("This resident registration number is already registered.");
       return;
     }
 
@@ -262,7 +262,7 @@ export default function PatientRegisterModal({
     if (
       registerLoading ||
       (hasUnsavedChanges &&
-        !window.confirm("작성 중인 내용이 사라집니다. 닫으시겠습니까?"))
+        !window.confirm("Unsaved changes will be lost. Close anyway?"))
     ) {
       return;
     }
@@ -274,7 +274,7 @@ export default function PatientRegisterModal({
   return (
     <Modal
       open={open}
-      title="환자 등록"
+      title="Register Patient"
       closeDisabled={registerLoading}
       onClose={handleClose}
       maxWidthClassName="max-w-lg"
@@ -291,17 +291,17 @@ export default function PatientRegisterModal({
       ) : null}
       {duplicated === false ? (
         <div className="mb-3">
-          <Alert variant="success">등록 가능한 주민등록번호입니다.</Alert>
+          <Alert variant="success">This resident registration number is available.</Alert>
         </div>
       ) : null}
       {duplicated === true ? (
         <div className="mb-3">
-          <Alert variant="error">이미 등록된 주민등록번호입니다.</Alert>
+          <Alert variant="error">This resident registration number is already registered.</Alert>
         </div>
       ) : null}
 
       <form onSubmit={submitPatient} className="space-y-4">
-        <FormField label="환자명" required htmlFor="modalPatientName">
+        <FormField label="Patient Name" required htmlFor="modalPatientName">
           <Input
             id="modalPatientName"
             value={form.patientName}
@@ -311,17 +311,17 @@ export default function PatientRegisterModal({
             autoComplete="name"
           />
           {patientNameTouched && !form.patientName.trim() ? (
-            <p className="text-sm text-red-600">환자명을 입력해 주세요.</p>
+            <p className="text-sm text-red-600">Please enter the patient&apos;s name.</p>
           ) : patientNameTouched &&
             (form.patientName.trim().length < 2 ||
               form.patientName.trim().length > 100) ? (
             <p className="text-sm text-red-600">
-              환자명은 2자 이상 100자 이하로 입력해 주세요.
+              Patient name must be between 2 and 100 characters.
             </p>
           ) : null}
         </FormField>
 
-        <FormField label="주민등록번호" required htmlFor="modalResidentRegNo">
+        <FormField label="Resident Registration Number" required htmlFor="modalResidentRegNo">
           <div className="flex gap-2">
             <Input
               id="modalResidentRegNo"
@@ -332,7 +332,7 @@ export default function PatientRegisterModal({
               disabled={duplicateCheckLoading || registerLoading}
               inputMode="numeric"
               maxLength={6}
-              placeholder="앞 6자리"
+              placeholder="First 6 digits"
               autoComplete="off"
               className="min-w-0"
             />
@@ -351,7 +351,7 @@ export default function PatientRegisterModal({
               type="password"
               inputMode="numeric"
               maxLength={7}
-              placeholder="뒤 7자리"
+              placeholder="Last 7 digits"
               autoComplete="off"
               className="min-w-0"
             />
@@ -366,7 +366,7 @@ export default function PatientRegisterModal({
               }
               className="shrink-0"
             >
-              {duplicateCheckLoading ? "확인 중…" : "중복 확인"}
+              {duplicateCheckLoading ? "Checking…" : "Check Duplicate"}
             </Button>
           </div>
           {residentRegNoError ? (
@@ -377,13 +377,13 @@ export default function PatientRegisterModal({
         </FormField>
 
         <FormField
-          label="생년월일"
+          label="Date of Birth"
           required
           htmlFor="modalBirthDate"
           hint={
             form.birthDate
-              ? "주민등록번호에서 자동으로 계산되었습니다."
-              : "주민등록번호를 입력하면 자동으로 계산됩니다."
+              ? "Automatically calculated from the resident registration number."
+              : "It will be calculated automatically once you enter the resident registration number."
           }
         >
           <Input
@@ -395,7 +395,7 @@ export default function PatientRegisterModal({
           />
         </FormField>
 
-        <FormField label="성별" required>
+        <FormField label="Gender" required>
           <Select
             name="genderCd"
             value={form.genderCd}
@@ -403,7 +403,7 @@ export default function PatientRegisterModal({
               updateForm("genderCd", event.target.value as GenderCd | "")
             }
             options={genderCodes.options}
-            placeholder="성별 선택"
+            placeholder="Select gender"
             disabled={registerLoading || genderCodes.loading}
           />
           {genderCodes.error ? (
@@ -411,7 +411,7 @@ export default function PatientRegisterModal({
           ) : null}
         </FormField>
 
-        <FormField label="환자 구분">
+        <FormField label="Patient Type">
           <label className="flex items-center gap-2 text-sm text-slate-700">
             <input
               type="checkbox"
@@ -422,7 +422,7 @@ export default function PatientRegisterModal({
               disabled={registerLoading}
               className="h-4 w-4 rounded border-slate-300"
             />
-            임시환자로 등록
+            Register as temporary patient
           </label>
         </FormField>
 
@@ -439,10 +439,10 @@ export default function PatientRegisterModal({
             onClick={handleClose}
             disabled={registerLoading}
           >
-            취소
+            Cancel
           </Button>
           <Button type="submit" variant="primary" disabled={isRegistrationDisabled}>
-            {registerLoading ? "등록 중…" : "등록"}
+            {registerLoading ? "Registering…" : "Register"}
           </Button>
         </div>
       </form>
