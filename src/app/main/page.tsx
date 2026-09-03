@@ -35,10 +35,10 @@ function formatClock(date: Date) {
 }
 
 function greetingPhrase(hours: number) {
-  if (hours < 6) return "늦은 시간까지 고생 많으세요.";
-  if (hours < 12) return "좋은 아침이에요, 오늘도 화이팅하세요.";
-  if (hours < 18) return "오늘도 활기찬 오후 되세요.";
-  return "오늘 하루도 수고 많으셨어요.";
+  if (hours < 6) return "Thank you for working late tonight.";
+  if (hours < 12) return "Good morning — have a great day.";
+  if (hours < 18) return "Hope you are having a good afternoon.";
+  return "Thank you for all your hard work today.";
 }
 
 /** 영역 카드 포인트 컬러 — menuId 순서대로 순환 배정 */
@@ -131,7 +131,7 @@ export default function MainPage() {
           </p>
           <p className="mt-4 text-base text-slate-600">
             <span className="font-medium text-slate-800">
-              {greetingName ? `${greetingName}님, ` : ""}
+              {greetingName ? `Hello, ${greetingName}. ` : ""}
             </span>
             {greetingPhrase(now.getHours())}
           </p>

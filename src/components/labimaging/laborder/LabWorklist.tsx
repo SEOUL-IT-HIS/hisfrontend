@@ -31,12 +31,14 @@ import {
   selectLastAcceptedSpecimen,
   selectLastCreatedSpecimen,
 } from "@/features/labimaging/labspecimen/slice";
-import ReceptionExcludeDialog from "@/components/labimaging/laborder/ReceptionExcludeDialog";
+import { selectLastSubmittedLabResult } from "@/features/labimaging/labresult/slice";
+import ReceptionExcludeDialog from "@/components/labimaging/common/ReceptionExcludeDialog";
 import WorklistProgress from "@/components/labimaging/laborder/WorklistProgress";
 import WorklistReceptionHeader from "@/components/labimaging/laborder/WorklistReceptionHeader";
 import LabScheduleRegisterForm from "@/components/labimaging/labschedule/LabScheduleRegisterForm";
 import SpecimenWorkPanel from "@/components/labimaging/labspecimen/SpecimenWorkPanel";
 import SpecimenAcceptancePanel from "@/components/labimaging/labspecimen/SpecimenAcceptancePanel";
+import LabResultWorkPanel from "@/components/labimaging/labresult/LabResultWorkPanel";
 
 /**
  * 검사 워크리스트 — 왼쪽 접수 목록 + 오른쪽 작업 폼 (마스터-디테일).
@@ -69,7 +71,7 @@ const WORK_TABS: ReadonlyArray<{ value: WorkTab; label: string; enabled: boolean
   { value: "schedule", label: "Schedule", enabled: true },
   { value: "specimen", label: "Specimen", enabled: true },
   { value: "acceptance", label: "Fitness Check", enabled: true },
-  { value: "result", label: "Result", enabled: false },
+  { value: "result", label: "Result", enabled: true },
 ];
 
 export default function LabWorklist() {
@@ -98,6 +100,8 @@ export default function LabWorklist() {
   const lastScheduleId = useSelector(selectLastCreatedLabSchedule)?.labScheduleId ?? null;
   const lastSpecimenId = useSelector(selectLastCreatedSpecimen)?.specimenId ?? null;
   const lastAcceptedId = useSelector(selectLastAcceptedSpecimen)?.specimenId ?? null;
+  // 결과가 등록·수정·확정되면 nextStep 이 바뀌므로 목록을 다시 부른다.
+  const lastResultId = useSelector(selectLastSubmittedLabResult)?.labResultId ?? null;
 
   /*
    * 목록을 다시 부르는 지점은 이 효과 하나로 모은다.
@@ -107,7 +111,7 @@ export default function LabWorklist() {
    */
   useEffect(() => {
     dispatch(fetchLabWorklistRequest(filter));
-  }, [dispatch, filter, lastScheduleId, lastSpecimenId, lastAcceptedId]);
+  }, [dispatch, filter, lastScheduleId, lastSpecimenId, lastAcceptedId, lastResultId]);
 
   /*
    * 목록에 보이는 환자들의 이름을 한 번에 불러온다. (POST /api/patient/batch)
@@ -279,6 +283,12 @@ export default function LabWorklist() {
             ) : tab === "acceptance" ? (
               // key 로 접수마다 새로 마운트해 이전 접수의 검체 선택·입력값이 남지 않게 한다.
               <SpecimenAcceptancePanel
+                key={selected.labReceptionId}
+                reception={selected}
+              />
+            ) : tab === "result" ? (
+              // key 로 접수마다 새로 마운트해 이전 접수의 항목 선택·입력값이 남지 않게 한다.
+              <LabResultWorkPanel
                 key={selected.labReceptionId}
                 reception={selected}
               />

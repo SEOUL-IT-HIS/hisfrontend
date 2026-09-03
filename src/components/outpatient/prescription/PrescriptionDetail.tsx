@@ -19,18 +19,18 @@ const getStatusText = (status: string) => {
         case 'REQUESTED':
         case 'ORDERED':
         case 'PENDING':
-            return '처방대기';
+            return 'Pending'; // 처방대기
         case 'ISSUED':
         case 'IN_PROGRESS':
-            return '처방중';
+            return 'In Progress'; // 처방중
         case 'COMPLETED':
-            return '처방완료';
+            return 'Completed'; // 처방완료
         case 'HOLD':
-            return '보류';
+            return 'On Hold'; // 보류
         case 'DISCONTINUED':
-            return '중단';
+            return 'Discontinued'; // 중단
         case 'CANCELLED':
-            return '취소';
+            return 'Cancelled'; // 취소
         default:
             return status;
     }
@@ -58,12 +58,14 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
     return (
         <Modal
             open={prescriptionId != null}
-            title="처방 상세"
+            // 처방 상세
+            title="Prescription Details"
             onClose={onClose}
             maxWidthClassName="max-w-2xl"
         >
             {loading ? (
-                <p className="p-8 text-center text-sm text-slate-500">처방 내역을 불러오는 중입니다...</p>
+                // 처방 내역을 불러오는 중입니다...
+                <p className="p-8 text-center text-sm text-slate-500">Loading prescription...</p>
             ) : error ? (
                 <Alert variant="error">{error}</Alert>
             ) : prescription ? (
@@ -71,47 +73,49 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
                     {/* 상단 처방 기본 정보 */}
                     <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
                         <h3 className="text-lg font-bold text-slate-800">
-                            {prescription.patientName ?? "미상"}
+                            {prescription.patientName ?? "Unknown"}
                         </h3>
                         <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-600 border border-slate-200">
                             {prescription.patientId}
                         </span>
                         <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-600 border border-slate-200">
-                            진료ID: {prescription.encounterId}
+                            {/* 진료ID: */}
+                            Encounter ID: {prescription.encounterId}
                         </span>
                         <span className="ml-auto text-xs text-slate-500">
-                            처방일시: {formatDateTime(prescription.prescribedAt)}
+                            {/* 처방일시: */}
+                            Prescribed At: {formatDateTime(prescription.prescribedAt)}
                         </span>
                     </div>
 
                     {/* 기본 정보 */}
                     <div className="grid grid-cols-2 gap-3">
-                        <FormField label="처방상태">
+                        <FormField label="Status">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 font-medium">
                                 {getStatusText(prescription.status)}
                             </div>
                         </FormField>
-                        <FormField label="처방자ID">
+                        <FormField label="Prescriber ID">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
                                 {prescription.prescribedBy}
                             </div>
                         </FormField>
-                        <FormField label="진료구분">
+                        <FormField label="Service Type">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
                                 {prescription.serviceType ?? "-"}
                             </div>
                         </FormField>
-                        <FormField label="처방유형">
+                        <FormField label="Order Method">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
                                 {prescription.orderMethod ?? "-"}
                             </div>
                         </FormField>
-                        <FormField label="우선순위">
+                        <FormField label="Priority">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
                                 {prescription.priorityCode ?? "-"}
                             </div>
                         </FormField>
-                        <FormField label="처방패턴">
+                        <FormField label="Timing">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
                                 {prescription.timingCode ?? "-"}
                             </div>
@@ -119,16 +123,17 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
                     </div>
 
                     {/* 처방 항목 목록 */}
-                    <FormField label="처방 항목">
+                    <FormField label="Prescription Items">
                         <div className="overflow-x-auto rounded-lg border border-slate-200">
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
                                 <tr>
-                                    <th className="p-2 font-semibold">항목명</th>
-                                    <th className="p-2 font-semibold">용량</th>
-                                    <th className="p-2 font-semibold">횟수</th>
-                                    <th className="p-2 font-semibold">투약일수</th>
-                                    <th className="p-2 font-semibold">상세정보</th>
+                                    {/* 항목명 / 용량 / 횟수 / 투약일수 / 상세정보 */}
+                                    <th className="p-2 font-semibold">Item</th>
+                                    <th className="p-2 font-semibold">Dosage</th>
+                                    <th className="p-2 font-semibold">Frequency</th>
+                                    <th className="p-2 font-semibold">Duration (days)</th>
+                                    <th className="p-2 font-semibold">Details</th>
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -145,7 +150,8 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
                                 ) : (
                                     <tr>
                                         <td colSpan={5} className="p-4 text-center text-slate-400">
-                                            처방 항목이 없습니다.
+                                            {/* 처방 항목이 없습니다. */}
+                                            No prescription items.
                                         </td>
                                     </tr>
                                 )}
@@ -156,21 +162,21 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
 
                     {/* 취소/보류/중단된 처방인 경우 사유 노출 */}
                     {prescription.status === "CANCELLED" && (
-                        <FormField label="취소 사유">
+                        <FormField label="Cancellation Reason">
                             <div className="min-h-[2.5rem] whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-slate-800">
                                 {prescription.cancelReason ?? "-"}
                             </div>
                         </FormField>
                     )}
                     {prescription.status === "HOLD" && (
-                        <FormField label="보류 사유">
+                        <FormField label="Hold Reason">
                             <div className="min-h-[2.5rem] whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-slate-800">
                                 {prescription.holdReason ?? "-"}
                             </div>
                         </FormField>
                     )}
                     {prescription.status === "DISCONTINUED" && (
-                        <FormField label="중단 사유">
+                        <FormField label="Discontinuation Reason">
                             <div className="min-h-[2.5rem] whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-slate-800">
                                 {prescription.discontinuedReason ?? "-"}
                             </div>
@@ -180,7 +186,8 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
                     {/* 하단 버튼 영역 */}
                     <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
                         <Button variant="secondary" onClick={onClose}>
-                            닫기
+                            {/* 닫기 */}
+                            Close
                         </Button>
                     </div>
                 </div>

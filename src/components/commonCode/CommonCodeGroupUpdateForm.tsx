@@ -73,37 +73,37 @@ export default function CommonCodeGroupUpdateForm({
 
       <form onSubmit={onSubmit} className="space-y-4">
         <FormField
-          label="그룹코드"
+          label="Group Code"
           htmlFor="groupCode"
-          hint="식별키라 변경할 수 없습니다."
+          hint="Identifier — cannot be changed."
         >
           <Input id="groupCode" value={group.groupCode} disabled />
         </FormField>
 
-        <FormField label="그룹명" required htmlFor="groupName">
+        <FormField label="Group Name" required htmlFor="groupName">
           <Input
             id="groupName"
             value={form.groupName}
-            placeholder="그룹명을 입력하세요"
+            placeholder="Enter a group name"
             onChange={(e) => setForm({ ...form, groupName: e.target.value })}
           />
         </FormField>
 
-        <FormField label="사용여부" required htmlFor="useYn">
+        <FormField label="Status" required htmlFor="useYn">
           <Select
             id="useYn"
             value={form.useYn}
             onChange={(e) => setForm({ ...form, useYn: e.target.value })}
             options={[
-              { value: "Y", label: "사용 (Y)" },
-              { value: "N", label: "미사용 (N)" },
+              { value: "Y", label: "Active (Y)" },
+              { value: "N", label: "Inactive (N)" },
             ]}
           />
         </FormField>
 
         <FormActions
           onCancel={onClose}
-          submitLabel="수정"
+          submitLabel="Save"
           loading={loading}
         />
       </form>

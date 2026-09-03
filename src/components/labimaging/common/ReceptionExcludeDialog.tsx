@@ -12,6 +12,11 @@ import { Button, FormField, Input, Modal } from "@/components/common";
  *
  * ⚠ 공통 ConfirmDialog 를 쓰지 않고 Modal 을 직접 쓴다.
  *   ConfirmDialog 는 예/아니오만 받을 수 있어 사유 입력칸을 넣을 수 없다.
+ *
+ * ⚠ laborder 아래가 아니라 labimaging/common 에 둔다. (2026-09-02 이동)
+ *   검사·영상 워크리스트가 같은 다이얼로그를 쓴다. 제외 규칙(사유 필수, 복구 가능)이
+ *   두 도메인에서 동일해서 문구도 동작도 갈릴 이유가 없다.
+ *   한쪽에 두고 다른 쪽이 가져다 쓰면 도메인 간 의존이 생기므로 공용 자리로 옮겼다.
  */
 type Props = {
   open: boolean;

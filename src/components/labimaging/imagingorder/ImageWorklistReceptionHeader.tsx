@@ -13,7 +13,7 @@ import {
   fetchImageReceptionByNoRequest,
   selectImageReceptionDetail,
 } from "@/features/labimaging/imagingorder/slice";
-import type { ImageReceptionSummary } from "@/features/labimaging/imagingorder/types";
+import type { ImageWorklistItem } from "@/features/labimaging/imagingorder/types";
 
 /**
  * 영상 워크리스트 오른쪽 패널의 대상 접수 머리말.
@@ -43,7 +43,7 @@ function formatDateTime(value?: string) {
 export default function ImageWorklistReceptionHeader({
   reception,
 }: {
-  reception: ImageReceptionSummary;
+  reception: ImageWorklistItem;
 }) {
   const dispatch = useDispatch<AppDispatch>();
   const detail = useSelector(selectImageReceptionDetail);
@@ -77,8 +77,8 @@ export default function ImageWorklistReceptionHeader({
           <span className="ml-2 text-sm font-normal text-slate-500">
             {patientName ?? "Unknown patient"}
           </span>
-          {/* 긴급여부는 목록 응답에 없어 상세를 받은 뒤에야 뜬다. */}
-          {matched?.urgencyYn === "Y" ? (
+          {/* 긴급여부는 워크리스트 응답에 있어 상세를 기다리지 않는다. */}
+          {reception.urgencyYn === "Y" ? (
             <span className="ml-2 rounded bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-600">
               Urgent
             </span>
@@ -104,7 +104,7 @@ export default function ImageWorklistReceptionHeader({
           ) : null}
         </p>
         <p className="mt-0.5 text-xs text-slate-400">
-          {matched ? `Received ${formatDateTime(matched.receivedAt)}` : "Received —"}
+          Received {formatDateTime(reception.receivedAt)}
           {reception.scheduledAt
             ? ` · Scheduled ${formatDateTime(reception.scheduledAt)}`
             : " · Not scheduled"}

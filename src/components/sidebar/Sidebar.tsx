@@ -294,7 +294,7 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
         </Link>
         {!collapsed ? (
           <div>
-            <p className="text-sm font-semibold text-slate-800">산대병원</p>
+            <p className="text-sm font-semibold text-slate-800">SANDAE HOSPITAL</p>
             <p className="text-[11px] text-slate-400">Hospital Workspace</p>
           </div>
         ) : null}
@@ -399,23 +399,10 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
         <span className={collapsed ? "" : "px-2"}>v0.1.0</span>
         <button
           type="button"
-          onClick={() => setCollapsed((prev) => !prev)}
-          className="w-full rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/90 hover:text-slate-600"
-        >
-          {collapsed ? "펼치기" : "메뉴 접기"}
-        </button>
-        <button
-          type="button"
-          className="w-full rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/90 hover:text-slate-600"
-        >
-          환경설정
-        </button>
-        <button
-          type="button"
           onClick={handleLogoutClick}
           className="w-full rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/90 hover:text-slate-600"
         >
-          로그아웃
+          Logout
         </button>
         {authError ? (
           <Alert variant="error" className="mt-1">
