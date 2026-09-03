@@ -61,79 +61,79 @@ const VitalSignRegisterForm = () => {
     return (
         <div className="mx-auto w-full max-w-lg p-6">
             <div className="mb-6">
-                <h1 className="text-lg font-semibold text-slate-800">활력징후 등록</h1>
-                <p className="mt-1 text-sm text-slate-500">환자의 활력징후 측정값을 등록합니다.</p>
+                <h1 className="text-lg font-semibold text-slate-800">Register Vital Signs</h1>
+                <p className="mt-1 text-sm text-slate-500">Register a patient's vital sign measurements.</p>
             </div>
 
-            {loading && <p className="mb-3 text-sm text-slate-500">로딩중...</p>}
+            {loading && <p className="mb-3 text-sm text-slate-500">Loading...</p>}
             {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
             <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div>
-                    <label htmlFor="admissionId" className={LABEL}>입원ID</label>
+                    <label htmlFor="admissionId" className={LABEL}>Admission ID</label>
                     <input type="text" id="admissionId" name="admissionId" value={form.admissionId} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="measuredAt" className={LABEL}>측정일시</label>
+                    <label htmlFor="measuredAt" className={LABEL}>Measured At</label>
                     <input type="datetime-local" id="measuredAt" name="measuredAt" value={form.measuredAt} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="temperature" className={LABEL}>체온(°C)</label>
+                    <label htmlFor="temperature" className={LABEL}>Temperature (°C)</label>
                     <input type="number" id="temperature" name="temperature" value={form.temperature} onChange={onChange} step="0.1" min="30" max="45" required className={FIELD} />
                     {form.temperature && isOutOfNormalRange("temperature", Number(form.temperature)) && (
                         <p className={WARNING}>
-                            정상범위({VITAL_SIGN_NORMAL_RANGES.temperature.min}~{VITAL_SIGN_NORMAL_RANGES.temperature.max}{VITAL_SIGN_NORMAL_RANGES.temperature.unit}) 벗어남
+                            Outside normal range ({VITAL_SIGN_NORMAL_RANGES.temperature.min}~{VITAL_SIGN_NORMAL_RANGES.temperature.max}{VITAL_SIGN_NORMAL_RANGES.temperature.unit})
                         </p>
                     )}
                 </div>
 
                 <div>
-                    <label htmlFor="pulse" className={LABEL}>맥박(회/분)</label>
+                    <label htmlFor="pulse" className={LABEL}>Pulse (beats/min)</label>
                     <input type="number" id="pulse" name="pulse" value={form.pulse} onChange={onChange} min="50" max="150" required className={FIELD} />
                     {form.pulse && isOutOfNormalRange("pulse", Number(form.pulse)) && (
                         <p className={WARNING}>
-                            정상범위({VITAL_SIGN_NORMAL_RANGES.pulse.min}~{VITAL_SIGN_NORMAL_RANGES.pulse.max}{VITAL_SIGN_NORMAL_RANGES.pulse.unit}) 벗어남
+                            Outside normal range ({VITAL_SIGN_NORMAL_RANGES.pulse.min}~{VITAL_SIGN_NORMAL_RANGES.pulse.max}{VITAL_SIGN_NORMAL_RANGES.pulse.unit})
                         </p>
                     )}
                 </div>
                 <div>
-                    <label htmlFor="respiration" className={LABEL}>호흡수(회/분)</label>
+                    <label htmlFor="respiration" className={LABEL}>Respiration Rate (breaths/min)</label>
                     <input type="number" id="respiration" name="respiration" value={form.respiration} onChange={onChange} min="12" max="20" required className={FIELD} />
                     {form.respiration && isOutOfNormalRange("respiration", Number(form.respiration)) && (
                         <p className={WARNING}>
-                            정상범위({VITAL_SIGN_NORMAL_RANGES.respiration.min}~{VITAL_SIGN_NORMAL_RANGES.respiration.max}{VITAL_SIGN_NORMAL_RANGES.respiration.unit}) 벗어남
+                            Outside normal range ({VITAL_SIGN_NORMAL_RANGES.respiration.min}~{VITAL_SIGN_NORMAL_RANGES.respiration.max}{VITAL_SIGN_NORMAL_RANGES.respiration.unit})
                         </p>
                     )}
                 </div>
                 <div>
-                    <label htmlFor="bpSystolic" className={LABEL}>수축기 혈압(mmHg)</label>
+                    <label htmlFor="bpSystolic" className={LABEL}>Systolic Blood Pressure (mmHg)</label>
                     <input type="number" id="bpSystolic" name="bpSystolic" value={form.bpSystolic} onChange={onChange} min="0" required className={FIELD} />
                     {form.bpSystolic && isOutOfNormalRange("bpSystolic", Number(form.bpSystolic)) && (
                         <p className={WARNING}>
-                            정상범위({VITAL_SIGN_NORMAL_RANGES.bpSystolic.min}~{VITAL_SIGN_NORMAL_RANGES.bpSystolic.max}{VITAL_SIGN_NORMAL_RANGES.bpSystolic.unit}) 벗어남
+                            Outside normal range ({VITAL_SIGN_NORMAL_RANGES.bpSystolic.min}~{VITAL_SIGN_NORMAL_RANGES.bpSystolic.max}{VITAL_SIGN_NORMAL_RANGES.bpSystolic.unit})
                         </p>
                     )}
                 </div>
                 <div>
-                    <label htmlFor="bpDiastolic" className={LABEL}>이완기 혈압(mmHg)</label>
+                    <label htmlFor="bpDiastolic" className={LABEL}>Diastolic Blood Pressure (mmHg)</label>
                     <input type="number" id="bpDiastolic" name="bpDiastolic" value={form.bpDiastolic} onChange={onChange} min="0" required className={FIELD} />
                     {form.bpDiastolic && isOutOfNormalRange("bpDiastolic", Number(form.bpDiastolic)) && (
                         <p className={WARNING}>
-                            정상범위({VITAL_SIGN_NORMAL_RANGES.bpDiastolic.min}~{VITAL_SIGN_NORMAL_RANGES.bpDiastolic.max}{VITAL_SIGN_NORMAL_RANGES.bpDiastolic.unit}) 벗어남
+                            Outside normal range ({VITAL_SIGN_NORMAL_RANGES.bpDiastolic.min}~{VITAL_SIGN_NORMAL_RANGES.bpDiastolic.max}{VITAL_SIGN_NORMAL_RANGES.bpDiastolic.unit})
                         </p>
                     )}
                 </div>
                 <div>
-                    <label htmlFor="spo2" className={LABEL}>산소포화도(%)</label>
+                    <label htmlFor="spo2" className={LABEL}>SpO2 (%)</label>
                     <input type="number" id="spo2" name="spo2" value={form.spo2} onChange={onChange} step="0.1" min="0" max="100" required className={FIELD} />
                     {form.spo2 && isOutOfNormalRange("spo2", Number(form.spo2)) && (
                         <p className={WARNING}>
-                            정상범위({VITAL_SIGN_NORMAL_RANGES.spo2.min}~{VITAL_SIGN_NORMAL_RANGES.spo2.max}{VITAL_SIGN_NORMAL_RANGES.spo2.unit}) 벗어남
+                            Outside normal range ({VITAL_SIGN_NORMAL_RANGES.spo2.min}~{VITAL_SIGN_NORMAL_RANGES.spo2.max}{VITAL_SIGN_NORMAL_RANGES.spo2.unit})
                         </p>
                     )}
                 </div>
                 <div>
-                    <label htmlFor="recorderId" className={LABEL}>측정자ID</label>
+                    <label htmlFor="recorderId" className={LABEL}>Recorder ID</label>
                     <input type="number" id="recorderId" name="recorderId" value={form.recorderId} onChange={onChange} min="0" required className={FIELD} />
                 </div>
                 <button
@@ -141,7 +141,7 @@ const VitalSignRegisterForm = () => {
                     disabled={loading}
                     className="w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                 >
-                    등록
+                    Register
                 </button>
             </form>
         </div>

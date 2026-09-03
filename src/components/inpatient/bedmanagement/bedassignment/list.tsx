@@ -70,19 +70,19 @@ const patientNameById = useMemo(
           <div />
         ) : (
         <div>
-          <h1 className="text-lg font-semibold text-slate-800">병상 배정 목록</h1>
-          <p className="mt-1 text-sm text-slate-500">현재까지의 병상 배정/퇴상 기록입니다.</p>
+          <h1 className="text-lg font-semibold text-slate-800">Bed Assignment List</h1>
+          <p className="mt-1 text-sm text-slate-500">A record of bed assignments and releases to date.</p>
         </div>
         )}
         <Link
           href="/inpatient/bedmanagement/bedassignment/create"
           className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
         >
-          배정 등록
+          Register Assignment
         </Link>
       </div>
 
-      {listStatus.loading && <p className="text-sm text-slate-500">로딩중...</p>}
+      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
       {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
 
       {!listStatus.loading && !listStatus.error && (
@@ -91,13 +91,13 @@ const patientNameById = useMemo(
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                  <th className="whitespace-nowrap px-4 py-3">환자명</th>
-                  <th className="whitespace-nowrap px-4 py-3">배정ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">병상ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">입원ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">배정시각</th>
-                  <th className="whitespace-nowrap px-4 py-3">퇴상시각</th>
-                  <th className="whitespace-nowrap px-4 py-3">상태</th>
+                  <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
+                  <th className="whitespace-nowrap px-4 py-3">Assignment ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Bed ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Admission ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Assigned At</th>
+                  <th className="whitespace-nowrap px-4 py-3">Released At</th>
+                  <th className="whitespace-nowrap px-4 py-3">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -129,7 +129,7 @@ const patientNameById = useMemo(
                               : "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
                           }`}
                         >
-                          {isActive ? "배정중" : "퇴상완료"}
+                          {isActive ? "Assigned" : "Released"}
                         </span>
                       </td>
                     </tr>
@@ -138,7 +138,7 @@ const patientNameById = useMemo(
               </tbody>
             </table>
             {bedAssignments.length === 0 && (
-              <p className="px-4 py-6 text-center text-sm text-slate-500">배정 데이터가 없습니다.</p>
+              <p className="px-4 py-6 text-center text-sm text-slate-500">No assignment data available.</p>
             )}
           </div>
 
