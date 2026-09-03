@@ -1,5 +1,5 @@
 import axios from "@/lib/axios";
-import { MedicalRecordCreateParams, MedicalRecordDto, MedicalRecordSearchParams, MedicalRecordUpdateParams } from "./types";
+import { MedicalRecordDto, MedicalRecordSearchParams, MedicalRecordUpdateParams } from "./types";
 
 // 목록 조회 API (params 옵셔널 처리)
 export const fetchMedicalRecordList = async (
@@ -18,14 +18,6 @@ export const fetchMedicalRecordDetail = async (
     recordId: string
 ): Promise<MedicalRecordDto> => {
     const response = await axios.get(`/api/outpatient/records/${recordId}`);
-    return response.data.data;
-};
-
-// 등록 API
-export const createMedicalRecord = async (
-    params: MedicalRecordCreateParams
-): Promise<MedicalRecordDto> => {
-    const response = await axios.post("/api/outpatient/records", params);
     return response.data.data;
 };
 

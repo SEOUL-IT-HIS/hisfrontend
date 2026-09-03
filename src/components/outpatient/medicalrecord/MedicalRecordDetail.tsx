@@ -18,11 +18,12 @@ type MedicalRecordDetailProps = {
 
 const formatDateTime = (value?: string) => (value ? value.replace("T", " ").slice(0, 19) : "-");
 
+// 주호소 / 진찰내용 / 진단명 / 치료계획
 const noteFields: { label: string; key: "chiefComplaint" | "examinationNote" | "assessmentNote" | "planNote" }[] = [
-    { label: "주호소", key: "chiefComplaint" },
-    { label: "진찰내용", key: "examinationNote" },
-    { label: "진료소견", key: "assessmentNote" },
-    { label: "치료계획", key: "planNote" },
+    { label: "Chief Complaint", key: "chiefComplaint" },
+    { label: "Examination Notes", key: "examinationNote" },
+    { label: "Diagnosis", key: "assessmentNote" },
+    { label: "Treatment Plan", key: "planNote" },
 ];
 
 const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) => {
@@ -142,13 +143,15 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
         <>
             <Modal
                 open={recordId != null}
-                title={isEditing ? "진료기록 수정" : "진료기록 상세"}
+                // 진료기록 수정 / 진료기록 상세
+                title={isEditing ? "Edit Medical Record" : "Medical Record Details"}
                 onClose={onClose}
                 closeDisabled={updateLoading}
                 maxWidthClassName="max-w-2xl"
             >
                 {loading ? (
-                    <p className="p-8 text-center text-sm text-slate-500">진료기록을 불러오는 중입니다...</p>
+                    // 진료기록을 불러오는 중입니다...
+                    <p className="p-8 text-center text-sm text-slate-500">Loading medical record...</p>
                 ) : error ? (
                     <Alert variant="error">{error}</Alert>
                 ) : record ? (
@@ -156,7 +159,7 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                         {/* 상단 환자 정보 영역 */}
                         <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
                             <h3 className="text-lg font-bold text-slate-800">
-                                {record.patientName ?? "미상"}
+                                {record.patientName ?? "Unknown"}
                             </h3>
                             {record.departmentName && (
                                 <span className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">
@@ -164,18 +167,19 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                             </span>
                             )}
                             <span className="ml-auto text-xs text-slate-500">
-                            작성일시: {formatDateTime(record.createdAt)}
+                            {/* 작성일시: */}
+                            Created At: {formatDateTime(record.createdAt)}
                         </span>
                         </div>
 
                         {/* 기본 정보 */}
                         <div className="grid grid-cols-2 gap-3">
-                            <FormField label="기록 상태">
+                            <FormField label="Record Status">
                                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 font-medium">
                                     {record.status}
                                 </div>
                             </FormField>
-                            <FormField label="담당의">
+                            <FormField label="Doctor">
                                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
                                     {record.doctorName
                                         ? `${record.doctorName} (${record.doctorId})`
@@ -187,27 +191,27 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                         {/* 진료 노트 영역 */}
                         {isEditing ? (
                             <div className="space-y-3">
-                                <FormField label="주호소">
+                                <FormField label="Chief Complaint">
                                     <Input
                                         value={editChiefComplaint}
                                         onChange={(e) => setEditChiefComplaint(e.target.value)}
                                     />
                                 </FormField>
-                                <FormField label="진찰내용">
+                                <FormField label="Examination Notes">
                                 <textarea
                                     value={editExaminationNote}
                                     onChange={(e) => setEditExaminationNote(e.target.value)}
                                     className="w-full min-h-[80px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                                 />
                                 </FormField>
-                                <FormField label="진료소견">
+                                <FormField label="Diagnosis">
                                 <textarea
                                     value={editAssessmentNote}
                                     onChange={(e) => setEditAssessmentNote(e.target.value)}
                                     className="w-full min-h-[80px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                                 />
                                 </FormField>
-                                <FormField label="치료계획">
+                                <FormField label="Treatment Plan">
                                 <textarea
                                     value={editPlanNote}
                                     onChange={(e) => setEditPlanNote(e.target.value)}
@@ -216,7 +220,7 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                                 </FormField>
 
                                 {/* 수정 모드일 때 파일 업로드 및 목록 UI */}
-                                <FormField label="첨부파일">
+                                <FormField label="Attachments">
                                     <div className="space-y-2">
                                         <input
                                             type="file"
@@ -229,7 +233,8 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                                             variant="secondary"
                                             onClick={() => fileInputRef.current?.click()}
                                         >
-                                            파일 선택
+                                            {/* 파일 선택 */}
+                                            Choose File
                                         </Button>
                                         <ul className="text-xs text-slate-600 space-y-1 mt-1">
                                             {editFileNames.map((name, idx) => (
@@ -240,12 +245,16 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                                                         onClick={() => handleRemoveFile(idx)}
                                                         className="text-red-500 hover:text-red-700 font-bold ml-2"
                                                     >
-                                                        삭제
+                                                        {/* 삭제 */}
+                                                        Delete
                                                     </button>
                                                 </li>
                                             ))}
                                             {editFileNames.length === 0 && (
-                                                <li className="text-slate-400">첨부된 파일이 없습니다.</li>
+                                                <li className="text-slate-400">
+                                                    {/* 첨부된 파일이 없습니다. */}
+                                                    No files attached.
+                                                </li>
                                             )}
                                         </ul>
                                     </div>
@@ -262,7 +271,7 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                                 ))}
 
                                 {/* 상세 조회 모드일 때 첨부파일 목록 표시 */}
-                                <FormField label="첨부파일 목록">
+                                <FormField label="Attached Files">
                                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
                                         {record.fileNames && record.fileNames.length > 0 ? (
                                             <ul className="list-disc list-inside space-y-1">
@@ -273,7 +282,10 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                                                 ))}
                                             </ul>
                                         ) : (
-                                            <span className="text-slate-400">첨부파일이 없습니다.</span>
+                                            <span className="text-slate-400">
+                                                {/* 첨부파일이 없습니다. */}
+                                                No attachments.
+                                            </span>
                                         )}
                                     </div>
                                 </FormField>
@@ -287,17 +299,20 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                         <div className="pt-2 border-t border-slate-200">
                             {record.updatedAt && (
                                 <p className="text-right text-xs text-slate-400 mb-3">
-                                    수정일시: {formatDateTime(record.updatedAt)}
+                                    {/* 수정일시: */}
+                                    Updated At: {formatDateTime(record.updatedAt)}
                                 </p>
                             )}
                             <div className="flex justify-end gap-2">
                                 {isEditing ? (
                                     <>
                                         <Button variant="secondary" onClick={handleCancelEdit} disabled={updateLoading}>
-                                            취소
+                                            {/* 취소 */}
+                                            Cancel
                                         </Button>
                                         <Button variant="primary" onClick={handleSaveEdit} disabled={updateLoading}>
-                                            {updateLoading ? "저장 중..." : "저장"}
+                                            {/* 저장 중... / 저장 */}
+                                            {updateLoading ? "Saving..." : "Save"}
                                         </Button>
                                     </>
                                 ) : (
@@ -308,13 +323,16 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                                             disabled={deactivateLoading}
                                             className="mr-auto"
                                         >
-                                            비활성화
+                                            {/* 비활성화 */}
+                                            Deactivate
                                         </Button>
                                         <Button variant="secondary" onClick={onClose}>
-                                            닫기
+                                            {/* 닫기 */}
+                                            Close
                                         </Button>
                                         <Button variant="primary" onClick={handleStartEdit}>
-                                            수정
+                                            {/* 수정 */}
+                                            Edit
                                         </Button>
                                     </>
                                 )}
@@ -327,17 +345,19 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
             {/* 비활성화 확인 모달 */}
             <Modal
                 open={showDeactivateConfirm}
-                title="진료기록 비활성화"
+                title="Deactivate Medical Record"
                 onClose={() => setShowDeactivateConfirm(false)}
                 maxWidthClassName="max-w-md"
             >
                 <div className="space-y-4">
                     <div className="space-y-2 text-sm text-slate-600">
                         <p className="font-medium text-red-600">
-                            비활성화하면 목록과 조회에서 더 이상 보이지 않습니다.
+                            {/* 비활성화하면 목록과 조회에서 더 이상 보이지 않습니다. */}
+                            Once deactivated, this record will no longer appear in lists or search results.
                         </p>
                         <p className="text-slate-800">
-                            이 진료기록을 비활성화하시겠습니까?
+                            {/* 이 진료기록을 비활성화하시겠습니까? */}
+                            Are you sure you want to deactivate this medical record?
                         </p>
                     </div>
 
@@ -347,14 +367,16 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                             onClick={() => setShowDeactivateConfirm(false)}
                             disabled={deactivateLoading}
                         >
-                            취소
+                            {/* 취소 */}
+                            Cancel
                         </Button>
                         <Button
                             variant="danger"
                             onClick={handleDeactivate}
                             disabled={deactivateLoading}
                         >
-                            {deactivateLoading ? "비활성화 중..." : "비활성화"}
+                            {/* 비활성화 중... / 비활성화 */}
+                            {deactivateLoading ? "Deactivating..." : "Deactivate"}
                         </Button>
                     </div>
                 </div>
