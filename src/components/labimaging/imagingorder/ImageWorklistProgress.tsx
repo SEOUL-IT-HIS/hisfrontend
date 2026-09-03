@@ -1,6 +1,6 @@
 "use client";
 
-import type { ImageReceptionSummary } from "@/features/labimaging/imagingorder/types";
+import type { ImageWorklistItem } from "@/features/labimaging/imagingorder/types";
 
 /**
  * 영상 워크리스트 1행의 진행 상태 표시.
@@ -15,12 +15,14 @@ import type { ImageReceptionSummary } from "@/features/labimaging/imagingorder/t
  * ⚠ 판독을 "결과"와 나누지 않는다. 영상의 결과가 곧 판독소견이다.
  *   신규 테이블에 IMAGE_READING 은 있고 IMAGE_RESULT 는 없다. 나누면 한 칸이 영원히 빈다.
  *
- * ⚠ 지금은 일정 외에는 서버가 진행 상태를 내려주지 않는다.
- *   목록 API(GET /image-orders/receptions)가 ImageOrderSummaryDto 를 주는데
- *   scheduledAt 만 있고 동의·촬영·판독 건수가 없다. 그래서 세 칸은 미구현 회색으로 자리만 잡는다.
- *   TODO(영상 워크리스트 API): 백엔드에 consentYn / imageFileCount / readingYn 이 생기면
- *     검사 쪽 specimenCount·judgedCount 처럼 실제 값으로 바꾼다.
- *     그때 이 컴포넌트의 props 타입도 ImageWorklistItem 으로 교체한다.
+ * ⚠ 동의를 개수가 아니라 Y/N 으로 보여준다.
+ *   검체는 "3건 중 2건 판정" 이라는 중간 상태가 있어 개수가 필요하지만,
+ *   동의는 유효한 게 하나라도 있으면 촬영 가능이라 그런 중간 상태가 없다.
+ *
+ * ⚠ 촬영·판독은 아직 회색이다. 서버가 값을 계산하지 않는다.
+ *   촬영(IMAGE_FILE)은 등록 기능이 없어 항상 0 이고(ZP2-21),
+ *   판독(IMAGE_READING)은 테이블만 있고 엔티티가 없다(ZP2-23).
+ *   기능이 붙으면 imageFileCount 를 실제 값으로 쓰고 판독 칸도 살린다.
  */
 
 type StepChipProps = {
@@ -49,9 +51,11 @@ function StepChip({ label, tone }: StepChipProps) {
 export default function ImageWorklistProgress({
   item,
 }: {
-  item: ImageReceptionSummary;
+  item: ImageWorklistItem;
 }) {
   const scheduled = Boolean(item.scheduledAt);
+  const consented = item.consentYn === "Y";
+  const hasFiles = item.imageFileCount > 0;
 
   return (
     <div className="flex flex-wrap items-center gap-1">
@@ -59,9 +63,18 @@ export default function ImageWorklistProgress({
         label={scheduled ? "Schedule" : "Schedule −"}
         tone={scheduled ? "done" : "pending"}
       />
-      {/* 아래 세 칸은 서버가 아직 상태를 안 내려준다. 위 TODO 참고. */}
-      <StepChip label="Consent" tone="disabled" />
-      <StepChip label="Images" tone="disabled" />
+      <StepChip
+        label={consented ? "Consent" : "Consent −"}
+        tone={consented ? "done" : "pending"}
+      />
+      {/*
+        촬영은 등록 기능이 생기기 전까지 항상 0 이라 회색으로만 뜬다.
+        조건을 미리 넣어 둔 이유는, ZP2-21 이 붙는 순간 이 칸이 저절로 살아나게 하기 위해서다.
+      */}
+      <StepChip
+        label={hasFiles ? `Images ${item.imageFileCount}` : "Images −"}
+        tone={hasFiles ? "done" : "disabled"}
+      />
       <StepChip label="Reading" tone="disabled" />
     </div>
   );
