@@ -278,7 +278,15 @@ export default function LabWorklist() {
               ))}
             </div>
 
-            {tab === "specimen" ? (
+            {/*
+              ⚠ 작업 영역에만 스크롤을 준다.
+                오른쪽 Panel 은 고정 높이(min-h-0 flex-1)라, 내용이 넘치면 스크롤바도 없이 잘린다.
+                실제로 첫 판정 뒤 성공 Alert 가 한 줄 늘어나는 것만으로 아래쪽 입력 폼이
+                화면 밖으로 밀려 안 보였다. (2026-09-02)
+                머리말·탭은 고정해야 하므로 패널 각각이 아니라 탭 내용만 감싼다.
+            */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+              {tab === "specimen" ? (
               <SpecimenWorkPanel reception={selected} />
             ) : tab === "acceptance" ? (
               // key 로 접수마다 새로 마운트해 이전 접수의 검체 선택·입력값이 남지 않게 한다.
@@ -306,11 +314,12 @@ export default function LabWorklist() {
                 showReceptionSummary={false}
                 onCancel={() => dispatch(clearWorklistSelection())}
               />
-            ) : (
-              <div className="text-sm text-slate-400">
-                This step is not implemented yet.
-              </div>
-            )}
+              ) : (
+                <div className="text-sm text-slate-400">
+                  This step is not implemented yet.
+                </div>
+              )}
+            </div>
           </div>
         )}
       </Panel>

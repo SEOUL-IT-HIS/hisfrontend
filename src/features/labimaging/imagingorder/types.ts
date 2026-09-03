@@ -177,8 +177,15 @@ export interface ImageWorklistItem {
   /** 접수일시 — 목록 정렬 기준(오래된 건이 위) */
   receivedAt: string;
 
-  /** 촬영 예정일시. 일정 미등록이면 없음 */
+  /**
+   * ⚠ 촬영항목 중 "가장 이른" 예정일시다. (2026-09-03 — 일정이 항목 단위로 바뀜)
+   *   목록 한 줄에 시각 하나만 보여줘야 하고, 알고 싶은 건 "이 환자가 언제 오는가"라 첫 촬영 시각이 답이다.
+   */
   scheduledAt?: string;
+  /** 촬영항목 수 */
+  imageItemCount: number;
+  /** 일정이 잡힌 촬영항목 수 */
+  scheduledItemCount: number;
   /** 유효한(철회되지 않은) 동의가 하나라도 있는지 */
   consentYn: "Y" | "N";
   /** 등록된 영상파일 수. ⚠ 촬영 등록 기능(ZP2-21) 전까지 항상 0 이다. */
