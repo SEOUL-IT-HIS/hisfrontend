@@ -1,26 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
-import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch } from "@/store/store";
+import { useSelector } from "react-redux";
 import {
   Alert,
   Button,
   DataTable,
-  Panel,
   StatusBadge,
   type DataTableColumn,
 } from "@/components/common";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import type { Surgery } from "@/features/surgery/schedule/types";
 import {
-  fetchTodaySurgeriesRequest,
   selectScheduleError,
   selectScheduleLoading,
   selectTodaySurgeries,
 } from "@/features/surgery/schedule/slice";
-import { SURGERY_STATUS } from "@/features/surgery/schedule/types";
 
 /**
  * 금일 수술 현황 대시보드 (SL2-40)
@@ -33,33 +28,29 @@ import { SURGERY_STATUS } from "@/features/surgery/schedule/types";
  * 배정 상세도 같은 전이를 갖고 있어 한 동작이 두 화면에 흩어져 있었다.
  * 상태를 바꾸는 곳은 그 수술의 상세 하나로 모았다.</p>
  *
- * <p>표·패널·버튼·배지는 components/common 을 쓴다(§12.1).</p>
+ * <p>표·버튼·배지는 components/common 을 쓴다(§12.1).</p>
  *
- * <p><b>건수를 화면에서 세는 것에 대해</b> — 백엔드에
- * {@code GET /api/surgery/monitoring/status/today} 가 생겨 같은 집계를 서버가 내려준다.
- * 다만 이 화면은 목록을 어차피 받아오므로 지금은 받은 것을 센다. 집계 규칙(취소 포함
- * 여부 등)이 화면마다 갈라지기 시작하면 그때 서버 값으로 바꾼다.</p>
+ * <h3>상태별 건수를 여기서 빼냈다</h3>
+ *
+ * <p>이 컴포넌트는 이제 수술 홈({@code /surgery}) 안에 들어간다. 홈이 이미
+ * 배정 대기·금일 예약·진행중·완료 건수를 카드로 보여주고 있어서, 여기서 또 세면
+ * 같은 숫자가 한 화면에 두 번 뜬다. 여기는 <b>목록만</b> 맡는다.</p>
+ *
+ * <p>취소 건수 카드는 그 과정에서 사라졌다. 취소된 수술은 표에 그대로 남아 있고,
+ * 홈에서 세어 보여줄 만큼 자주 보는 숫자는 아니라고 봤다.</p>
  */
 export default function TodaySurgeryBoard() {
-  const dispatch = useDispatch<AppDispatch>();
   const surgeries = useSelector(selectTodaySurgeries);
   const loading = useSelector(selectScheduleLoading);
   const error = useSelector(selectScheduleError);
 
-  useEffect(() => {
-    dispatch(fetchTodaySurgeriesRequest());
-  }, [dispatch]);
+  /*
+    조회는 부모(SurgeryHome)가 한다.
 
-  // 상태별 건수 — 코드값을 직접 세지 않고 상수를 쓴다(오타를 컴파일러가 잡도록)
-  const countOf = (status: string) =>
-    surgeries.filter((s) => s.statusCd === status).length;
-
-  const summary = [
-    { label: "예약", code: SURGERY_STATUS.SCHEDULED },
-    { label: "진행중", code: SURGERY_STATUS.IN_PROGRESS },
-    { label: "완료", code: SURGERY_STATUS.COMPLETED },
-    { label: "취소", code: SURGERY_STATUS.CANCELLED },
-  ];
+    이 컴포넌트가 직접 부르면 홈이 이미 보낸 것과 같은 요청이 한 번 더 나간다 —
+    홈이 같은 selectTodaySurgeries 로 상태별 건수를 세기 때문이다. 단독 화면이던
+    시절에는 스스로 받아와야 했지만, 지금은 홈 안에서만 쓰인다.
+  */
 
   const columns: DataTableColumn<Surgery>[] = [
     { key: "surgeryName", header: "수술명", render: (s) => s.surgeryName ?? "-" },
@@ -106,17 +97,6 @@ export default function TodaySurgeryBoard() {
   return (
     <div className="flex flex-col gap-6">
       {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
-
-      <div className="flex flex-wrap gap-3">
-        {summary.map((s) => (
-          <Panel key={s.code} className="px-4 py-3 text-center">
-            <p className="text-xs text-slate-500">{s.label}</p>
-            <p className="text-lg font-semibold text-slate-800">
-              {countOf(s.code)}
-            </p>
-          </Panel>
-        ))}
-      </div>
 
       <DataTable
         columns={columns}

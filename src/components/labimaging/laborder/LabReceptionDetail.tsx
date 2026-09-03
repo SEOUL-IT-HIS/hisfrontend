@@ -69,28 +69,28 @@ export default function LabReceptionDetail() {
     if (receptionNo) dispatch(fetchLabReceptionByNoRequest(receptionNo));
   }, [dispatch, receptionNo]);
 
-  if (loading) return <p className="text-sm text-slate-400">불러오는 중…</p>;
+  if (loading) return <p className="text-sm text-slate-400">Loading…</p>;
   if (error) return <Alert>{error}</Alert>;
-  if (!reception) return <p className="text-sm text-slate-400">접수 정보가 없습니다.</p>;
+  if (!reception) return <p className="text-sm text-slate-400">No reception found.</p>;
 
   const labItems = reception.labItemCodes
     .map((code) => toCodeLabel(testTypes.options, code))
     .join(", ");
 
   const rows: Array<[string, string]> = [
-    ["접수번호", reception.receptionNo],
-    ["오더번호", reception.labOrderNo],
-    ["진료구분", toCodeLabel(treatTypes.options, reception.treatTypeCode)],
-    ["긴급여부", reception.urgencyYn === "Y" ? "긴급" : "일반"],
+    ["Reception No.", reception.receptionNo],
+    ["Order No.", reception.labOrderNo],
+    ["Treatment Type", toCodeLabel(treatTypes.options, reception.treatTypeCode)],
+    ["Urgency", reception.urgencyYn === "Y" ? "Urgent" : "Routine"],
     // 환자번호는 화면에서 쓰지 않기로 해서 이름만 둔다. (2026-08-25)
-    ["환자명", patientNames[reception.patientId] || "미상"],
-    ["처방의번호", reception.physicianNo || "-"],
-    ["검사항목", labItems || "-"],
-    ["접수일시", formatDateTime(reception.receivedAt)],
-    ["검사 예정일시", reception.scheduledAt ? formatDateTime(reception.scheduledAt) : "미등록"],
-    ["오더상태", toStatusLabel(ORDER_STATUS_LABELS, reception.orderStatusCode)],
-    ["접수상태", toStatusLabel(RECEPTION_STATUS_LABELS, reception.receptionStatusCode)],
-    ["접수담당자", reception.receivedById],
+    ["Patient Name", patientNames[reception.patientId] || "Unknown"],
+    ["Physician No.", reception.physicianNo || "-"],
+    ["Test Items", labItems || "-"],
+    ["Received At", formatDateTime(reception.receivedAt)],
+    ["Scheduled Test", reception.scheduledAt ? formatDateTime(reception.scheduledAt) : "Not scheduled"],
+    ["Order Status", toStatusLabel(ORDER_STATUS_LABELS, reception.orderStatusCode)],
+    ["Reception Status", toStatusLabel(RECEPTION_STATUS_LABELS, reception.receptionStatusCode)],
+    ["Received By", reception.receivedById],
   ];
 
   return (
@@ -110,7 +110,7 @@ export default function LabReceptionDetail() {
           href="/labimaging/laborder/worklist"
           className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
         >
-          워크리스트
+          Worklist
         </Link>
         <Button
           onClick={() => {
@@ -119,7 +119,7 @@ export default function LabReceptionDetail() {
             router.push(`/labimaging/labschedule/register/${reception.labReceptionId}`);
           }}
         >
-          {reception.scheduledAt ? "일정 재등록" : "일정 등록"}
+          {reception.scheduledAt ? "Reschedule" : "Schedule"}
         </Button>
       </div>
     </div>

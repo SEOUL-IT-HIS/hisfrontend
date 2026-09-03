@@ -89,6 +89,12 @@ export interface ImageOrderState {
   /** 일정 화면으로 넘길 컨텍스트 (검사 쪽과 동일 규약) */
   selectedReception: ImageReceptionContext | null;
 
+  /**
+   * 워크리스트에서 고른 행의 접수번호. 빈 문자열이면 선택 없음.
+   * ⚠ 위 selectedReception 과 다른 상태다. 합치지 않는 이유는 slice 주석 참고.
+   */
+  selectedWorklistReceptionNo: string;
+
   /** 접수 상세 조회 결과 (촬영항목 포함) */
   receptionDetail: ImageReceptionDetail | null;
   receptionLoading: boolean;
@@ -103,8 +109,8 @@ export interface ImageOrderState {
  * — 이쪽은 공통코드가 아니라 API 계약상 고정값이라 상수로 유지한다.
  */
 export const URGENCY_YN_OPTIONS: ReadonlyArray<{ value: "Y" | "N"; label: string }> = [
-  { value: "N", label: "일반" },
-  { value: "Y", label: "긴급" },
+  { value: "N", label: "Routine" },
+  { value: "Y", label: "Urgent" },
 ];
 
 /**
@@ -118,9 +124,9 @@ export const RECEPTION_FILTER_OPTIONS: ReadonlyArray<{
   value: ReceptionScheduledFilter;
   label: string;
 }> = [
-  { value: "N", label: "일정 미등록" },
-  { value: "Y", label: "일정 등록됨" },
-  { value: "ALL", label: "전체" },
+  { value: "N", label: "Not scheduled" },
+  { value: "Y", label: "Scheduled" },
+  { value: "ALL", label: "All" },
 ];
 
 /**

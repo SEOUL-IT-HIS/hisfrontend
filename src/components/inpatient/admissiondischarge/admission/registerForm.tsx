@@ -93,7 +93,6 @@ const AdmissionRegisterForm = () => {
                         <option value="">선택하세요</option>
                         <option value="외래">외래</option>
                         <option value="응급">응급</option>
-                        <option value="OPD">OPD</option>
                     </select>
                 </div>
                 <div>

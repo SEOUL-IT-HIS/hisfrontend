@@ -65,28 +65,28 @@ export default function ImageReceptionDetail() {
     if (receptionNo) dispatch(fetchImageReceptionByNoRequest(receptionNo));
   }, [dispatch, receptionNo]);
 
-  if (loading) return <p className="text-sm text-slate-400">불러오는 중…</p>;
+  if (loading) return <p className="text-sm text-slate-400">Loading…</p>;
   if (error) return <Alert>{error}</Alert>;
-  if (!reception) return <p className="text-sm text-slate-400">접수 정보가 없습니다.</p>;
+  if (!reception) return <p className="text-sm text-slate-400">No reception found.</p>;
 
   const items = reception.imageItemCodes
     .map((code) => toCodeLabel(imageItems.options, code))
     .join(", ");
 
   const rows: Array<[string, string]> = [
-    ["접수번호", reception.receptionNo],
-    ["오더번호", reception.imageOrderNo],
-    ["진료구분", toCodeLabel(treatTypes.options, reception.treatTypeCode)],
-    ["긴급여부", reception.urgencyYn === "Y" ? "긴급" : "일반"],
+    ["Reception No.", reception.receptionNo],
+    ["Order No.", reception.imageOrderNo],
+    ["Treatment Type", toCodeLabel(treatTypes.options, reception.treatTypeCode)],
+    ["Urgency", reception.urgencyYn === "Y" ? "Urgent" : "Routine"],
     // 환자번호는 화면에서 쓰지 않기로 해서 이름만 둔다. (2026-08-25)
-    ["환자명", patientNames[reception.patientId] || "미상"],
-    ["처방의번호", reception.physicianNo || "-"],
-    ["촬영항목", items || "-"],
-    ["접수일시", formatDateTime(reception.receivedAt)],
-    ["촬영 예정일시", reception.scheduledAt ? formatDateTime(reception.scheduledAt) : "미등록"],
-    ["오더상태", toStatusLabel(ORDER_STATUS_LABELS, reception.orderStatusCode)],
-    ["접수상태", toStatusLabel(RECEPTION_STATUS_LABELS, reception.receptionStatusCode)],
-    ["접수담당자", reception.receivedById],
+    ["Patient Name", patientNames[reception.patientId] || "Unknown"],
+    ["Physician No.", reception.physicianNo || "-"],
+    ["Imaging Items", items || "-"],
+    ["Received At", formatDateTime(reception.receivedAt)],
+    ["Scheduled Imaging", reception.scheduledAt ? formatDateTime(reception.scheduledAt) : "Not scheduled"],
+    ["Order Status", toStatusLabel(ORDER_STATUS_LABELS, reception.orderStatusCode)],
+    ["Reception Status", toStatusLabel(RECEPTION_STATUS_LABELS, reception.receptionStatusCode)],
+    ["Received By", reception.receivedById],
   ];
 
   return (
@@ -106,7 +106,7 @@ export default function ImageReceptionDetail() {
           href="/labimaging/imagingorder/receptions"
           className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
         >
-          목록
+          List
         </Link>
         <Button
           onClick={() => {
@@ -115,7 +115,7 @@ export default function ImageReceptionDetail() {
             router.push(`/labimaging/imagingschedule/register/${reception.imageReceptionId}`);
           }}
         >
-          {reception.scheduledAt ? "일정 재등록" : "일정 등록"}
+          {reception.scheduledAt ? "Reschedule" : "Schedule"}
         </Button>
       </div>
     </div>

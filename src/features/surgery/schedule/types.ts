@@ -70,70 +70,30 @@ export type Surgery = {
   /** 수술 서비스가 직접 입력받아 소유하는 원본 데이터라 저장한다(스냅샷 아님) */
   surgeryName: string | null;
   emergencyYn: YnFlag;
+  /**
+   * 마취 시행 여부. 배정할 때 정해지고 이후에는 바뀌지 않는다.
+   *
+   * <p>N 이면 마취과가 붙지 않는 시술이라 {@code anesthesiologistId} 가 비어 있는
+   * 것이 정상이다 — 화면에서 '미배정'이 아니라 '해당 없음'으로 보여야 한다.</p>
+   */
+  anesthesiaYn: YnFlag;
   actualStartDt: string | null;
   actualEndDt: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
-/**
- * 수술 요청 등록 (SL2-36)
- *
- * <p>진료가 "이 환자를 이렇게 집도하겠다"고 올리는 요청이다. 환자·집도의·희망일은
- * 진료가 확정하고, 수술실·마취의·간호사는 수술실 담당자가 배정 단계에서 채운다.</p>
- *
- * <p>statusCd 를 보내지 않는 이유 — 상태는 서버가 정한다. 진료 요청은 '요청접수(00)',
- * 응급 등록은 '예약(01)'로 생성되며, 클라이언트 값은 백엔드가 무시한다.</p>
- */
-export type RegisterSurgeryRequest = {
-  patientId: string;
-  surgeonId: string;
-  /** yyyy-MM-dd — 진료가 올리는 희망일. 배정 때 조정될 수 있다 */
-  surgeryDt: string;
-  emergencyYn: YnFlag;
-  roomCode?: string | null;
-  anesthesiologistId?: string | null;
-  nurseId?: string | null;
-  surgeryTypeCd?: CodeValue | null;
-  surgeryName?: string | null;
-};
+/*
+  수술 등록·수정·배정 요청 타입 4종(RegisterSurgeryRequest·UpdateSurgeryRequest·
+  AssignSurgeryRequest·AssignFieldRequest)을 걷어냈다.
 
-/** 수술 스케줄 수정 (SL2-37) — 전체 교체(PUT). statusCd 는 전이 API 로만 바뀐다 */
-export type UpdateSurgeryRequest = RegisterSurgeryRequest;
+  수술을 직접 만드는 경로는 오더로 옮겨 갔고(features/surgery/order), 배정은 오더를
+  승인할 때 한 번에 확정된 뒤로는 바꿀 수 없다 — 백엔드가 개별 배정 PATCH 4종과
+  스케줄 수정 PUT 의 배정 항목 변경을 SUR059 로 거절한다.
 
-/**
- * 수술 배정 (요청접수 → 예약)
- *
- * <p>수술실은 필수, 마취의·간호사는 나중에 채워도 된다. surgeryDt 를 함께 보내면
- * 진료가 올린 희망일을 수술실 사정에 맞춰 조정한다(미지정이면 요청일 유지).</p>
- *
- * <p>환자·집도의가 없는 이유 — 진료가 확정한 값이라 배정에서 바꾸지 않는다.
- * 집도의를 바꿔야 하면 배정 후 수정(PUT)으로 처리한다.</p>
- */
-export type AssignSurgeryRequest = {
-  roomCode: string;
-  anesthesiologistId?: string | null;
-  nurseId?: string | null;
-  /** yyyy-MM-dd */
-  surgeryDt?: string;
-};
-
-/**
- * 개별 배정 요청 (SL2-13 집도의 / SL2-15 수술실 / SL2-43 마취의 / SL2-63 간호사)
- *
- * <p>백엔드 {@code AssignmentRequest} 와 짝이다. 넷이 같은 본문을 쓰고 각 엔드포인트가
- * 자기 필드만 읽는다 — 그래서 보낼 항목 하나만 채우면 된다.</p>
- *
- * <p><b>빈 문자열을 보내면 해제</b>다(SL2-166). 단 집도의는 해제할 수 없어 400 이 온다.
- * 위 {@link AssignSurgeryRequest} 는 오더를 처음 배정할 때 쓰는 것이고, 이쪽은 이미
- * 만들어진 수술의 배정을 하나씩 고칠 때 쓴다.</p>
- */
-export type AssignFieldRequest = {
-  roomCode?: string;
-  surgeonId?: string;
-  anesthesiologistId?: string;
-  nurseId?: string;
-};
+  그래서 이 타입들을 쓰는 api·saga·slice 가 전부 사라졌다. 배정 요청 본문은
+  features/surgery/order/types.ts 의 AssignSurgeryOrderRequest 하나뿐이다.
+*/
 
 /**
  * 상태변경 이력 (SL2-282, SURGERY_STATUS_HISTORY)

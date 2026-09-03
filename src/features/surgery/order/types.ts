@@ -97,8 +97,17 @@ export type AssignSurgeryOrderRequest = {
   roomCode: string;
   /** 확정 수술일. 비우면 오더의 희망일을 그대로 쓴다 */
   surgeryDt?: string;
+  /**
+   * 마취 시행 여부. 필수다.
+   *
+   * <p>Y 면 마취의도 함께 보내야 한다. N 은 마취과가 붙지 않는 시술이다 —
+   * 단순 봉합, 표재성 종물 제거 같은 것들.</p>
+   */
+  anesthesiaYn: "Y" | "N";
+  /** 마취의. {@code anesthesiaYn === "Y"} 일 때 필수 */
   anesthesiologistId?: string | null;
-  nurseId?: string | null;
+  /** 간호사. 필수다 — 마취 여부와 무관하게 수술에는 간호사가 붙는다 */
+  nurseId: string;
 };
 
 /**

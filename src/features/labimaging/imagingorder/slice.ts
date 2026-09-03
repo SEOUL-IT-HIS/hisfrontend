@@ -23,6 +23,7 @@ const initialState: ImageOrderState = {
   receptionsError: "",
 
   selectedReception: null,
+  selectedWorklistReceptionNo: "",
   receptionDetail: null,
   receptionLoading: false,
   receptionError: "",
@@ -111,6 +112,21 @@ const imagingOrderSlice = createSlice({
       state.selectedReception = null;
       state.receptionError = "";
     },
+
+    // ---------- 워크리스트 행 선택 ----------
+    /**
+     * ⚠ 위 selectImageReception 과 다른 상태다. 합치지 않는다.
+     *   그쪽은 "일정 화면으로 넘길 컨텍스트 객체"고, 이쪽은 "지금 목록에서 고른 행이 무엇인가"다.
+     *   워크리스트는 목록이 갱신돼도 같은 행을 계속 잡고 있어야 하는데, 객체를 들고 있으면
+     *   갱신된 목록의 새 객체와 참조가 달라져 선택이 풀린다. 그래서 접수번호만 들고
+     *   화면이 목록에서 다시 찾아 쓴다. (검사 워크리스트와 같은 방식)
+     */
+    selectImageWorklistReception(state, action: PayloadAction<string>) {
+      state.selectedWorklistReceptionNo = action.payload;
+    },
+    clearImageWorklistSelection(state) {
+      state.selectedWorklistReceptionNo = "";
+    },
   },
 });
 
@@ -127,6 +143,8 @@ export const {
   fetchImageReceptionByNoFailure,
   selectImageReception,
   clearSelectedImageReception,
+  selectImageWorklistReception,
+  clearImageWorklistSelection,
 } = imagingOrderSlice.actions;
 
 export default imagingOrderSlice.reducer;
@@ -157,3 +175,7 @@ export const selectImageReceptionError = (s: ImageOrderRoot) =>
 
 export const selectImageReceptionDetail = (s: ImageOrderRoot) =>
   s.labImaging.imagingorder.receptionDetail;
+
+/** 워크리스트에서 고른 행의 접수번호. 빈 문자열이면 선택 없음. */
+export const selectSelectedImageWorklistReceptionNo = (s: ImageOrderRoot) =>
+  s.labImaging.imagingorder.selectedWorklistReceptionNo;

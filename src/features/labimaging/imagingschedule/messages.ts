@@ -1,11 +1,11 @@
 
 export const IMAGE_SCHEDULE_MESSAGES = {
-  LAB011: "영상 일정이 등록되었습니다.",
-  LAB012: "영상 일정이 재등록되었습니다.",
-  LAB015: "영상접수 정보를 찾을 수 없습니다.",
-  LAB016: "재등록할 기존 영상 일정이 없습니다.",
-  LAB017: "유효하지 않은 코드값입니다.",
-  LAB999: "처리 중 오류가 발생했습니다.",
+  LAB011: "Imaging schedule has been registered.",
+  LAB012: "Imaging schedule has been rescheduled.",
+  LAB015: "Imaging reception not found.",
+  LAB016: "There is no existing imaging schedule to reschedule.",
+  LAB017: "Invalid code value.",
+  LAB999: "An error occurred while processing the request.",
 } as const;
 
 export type ImageScheduleMessageCode = keyof typeof IMAGE_SCHEDULE_MESSAGES;

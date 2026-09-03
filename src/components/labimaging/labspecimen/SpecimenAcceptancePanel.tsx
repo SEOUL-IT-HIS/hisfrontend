@@ -115,11 +115,11 @@ function matchBarcode(
 function barcodeMatchMessage(match: BarcodeMatch): string {
   switch (match.kind) {
     case "OTHER_RECEPTION":
-      return `지금 선택한 접수의 검체가 아닙니다. (입력한 검체의 접수번호: ${match.specimen.receptionNo})`;
+      return `This specimen does not belong to the selected reception. (Reception No. of the entered specimen: ${match.specimen.receptionNo})`;
     case "JUDGED":
-      return `이미 인수/판정이 완료된 검체입니다. (${match.specimen.specimenBarcode})`;
+      return `This specimen has already been accepted and assessed. (${match.specimen.specimenBarcode})`;
     default:
-      return `${match.specimen.specimenBarcode} 을(를) 판정 대상으로 선택했습니다.`;
+      return `${match.specimen.specimenBarcode} has been selected for assessment.`;
   }
 }
 
@@ -242,11 +242,11 @@ export default function SpecimenAcceptancePanel({
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!form.acceptedAt) next.acceptedAt = "인수일시는 필수입니다.";
-    if (!form.acceptedById.trim()) next.acceptedById = "인수자ID는 필수입니다.";
+    if (!form.acceptedAt) next.acceptedAt = "Acceptance date and time is required.";
+    if (!form.acceptedById.trim()) next.acceptedById = "Accepting staff ID is required.";
     // 부적합일 때만 사유가 필수다. 서버(SpecimenAcceptanceService.validateJudgment)와 같은 규칙.
     if (isUnfit && !form.unfitReasonCode)
-      next.unfitReasonCode = "부적합 판정에는 사유가 필요합니다.";
+      next.unfitReasonCode = "An unfit assessment requires a reason.";
     return next;
   }
 
@@ -287,7 +287,7 @@ export default function SpecimenAcceptancePanel({
 
   /** 판정 결과 표시. 미판정이면 회색. */
   function fitnessCell(s: SpecimenSummary) {
-    if (!s.fitnessStatus) return <span className="text-slate-400">미판정</span>;
+    if (!s.fitnessStatus) return <span className="text-slate-400">Not assessed</span>;
     return (
       <span
         className={s.fitnessStatus === "FIT" ? "text-emerald-600" : "text-rose-600"}
@@ -304,20 +304,20 @@ export default function SpecimenAcceptancePanel({
       {lastAccepted ? (
         <Alert variant="success">
           {lastAccepted.specimenBarcode} — {FITNESS_STATUS_LABELS[lastAccepted.fitnessStatus]}{" "}
-          판정이 등록되었습니다.
+          assessment registered.
         </Alert>
       ) : null}
 
       <p className="text-sm text-slate-500">
-        대상 환자{" "}
+        Patient{" "}
         <span className="font-semibold text-slate-800">
-          {patientNames[reception.patientId] ?? "미상"}
+          {patientNames[reception.patientId] ?? "Unknown"}
         </span>
       </p>
 
       {/* ---------- 바코드로 검체 지목 (ZP2-75) ---------- */}
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-semibold text-slate-700">검체바코드 입력</p>
+        <p className="text-sm font-semibold text-slate-700">Specimen Barcode</p>
 
         {/*
           ⚠ 아래 판정 <form> 바깥에 둔다. 안에 넣으면 Enter 가 판정 제출로 새어 나간다.
@@ -337,7 +337,7 @@ export default function SpecimenAcceptancePanel({
                 handleBarcodeLookup();
               }
             }}
-            placeholder="예: SP-A1B2C3D4"
+            placeholder="e.g. SP-A1B2C3D4"
             disabled={barcodeLookupLoading || accepting}
           />
           <Button
@@ -346,7 +346,7 @@ export default function SpecimenAcceptancePanel({
             disabled={barcodeLookupLoading || accepting || !barcodeInput.trim()}
             className="shrink-0"
           >
-            {barcodeLookupLoading ? "조회 중..." : "조회"}
+            {barcodeLookupLoading ? "Searching..." : "Search"}
           </Button>
         </div>
 
@@ -367,14 +367,14 @@ export default function SpecimenAcceptancePanel({
       {/* ---------- 판정 대상 검체 고르기 ---------- */}
       <div className="flex flex-col gap-2">
         <p className="text-sm font-semibold text-slate-700">
-          판정 대상 검체 {listLoading ? "" : `${unjudged.length}건 / 전체 ${specimens.length}건`}
+          Specimens to Assess {listLoading ? "" : `(${unjudged.length} of ${specimens.length})`}
         </p>
 
         {listLoading ? (
-          <p className="text-sm text-slate-400">검체를 불러오는 중입니다...</p>
+          <p className="text-sm text-slate-400">Loading specimens...</p>
         ) : specimens.length === 0 ? (
           <p className="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-400">
-            등록된 검체가 없습니다. [검체] 탭에서 먼저 등록하세요.
+            No specimens registered. Register one on the [Specimen] tab first.
           </p>
         ) : (
           <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
@@ -426,23 +426,29 @@ export default function SpecimenAcceptancePanel({
       {selected === null ? (
         specimens.length > 0 && unjudged.length === 0 ? (
           <p className="text-sm text-slate-400">
-            모든 검체의 판정이 끝났습니다.
+            All specimens have been assessed.
           </p>
         ) : specimens.length > 0 ? (
-          <p className="text-sm text-slate-400">위에서 판정할 검체를 고르세요.</p>
+          <p className="text-sm text-slate-400">Select a specimen above to assess.</p>
         ) : null
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <p className="text-sm text-slate-500">
-            대상 검체{" "}
+            Specimen{" "}
             <span className="font-semibold text-slate-800">
               {selected.specimenBarcode}
             </span>
           </p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField label="인수일시" required>
+            <FormField label="Accepted At" required>
               <Input
+                /*
+                  ⚠ 날짜 위젯의 안내 문구("연도-월-일 --:--")는 우리 문자열이 아니라 브라우저가 그린다.
+                    Chrome 은 그 언어를 element 가 물려받은 lang 으로 정하는데, 루트가 <html lang="ko"> 라
+                    한글로 나온다. 루트 레이아웃은 공용(가이드 5.3)이라 손대지 않고 이 입력칸에만 en 을 건다.
+                */
+                lang="en"
                 type="datetime-local"
                 name="acceptedAt"
                 value={form.acceptedAt}
@@ -454,21 +460,21 @@ export default function SpecimenAcceptancePanel({
               ) : null}
             </FormField>
 
-            <FormField label="인수자ID" required>
+            <FormField label="Accepting Staff ID" required>
               <Input
                 name="acceptedById"
                 value={form.acceptedById}
                 onChange={handleChange}
                 maxLength={20}
                 disabled={accepting}
-                placeholder="예: STF00021"
+                placeholder="e.g. STF00021"
               />
               {errors.acceptedById ? (
                 <span className="text-xs text-rose-500">{errors.acceptedById}</span>
               ) : null}
             </FormField>
 
-            <FormField label="적합상태" required>
+            <FormField label="Fitness Status" required>
               <Select
                 name="fitnessStatus"
                 value={form.fitnessStatus}
@@ -479,16 +485,16 @@ export default function SpecimenAcceptancePanel({
             </FormField>
 
             <FormField
-              label="부적합사유"
+              label="Unfit Reason"
               required={isUnfit}
-              hint={isUnfit ? undefined : "부적합을 선택하면 입력할 수 있습니다."}
+              hint={isUnfit ? undefined : "Enabled when Unfit is selected."}
             >
               <Select
                 name="unfitReasonCode"
                 value={form.unfitReasonCode}
                 onChange={handleChange}
                 options={rejectReasons.options}
-                placeholder={rejectReasons.loading ? "불러오는 중..." : "선택하세요"}
+                placeholder={rejectReasons.loading ? "Loading..." : "Select"}
                 disabled={!isUnfit || accepting || rejectReasons.loading}
               />
               {errors.unfitReasonCode ? (
@@ -497,8 +503,8 @@ export default function SpecimenAcceptancePanel({
             </FormField>
 
             <FormField
-              label="재채취"
-              hint={isUnfit ? undefined : "부적합을 선택하면 입력할 수 있습니다."}
+              label="Recollection"
+              hint={isUnfit ? undefined : "Enabled when Unfit is selected."}
             >
               <Select
                 name="recollectionRequestedYn"
@@ -514,7 +520,7 @@ export default function SpecimenAcceptancePanel({
 
           <div className="flex justify-end">
             <Button type="submit" disabled={accepting}>
-              {accepting ? "판정 중..." : "판정 등록"}
+              {accepting ? "Submitting..." : "Submit Assessment"}
             </Button>
           </div>
         </form>

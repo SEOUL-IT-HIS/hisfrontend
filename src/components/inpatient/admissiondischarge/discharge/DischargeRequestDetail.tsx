@@ -58,11 +58,6 @@ const DischargeRequestDetail = ({ admissionId: admissionIdProp, onClose }: Disch
     dispatch(changeStatusRequest({ admissionId, status: "DISCHARGE_REQUESTED" }));
   };
 
-  const handleCompleteDischarge = () => {
-    if (!admissionId) return;
-    dispatch(changeStatusRequest({ admissionId, status: "DISCHARGED" }));
-  };
-
   return (
     <div className="w-full p-6">
       <div className="mb-6 flex items-center justify-between">
@@ -127,19 +122,7 @@ const DischargeRequestDetail = ({ admissionId: admissionIdProp, onClose }: Disch
               )}
               {admission.status === "DISCHARGE_REQUESTED" && (
                 <>
-                  <span className="text-sm text-slate-600">퇴원 신청 완료 — 처리 대기 중</span>
-                  <button
-                    onClick={handleCompleteDischarge}
-                    disabled={changeStatusStatus.loading}
-                    className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
-                  >
-                    {changeStatusStatus.loading ? "처리중..." : "퇴원 완료 처리"}
-                  </button>
-                </>
-              )}
-              {admission.status === "DISCHARGED" && (
-                <>
-                  <span className="text-sm text-slate-600">퇴원 완료됨</span>
+                  <span className="text-sm text-slate-600">수납 완료 대기 중 — 정산이 끝나면 자동으로 퇴원완료됩니다</span>
                   <Link
                     href={`/inpatient/admissiondischarge/discharge/settlement/${admissionId}`}
                     className="inline-flex items-center rounded-lg border border-sky-600 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50"
@@ -147,6 +130,9 @@ const DischargeRequestDetail = ({ admissionId: admissionIdProp, onClose }: Disch
                     정산 확인하기
                   </Link>
                 </>
+              )}
+              {admission.status === "DISCHARGED" && (
+                <span className="text-sm text-slate-600">퇴원 완료됨</span>
               )}
             </div>
             {changeStatusStatus.error && <p className="mt-2 text-sm text-red-600">{changeStatusStatus.error}</p>}

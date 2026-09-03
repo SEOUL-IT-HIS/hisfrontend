@@ -1,32 +1,19 @@
-import Link from "next/link";
-import TodaySurgeryBoard from "@/components/surgery/schedule/TodaySurgeryBoard";
+import { redirect } from "next/navigation";
 
 /**
- * 수술 현황 모니터링 (SL2-5 / SL2-40 금일 대시보드)
- * 경로: /surgery/monitoring — 사이드바 메뉴가 가리키는 주소
+ * 수술 현황 모니터링 — <b>수술 관리 홈으로 합쳐졌다.</b>
  *
- * <p>오늘 날짜의 수술만 보여준다. 전체 일정은 수술 스케줄링 화면에서 본다.</p>
+ * <p>이 화면은 금일 수술 목록 하나만 보여줬는데, 홈({@code /surgery})이 이미 같은
+ * 조회로 금일 예약·진행중·완료 건수를 세고 있었다. 같은 데이터를 두 화면이 각자
+ * 받아다 절반씩 보여주고 있었던 셈이라, 목록을 홈으로 옮기고 이 경로는 닫았다.</p>
+ *
+ * <p><b>파일을 지우지 않고 리다이렉트로 둔 이유</b> — admin-service 의 {@code MENU}
+ * 테이블에 아직 {@code SUR_MONITORING} 이 남아 있다. 그 테이블은 admin 소유라
+ * 우리가 지울 수 없고, 요청해서 지워질 때까지는 사이드바에 이 메뉴가 보인다.
+ * 지금 파일을 없애면 그때까지 누를 때마다 404 가 뜬다.</p>
+ *
+ * <p>메뉴가 삭제되면(admin_수술메뉴_변경요청.md ③번) 이 파일도 함께 지운다.</p>
  */
 export default function Page() {
-  return (
-    <div className="mx-auto w-full max-w-[1800px] p-6">
-      <h1 className="mb-1 text-lg font-semibold text-slate-800">
-        수술 현황 모니터링
-      </h1>
-      <p className="mb-6 text-sm text-slate-600">
-        오늘 예정·진행 중인 수술입니다. 예약 건은 시작을, 진행 중인 건은 종료를
-        여기서 바로 처리할 수 있습니다.
-      </p>
-
-      <TodaySurgeryBoard />
-
-      <p className="mt-10 text-xs text-slate-500">
-        전체 일정은{" "}
-        <Link href="/surgery/schedule" className="text-sky-600 underline">
-          수술 배정 관리
-        </Link>{" "}
-        에서 볼 수 있습니다.
-      </p>
-    </div>
-  );
+  redirect("/surgery");
 }

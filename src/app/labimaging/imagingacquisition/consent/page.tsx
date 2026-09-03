@@ -16,8 +16,8 @@ export default function Page() {
   return (
     <div className="flex h-full w-full flex-col gap-4 p-6">
       <PageHeader
-        title="영상 동의서"
-        description="조영제·침습검사 동의를 등록하고 오더별 동의 이력을 확인합니다."
+        title="Imaging Consent"
+        description="Register consent for contrast media and invasive exams, and review the consent history for each order."
       />
       <ConsentScreen />
     </div>
