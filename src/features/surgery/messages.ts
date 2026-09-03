@@ -4,35 +4,40 @@
  * <p>서비스코드 3자리(SUR) + 일련번호 3자리. 백엔드 common/exception/ErrorCode.java 의
  * 코드-문구와 맞춘다. 백엔드 응답 message 가 코드(SUR###)로 내려오면 이 사전으로 변환 후
  * 노출한다(§15.2). 스택트레이스 등 시스템 메시지는 사용자에게 노출하지 않는다(§15.1).</p>
+ *
+ * <p><b>문구는 영어로 쓴다</b>(§12.4, 2026-08-31 결정). 화면에 노출되는 모든 문자열이
+ * 대상이고 성공·예외 메시지도 포함된다. 한글은 인명·환자명 같은 고유명사 데이터만
+ * 남는데, 그런 값은 여기 사전이 아니라 서버에서 온다.</p>
  */
 export const SURGERY_MESSAGES = {
-  SUR035: "해당 수술이 존재하지 않습니다.",
-  SUR036: "해당 수술실이 존재하지 않습니다.",
-  SUR037: "해당 장비가 존재하지 않습니다.",
-  SUR038: "잘못된 요청입니다.",
-  SUR039: "잘못된 수술 상태 값 또는 전이입니다.",
-  SUR040: "서버 내부 오류가 발생했습니다.",
-  SUR042: "해당 수술기록이 존재하지 않습니다.",
-  SUR043: "확정된 수술기록은 수정할 수 없습니다.",
-  SUR044: "수술 동의서는 1:1로만 등록할 수 있습니다.",
-  SUR045: "점검중이거나 폐쇄된 수술실은 배정할 수 없습니다.",
-  SUR046: "해당 동의서가 존재하지 않습니다.",
+  SUR035: "Surgery not found.",
+  SUR036: "Operating room not found.",
+  SUR037: "Equipment not found.",
+  SUR038: "Invalid request.",
+  SUR039: "Invalid surgery status or transition.",
+  SUR040: "An internal server error occurred.",
+  SUR042: "Operative record not found.",
+  SUR043: "A finalized operative record cannot be modified.",
+  SUR044: "Only one consent of each type can be registered per surgery.",
+  SUR045: "A room under maintenance or closed cannot be assigned.",
+  SUR046: "Consent not found.",
   // 수술·마취·비용견적 동의서에 공통으로 쓴다. 종류를 문구에 박으면
   // 마취 기록 등록에서 이 오류를 받았을 때 "수술 동의서는 냈는데?" 하고 헷갈린다.
-  SUR047: "동의서가 확인되지 않아 진행할 수 없습니다.",
-  SUR048: "해당 마취기록이 존재하지 않습니다.",
-  SUR049: "해당 체크리스트 항목이 존재하지 않습니다.",
-  SUR050: "해당 예정 자원이 존재하지 않습니다.",
-  SUR051: "이전 단계 체크리스트가 완료되지 않았습니다.",
-  SUR052: "요청한 자료를 찾을 수 없습니다.",
-  SUR053: "허용되지 않는 요청 방식입니다.",
-  SUR054: "지원하지 않는 요청 형식입니다.",
-  SUR055: "해당 수술항목이 존재하지 않습니다.",
-  SUR056: "이미 등록된 수술항목 코드입니다.",
-  SUR057: "해당 수술 요청이 존재하지 않습니다.",
-  SUR058: "이미 처리된 수술 요청입니다.",
+  // (문구는 영어 — §12.4. 주석은 그대로 한글이다, §16)
+  SUR047: "Consent has not been confirmed, so this cannot proceed.",
+  SUR048: "Anesthesia record not found.",
+  SUR049: "Checklist item not found.",
+  SUR050: "Planned item not found.",
+  SUR051: "The previous checklist phase has not been completed.",
+  SUR052: "The requested resource was not found.",
+  SUR053: "This request method is not allowed.",
+  SUR054: "This request format is not supported.",
+  SUR055: "Surgical procedure not found.",
+  SUR056: "This procedure code is already registered.",
+  SUR057: "Surgery order not found.",
+  SUR058: "This surgery order has already been processed.",
   SUR059:
-    "배정이 확정된 수술은 변경할 수 없습니다. 바꾸려면 수술을 취소하고 다시 요청받아야 합니다.",
+    "Assignment is fixed once the order is approved. To change it, cancel the surgery and have it requested again.",
 } as const;
 
 export type SurgeryMessageCode = keyof typeof SURGERY_MESSAGES;

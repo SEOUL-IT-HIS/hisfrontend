@@ -19,11 +19,11 @@ export default function Page() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold text-slate-800">
-            수술 배정 관리
+            Surgery assignment
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            수술실·집도의·마취의·간호사를 배정합니다. 예약 상태에서만 바꿀 수
-            있습니다.
+            Surgeries created from approved orders. The assignment itself is
+            fixed at approval time and shown read-only here.
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
@@ -31,13 +31,13 @@ export default function Page() {
             href="/surgery/schedule/requests"
             className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:border-sky-400 hover:text-sky-600"
           >
-            배정 대기 목록
+            Pending orders
           </Link>
           <Link
             href="/surgery/worklist"
             className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:border-sky-400 hover:text-sky-600"
           >
-            수술 업무
+            Surgery worklist
           </Link>
         </div>
       </div>

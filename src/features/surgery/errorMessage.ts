@@ -42,12 +42,12 @@ export function getSurgeryErrorMessage(
     // ② 응답 객체 자체가 없다 = 요청이 서버에 닿지 못했다.
     //    서버가 안 떠 있거나, 네트워크가 다르거나, 타임아웃이다.
     if (!error.response) {
-      return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.";
+      return "Cannot reach the server. Please try again shortly.";
     }
 
     // ③ 닿기는 했는데 서버 안에서 터졌다. 사용자가 할 수 있는 일은 없다.
     if (error.response.status >= 500) {
-      return "서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+      return "A server error occurred. Please try again shortly.";
     }
   }
 
