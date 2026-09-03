@@ -17,10 +17,7 @@ import {
 } from "@/components/common";
 import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemTypes";
 import { fetchEmpUpdateRequest } from "@/features/emp/slice/empSlice";
-import {
-  toCodeSelectOptions,
-  toRoleSelectOptions,
-} from "@/features/emp/utils/empCodeLabel";
+import { toCodeSelectOptions } from "@/features/emp/utils/empCodeLabel";
 import type { RoleType } from "@/features/emp/types/roleType";
 import type { Emp, EmpUpdateRequest } from "@/features/emp/types/empTypes";
 import type { AppDispatch, RootState } from "@/store/store";
@@ -42,8 +39,11 @@ type EmpUpdateFormState = {
   zipCode: string;
   address: string;
   addressDetail: string;
-  /** 드롭다운에서 고른 역할 PK (ROLE.ROLE_ID) */
-  roleId: string;
+  /**
+   * 라디오로 고른 역할 PK (ROLE.ROLE_ID).
+   * API 가 배열을 받아서 배열로 들고 있지만, 화면에서는 항상 하나만 담긴다.
+   */
+  roleIds: string[];
 };
 
 /** 필드별 인라인 검증 메시지 (EmpRegisterForm과 동일 규칙) */
@@ -51,6 +51,7 @@ type FieldErrors = {
   empName?: string;
   empPhone?: string;
   deptCode?: string;
+  roleId?: string;
 };
 
 type EmpUpdateFormProps = {
@@ -78,8 +79,9 @@ export default function EmpUpdateForm({
     zipCode: emp.zipCode ?? "",
     address: emp.address ?? "",
     addressDetail: emp.addressDetail ?? "",
-    // 지금은 1인 1역이라 배정된 역할 중 첫 번째만 드롭다운에 세팅한다.
-    roleId: (emp.roleIds ?? [])[0] ?? "",
+    // 지금은 1인 1역이라 배정된 역할 중 첫 번째만 라디오에 세팅한다.
+    // DB 는 다역을 허용하므로 2개 이상 들어와도 라디오가 깨지지 않게 하나만 남긴다.
+    roleIds: (emp.roleIds ?? []).slice(0, 1),
   });
 
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -123,6 +125,15 @@ export default function EmpUpdateForm({
     }).open();
   }
 
+  /**
+   * 역할을 고른다.
+   * DB(EMP_ROLE)와 API 는 여러 역할을 받을 수 있지만 화면은 한 명당 한 역할만 둔다.
+   * 라디오라 항상 하나로 대체되므로 기존 선택에 더하지 않는다.
+   */
+  function selectRole(roleId: string) {
+    setForm({ ...form, roleIds: [roleId] });
+  }
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -130,6 +141,9 @@ export default function EmpUpdateForm({
     if (!form.empName.trim()) nextErrors.empName = "Please enter a name.";
     if (!form.empPhone.trim()) nextErrors.empPhone = "Please enter a phone number.";
     if (!form.deptCode.trim()) nextErrors.deptCode = "Please select a department.";
+    // 역할이 없으면 권한을 줄 수 없어 로그인해도 볼 화면이 없다. 모르면 "기타"를 고른다.
+    // 빈 배열을 보내면 백엔드가 "배정된 역할 전부 삭제"로 처리하는 것도 여기서 함께 막힌다.
+    if (form.roleIds.length === 0) nextErrors.roleId = "Please select a role.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -146,8 +160,9 @@ export default function EmpUpdateForm({
       zipCode: form.zipCode || undefined,
       address: form.address || undefined,
       addressDetail: form.addressDetail.trim() || undefined,
-      // 빈 배열이면 서버가 배정된 역할을 전부 지운다 (드롭다운을 "선택"으로 되돌린 경우)
-      roleIds: form.roleId ? [form.roleId] : [],
+      // 빈 배열을 보내면 서버가 배정된 역할을 전부 지운다.
+      // 검증에서 비어 있으면 막으므로 여기서는 항상 역할이 하나 들어 있다.
+      roleIds: form.roleIds,
       assignedBy: authUser?.empId,
     };
     dispatch(fetchEmpUpdateRequest(payload));
@@ -251,16 +266,37 @@ export default function EmpUpdateForm({
               <p className="text-xs text-red-600">{errors.deptCode}</p>
             )}
           </FormField>
+        </div>
 
-          <FormField label="Role" htmlFor="roleId">
-            <Select
-              id="roleId"
-              value={form.roleId}
-              placeholder="Select"
-              onChange={(e) => setForm({ ...form, roleId: e.target.value })}
-              options={toRoleSelectOptions(roles)}
-            />
-          </FormField>
+        {/*
+         * 역할은 하나만 고르므로 라디오로 둔다. name 이 같은 것끼리 한 묶음이 된다.
+         * 공통 FormField 는 내부를 <label> 로 감싸는데 라디오마다 다시 <label> 이 필요하다.
+         * label 중첩은 유효하지 않은 HTML 이라 여기서만 FormField 를 쓰지 않고 라벨을 직접 그린다.
+         */}
+        <div className="flex flex-col gap-1.5 text-sm">
+          <span className="font-semibold text-slate-700">
+            Role<span className="text-rose-500"> *</span>
+          </span>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+            {roles.map((role) => (
+              <label
+                key={role.roleId}
+                className="flex cursor-pointer items-center gap-2 text-slate-700"
+              >
+                <input
+                  type="radio"
+                  name="roleId"
+                  checked={form.roleIds.includes(role.roleId)}
+                  onChange={() => selectRole(role.roleId)}
+                  className="h-4 w-4 accent-sky-600"
+                />
+                <span>{role.roleName}</span>
+              </label>
+            ))}
+          </div>
+          {errors.roleId && (
+            <p className="text-xs text-red-600">{errors.roleId}</p>
+          )}
         </div>
 
         <FormField label="Address" htmlFor="zipCode">
