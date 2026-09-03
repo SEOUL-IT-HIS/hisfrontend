@@ -6,6 +6,8 @@ import type {
   ImageReceptionContext,
   ImageReceptionDetail,
   ImageReceptionSummary,
+  ImageWorklistItem,
+  ImageWorklistStatusFilter,
   ReceptionScheduledFilter,
 } from "@/features/labimaging/imagingorder/types";
 
@@ -24,6 +26,13 @@ const initialState: ImageOrderState = {
 
   selectedReception: null,
   selectedWorklistReceptionNo: "",
+
+  worklist: [],
+  worklistLoading: false,
+  worklistError: "",
+
+  exclusionSubmitting: false,
+  exclusionError: "",
   receptionDetail: null,
   receptionLoading: false,
   receptionError: "",
@@ -127,6 +136,62 @@ const imagingOrderSlice = createSlice({
     clearImageWorklistSelection(state) {
       state.selectedWorklistReceptionNo = "";
     },
+
+    // ---------- 워크리스트 조회 ----------
+    // payload = 필터("ALL"/"ACCEPTED"/"EXCLUDED"). saga 가 읽어 API 파라미터로 넘긴다.
+    fetchImageWorklistRequest(
+      state,
+      _action: PayloadAction<ImageWorklistStatusFilter | undefined>,
+    ) {
+      state.worklistLoading = true;
+      state.worklistError = "";
+    },
+    fetchImageWorklistSuccess(state, action: PayloadAction<ImageWorklistItem[]>) {
+      state.worklistLoading = false;
+      state.worklist = action.payload;
+    },
+    fetchImageWorklistFailure(state, action: PayloadAction<string>) {
+      state.worklistLoading = false;
+      state.worklistError = action.payload;
+    },
+
+    // ---------- 접수 제외 / 복구 ----------
+    /**
+     * ⚠ payload 에 현재 필터를 같이 싣는다.
+     *   제외/복구에 성공하면 목록을 다시 불러와야 하는데, 어느 필터로 보고 있었는지를
+     *   saga 가 알아야 같은 화면을 다시 그릴 수 있다. (검사 워크리스트와 같은 규약)
+     */
+    excludeImageReceptionRequest: {
+      reducer(state) {
+        state.exclusionSubmitting = true;
+        state.exclusionError = "";
+      },
+      prepare(
+        receptionNo: string,
+        exclusionReason: string,
+        filter: ImageWorklistStatusFilter,
+      ) {
+        return { payload: { receptionNo, exclusionReason, filter } };
+      },
+    },
+    restoreImageReceptionRequest: {
+      reducer(state) {
+        state.exclusionSubmitting = true;
+        state.exclusionError = "";
+      },
+      prepare(receptionNo: string, filter: ImageWorklistStatusFilter) {
+        return { payload: { receptionNo, filter } };
+      },
+    },
+    /** 제외·복구 공용 성공/실패. saga 가 어느 쪽이든 이 둘로 모은다. */
+    imageExclusionSuccess(state) {
+      state.exclusionSubmitting = false;
+      state.exclusionError = "";
+    },
+    imageExclusionFailure(state, action: PayloadAction<string>) {
+      state.exclusionSubmitting = false;
+      state.exclusionError = action.payload;
+    },
   },
 });
 
@@ -145,6 +210,13 @@ export const {
   clearSelectedImageReception,
   selectImageWorklistReception,
   clearImageWorklistSelection,
+  fetchImageWorklistRequest,
+  fetchImageWorklistSuccess,
+  fetchImageWorklistFailure,
+  excludeImageReceptionRequest,
+  restoreImageReceptionRequest,
+  imageExclusionSuccess,
+  imageExclusionFailure,
 } = imagingOrderSlice.actions;
 
 export default imagingOrderSlice.reducer;
@@ -179,3 +251,15 @@ export const selectImageReceptionDetail = (s: ImageOrderRoot) =>
 /** 워크리스트에서 고른 행의 접수번호. 빈 문자열이면 선택 없음. */
 export const selectSelectedImageWorklistReceptionNo = (s: ImageOrderRoot) =>
   s.labImaging.imagingorder.selectedWorklistReceptionNo;
+
+export const selectImageWorklist = (s: ImageOrderRoot) =>
+  s.labImaging.imagingorder.worklist;
+export const selectImageWorklistLoading = (s: ImageOrderRoot) =>
+  s.labImaging.imagingorder.worklistLoading;
+export const selectImageWorklistError = (s: ImageOrderRoot) =>
+  s.labImaging.imagingorder.worklistError;
+
+export const selectImageExclusionSubmitting = (s: ImageOrderRoot) =>
+  s.labImaging.imagingorder.exclusionSubmitting;
+export const selectImageExclusionError = (s: ImageOrderRoot) =>
+  s.labImaging.imagingorder.exclusionError;
