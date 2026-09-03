@@ -9,6 +9,7 @@ import {
   deactivatePatientApi,
   updatePatientDeathApi,
   convertTemporaryPatientApi,
+  activatePatientApi,
 } from "../api/patientApi";
 import {
   checkPatientDuplicateFailure,
@@ -35,6 +36,12 @@ import {
   convertTemporaryPatientFailure,
   convertTemporaryPatientRequest,
   convertTemporaryPatientSuccess,
+  checkConversionDuplicateFailure,
+  checkConversionDuplicateRequest,
+  checkConversionDuplicateSuccess,
+  activatePatientFailure,
+  activatePatientRequest,
+  activatePatientSuccess,
 } from "../slice/patientSlice";
 import type {
   Patient,
@@ -164,10 +171,46 @@ function* convertTemporaryPatientSaga(
   } catch (error) {
     const message = getPatientErrorMessage(
       error,
-      "정식환자 전환에 실패했습니다.",
+      "정규환자 전환에 실패했습니다.",
     );
 
     yield put(convertTemporaryPatientFailure(message));
+  }
+}
+
+function* checkConversionDuplicateSaga(
+  action: ReturnType<typeof checkConversionDuplicateRequest>,
+) {
+  try {
+    const duplicated: boolean = yield call(
+      checkPatientDuplicateApi,
+      action.payload,
+    );
+    yield put(checkConversionDuplicateSuccess(duplicated));
+  } catch (error) {
+    const message = getPatientErrorMessage(
+      error,
+      "주민등록번호 중복 확인에 실패했습니다.",
+    );
+    yield put(checkConversionDuplicateFailure(message));
+  }
+}
+
+function* activatePatientSaga(
+  action: ReturnType<typeof activatePatientRequest>,
+) {
+  try {
+    const patient: PatientDetail = yield call(
+      activatePatientApi,
+      action.payload,
+    );
+    yield put(activatePatientSuccess(patient));
+  } catch (error) {
+    const message = getPatientErrorMessage(
+      error,
+      "환자 활성화에 실패했습니다.",
+    );
+    yield put(activatePatientFailure(message));
   }
 }
 
@@ -237,10 +280,17 @@ export default function* patientSaga() {
 
   yield takeLatest(deactivatePatientRequest.type, deactivatePatientSaga);
 
+  yield takeLatest(activatePatientRequest.type, activatePatientSaga);
+
   yield takeLatest(registerPatientRequest.type, registerPatientSaga);
 
   yield takeLatest(
     checkPatientDuplicateRequest.type,
     checkPatientDuplicateSaga,
+  );
+
+  yield takeLatest(
+    checkConversionDuplicateRequest.type,
+    checkConversionDuplicateSaga,
   );
 }

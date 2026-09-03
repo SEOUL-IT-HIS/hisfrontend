@@ -10,6 +10,7 @@ import type {
   PatientDeactivateRequest,
   PatientDeathUpdateRequest,
   PatientTemporaryConversionRequest,
+  PatientActivateRequest,
 } from "../type/patientType";
 
 type PatientState = {
@@ -36,6 +37,12 @@ type PatientState = {
   temporaryConversionLoading: boolean;
   temporaryConversionError: string | null;
   temporaryConversionSuccess: boolean;
+  conversionDuplicateLoading: boolean;
+  conversionDuplicated: boolean | null;
+  conversionDuplicateError: string | null;
+  activateLoading: boolean;
+  activateError: string | null;
+  activateSuccess: boolean;
 };
 
 const initialState: PatientState = {
@@ -62,6 +69,12 @@ const initialState: PatientState = {
   temporaryConversionLoading: false,
   temporaryConversionError: null,
   temporaryConversionSuccess: false,
+  conversionDuplicateLoading: false,
+  conversionDuplicated: null,
+  conversionDuplicateError: null,
+  activateLoading: false,
+  activateError: null,
+  activateSuccess: false,
 };
 
 const patientSlice = createSlice({
@@ -161,6 +174,32 @@ const patientSlice = createSlice({
       state.temporaryConversionSuccess = false;
     },
 
+    checkConversionDuplicateRequest(
+      state,
+      _action: PayloadAction<PatientDuplicateCheckRequest>,
+    ) {
+      void _action;
+      state.conversionDuplicateLoading = true;
+      state.conversionDuplicated = null;
+      state.conversionDuplicateError = null;
+    },
+
+    checkConversionDuplicateSuccess(state, action: PayloadAction<boolean>) {
+      state.conversionDuplicateLoading = false;
+      state.conversionDuplicated = action.payload;
+    },
+
+    checkConversionDuplicateFailure(state, action: PayloadAction<string>) {
+      state.conversionDuplicateLoading = false;
+      state.conversionDuplicateError = action.payload;
+    },
+
+    resetConversionDuplicate(state) {
+      state.conversionDuplicateLoading = false;
+      state.conversionDuplicated = null;
+      state.conversionDuplicateError = null;
+    },
+
     updatePatientDeathRequest(
       state,
       _action: PayloadAction<PatientDeathUpdateRequest>,
@@ -217,6 +256,33 @@ const patientSlice = createSlice({
       state.deactivateLoading = false;
       state.deactivateError = null;
       state.deactivateSuccess = false;
+    },
+
+    activatePatientRequest(
+      state,
+      _action: PayloadAction<PatientActivateRequest>,
+    ) {
+      void _action;
+      state.activateLoading = true;
+      state.activateError = null;
+      state.activateSuccess = false;
+    },
+
+    activatePatientSuccess(state, action: PayloadAction<PatientDetail>) {
+      state.activateLoading = false;
+      state.activateSuccess = true;
+      state.patientDetail = action.payload;
+    },
+
+    activatePatientFailure(state, action: PayloadAction<string>) {
+      state.activateLoading = false;
+      state.activateError = action.payload;
+    },
+
+    resetPatientActivation(state) {
+      state.activateLoading = false;
+      state.activateError = null;
+      state.activateSuccess = false;
     },
 
     registerPatientRequest: {
@@ -292,6 +358,14 @@ export const {
   convertTemporaryPatientSuccess,
   convertTemporaryPatientFailure,
   resetTemporaryPatientConversion,
+  checkConversionDuplicateRequest,
+  checkConversionDuplicateSuccess,
+  checkConversionDuplicateFailure,
+  resetConversionDuplicate,
+  activatePatientRequest,
+  activatePatientSuccess,
+  activatePatientFailure,
+  resetPatientActivation,
 } = patientSlice.actions;
 
 export default patientSlice.reducer;

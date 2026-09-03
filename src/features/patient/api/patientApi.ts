@@ -18,6 +18,8 @@ import type {
   PatientDeathUpdateRequest,
   PatientTemporaryConversionApiResponse,
   PatientTemporaryConversionRequest,
+  PatientActivateApiResponse,
+  PatientActivateRequest,
 } from "../type/patientType";
 
 /** GET /api/patient/list */
@@ -108,6 +110,17 @@ export async function deactivatePatientApi(
 ): Promise<PatientDetail> {
   const response = await apiClient.patch<PatientDeactivateApiResponse>(
     `/api/patient/${encodeURIComponent(request.patientId)}/deactivate`,
+  );
+
+  return response.data.data;
+}
+
+/** PATCH /api/patient/{patientId}/activate */
+export async function activatePatientApi(
+  request: PatientActivateRequest,
+): Promise<PatientDetail> {
+  const response = await apiClient.patch<PatientActivateApiResponse>(
+    `/api/patient/${encodeURIComponent(request.patientId)}/activate`,
   );
 
   return response.data.data;

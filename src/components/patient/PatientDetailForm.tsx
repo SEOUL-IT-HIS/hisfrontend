@@ -14,10 +14,14 @@ import {
   StatusBadge,
 } from "@/components/common";
 import {
+  activatePatientRequest,
+  checkConversionDuplicateRequest,
   deactivatePatientRequest,
   convertTemporaryPatientRequest,
   fetchPatientDetailRequest,
   resetPatientDeactivation,
+  resetPatientActivation,
+  resetConversionDuplicate,
   resetPatientDeathUpdate,
   resetPatientUpdate,
   resetTemporaryPatientConversion,
@@ -60,6 +64,13 @@ const getBirthDateFromResidentRegNo = (residentRegNo: string) => {
   }
 
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+};
+
+const getGenderFromResidentRegNo = (residentRegNo: string) => {
+  const typeCode = residentRegNo.charAt(6);
+  if (["1", "3", "5", "7"].includes(typeCode)) return "01" as const;
+  if (["2", "4", "6", "8"].includes(typeCode)) return "02" as const;
+  return null;
 };
 
 const formatPhoneNo = (value: string) => {
@@ -105,6 +116,12 @@ export default function PatientDetailForm({
     temporaryConversionLoading,
     temporaryConversionError,
     temporaryConversionSuccess,
+    conversionDuplicateLoading,
+    conversionDuplicated,
+    conversionDuplicateError,
+    activateLoading,
+    activateError,
+    activateSuccess,
   } = useSelector((state: RootState) => state.patient);
 
   const isEditing = editing && !updateSuccess;
@@ -112,8 +129,10 @@ export default function PatientDetailForm({
   useEffect(() => {
     dispatch(resetPatientUpdate());
     dispatch(resetPatientDeactivation());
+    dispatch(resetPatientActivation());
     dispatch(resetPatientDeathUpdate());
     dispatch(resetTemporaryPatientConversion());
+    dispatch(resetConversionDuplicate());
     dispatch(fetchPatientDetailRequest(patientId));
   }, [dispatch, patientId]);
 
@@ -176,6 +195,7 @@ export default function PatientDetailForm({
     setConversionGenderCd(patientDetail.genderCd);
     setValidationError(null);
     dispatch(resetTemporaryPatientConversion());
+    dispatch(resetConversionDuplicate());
     setConversionEditing(true);
   };
 
@@ -183,6 +203,27 @@ export default function PatientDetailForm({
     setConversionEditing(false);
     setValidationError(null);
     dispatch(resetTemporaryPatientConversion());
+    dispatch(resetConversionDuplicate());
+  };
+
+  const checkConversionDuplicate = () => {
+    if (!/^\d{13}$/.test(conversionResidentRegNo)) {
+      setValidationError("주민등록번호 13자리를 먼저 입력해 주세요.");
+      return;
+    }
+
+    if (!getBirthDateFromResidentRegNo(conversionResidentRegNo)) {
+      setValidationError("올바른 주민등록번호를 입력해 주세요.");
+      return;
+    }
+
+    setValidationError(null);
+    dispatch(
+      checkConversionDuplicateRequest({
+        residentRegNo: conversionResidentRegNo,
+        excludePatientId: patientId,
+      }),
+    );
   };
 
   const submitTemporaryConversion = () => {
@@ -207,7 +248,12 @@ export default function PatientDetailForm({
       return;
     }
 
-    if (!window.confirm("입력한 정보로 정식환자 전환을 진행하시겠습니까?")) {
+    if (conversionDuplicated !== false) {
+      setValidationError("주민등록번호 중복 확인을 완료해 주세요.");
+      return;
+    }
+
+    if (!window.confirm("입력한 정보로 정규환자 전환을 진행하시겠습니까?")) {
       return;
     }
 
@@ -248,6 +294,24 @@ export default function PatientDetailForm({
         patientId,
       }),
     );
+  };
+
+  const activatePatient = () => {
+    if (
+      !patientDetail ||
+      patientDetail.statusCd === "ACTIVE" ||
+      patientDetail.deathYn === "Y" ||
+      activateLoading
+    ) {
+      return;
+    }
+
+    if (!window.confirm("환자를 활성화하시겠습니까?\n활성화 후 신규 접수에 사용할 수 있습니다.")) {
+      return;
+    }
+
+    dispatch(resetPatientActivation());
+    dispatch(activatePatientRequest({ patientId }));
   };
 
   const submitUpdate = (event: React.FormEvent<HTMLFormElement>) => {
@@ -368,12 +432,22 @@ export default function PatientDetailForm({
         <Alert variant="success">환자가 비활성화되었습니다.</Alert>
       ) : null}
 
+      {activateError ? <Alert variant="error">{activateError}</Alert> : null}
+
+      {activateSuccess ? (
+        <Alert variant="success">환자가 활성화되었습니다.</Alert>
+      ) : null}
+
       {deathUpdateError ? (
         <Alert variant="error">{deathUpdateError}</Alert>
       ) : null}
 
       {deathUpdateSuccess ? (
-        <Alert variant="success">사망정보가 수정되었습니다.</Alert>
+        <Alert variant="success">
+          {patientDetail?.deathYn === "N" && patientDetail.statusCd === "INACTIVE"
+            ? "사망정보가 해제되었습니다. 환자를 다시 사용하려면 환자관리상태를 활성화해 주세요."
+            : "사망정보가 수정되었습니다."}
+        </Alert>
       ) : null}
 
       {temporaryConversionError ? (
@@ -381,12 +455,12 @@ export default function PatientDetailForm({
       ) : null}
 
       {temporaryConversionSuccess ? (
-        <Alert variant="success">정식환자 전환이 완료되었습니다.</Alert>
+        <Alert variant="success">정규환자 전환이 완료되었습니다.</Alert>
       ) : null}
 
       {patientDetail?.tempPatientYn === "Y" ? (
         <Alert>
-          신원이 확인되지 않은 임시환자입니다. 신원 확인 후 정식환자로
+          신원이 확인되지 않은 임시환자입니다. 신원 확인 후 정규환자로
           전환해 주세요.
         </Alert>
       ) : null}
@@ -420,7 +494,7 @@ export default function PatientDetailForm({
                       onClick={startTemporaryConversion}
                       disabled={temporaryConversionLoading}
                     >
-                      정식환자 전환
+                      정규환자 전환
                     </Button>
                   ) : null}
                   {patientDetail.statusCd === "ACTIVE" ? (
@@ -432,7 +506,20 @@ export default function PatientDetailForm({
                     >
                       {deactivateLoading ? "처리 중..." : "비활성화"}
                     </Button>
-                  ) : null}
+                  ) : patientDetail.deathYn === "N" ? (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={activatePatient}
+                      disabled={activateLoading}
+                    >
+                      {activateLoading ? "처리 중..." : "활성화"}
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="secondary" disabled>
+                      사망 환자 활성화 불가
+                    </Button>
+                  )}
 
                   <Button
                     type="button"
@@ -680,7 +767,7 @@ export default function PatientDetailForm({
             <div className="border-t border-slate-200">
               <div className="px-5 py-4">
                 <h2 className="text-base font-semibold text-slate-800">
-                  정식환자 전환
+                  정규환자 전환
                 </h2>
                 <p className="mt-1 text-xs text-slate-500">
                   환자 ID와 기존 기록은 유지되고 임시환자 표시만 해제됩니다.
@@ -703,24 +790,59 @@ export default function PatientDetailForm({
                 </FormField>
 
                 <FormField label="주민등록번호" required>
-                  <Input
-                    value={conversionResidentRegNo}
-                    onChange={(event) => {
-                      const residentRegNo = event.target.value
-                        .replace(/[^0-9]/g, "")
-                        .slice(0, 13);
-                      setConversionResidentRegNo(residentRegNo);
-                      setConversionBirthDate(
-                        getBirthDateFromResidentRegNo(residentRegNo) ?? "",
-                      );
-                      setValidationError(null);
-                    }}
-                    disabled={temporaryConversionLoading}
-                    inputMode="numeric"
-                    maxLength={13}
-                    placeholder="숫자 13자리"
-                    autoComplete="off"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      value={conversionResidentRegNo}
+                      onChange={(event) => {
+                        const residentRegNo = event.target.value
+                          .replace(/[^0-9]/g, "")
+                          .slice(0, 13);
+                        const genderCd = getGenderFromResidentRegNo(residentRegNo);
+                        setConversionResidentRegNo(residentRegNo);
+                        setConversionBirthDate(
+                          getBirthDateFromResidentRegNo(residentRegNo) ?? "",
+                        );
+                        if (genderCd) setConversionGenderCd(genderCd);
+                        setValidationError(null);
+                        dispatch(resetConversionDuplicate());
+                      }}
+                      disabled={
+                        temporaryConversionLoading || conversionDuplicateLoading
+                      }
+                      inputMode="numeric"
+                      maxLength={13}
+                      placeholder="숫자 13자리"
+                      autoComplete="off"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="shrink-0 whitespace-nowrap"
+                      onClick={checkConversionDuplicate}
+                      disabled={
+                        conversionResidentRegNo.length !== 13 ||
+                        temporaryConversionLoading ||
+                        conversionDuplicateLoading
+                      }
+                    >
+                      {conversionDuplicateLoading ? "확인 중..." : "중복 확인"}
+                    </Button>
+                  </div>
+                  {conversionDuplicated === false ? (
+                    <p className="mt-1 text-sm text-emerald-600">
+                      사용 가능한 주민등록번호입니다.
+                    </p>
+                  ) : null}
+                  {conversionDuplicated === true ? (
+                    <p className="mt-1 text-sm text-red-600">
+                      이미 등록된 주민등록번호입니다.
+                    </p>
+                  ) : null}
+                  {conversionDuplicateError ? (
+                    <p className="mt-1 text-sm text-red-600">
+                      {conversionDuplicateError}
+                    </p>
+                  ) : null}
                 </FormField>
 
                 <FormField
@@ -767,7 +889,11 @@ export default function PatientDetailForm({
                     type="button"
                     variant="primary"
                     onClick={submitTemporaryConversion}
-                    disabled={temporaryConversionLoading}
+                    disabled={
+                      temporaryConversionLoading ||
+                      conversionDuplicateLoading ||
+                      conversionDuplicated !== false
+                    }
                   >
                     {temporaryConversionLoading ? "전환 중..." : "전환"}
                   </Button>
