@@ -19,9 +19,9 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  REQUESTED: "예약 대기",
-  RESERVED: "예약중",
-  RELEASED: "해제됨",
+  REQUESTED: "Pending",
+  RESERVED: "Reserved",
+  RELEASED: "Released",
 };
 
 type BedReservationListProps = {
@@ -52,19 +52,19 @@ const BedReservationList = ({ embedded = false }: BedReservationListProps = {}) 
           <div />
         ) : (
           <div>
-            <h1 className="text-lg font-semibold text-slate-800">병상 예약 목록</h1>
-            <p className="mt-1 text-sm text-slate-500">등록된 병상 예약 현황입니다.</p>
+            <h1 className="text-lg font-semibold text-slate-800">Bed Reservation List</h1>
+            <p className="mt-1 text-sm text-slate-500">Current status of registered bed reservations.</p>
           </div>
         )}
         <Link
           href="/inpatient/bedmanagement/bedreservation/create"
           className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
         >
-          예약 등록
+          Register Reservation
         </Link>
       </div>
 
-      {listStatus.loading && <p className="text-sm text-slate-500">로딩중...</p>}
+      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
       {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
 
       {!listStatus.loading && !listStatus.error && (
@@ -73,13 +73,13 @@ const BedReservationList = ({ embedded = false }: BedReservationListProps = {}) 
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                  <th className="whitespace-nowrap px-4 py-3">환자명</th>
-                  <th className="whitespace-nowrap px-4 py-3">예약ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">병상ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">환자ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">예약시각</th>
-                  <th className="whitespace-nowrap px-4 py-3">예상입원시각</th>
-                  <th className="whitespace-nowrap px-4 py-3">상태</th>
+                  <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
+                  <th className="whitespace-nowrap px-4 py-3">Reservation ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Bed ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Patient ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Reserved At</th>
+                  <th className="whitespace-nowrap px-4 py-3">Expected Admission At</th>
+                  <th className="whitespace-nowrap px-4 py-3">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -93,8 +93,8 @@ const BedReservationList = ({ embedded = false }: BedReservationListProps = {}) 
                   >
                     <td className="whitespace-nowrap px-4 py-3 text-slate-800">
                       {bedReservation.patientId
-                        ? (patientNameById.get(bedReservation.patientId) ?? "조회중...")
-                        : "없음"}
+                        ? (patientNameById.get(bedReservation.patientId) ?? "Loading...")
+                        : "None"}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 font-medium text-sky-700">
                       {bedReservation.bedReservationId}
@@ -117,7 +117,7 @@ const BedReservationList = ({ embedded = false }: BedReservationListProps = {}) 
               </tbody>
             </table>
             {bedReservations.length === 0 && (
-              <p className="px-4 py-6 text-center text-sm text-slate-500">예약 데이터가 없습니다.</p>
+              <p className="px-4 py-6 text-center text-sm text-slate-500">No reservation data available.</p>
             )}
           </div>
 

@@ -41,19 +41,19 @@ const VitalSignList = ({ embedded = false }: VitalSignListProps = {}) => {
           <div />
         ) : (
           <div>
-            <h1 className="text-lg font-semibold text-slate-800">활력징후 목록</h1>
-            <p className="mt-1 text-sm text-slate-500">환자별 활력징후 측정 기록입니다.</p>
+            <h1 className="text-lg font-semibold text-slate-800">Vital Signs List</h1>
+            <p className="mt-1 text-sm text-slate-500">Vital sign measurement records by patient.</p>
           </div>
         )}
         <Link
           href="/inpatient/nursingrecord/vitalsign/create"
           className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
         >
-          활력징후 등록
+          Register Vital Signs
         </Link>
       </div>
 
-      {listStatus.loading && <p className="text-sm text-slate-500">로딩중...</p>}
+      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
       {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
 
       {!listStatus.loading && !listStatus.error && (
@@ -61,21 +61,21 @@ const VitalSignList = ({ embedded = false }: VitalSignListProps = {}) => {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <th className="whitespace-nowrap px-4 py-3">환자명</th>
-                <th className="whitespace-nowrap px-4 py-3">측정일시</th>
-                <th className="whitespace-nowrap px-4 py-3">체온</th>
-                <th className="whitespace-nowrap px-4 py-3">맥박</th>
-                <th className="whitespace-nowrap px-4 py-3">호흡수</th>
-                <th className="whitespace-nowrap px-4 py-3">혈압</th>
-                <th className="whitespace-nowrap px-4 py-3">산소포화도</th>
-                <th className="whitespace-nowrap px-4 py-3">측정자</th>
-                <th className="whitespace-nowrap px-4 py-3">상세</th>
+                <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
+                <th className="whitespace-nowrap px-4 py-3">Measured At</th>
+                <th className="whitespace-nowrap px-4 py-3">Temperature</th>
+                <th className="whitespace-nowrap px-4 py-3">Pulse</th>
+                <th className="whitespace-nowrap px-4 py-3">Respiration Rate</th>
+                <th className="whitespace-nowrap px-4 py-3">Blood Pressure</th>
+                <th className="whitespace-nowrap px-4 py-3">SpO2</th>
+                <th className="whitespace-nowrap px-4 py-3">Recorded By</th>
+                <th className="whitespace-nowrap px-4 py-3">Details</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {vitalSigns.map((vitalSign) => {
                 const patientId = patientIdByAdmissionId.get(vitalSign.admissionId);
-                const patientName = patientId ? (patientNameById.get(patientId) ?? "조회중...") : "없음";
+                const patientName = patientId ? (patientNameById.get(patientId) ?? "Loading...") : "None";
                 return (
                   <tr key={vitalSign.vitalSignId} className="hover:bg-slate-50">
                     <td className="whitespace-nowrap px-4 py-3 text-slate-800">{patientName}</td>
@@ -97,7 +97,7 @@ const VitalSignList = ({ embedded = false }: VitalSignListProps = {}) => {
             </tbody>
           </table>
           {vitalSigns.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-slate-500">활력징후 데이터가 없습니다.</p>
+            <p className="px-4 py-6 text-center text-sm text-slate-500">No vital signs data available.</p>
           )}
         </div>
       )}
