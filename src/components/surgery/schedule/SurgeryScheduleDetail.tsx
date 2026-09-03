@@ -13,6 +13,7 @@ import {
 } from "@/components/common";
 import { fetchEmpApi } from "@/features/emp/api/empApi";
 import type { Emp } from "@/features/emp/types/empTypes";
+import { usePatientNames } from "@/features/surgery/common/usePatientNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   fetchRoomsRequest,
@@ -80,16 +81,16 @@ import {
 type Props = { surgeryId: string };
 
 const STATUS_LABEL: Record<string, string> = {
-  [SURGERY_STATUS.SCHEDULED]: "예약",
-  [SURGERY_STATUS.IN_PROGRESS]: "진행중",
-  [SURGERY_STATUS.COMPLETED]: "완료",
-  [SURGERY_STATUS.CANCELLED]: "취소",
+  [SURGERY_STATUS.SCHEDULED]: "Scheduled",
+  [SURGERY_STATUS.IN_PROGRESS]: "In progress",
+  [SURGERY_STATUS.COMPLETED]: "Completed",
+  [SURGERY_STATUS.CANCELLED]: "Cancelled",
 };
 
 /** 이력의 statusType 을 사람이 읽는 말로. 서버 내부 구분자라 공통코드에 없다 */
 const TYPE_LABEL: Record<string, string> = {
-  STATUS: "상태",
-  PROGRESS: "진행단계",
+  STATUS: "Status",
+  PROGRESS: "Progress",
 };
 
 export default function SurgeryScheduleDetail({ surgeryId }: Props) {
@@ -106,6 +107,11 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
   const [employees, setEmployees] = useState<Emp[]>([]);
   const [empError, setEmpError] = useState("");
 
+  // 환자도 같은 이유로 이름을 받아온다. surgery 가 아직 없으면 빈 배열이라 호출도 없다.
+  const { names: patientNames } = usePatientNames(
+    surgery ? [surgery.patientId] : [],
+  );
+
   useEffect(() => {
     dispatch(fetchSurgeryRequest(surgeryId));
     dispatch(fetchHistoryRequest(surgeryId));
@@ -121,7 +127,7 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
       .catch((err: unknown) => {
         if (ignore) return;
         setEmpError(
-          err instanceof Error ? err.message : "직원 목록 조회에 실패했습니다.",
+          err instanceof Error ? err.message : "Failed to load the employee list.",
         );
       });
     return () => {
@@ -130,7 +136,7 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
   }, []);
 
   if (loading && !surgery) {
-    return <p className="text-sm text-slate-500">불러오는 중입니다…</p>;
+    return <p className="text-sm text-slate-500">Loading…</p>;
   }
   if (!surgery) {
     return <Alert>{resolveSurgeryMessage(error || "SUR035")}</Alert>;
@@ -138,14 +144,14 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
 
   /** 수술실 코드를 이름으로. 못 찾으면 코드라도 보여준다 — 빈칸보다는 낫다 */
   const roomLabel = (code?: string | null) => {
-    if (!code) return "미배정";
+    if (!code) return "Unassigned";
     const room = (rooms?.items ?? []).find((r) => r.roomCode === code);
     return room ? `${room.roomName} (${room.roomCode})` : code;
   };
 
   /** 직원 ID 를 이름으로. admin 의 empId 는 number, 수술은 문자열이라 맞춰 비교한다 */
   const empLabel = (id?: string | null) => {
-    if (!id) return "미배정";
+    if (!id) return "Unassigned";
     const emp = employees.find((e) => String(e.empId) === id);
     return emp ? `${emp.empName} (${emp.empNo})` : id;
   };
@@ -153,17 +159,17 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
   const historyColumns: DataTableColumn<SurgeryStatusHistory>[] = [
     {
       key: "changedAt",
-      header: "변경일시",
+      header: "Changed at",
       render: (h) => h.changedAt?.replace("T", " ").slice(0, 16) ?? "-",
     },
     {
       key: "statusType",
-      header: "구분",
+      header: "Type",
       render: (h) => TYPE_LABEL[h.statusType] ?? h.statusType,
     },
     {
       key: "change",
-      header: "변경",
+      header: "Change",
       render: (h) => (
         <span>
           {h.beforeCd ? (STATUS_LABEL[h.beforeCd] ?? h.beforeCd) : "—"}
@@ -172,10 +178,10 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
         </span>
       ),
     },
-    { key: "reasonCd", header: "사유", render: (h) => h.reasonCd ?? "-" },
+    { key: "reasonCd", header: "Reason", render: (h) => h.reasonCd ?? "-" },
     {
       key: "changedBy",
-      header: "변경자",
+      header: "Changed by",
       // 로그인 세션이 없어 서버가 채우지 못한다(SL2-303·304와 같은 벽)
       render: (h) => h.changedBy ?? "-",
     },
@@ -191,32 +197,34 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
       <Panel className="p-5">
         <div className="mb-3 flex items-center gap-2">
           <span className="text-sm font-medium text-slate-800">
-            {surgery.surgeryName ?? "수술명 미입력"}
+            {surgery.surgeryName ?? "No surgery name"}
           </span>
           <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
             {STATUS_LABEL[surgery.statusCd] ?? surgery.statusCd}
           </span>
           {surgery.emergencyYn === "Y" ? (
-            <StatusBadge value="Y" activeLabel="응급" />
+            <StatusBadge value="Y" activeLabel="Emergency" />
           ) : null}
         </div>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs sm:grid-cols-4">
           <div>
-            <dt className="text-slate-500">환자</dt>
-            <dd className="text-slate-800">{surgery.patientId}</dd>
+            <dt className="text-slate-500">Patient</dt>
+            <dd className="text-slate-800">
+              {patientNames[surgery.patientId] ?? surgery.patientId}
+            </dd>
           </div>
           <div>
-            <dt className="text-slate-500">수술일</dt>
+            <dt className="text-slate-500">Date</dt>
             <dd className="text-slate-800">{surgery.surgeryDt}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">실제 시작</dt>
+            <dt className="text-slate-500">Actual start</dt>
             <dd className="text-slate-800">
               {surgery.actualStartDt?.replace("T", " ").slice(0, 16) ?? "-"}
             </dd>
           </div>
           <div>
-            <dt className="text-slate-500">실제 종료</dt>
+            <dt className="text-slate-500">Actual end</dt>
             <dd className="text-slate-800">
               {surgery.actualEndDt?.replace("T", " ").slice(0, 16) ?? "-"}
             </dd>
@@ -226,36 +234,37 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
 
       {/* ---- 배정 (읽기 전용) ---- */}
       <Panel className="p-5">
-        <h2 className="mb-1 text-sm font-medium text-slate-700">배정</h2>
+        <h2 className="mb-1 text-sm font-medium text-slate-700">Assignment</h2>
         <p className="mb-4 text-xs text-slate-500">
-          배정은 요청을 승인할 때 확정되며 이후에는 바꿀 수 없습니다. 바꿔야 하면{" "}
+          The assignment is fixed when the order is approved and cannot be changed
+          afterwards. To change it, go to{" "}
           <Link href="/surgery/worklist" className="text-sky-600 underline">
-            수술 업무
+            Surgery worklist
           </Link>
-          에서 수술을 취소하고 진료 쪽에서 다시 요청받아야 합니다.
+          , cancel the surgery, and have it requested again.
         </p>
 
         <dl className="grid gap-x-6 gap-y-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <dt className="text-slate-500">수술실</dt>
+            <dt className="text-slate-500">Room</dt>
             <dd className="text-slate-800">{roomLabel(surgery.roomCode)}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">집도의</dt>
+            <dt className="text-slate-500">Surgeon</dt>
             <dd className="text-slate-800">{empLabel(surgery.surgeonId)}</dd>
           </div>
           <div>
-            <dt className="text-slate-500">마취의</dt>
+            <dt className="text-slate-500">Anesthesiologist</dt>
             <dd className="text-slate-800">
               {/* 무마취 시술은 마취의가 없는 것이 정상이다 — '미배정'으로 보이면
                   누락으로 읽히므로 사유를 밝혀 준다 */}
               {surgery.anesthesiaYn === "N"
-                ? "해당 없음 (무마취 시술)"
+                ? "Not applicable (no anesthesia)"
                 : empLabel(surgery.anesthesiologistId)}
             </dd>
           </div>
           <div>
-            <dt className="text-slate-500">간호사</dt>
+            <dt className="text-slate-500">Nurse</dt>
             <dd className="text-slate-800">{empLabel(surgery.nurseId)}</dd>
           </div>
         </dl>
@@ -264,25 +273,26 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
       {/* ---- 상태변경 이력 ---- */}
       <div>
         <h2 className="mb-3 text-sm font-medium text-slate-700">
-          상태 변경 이력
+          Status change history
         </h2>
         <DataTable
           columns={historyColumns}
           rows={history}
           rowKey={(h) => h.historyId}
           loading={loading}
-          emptyMessage="이력이 없습니다."
+          emptyMessage="No history."
           minWidthClassName="min-w-[560px]"
         />
       </div>
 
       {/* 기록도 상태 전이도 워크리스트가 맡는다 — 여기서는 길만 열어둔다 */}
       <p className="text-xs text-slate-500">
-        수술 시작·종료·취소와 동의서·체크리스트·마취기록·수술기록지는{" "}
+        Start / end / cancel, consents, checklist, anesthesia and operative records
+        are all handled in{" "}
         <Link href="/surgery/worklist" className="text-sky-600 underline">
-          수술 업무
-        </Link>{" "}
-        화면에서 처리합니다.
+          Surgery worklist
+        </Link>
+        .
       </p>
     </div>
   );

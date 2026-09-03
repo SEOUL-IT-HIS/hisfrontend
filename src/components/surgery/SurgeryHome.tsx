@@ -46,26 +46,30 @@ import {
  * 셈이다. 홈에서 "금일 진행중 3건"을 보고 그 3건이 뭔지 알려면 메뉴를 하나 더
  * 눌러야 했다.</p>
  *
- * <p>이제 숫자 바로 아래에 그 목록이 있다. 사이드바의 'OR Monitoring' 메뉴 삭제는
- * admin 에 따로 요청한다(메뉴 테이블이 admin-service DB 소유라 우리가 못 지운다).</p>
+ * <p>이제 숫자 바로 아래에 그 목록이 있다. {@code /surgery/monitoring} 라우트는
+ * 지웠다 — 사이드바의 'OR Monitoring' 메뉴가 지워질 때까지는 그 메뉴를 누르면 404 다.
+ * 메뉴 테이블이 admin-service DB 소유라 우리가 못 지우고, 삭제를 따로 요청해 두었다.
+ * 리다이렉트로 가려 두지 않은 이유는 같은 사정으로 깨져 있는 메뉴가 셋 더 있어서다
+ * (OR Checklist·Consent·Records — 수술 업무 탭으로 합치면서 라우트를 지웠다).
+ * 넷 중 하나만 가리면 admin 쪽에서 남은 셋의 삭제가 덜 급해 보인다.</p>
  */
 
 const STATUS_LABEL: { key: string; label: string }[] = [
-  { key: SURGERY_STATUS.SCHEDULED, label: "예약" },
-  { key: SURGERY_STATUS.IN_PROGRESS, label: "진행중" },
-  { key: SURGERY_STATUS.COMPLETED, label: "완료" },
+  { key: SURGERY_STATUS.SCHEDULED, label: "Scheduled" },
+  { key: SURGERY_STATUS.IN_PROGRESS, label: "In progress" },
+  { key: SURGERY_STATUS.COMPLETED, label: "Completed" },
 ];
 
 /**
  * 지금 손이 필요한 곳으로 가는 길만 둔다 — 전체 메뉴는 사이드바가 갖는다.
  *
- * <p>'수술 현황'(/surgery/monitoring)이 빠졌다. 그 화면이 이 화면 안으로 들어와서
- * 자기 자신으로 가는 링크가 됐기 때문이다.</p>
+ * <p>'수술 현황'이 빠졌다. 그 화면이 이 화면 안으로 들어와서 자기 자신으로 가는
+ * 링크가 됐기 때문이다.</p>
  */
 const SHORTCUTS = [
-  { href: "/surgery/schedule/requests", label: "배정 대기" },
-  { href: "/surgery/worklist", label: "수술 업무" },
-  { href: "/surgery/schedule", label: "수술 배정 관리" },
+  { href: "/surgery/schedule/requests", label: "Pending assignment" },
+  { href: "/surgery/worklist", label: "Surgery worklist" },
+  { href: "/surgery/schedule", label: "Surgery assignment" },
 ];
 
 export default function SurgeryHome() {
@@ -95,16 +99,16 @@ export default function SurgeryHome() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {/* 배정 대기를 맨 앞에 둔다 — 유일하게 '지금 해야 할 일'이다 */}
         <Panel className="p-4">
-          <p className="text-xs text-slate-500">배정 대기</p>
+          <p className="text-xs text-slate-500">Pending assignment</p>
           <p className="mt-1 text-2xl font-medium text-slate-800">{waiting}</p>
           {emergencyWaiting > 0 ? (
-            <p className="mt-1 text-xs text-rose-600">응급 {emergencyWaiting}건</p>
+            <p className="mt-1 text-xs text-rose-600">{emergencyWaiting} emergency</p>
           ) : null}
         </Panel>
 
         {STATUS_LABEL.map((s) => (
           <Panel key={s.key} className="p-4">
-            <p className="text-xs text-slate-500">금일 {s.label}</p>
+            <p className="text-xs text-slate-500">Today · {s.label}</p>
             <p className="mt-1 text-2xl font-medium text-slate-800">
               {rows.filter((r) => r.statusCd === s.key).length}
             </p>
@@ -126,7 +130,7 @@ export default function SurgeryHome() {
 
       {/* 위 카드가 센 그 건들의 목록. 같은 조회 결과를 쓰므로 요청이 늘지 않는다 */}
       <div>
-        <h2 className="mb-3 text-sm font-medium text-slate-700">금일 수술</h2>
+        <h2 className="mb-3 text-sm font-medium text-slate-700">Today&apos;s surgeries</h2>
         <TodaySurgeryBoard />
       </div>
     </div>

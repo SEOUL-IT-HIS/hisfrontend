@@ -9,6 +9,7 @@ import {
   StatusBadge,
   type DataTableColumn,
 } from "@/components/common";
+import { usePatientNames } from "@/features/surgery/common/usePatientNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import type { Surgery } from "@/features/surgery/schedule/types";
 import {
@@ -44,6 +45,10 @@ export default function TodaySurgeryBoard() {
   const loading = useSelector(selectScheduleLoading);
   const error = useSelector(selectScheduleError);
 
+  const { names: patientNames } = usePatientNames(
+    surgeries.map((s) => s.patientId),
+  );
+
   /*
     조회는 부모(SurgeryHome)가 한다.
 
@@ -53,26 +58,32 @@ export default function TodaySurgeryBoard() {
   */
 
   const columns: DataTableColumn<Surgery>[] = [
-    { key: "surgeryName", header: "수술명", render: (s) => s.surgeryName ?? "-" },
-    { key: "patientId", header: "환자ID", render: (s) => s.patientId },
-    { key: "roomCode", header: "수술실", render: (s) => s.roomCode ?? "미배정" },
-    { key: "statusCd", header: "상태", render: (s) => s.statusCd },
+    { key: "surgeryName", header: "Surgery", render: (s) => s.surgeryName ?? "-" },
+    // 환자는 이름으로 보여준다 — SURGERY 는 patient_id 만 갖고 있어(§14.1)
+    // 예전에는 UUID 가 그대로 떴다. 못 불러오면 ID 로 되돌아간다.
+    {
+      key: "patientId",
+      header: "Patient",
+      render: (s) => patientNames[s.patientId] ?? s.patientId,
+    },
+    { key: "roomCode", header: "Room", render: (s) => s.roomCode ?? "Unassigned" },
+    { key: "statusCd", header: "Status", render: (s) => s.statusCd },
     {
       key: "emergencyYn",
-      header: "응급",
+      header: "Emergency",
       render: (s) => (
         <StatusBadge
           value={s.emergencyYn}
-          activeLabel="응급"
-          inactiveLabel="일반"
+          activeLabel="Emergency"
+          inactiveLabel="Routine"
         />
       ),
     },
-    { key: "actualStartDt", header: "시작", render: (s) => s.actualStartDt ?? "-" },
-    { key: "actualEndDt", header: "종료", render: (s) => s.actualEndDt ?? "-" },
+    { key: "actualStartDt", header: "Start", render: (s) => s.actualStartDt ?? "-" },
+    { key: "actualEndDt", header: "End", render: (s) => s.actualEndDt ?? "-" },
     {
       key: "detail",
-      header: "처리",
+      header: "Action",
       /*
         상태를 바꾸는 버튼(시작·종료)을 걷어냈다.
 
@@ -87,7 +98,7 @@ export default function TodaySurgeryBoard() {
       render: (s) => (
         <Link href={`/surgery/schedule/detail/${s.surgeryId}`}>
           <Button variant="secondary" className="h-8 px-3 text-xs">
-            상세 · 처리
+            Detail
           </Button>
         </Link>
       ),
@@ -103,7 +114,7 @@ export default function TodaySurgeryBoard() {
         rows={surgeries}
         rowKey={(s) => s.surgeryId}
         loading={loading}
-        emptyMessage="금일 예정된 수술이 없습니다."
+        emptyMessage="No surgeries are scheduled for today."
         minWidthClassName="min-w-[960px]"
       />
     </div>
