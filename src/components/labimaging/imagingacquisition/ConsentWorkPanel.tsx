@@ -31,7 +31,6 @@ import {
   hasValidConsent,
   type ConsentSummary,
 } from "@/features/labimaging/imagingacquisition/types";
-import type { ImageReceptionSummary } from "@/features/labimaging/imagingorder/types";
 
 /**
  * 선택한 영상오더의 동의 작업 영역 — 등록 폼 + 동의 이력.
@@ -65,10 +64,22 @@ function formatDateTime(value?: string) {
   return value.replace("T", " ").slice(0, 16);
 }
 
+/**
+ * ⚠ 프롭 타입을 특정 DTO 로 고정하지 않고 필요한 필드만 받는다.
+ *   이 패널은 동의 화면(ImageReceptionSummary)과 영상 워크리스트(ImageWorklistItem)
+ *   양쪽에서 쓰이는데, 정작 쓰는 값은 아래 두 개뿐이다.
+ *   DTO 를 통째로 요구하면 목록이 하나 늘 때마다 이 파일을 고쳐야 한다.
+ */
+type ConsentWorkTarget = {
+  /** 동의는 접수가 아니라 오더에 붙는다. (CONSENT.image_order_id) */
+  imageOrderId: string;
+  patientId: string;
+};
+
 export default function ConsentWorkPanel({
   reception,
 }: {
-  reception: ImageReceptionSummary;
+  reception: ConsentWorkTarget;
 }) {
   const dispatch = useDispatch<AppDispatch>();
 

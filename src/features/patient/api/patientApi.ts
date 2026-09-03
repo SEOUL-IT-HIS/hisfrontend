@@ -16,6 +16,8 @@ import type {
   PatientDeactivateRequest,
   PatientDeathUpdateApiResponse,
   PatientDeathUpdateRequest,
+  PatientTemporaryConversionApiResponse,
+  PatientTemporaryConversionRequest,
 } from "../type/patientType";
 
 /** GET /api/patient/list */
@@ -65,6 +67,26 @@ export async function updatePatientApi(
   return response.data.data;
 }
 
+/** PATCH /api/patient/{patientId}/convert-from-temporary */
+export async function convertTemporaryPatientApi(
+  request: PatientTemporaryConversionRequest,
+): Promise<PatientDetail> {
+  const response =
+    await apiClient.patch<PatientTemporaryConversionApiResponse>(
+      `/api/patient/${encodeURIComponent(
+        request.patientId,
+      )}/convert-from-temporary`,
+      {
+        patientName: request.patientName.trim(),
+        residentRegNo: request.residentRegNo.trim(),
+        birthDate: request.birthDate,
+        genderCd: request.genderCd,
+      },
+    );
+
+  return response.data.data;
+}
+
 /** PATCH /api/patient/{patientId}/death-status */
 export async function updatePatientDeathApi(
   request: PatientDeathUpdateRequest,
@@ -97,10 +119,24 @@ export async function registerPatientApi(
 ): Promise<Patient> {
   const response = await apiClient.post<PatientRegisterApiResponse>(
     "/api/patient/register",
-    patientData,
+    {
+      ...patientData,
+      patientName: patientData.patientName.trim() || null,
+      birthDate: patientData.birthDate || null,
+      residentRegNo: patientData.residentRegNo.trim() || null,
+      tempRegisterReason:
+        patientData.tempPatientYn === "Y"
+          ? patientData.tempRegisterReason?.trim() || null
+          : null,
+    },
   );
 
-  return response.data.data;
+  const patient = response.data.data;
+
+  return {
+    ...patient,
+    birthDate: patient.birthDate ?? "",
+  };
 }
 
 /** POST /api/patient/duplicate-check */

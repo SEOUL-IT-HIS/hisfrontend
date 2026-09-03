@@ -57,7 +57,7 @@ const columns: DataTableColumn<PatientListItem>[] = [
   {
     key: "birthDate",
     header: "생년월일",
-    render: (patient) => patient.birthDate,
+    render: (patient) => patient.birthDate ?? "-",
   },
 
   {
@@ -65,6 +65,27 @@ const columns: DataTableColumn<PatientListItem>[] = [
     header: "환자관리상태코드",
     render: (patient) =>
       patient.statusCd === "ACTIVE" ? "활성" : "비활성",
+  },
+  {
+    key: "tempPatientYn",
+    header: "환자 구분",
+    render: (patient) => (
+      <div className="flex flex-wrap gap-1">
+        {patient.tempPatientYn === "Y" ? (
+          <span className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
+            임시환자
+          </span>
+        ) : null}
+        {patient.deathYn === "Y" ? (
+          <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
+            사망
+          </span>
+        ) : null}
+        {patient.tempPatientYn !== "Y" && patient.deathYn !== "Y"
+          ? "-"
+          : null}
+      </div>
+    ),
   },
   {
     key: "createdAt",
