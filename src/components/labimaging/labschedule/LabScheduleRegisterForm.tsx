@@ -123,9 +123,9 @@ export default function LabScheduleRegisterForm({
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!form.scheduledAt) next.scheduledAt = "검사 예정일시는 필수입니다.";
+    if (!form.scheduledAt) next.scheduledAt = "Scheduled test date and time is required.";
     if (!form.confirmedById.trim())
-      next.confirmedById = "확정담당자ID는 필수입니다.";
+      next.confirmedById = "Confirming staff ID is required.";
     return next;
   }
 
@@ -163,11 +163,11 @@ export default function LabScheduleRegisterForm({
       {/* 대상 접수 컨텍스트 — 패널에서는 위쪽 머리말이 같은 내용을 보여줘서 끈다. */}
       {showReceptionSummary ? (
         <Panel className="px-4 py-3 text-sm">
-          <p className="text-slate-500">대상 접수</p>
+          <p className="text-slate-500">Target Reception</p>
           <p className="mt-1 font-semibold text-slate-700">
             {reception
               ? reception.receptionNo
-              : `접수ID ${labReceptionId || "(없음)"}`}
+              : `Reception ID ${labReceptionId || "(none)"}`}
           </p>
         </Panel>
       ) : null}
@@ -175,9 +175,9 @@ export default function LabScheduleRegisterForm({
       {lastCreated ? (
         <Alert variant="success">
           {mode === "create"
-            ? "검사 일정이 등록되었습니다."
-            : "검사 일정이 재등록되었습니다."}{" "}
-          (일정ID: {lastCreated.labScheduleId})
+            ? "Lab schedule has been registered."
+            : "Lab schedule has been rescheduled."}{" "}
+          (Schedule ID: {lastCreated.labScheduleId})
         </Alert>
       ) : null}
       {createError ? <Alert>{resolveLabScheduleMessage(createError)}</Alert> : null}
@@ -191,18 +191,24 @@ export default function LabScheduleRegisterForm({
             onClick={() => setMode(m)}
             disabled={creating}
           >
-            {m === "create" ? "신규 등록" : "재등록"}
+            {m === "create" ? "New" : "Reschedule"}
           </Button>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField
-          label="검사 예정일시"
+          label="Scheduled Test"
           required
-          hint="검사를 시행할 날짜와 시각입니다. 확정한 시각은 자동 기록됩니다."
+          hint="Date and time the test will be performed. The confirmation time is recorded automatically."
         >
           <Input
+            /*
+              ⚠ 날짜 위젯의 안내 문구("연도-월-일 --:--")는 우리 문자열이 아니라 브라우저가 그린다.
+                Chrome 은 그 언어를 element 가 물려받은 lang 으로 정하는데, 루트가 <html lang="ko"> 라
+                한글로 나온다. 루트 레이아웃은 공용(가이드 5.3)이라 손대지 않고 이 입력칸에만 en 을 건다.
+            */
+            lang="en"
             type="datetime-local"
             name="scheduledAt"
             value={form.scheduledAt}
@@ -214,7 +220,7 @@ export default function LabScheduleRegisterForm({
           ) : null}
         </FormField>
 
-        <FormField label="예약여부">
+        <FormField label="Appointment">
           <Select
             name="reservationYn"
             value={form.reservationYn}
@@ -224,21 +230,21 @@ export default function LabScheduleRegisterForm({
           />
         </FormField>
 
-        <FormField label="확정담당자ID" required>
+        <FormField label="Confirming Staff ID" required>
           <Input
             name="confirmedById"
             value={form.confirmedById}
             onChange={handleChange}
             maxLength={20}
             disabled={creating}
-            placeholder="예: STF00021"
+            placeholder="e.g. STF00021"
           />
           {errors.confirmedById ? (
             <span className="text-xs text-rose-500">{errors.confirmedById}</span>
           ) : null}
         </FormField>
 
-        <FormField label="안내메모" className="sm:col-span-2">
+        <FormField label="Notes" className="sm:col-span-2">
           <textarea
             name="guidanceNote"
             value={form.guidanceNote}
@@ -246,7 +252,7 @@ export default function LabScheduleRegisterForm({
             maxLength={500}
             disabled={creating}
             rows={3}
-            placeholder="선택 입력"
+            placeholder="Optional"
             className={textareaClass}
           />
         </FormField>
@@ -255,8 +261,9 @@ export default function LabScheduleRegisterForm({
       <FormActions
         // 패널에서는 화면을 옮기면 안 되므로 호출하는 쪽이 동작을 넘긴다.
         onCancel={onCancel ?? (() => router.push("/labimaging/laborder/worklist"))}
-        cancelLabel={onCancel ? "선택 해제" : "워크리스트로"}
-        submitLabel={mode === "create" ? "일정 등록" : "일정 재등록"}
+        cancelLabel={onCancel ? "Clear Selection" : "To Worklist"}
+        submitLabel={mode === "create" ? "Schedule" : "Reschedule"}
+        loadingLabel="Processing…"
         loading={creating}
         submitDisabled={!labReceptionId}
       />

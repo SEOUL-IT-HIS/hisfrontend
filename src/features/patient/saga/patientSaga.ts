@@ -8,6 +8,8 @@ import {
   updatePatientApi,
   deactivatePatientApi,
   updatePatientDeathApi,
+  convertTemporaryPatientApi,
+  activatePatientApi,
 } from "../api/patientApi";
 import {
   checkPatientDuplicateFailure,
@@ -31,6 +33,15 @@ import {
   updatePatientDeathFailure,
   updatePatientDeathRequest,
   updatePatientDeathSuccess,
+  convertTemporaryPatientFailure,
+  convertTemporaryPatientRequest,
+  convertTemporaryPatientSuccess,
+  checkConversionDuplicateFailure,
+  checkConversionDuplicateRequest,
+  checkConversionDuplicateSuccess,
+  activatePatientFailure,
+  activatePatientRequest,
+  activatePatientSuccess,
 } from "../slice/patientSlice";
 import type {
   Patient,
@@ -42,20 +53,45 @@ type PatientErrorResponse = {
   message?: string;
 };
 
+const patientErrorTranslations: Record<string, string> = {
+  "입력값이 올바르지 않습니다.": "The input is invalid.",
+  "일반환자는 환자명을 입력해야 합니다.": "Patient name is required for a regular patient.",
+  "일반환자는 생년월일을 입력해야 합니다.": "Date of birth is required for a regular patient.",
+  "일반환자는 주민등록번호를 입력해야 합니다.": "Resident registration number is required for a regular patient.",
+  "임시환자는 임시등록 사유를 입력해야 합니다.": "Temporary registration reason is required for a temporary patient.",
+  "올바른 주민등록번호 형식이 아닙니다.": "The resident registration number is invalid.",
+  "주민등록번호와 생년월일이 일치하지 않습니다.": "The resident registration number does not match the date of birth.",
+  "이미 등록된 주민등록번호입니다.": "This resident registration number is already registered.",
+  "임시환자만 정규환자로 전환할 수 있습니다.": "Only a temporary patient can be converted to a regular patient.",
+  "사망 상태인 환자는 활성화할 수 없습니다. 먼저 사망정보를 해제해 주세요.": "A deceased patient cannot be activated. Clear the death information first.",
+  "환자 정보를 찾을 수 없습니다.": "Patient information was not found.",
+  "사망 환자는 사망일시를 입력해야 합니다.": "The date and time of death is required.",
+  "사망일시는 현재 시각보다 이후일 수 없습니다.": "The date and time of death cannot be in the future.",
+  "요청 데이터 형식이 올바르지 않습니다.": "The request data format is invalid.",
+  "서버 오류가 발생했습니다.": "A server error occurred.",
+};
+
+function translatePatientError(message: string, fallbackMessage: string) {
+  const translatedMessage = patientErrorTranslations[message];
+  if (translatedMessage) return translatedMessage;
+
+  return /[가-힣]/.test(message) ? fallbackMessage : message;
+}
+
 function getPatientErrorMessage(error: unknown, fallbackMessage: string) {
   if (isAxiosError<PatientErrorResponse>(error)) {
     const responseMessage = error.response?.data?.message;
 
     if (responseMessage) {
-      return responseMessage;
+      return translatePatientError(responseMessage, fallbackMessage);
     }
 
     if (!error.response) {
-      return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.";
+      return "Unable to connect to the server. Please try again later.";
     }
 
     if (error.response.status >= 500) {
-      return "서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+      return "A server error occurred. Please try again later.";
     }
   }
 
@@ -65,7 +101,7 @@ function getPatientErrorMessage(error: unknown, fallbackMessage: string) {
       error.message.startsWith("Request failed with status code");
 
     return isTechnicalMessage
-      ? "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."
+      ? "Unable to connect to the server. Please try again later."
       : error.message;
   }
 
@@ -85,7 +121,7 @@ function* fetchPatientListSaga(
   } catch (error) {
     const message = getPatientErrorMessage(
       error,
-      "환자 목록 조회에 실패했습니다.",
+      "Failed to load the patient list.",
     );
 
     yield put(fetchPatientListFailure(message));
@@ -105,7 +141,7 @@ function* fetchPatientDetailSaga(
   } catch (error) {
     const message = getPatientErrorMessage(
       error,
-      "환자 상세 정보를 불러오지 못했습니다.",
+      "Failed to load patient details.",
     );
 
     yield put(fetchPatientDetailFailure(message));
@@ -120,7 +156,7 @@ function* updatePatientSaga(action: ReturnType<typeof updatePatientRequest>) {
   } catch (error) {
     const message = getPatientErrorMessage(
       error,
-      "환자 정보 수정에 실패했습니다.",
+      "Failed to update patient information.",
     );
 
     yield put(updatePatientFailure(message));
@@ -140,10 +176,66 @@ function* updatePatientDeathSaga(
   } catch (error) {
     const message = getPatientErrorMessage(
       error,
-      "환자 사망정보 수정에 실패했습니다.",
+      "Failed to update death information.",
     );
 
     yield put(updatePatientDeathFailure(message));
+  }
+}
+
+function* convertTemporaryPatientSaga(
+  action: ReturnType<typeof convertTemporaryPatientRequest>,
+) {
+  try {
+    const patient: PatientDetail = yield call(
+      convertTemporaryPatientApi,
+      action.payload,
+    );
+
+    yield put(convertTemporaryPatientSuccess(patient));
+  } catch (error) {
+    const message = getPatientErrorMessage(
+      error,
+      "Failed to convert the patient to a regular patient.",
+    );
+
+    yield put(convertTemporaryPatientFailure(message));
+  }
+}
+
+function* checkConversionDuplicateSaga(
+  action: ReturnType<typeof checkConversionDuplicateRequest>,
+) {
+  try {
+    const duplicated: boolean = yield call(
+      checkPatientDuplicateApi,
+      action.payload,
+    );
+    yield put(checkConversionDuplicateSuccess(duplicated));
+  } catch (error) {
+    const message = getPatientErrorMessage(
+      error,
+      "Failed to check the resident registration number.",
+    );
+    yield put(checkConversionDuplicateFailure(message));
+  }
+}
+
+function* activatePatientSaga(
+  action: ReturnType<typeof activatePatientRequest>,
+) {
+  try {
+    const patient: PatientDetail = yield call(
+      activatePatientApi,
+      action.payload,
+    );
+    yield put(activatePatientSuccess(patient));
+  } catch (error) {
+    const message = getPatientErrorMessage(
+      error,
+      "Failed to activate the patient.",
+    );
+    yield put(activatePatientFailure(message));
   }
 }
 
@@ -160,7 +252,7 @@ function* deactivatePatientSaga(
   } catch (error) {
     const message = getPatientErrorMessage(
       error,
-      "환자 비활성화에 실패했습니다.",
+      "Failed to deactivate the patient.",
     );
 
     yield put(deactivatePatientFailure(message));
@@ -174,7 +266,7 @@ function* registerPatientSaga(
     const patient: Patient = yield call(registerPatientApi, action.payload);
     yield put(registerPatientSuccess(patient));
   } catch (error) {
-    const message = getPatientErrorMessage(error, "환자 등록에 실패했습니다.");
+    const message = getPatientErrorMessage(error, "Failed to register the patient.");
     yield put(registerPatientFailure(message));
   }
 }
@@ -191,7 +283,7 @@ function* checkPatientDuplicateSaga(
   } catch (error) {
     const message = getPatientErrorMessage(
       error,
-      "환자 중복 확인에 실패했습니다.",
+      "Failed to check for a duplicate patient.",
     );
     yield put(checkPatientDuplicateFailure(message));
   }
@@ -204,14 +296,26 @@ export default function* patientSaga() {
 
   yield takeLatest(updatePatientRequest.type, updatePatientSaga);
 
+  yield takeLatest(
+    convertTemporaryPatientRequest.type,
+    convertTemporaryPatientSaga,
+  );
+
   yield takeLatest(updatePatientDeathRequest.type, updatePatientDeathSaga);
 
   yield takeLatest(deactivatePatientRequest.type, deactivatePatientSaga);
+
+  yield takeLatest(activatePatientRequest.type, activatePatientSaga);
 
   yield takeLatest(registerPatientRequest.type, registerPatientSaga);
 
   yield takeLatest(
     checkPatientDuplicateRequest.type,
     checkPatientDuplicateSaga,
+  );
+
+  yield takeLatest(
+    checkConversionDuplicateRequest.type,
+    checkConversionDuplicateSaga,
   );
 }

@@ -4,15 +4,15 @@
  * 백엔드 common/LabMessageCode.java 와 코드-문구를 맞춘다.
  */
 export const LAB_SPECIMEN_MESSAGES = {
-  LAB013: "검사접수 정보를 찾을 수 없습니다.",
-  LAB017: "유효하지 않은 코드값입니다.",
-  LAB018: "검체 정보가 등록되었습니다.",
-  LAB019: "검체 정보 조회에 성공했습니다.",
-  LAB020: "등록된 검체 정보를 찾을 수 없습니다.",
-  LAB021: "검체 인수 및 적합성 판정이 등록되었습니다.",
-  LAB022: "이미 인수/판정이 완료된 검체입니다.",
-  LAB998: "필수 항목이 누락되었거나 형식이 올바르지 않습니다.",
-  LAB999: "처리 중 오류가 발생했습니다.",
+  LAB013: "Lab reception not found.",
+  LAB017: "Invalid code value.",
+  LAB018: "Specimen has been registered.",
+  LAB019: "Specimen loaded successfully.",
+  LAB020: "Specimen not found.",
+  LAB021: "Specimen acceptance and fitness assessment have been registered.",
+  LAB022: "This specimen has already been accepted and assessed.",
+  LAB998: "A required field is missing or has an invalid format.",
+  LAB999: "An error occurred while processing the request.",
 } as const;
 
 export type LabSpecimenMessageCode = keyof typeof LAB_SPECIMEN_MESSAGES;

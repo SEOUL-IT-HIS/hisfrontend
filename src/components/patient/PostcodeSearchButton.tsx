@@ -127,10 +127,10 @@ export default function PostcodeSearchButton({
         className="shrink-0"
       >
         {scriptError
-          ? "주소 검색 불가"
+          ? "Address Search Unavailable"
           : scriptReady
-            ? "주소 검색"
-            : "주소 검색 로딩…"}
+            ? "Search Address"
+            : "Loading Address Search..."}
       </Button>
     </>
   );

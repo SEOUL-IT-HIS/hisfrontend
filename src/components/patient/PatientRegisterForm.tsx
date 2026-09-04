@@ -20,21 +20,89 @@ import type {
   GenderCd,
   PatientRegisterRequest,
 } from "@/features/patient/type/patientType";
-import {
-  formatPhoneNo,
-  getBirthDateFromResidentRegNo,
-  normalizePhoneNo,
-  validatePatientName,
-  validatePhoneNo,
-  validateZipCode,
-} from "@/features/patient/util/patientUtils";
 import type { AppDispatch, RootState } from "@/store/store";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import PostcodeSearchButton from "./PostcodeSearchButton";
 
-type PatientRegisterFormState = Omit<PatientRegisterRequest, "genderCd"> & {
+type PatientRegisterFormState = Omit<
+  PatientRegisterRequest,
+  "genderCd" | "zipCode" | "address" | "addressDetail" | "phoneNo"
+> & {
   genderCd: GenderCd | "";
+  zipCode: string;
+  address: string;
+  addressDetail: string;
+  phoneNo: string;
 };
+// Omit은 기존 타입에서 특정 속성을 제외하는 TypeScript 유틸리티 타입
+// &는 교차 타입(Intersection Type) : 두 타입 합치기
+// |는 유니온 타입(Union Type) : 둘 중 하나 허용
+
+function formatPhoneNo(value: string): string {
+  const digits = value.replace(/[^0-9]/g, "").slice(0, 11);
+
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
+function getBirthDateFromResidentRegNo(residentRegNo: string): string | null {
+  if (!/^\d{13}$/.test(residentRegNo)) {
+    return null;
+  }
+  // /^\d{13}$/ : 정규표현식(Regular Expression)
+  // : 문자열의 처음부터 끝까지 숫자로만 이루어져 있고, 그 숫자가 정확히 13개인가?
+  // ^ : 문자열의 시작, \d : 숫자 0~9, {13} : 앞의 숫자가 정확히 13개, $ : 문자열의 끝
+  // test()는 문자열이 정규표현식 조건에 맞는지 검사하는 함수, 결과는 boolean
+
+  const yearPart = Number(residentRegNo.slice(0, 2));
+  const month = Number(residentRegNo.slice(2, 4));
+  const day = Number(residentRegNo.slice(4, 6));
+  const typeCode = residentRegNo.charAt(6);
+  // slice(시작위치, 끝위치) : 문자열의 일부분을 잘라내는 함수(시작위치는 포함, 끝위치는 포함 X)
+  // charAt() : 문자열의 특정 위치에 있는 문자 하나를 가져오는 함수
+  // 차례대로 출생년도, 출생월, 출생일, 출생 세기 판정코드
+
+  const centuryByTypeCode: Record<string, number> = {
+    "1": 1900,
+    "2": 1900,
+    "3": 2000,
+    "4": 2000,
+    "5": 1900,
+    "6": 1900,
+    "7": 2000,
+    "8": 2000,
+  };
+  // Record : 객체의 key와 value가 어떤 타입인지 지정하는 TypeScript 유틸리티 타입
+
+  const century = centuryByTypeCode[typeCode];
+
+  if (century === undefined) {
+    return null;
+  }
+
+  const year = century + yearPart;
+  const date = new Date(year, month - 1, day);
+  // year 예시 : 1900 + 99, 2000 + 00
+  // date 예시 : 2000 , 8 - 1, 13 , 이때 -1을 하는 이유는 Date는 1월이 0부터 시작이기 때문
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  // 실제로 생성된 날짜의 연도가 원래 계산한 연도와 다른가?
+  // || : OR(또는) 연산자
+  // getDate() : 몇 일인지와 getDay() : 요일을 가져오는 함수
+
+  return [
+    year,
+    String(month).padStart(2, "0"),
+    String(day).padStart(2, "0"),
+  ].join("-");
+}
 
 const initialForm: PatientRegisterFormState = {
   patientName: "",
@@ -42,6 +110,7 @@ const initialForm: PatientRegisterFormState = {
   residentRegNo: "",
   genderCd: "",
   tempPatientYn: "N",
+  tempRegisterReason: "",
   zipCode: "",
   address: "",
   addressDetail: "",
@@ -61,47 +130,41 @@ export default function PatientRegisterForm() {
     duplicated,
     registerLoading,
     duplicateCheckLoading,
-    registerError,
-    duplicateCheckError,
+    error,
   } = useSelector((state: RootState) => state.patient);
 
-  const hasUnsavedChanges =
-    form.patientName.trim() !== "" ||
-    form.residentRegNo !== "" ||
-    form.genderCd !== "" ||
-    form.tempPatientYn !== initialForm.tempPatientYn ||
-    form.zipCode !== "" ||
-    form.address.trim() !== "" ||
-    form.addressDetail.trim() !== "" ||
-    form.phoneNo !== "";
+  const isTemporaryPatient = form.tempPatientYn === "Y";
 
   const residentRegNoError =
     form.residentRegNo.length === 0
       ? null
       : form.residentRegNo.length < 13
-        ? "주민등록번호 13자리를 입력해 주세요."
+        ? "Please enter all 13 digits of the resident registration number."
         : getBirthDateFromResidentRegNo(form.residentRegNo) === null
-          ? "올바른 주민등록번호 형식이 아닙니다."
+          ? "Please enter a valid resident registration number."
           : null;
 
   const registrationDisabledReason = registerLoading
     ? null
     : duplicateCheckLoading
-      ? "주민등록번호 중복 확인 중입니다."
-      : !form.patientName.trim() ||
-        !form.residentRegNo ||
-        !form.birthDate ||
-        !form.genderCd
-        ? "필수 항목을 모두 입력해 주세요."
-        : form.patientName.trim().length < 2 ||
-          form.patientName.trim().length > 100
-          ? "환자명은 2자 이상 100자 이하로 입력해 주세요."
+      ? "Checking the resident registration number..."
+      : !form.genderCd ||
+        (isTemporaryPatient
+          ? !form.tempRegisterReason?.trim()
+          : !form.patientName.trim() ||
+            !form.residentRegNo ||
+            !form.birthDate)
+        ? "Please complete all required fields."
+        : form.patientName.trim() &&
+            (form.patientName.trim().length < 2 ||
+              form.patientName.trim().length > 100)
+          ? "Patient name must be between 2 and 100 characters."
           : residentRegNoError
             ? residentRegNoError
-            : duplicated === null
-              ? "등록하려면 주민등록번호 중복확인을 완료해 주세요."
-              : duplicated
-                ? "이미 등록된 주민등록번호입니다."
+            : form.residentRegNo && duplicated === null
+              ? "Please check the resident registration number before registering."
+              : form.residentRegNo && duplicated
+                ? "This resident registration number is already registered."
                 : null;
 
   const isRegistrationDisabled =
@@ -128,6 +191,18 @@ export default function PatientRegisterForm() {
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      const hasUnsavedChanges =
+        form.patientName.trim() !== "" ||
+        form.residentRegNo !== "" ||
+        form.birthDate !== "" ||
+        form.genderCd !== "" ||
+        form.tempPatientYn !== initialForm.tempPatientYn ||
+        Boolean(form.tempRegisterReason?.trim()) ||
+        form.zipCode !== "" ||
+        form.address.trim() !== "" ||
+        form.addressDetail.trim() !== "" ||
+        form.phoneNo !== "";
+
       if (!hasUnsavedChanges || submitted) {
         return;
       }
@@ -141,7 +216,7 @@ export default function PatientRegisterForm() {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [hasUnsavedChanges, submitted]);
+  }, [form, submitted]);
 
   const updateForm = <K extends keyof PatientRegisterFormState>(
     field: K,
@@ -202,12 +277,12 @@ export default function PatientRegisterForm() {
 
   const checkDuplicate = () => {
     if (form.residentRegNo.length !== 13) {
-      setValidationError("주민등록번호 13자리를 입력해 주세요.");
+      setValidationError("Please enter all 13 digits of the resident registration number.");
       return;
     }
 
     if (getBirthDateFromResidentRegNo(form.residentRegNo) === null) {
-      setValidationError("올바른 주민등록번호 형식이 아닙니다.");
+      setValidationError("Please enter a valid resident registration number.");
       return;
     }
 
@@ -221,44 +296,58 @@ export default function PatientRegisterForm() {
   const submitPatient = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!form.genderCd) {
+      setValidationError("Please complete all required fields.");
+      return;
+    }
+
     if (
-      !form.patientName.trim() ||
-      !form.birthDate ||
-      !form.residentRegNo.trim() ||
-      !form.genderCd
+      isTemporaryPatient &&
+      !form.tempRegisterReason?.trim()
     ) {
-      setValidationError("모든 필수 항목을 입력해 주세요.");
+      setValidationError("Please enter a temporary registration reason.");
       return;
     }
 
-    const patientNameError = validatePatientName(form.patientName);
-    if (patientNameError) {
+    if (
+      !isTemporaryPatient &&
+      (!form.patientName.trim() ||
+        !form.birthDate ||
+        !form.residentRegNo.trim())
+    ) {
+      setValidationError("Please complete all required fields.");
+      return;
+    }
+
+    if (
+      form.patientName.trim() &&
+      (form.patientName.trim().length < 2 ||
+        form.patientName.trim().length > 100)
+    ) {
       setPatientNameTouched(true);
-      setValidationError(patientNameError);
+      setValidationError("Patient name must be between 2 and 100 characters.");
       return;
     }
 
-    const zipCodeError = validateZipCode(form.zipCode);
-    if (zipCodeError) {
-      setValidationError(zipCodeError);
+    if (form.zipCode && !/^\d{5}$/.test(form.zipCode)) {
+      setValidationError("Postal code must contain exactly 5 digits.");
       return;
     }
 
-    const phoneNoError = validatePhoneNo(form.phoneNo);
-    if (phoneNoError) {
-      setValidationError(phoneNoError);
+    const normalizedPhoneNo = form.phoneNo.replace(/[^0-9]/g, "");
+
+    if (normalizedPhoneNo && !/^\d{9,11}$/.test(normalizedPhoneNo)) {
+      setValidationError("Phone number must contain 9 to 11 digits.");
       return;
     }
 
-    const normalizedPhoneNo = normalizePhoneNo(form.phoneNo);
-
-    if (duplicated === null) {
-      setValidationError("주민등록번호 중복 확인을 먼저 진행해 주세요.");
+    if (form.residentRegNo && duplicated === null) {
+      setValidationError("Please check the resident registration number first.");
       return;
     }
 
     if (duplicated) {
-      setValidationError("이미 등록된 주민등록번호입니다.");
+      setValidationError("This resident registration number is already registered.");
       return;
     }
 
@@ -271,6 +360,9 @@ export default function PatientRegisterForm() {
         residentRegNo: form.residentRegNo.trim(),
         genderCd: form.genderCd as GenderCd,
         tempPatientYn: form.tempPatientYn,
+        tempRegisterReason: isTemporaryPatient
+          ? form.tempRegisterReason?.trim()
+          : undefined,
         zipCode: form.zipCode.trim(),
         address: form.address.trim(),
         addressDetail: form.addressDetail.trim(),
@@ -280,9 +372,21 @@ export default function PatientRegisterForm() {
   };
 
   const cancelForm = () => {
+    const hasUnsavedChanges =
+      form.patientName.trim() !== "" ||
+      form.residentRegNo !== "" ||
+      form.birthDate !== "" ||
+      form.genderCd !== "" ||
+      form.tempPatientYn !== initialForm.tempPatientYn ||
+      Boolean(form.tempRegisterReason?.trim()) ||
+      form.zipCode !== "" ||
+      form.address.trim() !== "" ||
+      form.addressDetail.trim() !== "" ||
+      form.phoneNo !== "";
+
     if (
       hasUnsavedChanges &&
-      !window.confirm("작성 중인 내용이 사라집니다. 이동하시겠습니까?")
+      !window.confirm("Your unsaved changes will be lost. Do you want to leave this page?")
     ) {
       return;
     }
@@ -291,9 +395,21 @@ export default function PatientRegisterForm() {
   };
 
   const resetForm = () => {
+    const hasUnsavedChanges =
+      form.patientName.trim() !== "" ||
+      form.residentRegNo !== "" ||
+      form.birthDate !== "" ||
+      form.genderCd !== "" ||
+      form.tempPatientYn !== initialForm.tempPatientYn ||
+      Boolean(form.tempRegisterReason?.trim()) ||
+      form.zipCode !== "" ||
+      form.address.trim() !== "" ||
+      form.addressDetail.trim() !== "" ||
+      form.phoneNo !== "";
+
     if (
       hasUnsavedChanges &&
-      !window.confirm("입력한 내용을 모두 초기화하시겠습니까?")
+      !window.confirm("Do you want to reset all entered information?")
     ) {
       return;
     }
@@ -307,30 +423,82 @@ export default function PatientRegisterForm() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-3">
-      <PageHeader title="환자 등록" />
+      <PageHeader title="Register Patient" />
 
       {validationError ? (
         <Alert variant="error">{validationError}</Alert>
       ) : null}
-      {registerError ? <Alert variant="error">{registerError}</Alert> : null}
-      {duplicateCheckError ? (
-        <Alert variant="error">{duplicateCheckError}</Alert>
-      ) : null}
+      {error ? <Alert variant="error">{error}</Alert> : null}
       {duplicated === false ? (
-        <Alert variant="success">등록 가능한 주민등록번호입니다.</Alert>
+        <Alert variant="success">This resident registration number is available.</Alert>
       ) : null}
       {duplicated === true ? (
-        <Alert variant="error">이미 등록된 주민등록번호입니다.</Alert>
+        <Alert variant="error">This resident registration number is already registered.</Alert>
       ) : null}
       {registeredPatient ? (
         <Alert variant="success">
-          환자 등록이 완료되었습니다. 환자 ID : {registeredPatient.patientId}
+          Patient registration completed. Patient ID: {registeredPatient.patientId}
         </Alert>
       ) : null}
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <form onSubmit={submitPatient} className="space-y-4">
-          <FormField label="환자명" required htmlFor="patientName">
+          <FormField label="Patient Type">
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={isTemporaryPatient}
+                onChange={(event) => {
+                  const temporary = event.target.checked;
+                  setForm((previous) => ({
+                    ...previous,
+                    tempPatientYn: temporary ? "Y" : "N",
+                    genderCd:
+                      temporary && !previous.genderCd
+                        ? "03"
+                        : previous.genderCd,
+                    tempRegisterReason: temporary
+                      ? previous.tempRegisterReason
+                      : "",
+                  }));
+                  setValidationError(null);
+                  dispatch(resetPatientRegistration());
+                }}
+                disabled={registerLoading}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              Register as Temporary Patient
+            </label>
+            <p className="mt-1 text-xs text-slate-500">
+              Use this option to register a patient with minimal information before identity confirmation.
+            </p>
+          </FormField>
+
+          {isTemporaryPatient ? (
+            <FormField
+              label="Temporary Registration Reason"
+              required
+              htmlFor="tempRegisterReason"
+            >
+              <Input
+                id="tempRegisterReason"
+                value={form.tempRegisterReason ?? ""}
+                onChange={(event) =>
+                  updateForm("tempRegisterReason", event.target.value)
+                }
+                disabled={registerLoading}
+                maxLength={200}
+                placeholder="Enter the reason (e.g., identity unknown)"
+              />
+            </FormField>
+          ) : null}
+
+          <FormField
+            label="Patient Name"
+            required={!isTemporaryPatient}
+            htmlFor="patientName"
+            hint={isTemporaryPatient ? "A temporary patient name will be generated if left blank." : undefined}
+          >
             <Input
               id="patientName"
               value={form.patientName}
@@ -342,18 +510,23 @@ export default function PatientRegisterForm() {
               autoComplete="name"
             />
 
-            {patientNameTouched && !form.patientName.trim() ? (
-              <p className="text-sm text-red-600">환자명을 입력해 주세요.</p>
+            {patientNameTouched && !isTemporaryPatient && !form.patientName.trim() ? (
+              <p className="text-sm text-red-600">Please enter the patient name.</p>
             ) : patientNameTouched &&
+              form.patientName.trim() &&
               (form.patientName.trim().length < 2 ||
                 form.patientName.trim().length > 100) ? (
               <p className="text-sm text-red-600">
-                환자명은 2자 이상 100자 이하로 입력해 주세요.
+                Patient name must be between 2 and 100 characters.
               </p>
             ) : null}
           </FormField>
 
-          <FormField label="주민등록번호" required htmlFor="residentRegNo">
+          <FormField
+            label="Resident Registration Number"
+            required={!isTemporaryPatient}
+            htmlFor="residentRegNo"
+          >
             <div className="flex gap-2">
               <Input
                 id="residentRegNo"
@@ -364,7 +537,7 @@ export default function PatientRegisterForm() {
                 disabled={duplicateCheckLoading || registerLoading}
                 inputMode="numeric"
                 maxLength={6}
-                placeholder="앞 6자리"
+                placeholder="First 6 digits"
                 autoComplete="off"
                 className="min-w-0"
               />
@@ -385,7 +558,7 @@ export default function PatientRegisterForm() {
                 type="password"
                 inputMode="numeric"
                 maxLength={7}
-                placeholder="뒤 7자리"
+                placeholder="Last 7 digits"
                 autoComplete="off"
                 className="min-w-0"
               />
@@ -401,7 +574,7 @@ export default function PatientRegisterForm() {
                 }
                 className="shrink-0"
               >
-                {duplicateCheckLoading ? "확인 중…" : "중복 확인"}
+                {duplicateCheckLoading ? "Checking..." : "Check Duplicate"}
               </Button>
             </div>
             {residentRegNoError ? (
@@ -412,13 +585,13 @@ export default function PatientRegisterForm() {
           </FormField>
 
           <FormField
-            label="생년월일"
-            required
+            label="Date of Birth"
+            required={!isTemporaryPatient}
             htmlFor="birthDate"
             hint={
               form.birthDate
-                ? "주민등록번호에서 자동으로 계산되었습니다."
-                : "주민등록번호를 입력하면 자동으로 계산됩니다."
+                ? "Calculated automatically from the resident registration number."
+                : "Enter the resident registration number to calculate automatically."
             }
           >
             <Input
@@ -430,7 +603,7 @@ export default function PatientRegisterForm() {
             />
           </FormField>
 
-          <FormField label="성별" required>
+          <FormField label="Gender" required>
             <Select
               name="genderCd"
               value={form.genderCd}
@@ -438,7 +611,7 @@ export default function PatientRegisterForm() {
                 updateForm("genderCd", event.target.value as GenderCd | "")
               }
               options={genderCodes.options}
-              placeholder="성별 선택"
+              placeholder="Select gender"
               disabled={registerLoading || genderCodes.loading}
             />
             {genderCodes.error ? (
@@ -448,11 +621,11 @@ export default function PatientRegisterForm() {
 
           <div className="border-t border-slate-200 pt-4">
             <h2 className="mb-4 text-base font-semibold text-slate-800">
-              주소 및 연락처
+              Address and Contact Information
             </h2>
 
             <div className="space-y-4">
-              <FormField label="주소" htmlFor="zipCode">
+              <FormField label="Address" htmlFor="zipCode">
                 <div className="space-y-3">
                   <div className="flex gap-2">
                     <Input
@@ -467,7 +640,7 @@ export default function PatientRegisterForm() {
                       disabled={registerLoading}
                       inputMode="numeric"
                       maxLength={5}
-                      placeholder="우편번호"
+                      placeholder="Postal code"
                       autoComplete="postal-code"
                     />
                     <PostcodeSearchButton
@@ -488,7 +661,7 @@ export default function PatientRegisterForm() {
                     onChange={(event) => updateForm("address", event.target.value)}
                     disabled={registerLoading}
                     maxLength={300}
-                    placeholder="기본주소"
+                    placeholder="Address"
                     autoComplete="street-address"
                   />
                   <Input
@@ -499,19 +672,19 @@ export default function PatientRegisterForm() {
                     }
                     disabled={registerLoading}
                     maxLength={300}
-                    placeholder="상세주소를 입력하세요 (예: 101동 202호)"
+                    placeholder="Enter address details"
                     autoComplete="address-line2"
                   />
                   <p className="text-xs text-slate-400">
-                    우편번호는 숫자 5자리로 입력해 주세요.
+                    Postal code must contain exactly 5 digits.
                   </p>
                 </div>
               </FormField>
 
               <FormField
-                label="연락처"
+                label="Phone Number"
                 htmlFor="phoneNo"
-                hint="010-1234-5678 형식으로 입력해 주세요."
+                hint="Enter in 010-1234-5678 format."
               >
                 <Input
                   id="phoneNo"
@@ -544,7 +717,7 @@ export default function PatientRegisterForm() {
               onClick={cancelForm}
               disabled={registerLoading}
             >
-              취소
+              Cancel
             </Button>
 
             <Button
@@ -553,14 +726,14 @@ export default function PatientRegisterForm() {
               onClick={resetForm}
               disabled={registerLoading || duplicateCheckLoading}
             >
-              초기화
+              Reset
             </Button>
             <Button
               type="submit"
               variant="primary"
               disabled={isRegistrationDisabled}
             >
-              {registerLoading ? "등록 중…" : "등록"}
+              {registerLoading ? "Registering..." : "Register"}
             </Button>
           </div>
         </form>

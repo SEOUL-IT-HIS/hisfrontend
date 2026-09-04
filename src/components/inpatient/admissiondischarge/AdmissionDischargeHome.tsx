@@ -5,8 +5,8 @@ import AdmissionList from "@/components/inpatient/admissiondischarge/admission/l
 import DischargeTargetList from "@/components/inpatient/admissiondischarge/discharge/DischargeTargetList";
 
 const TABS = [
-  { key: "admission", label: "입원요청" },
-  { key: "discharge", label: "퇴원요청" },
+  { key: "admission", label: "Admission Requests" },
+  { key: "discharge", label: "Discharge Requests" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -17,8 +17,8 @@ const AdmissionDischargeHome = () => {
   return (
     <div className="mx-auto w-full max-w-[1800px] p-6">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-slate-800">입퇴원관리</h1>
-        <p className="mt-1 text-sm text-slate-500">입원 요청과 퇴원 요청을 한 화면에서 확인합니다.</p>
+        <h1 className="text-lg font-semibold text-slate-800">Admission &amp; Discharge Management</h1>
+        <p className="mt-1 text-sm text-slate-500">View admission requests and discharge requests in a single screen.</p>
       </div>
 
       <div className="mb-6 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">

@@ -1,26 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
-import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch } from "@/store/store";
+import { useSelector } from "react-redux";
 import {
   Alert,
   Button,
   DataTable,
-  Panel,
   StatusBadge,
   type DataTableColumn,
 } from "@/components/common";
+import { usePatientNames } from "@/features/surgery/common/usePatientNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import type { Surgery } from "@/features/surgery/schedule/types";
 import {
-  fetchTodaySurgeriesRequest,
   selectScheduleError,
   selectScheduleLoading,
   selectTodaySurgeries,
 } from "@/features/surgery/schedule/slice";
-import { SURGERY_STATUS } from "@/features/surgery/schedule/types";
 
 /**
  * 금일 수술 현황 대시보드 (SL2-40)
@@ -28,62 +24,68 @@ import { SURGERY_STATUS } from "@/features/surgery/schedule/types";
  * <p>백엔드 {@code GET /api/surgery/schedule/today} 가 오늘 날짜의 수술을 돌려준다.
  * 상태별로 나눠 보여줘, 지금 무엇이 밀려 있고 무엇이 진행 중인지 한눈에 보이게 한다.</p>
  *
- * <p><b>보기 전용이다</b>(2026-08-26). 예전에는 시작·종료 버튼을 여기 뒀는데 —
+ * <p><b>보기 전용이다</b>. 예전에는 시작·종료 버튼을 여기 뒀는데 —
  * "당일에 가장 자주 하는 조작이라 상세까지 들어가지 않아도 되게" 한다는 이유였다 —
  * 배정 상세도 같은 전이를 갖고 있어 한 동작이 두 화면에 흩어져 있었다.
  * 상태를 바꾸는 곳은 그 수술의 상세 하나로 모았다.</p>
  *
- * <p>표·패널·버튼·배지는 components/common 을 쓴다(§12.1).</p>
+ * <p>표·버튼·배지는 components/common 을 쓴다(§12.1).</p>
  *
- * <p><b>건수를 화면에서 세는 것에 대해</b> — 백엔드에
- * {@code GET /api/surgery/monitoring/status/today} 가 생겨 같은 집계를 서버가 내려준다.
- * 다만 이 화면은 목록을 어차피 받아오므로 지금은 받은 것을 센다. 집계 규칙(취소 포함
- * 여부 등)이 화면마다 갈라지기 시작하면 그때 서버 값으로 바꾼다.</p>
+ * <h3>상태별 건수를 여기서 빼냈다</h3>
+ *
+ * <p>이 컴포넌트는 이제 수술 홈({@code /surgery}) 안에 들어간다. 홈이 이미
+ * 배정 대기·금일 예약·진행중·완료 건수를 카드로 보여주고 있어서, 여기서 또 세면
+ * 같은 숫자가 한 화면에 두 번 뜬다. 여기는 <b>목록만</b> 맡는다.</p>
+ *
+ * <p>취소 건수 카드는 그 과정에서 사라졌다. 취소된 수술은 표에 그대로 남아 있고,
+ * 홈에서 세어 보여줄 만큼 자주 보는 숫자는 아니라고 봤다.</p>
  */
 export default function TodaySurgeryBoard() {
-  const dispatch = useDispatch<AppDispatch>();
   const surgeries = useSelector(selectTodaySurgeries);
   const loading = useSelector(selectScheduleLoading);
   const error = useSelector(selectScheduleError);
 
-  useEffect(() => {
-    dispatch(fetchTodaySurgeriesRequest());
-  }, [dispatch]);
+  const { names: patientNames } = usePatientNames(
+    surgeries.map((s) => s.patientId),
+  );
 
-  // 상태별 건수 — 코드값을 직접 세지 않고 상수를 쓴다(오타를 컴파일러가 잡도록)
-  const countOf = (status: string) =>
-    surgeries.filter((s) => s.statusCd === status).length;
+  /*
+    조회는 부모(SurgeryHome)가 한다.
 
-  const summary = [
-    { label: "예약", code: SURGERY_STATUS.SCHEDULED },
-    { label: "진행중", code: SURGERY_STATUS.IN_PROGRESS },
-    { label: "완료", code: SURGERY_STATUS.COMPLETED },
-    { label: "취소", code: SURGERY_STATUS.CANCELLED },
-  ];
+    이 컴포넌트가 직접 부르면 홈이 이미 보낸 것과 같은 요청이 한 번 더 나간다 —
+    홈이 같은 selectTodaySurgeries 로 상태별 건수를 세기 때문이다. 단독 화면이던
+    시절에는 스스로 받아와야 했지만, 지금은 홈 안에서만 쓰인다.
+  */
 
   const columns: DataTableColumn<Surgery>[] = [
-    { key: "surgeryName", header: "수술명", render: (s) => s.surgeryName ?? "-" },
-    { key: "patientId", header: "환자ID", render: (s) => s.patientId },
-    { key: "roomCode", header: "수술실", render: (s) => s.roomCode ?? "미배정" },
-    { key: "statusCd", header: "상태", render: (s) => s.statusCd },
+    { key: "surgeryName", header: "Surgery", render: (s) => s.surgeryName ?? "-" },
+    // 환자는 이름으로 보여준다 — SURGERY 는 patient_id 만 갖고 있어(§14.1)
+    // 예전에는 UUID 가 그대로 떴다. 못 불러오면 ID 로 되돌아간다.
+    {
+      key: "patientId",
+      header: "Patient",
+      render: (s) => patientNames[s.patientId] ?? s.patientId,
+    },
+    { key: "roomCode", header: "Room", render: (s) => s.roomCode ?? "Unassigned" },
+    { key: "statusCd", header: "Status", render: (s) => s.statusCd },
     {
       key: "emergencyYn",
-      header: "응급",
+      header: "Emergency",
       render: (s) => (
         <StatusBadge
           value={s.emergencyYn}
-          activeLabel="응급"
-          inactiveLabel="일반"
+          activeLabel="Emergency"
+          inactiveLabel="Routine"
         />
       ),
     },
-    { key: "actualStartDt", header: "시작", render: (s) => s.actualStartDt ?? "-" },
-    { key: "actualEndDt", header: "종료", render: (s) => s.actualEndDt ?? "-" },
+    { key: "actualStartDt", header: "Start", render: (s) => s.actualStartDt ?? "-" },
+    { key: "actualEndDt", header: "End", render: (s) => s.actualEndDt ?? "-" },
     {
       key: "detail",
-      header: "처리",
+      header: "Action",
       /*
-        상태를 바꾸는 버튼(시작·종료)을 걷어냈다(2026-08-26).
+        상태를 바꾸는 버튼(시작·종료)을 걷어냈다.
 
         모니터링은 "지금 수술실이 어떻게 돌아가는지 보는" 화면인데 상태 전이까지
         갖고 있어서 배정 상세와 같은 일을 두 곳에서 하고 있었다. 둘 다
@@ -96,7 +98,7 @@ export default function TodaySurgeryBoard() {
       render: (s) => (
         <Link href={`/surgery/schedule/detail/${s.surgeryId}`}>
           <Button variant="secondary" className="h-8 px-3 text-xs">
-            상세 · 처리
+            Detail
           </Button>
         </Link>
       ),
@@ -107,23 +109,12 @@ export default function TodaySurgeryBoard() {
     <div className="flex flex-col gap-6">
       {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
-      <div className="flex flex-wrap gap-3">
-        {summary.map((s) => (
-          <Panel key={s.code} className="px-4 py-3 text-center">
-            <p className="text-xs text-slate-500">{s.label}</p>
-            <p className="text-lg font-semibold text-slate-800">
-              {countOf(s.code)}
-            </p>
-          </Panel>
-        ))}
-      </div>
-
       <DataTable
         columns={columns}
         rows={surgeries}
         rowKey={(s) => s.surgeryId}
         loading={loading}
-        emptyMessage="금일 예정된 수술이 없습니다."
+        emptyMessage="No surgeries are scheduled for today."
         minWidthClassName="min-w-[960px]"
       />
     </div>

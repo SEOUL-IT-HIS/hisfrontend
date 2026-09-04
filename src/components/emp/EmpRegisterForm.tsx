@@ -23,6 +23,7 @@ import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemT
 import { checkRrnApi } from "@/features/emp/api/empApi";
 import { fetchEmpRegisterRequest } from "@/features/emp/slice/empSlice";
 import { toCodeSelectOptions } from "@/features/emp/utils/empCodeLabel";
+import type { RoleType } from "@/features/emp/types/roleType";
 import type { EmpRegisterRequest } from "@/features/emp/types/empTypes";
 import type { AppDispatch, RootState } from "@/store/store";
 import Script from "next/script";
@@ -36,7 +37,11 @@ type EmpRegisterFormState = {
   zipCode: string;
   address: string;
   addressDetail: string;
-  medRoleCode: string;
+  /**
+   * 체크박스로 고른 역할 PK (ROLE.ROLE_ID).
+   * API 가 배열을 받아서 배열로 들고 있지만, 화면에서는 0개 또는 1개만 담긴다.
+   */
+  roleIds: string[];
   rrn: string;
 };
 
@@ -46,18 +51,19 @@ type FieldErrors = {
   empPhone?: string;
   hireDate?: string;
   deptCode?: string;
+  roleId?: string;
   rrn?: string;
 };
 
 type EmpRegisterFormProps = {
   deptCodes: CommonCodeItem[];
-  roleCodes: CommonCodeItem[];
+  roles: RoleType[];
   onClose: () => void;
 };
 
 export default function EmpRegisterForm({
   deptCodes,
-  roleCodes,
+  roles,
   onClose,
 }: EmpRegisterFormProps) {
   const [form, setForm] = useState<EmpRegisterFormState>({
@@ -69,7 +75,7 @@ export default function EmpRegisterForm({
     zipCode: "",
     address: "",
     addressDetail: "",
-    medRoleCode: "",
+    roleIds: [],
     rrn: "",
   });
 
@@ -78,6 +84,8 @@ export default function EmpRegisterForm({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const loading = useSelector((state: RootState) => state.emp.loading);
   const error = useSelector((state: RootState) => state.emp.error);
+  /** 역할 배정자(assignedBy)로 보낼 로그인 사용자 */
+  const authUser = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch<AppDispatch>();
 
   /** true 이면 이번 submit 의 완료를 기다리는 중 */
@@ -85,6 +93,9 @@ export default function EmpRegisterForm({
 
   /** 주민등록번호 실시간 중복확인 결과 안내 문구 (null이면 아직 확인 안 함) */
   const [rrnCheckMessage, setRrnCheckMessage] = useState<string | null>(null);
+
+  /** 우편번호 스크립트가 다 받아졌는지 (false면 주소 검색 버튼을 못 누르게 막는다) */
+  const [postcodeReady, setPostcodeReady] = useState(false);
 
   /** 숫자만 남긴 뒤 앞 6자리 뒤에 하이픈을 넣어준다 (예: 900101-1234567) */
   function formatRrn(value: string) {
@@ -104,12 +115,12 @@ export default function EmpRegisterForm({
     }
     const result = await checkRrnApi(rrn);
     const birthDateText = result.birthDate
-      ? `생년월일 ${result.birthDate.slice(0, 10)} · `
+      ? `Date of birth ${result.birthDate.slice(0, 10)} · `
       : "";
     setRrnCheckMessage(
       result.duplicate
-        ? `${birthDateText}이미 등록된 주민등록번호입니다.`
-        : `${birthDateText}사용 가능한 번호입니다.`,
+        ? `${birthDateText}This resident number is already registered.`
+        : `${birthDateText}This number is available.`,
     );
   }
 
@@ -144,6 +155,15 @@ export default function EmpRegisterForm({
     }).open();
   }
 
+  /**
+   * 역할을 고른다.
+   * DB(EMP_ROLE)와 API 는 여러 역할을 받을 수 있지만 화면은 한 명당 한 역할만 둔다.
+   * 라디오라 항상 하나로 대체되므로 기존 선택에 더하지 않는다.
+   */
+  function selectRole(roleId: string) {
+    setForm({ ...form, roleIds: [roleId] });
+  }
+
   /** 폼 state를 실제 등록 요청 payload로 변환 */
   function buildPayload(): EmpRegisterRequest {
     return {
@@ -156,7 +176,9 @@ export default function EmpRegisterForm({
       zipCode: form.zipCode || undefined,
       address: form.address || undefined,
       addressDetail: form.addressDetail.trim() || undefined,
-      medRoleCode: form.medRoleCode || undefined,
+      // 검증에서 비어 있으면 막으므로 여기서는 항상 역할이 하나 들어 있다.
+      roleIds: form.roleIds,
+      assignedBy: authUser?.empId,
       rrn: form.rrn.trim() || undefined,
     };
   }
@@ -170,15 +192,17 @@ export default function EmpRegisterForm({
     e.preventDefault();
 
     const nextErrors: FieldErrors = {};
-    if (!form.empName.trim()) nextErrors.empName = "이름을 입력해주세요.";
-    if (!form.empPhone.trim()) nextErrors.empPhone = "연락처를 입력해주세요.";
-    if (!form.hireDate) nextErrors.hireDate = "입사일을 입력해주세요.";
-    if (!form.deptCode.trim()) nextErrors.deptCode = "부서를 선택해주세요.";
+    if (!form.empName.trim()) nextErrors.empName = "Please enter a name.";
+    if (!form.empPhone.trim()) nextErrors.empPhone = "Please enter a phone number.";
+    if (!form.hireDate) nextErrors.hireDate = "Please enter a hire date.";
+    if (!form.deptCode.trim()) nextErrors.deptCode = "Please select a department.";
+    // 역할이 없으면 권한을 줄 수 없어 로그인해도 볼 화면이 없다. 모르면 "기타"를 고른다.
+    if (form.roleIds.length === 0) nextErrors.roleId = "Please select a role.";
     // 주민등록번호가 중복 확인의 유일한 기준이므로 반드시 받는다.
     if (!form.rrn.trim()) {
-      nextErrors.rrn = "주민등록번호를 입력해주세요.";
+      nextErrors.rrn = "Please enter the resident registration number.";
     } else if (form.rrn.replace(/[^0-9]/g, "").length !== 13) {
-      nextErrors.rrn = "주민등록번호 13자리를 모두 입력해주세요.";
+      nextErrors.rrn = "Please enter all 13 digits.";
     }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -205,15 +229,19 @@ export default function EmpRegisterForm({
 
   return (
     <div className="space-y-5">
-      <Script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" strategy="afterInteractive" />
+      <Script
+        src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
+        strategy="afterInteractive"
+        onReady={() => setPostcodeReady(true)}
+      />
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       <form onSubmit={onSubmit} className="space-y-4">
-        <FormField label="이름" required htmlFor="empName">
+        <FormField label="Name" required htmlFor="empName">
           <Input
             id="empName"
             value={form.empName}
-            placeholder="이름을 입력하세요"
+            placeholder="Enter a name"
             onChange={(e) => setForm({ ...form, empName: e.target.value })}
           />
           {errors.empName && (
@@ -221,21 +249,21 @@ export default function EmpRegisterForm({
           )}
         </FormField>
 
-        <FormField label="이메일" htmlFor="empEmail">
+        <FormField label="Email" htmlFor="empEmail">
           <Input
             id="empEmail"
             type="email"
             value={form.empEmail}
-            placeholder="예: kim@hospital.com"
+            placeholder="e.g. kim@hospital.com"
             onChange={(e) => setForm({ ...form, empEmail: e.target.value })}
           />
         </FormField>
 
-        <FormField label="연락처" required htmlFor="empPhone">
+        <FormField label="Phone" required htmlFor="empPhone">
           <Input
             id="empPhone"
             value={form.empPhone}
-            placeholder="예: 010-1234-5678"
+            placeholder="e.g. 010-1234-5678"
             onChange={(e) => setForm({ ...form, empPhone: e.target.value })}
           />
           {errors.empPhone && (
@@ -244,15 +272,15 @@ export default function EmpRegisterForm({
         </FormField>
 
         <FormField
-          label="주민등록번호"
+          label="Resident Reg. No."
           required
           htmlFor="rrn"
-          hint="중복 확인 용도로만 사용되며, 원본은 저장하지 않고 해시로만 저장됩니다."
+          hint="Used only for duplicate checks. The number itself is never stored — only a hash."
         >
           <Input
             id="rrn"
             value={form.rrn}
-            placeholder="예: 900101-1234567"
+            placeholder="e.g. 900101-1234567"
             inputMode="numeric"
             maxLength={14}
             onChange={(e) => {
@@ -265,7 +293,7 @@ export default function EmpRegisterForm({
           {rrnCheckMessage && (
             <p
               className={
-                rrnCheckMessage.includes("이미")
+                rrnCheckMessage.includes("already")
                   ? "text-xs text-red-600"
                   : "text-xs text-emerald-600"
               }
@@ -275,7 +303,7 @@ export default function EmpRegisterForm({
           )}
         </FormField>
 
-        <FormField label="입사일" required htmlFor="hireDate">
+        <FormField label="Hire Date" required htmlFor="hireDate">
           <Input
             id="hireDate"
             type="date"
@@ -288,11 +316,11 @@ export default function EmpRegisterForm({
         </FormField>
 
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="부서" required htmlFor="deptCode">
+          <FormField label="Department" required htmlFor="deptCode">
             <Select
               id="deptCode"
               value={form.deptCode}
-              placeholder="선택"
+              placeholder="Select"
               onChange={(e) => setForm({ ...form, deptCode: e.target.value })}
               options={toCodeSelectOptions(deptCodes)}
             />
@@ -300,39 +328,61 @@ export default function EmpRegisterForm({
               <p className="text-xs text-red-600">{errors.deptCode}</p>
             )}
           </FormField>
-
-          <FormField label="역할" htmlFor="medRoleCode">
-            <Select
-              id="medRoleCode"
-              value={form.medRoleCode}
-              placeholder="선택"
-              onChange={(e) => setForm({ ...form, medRoleCode: e.target.value })}
-              options={toCodeSelectOptions(roleCodes)}
-            />
-          </FormField>
         </div>
 
-        <FormField label="주소" htmlFor="zipCode">
+        {/*
+         * 역할은 하나만 고르므로 라디오로 둔다. name 이 같은 것끼리 한 묶음이 된다.
+         * 공통 FormField 는 내부를 <label> 로 감싸는데 라디오마다 다시 <label> 이 필요하다.
+         * label 중첩은 유효하지 않은 HTML 이라 여기서만 FormField 를 쓰지 않고 라벨을 직접 그린다.
+         */}
+        <div className="flex flex-col gap-1.5 text-sm">
+          <span className="font-semibold text-slate-700">
+            Role<span className="text-rose-500"> *</span>
+          </span>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+            {roles.map((role) => (
+              <label
+                key={role.roleId}
+                className="flex cursor-pointer items-center gap-2 text-slate-700"
+              >
+                <input
+                  type="radio"
+                  name="roleId"
+                  checked={form.roleIds.includes(role.roleId)}
+                  onChange={() => selectRole(role.roleId)}
+                  className="h-4 w-4 accent-sky-600"
+                />
+                <span>{role.roleName}</span>
+              </label>
+            ))}
+          </div>
+          {errors.roleId && (
+            <p className="text-xs text-red-600">{errors.roleId}</p>
+          )}
+        </div>
+
+        <FormField label="Address" htmlFor="zipCode">
           <div className="flex gap-2">
-            <Input id="zipCode" value={form.zipCode} placeholder="우편번호" disabled />
+            <Input id="zipCode" value={form.zipCode} placeholder="Zip Code" disabled />
             <button
                 type="button"
                 onClick={handleAddressSearch}
-                className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                disabled={!postcodeReady}
+                className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:bg-slate-50 disabled:text-slate-400"
             >
-              주소 검색
+              {postcodeReady ? "Find Address" : "Loading…"}
             </button>
           </div>
-          <Input value={form.address} placeholder="기본주소" disabled className="mt-2" />
+          <Input value={form.address} placeholder="Street address" disabled className="mt-2" />
           <Input
               value={form.addressDetail}
-              placeholder="상세주소를 입력하세요 (예: 101동 202호)"
+              placeholder="Enter address detail (e.g. Bldg 101, Unit 202)"
               onChange={(e) => setForm({ ...form, addressDetail: e.target.value })}
               className="mt-2"
           />
         </FormField>
 
-        <FormField label="사진" htmlFor="image">
+        <FormField label="Photo" htmlFor="image">
           <input
               id="image"
               type="file"
@@ -343,13 +393,13 @@ export default function EmpRegisterForm({
           {imagePreview ? (
               <img
                   src={imagePreview}
-                  alt="미리보기"
+                  alt="Preview"
                   className="mt-2 h-20 w-20 rounded-full object-cover"
               />
           ) : null}
         </FormField>
 
-        <FormActions onCancel={onClose} submitLabel="등록" loading={loading} />
+        <FormActions onCancel={onClose} submitLabel="Register" loading={loading} />
       </form>
     </div>
   );

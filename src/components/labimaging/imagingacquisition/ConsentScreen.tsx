@@ -51,7 +51,7 @@ export default function ConsentScreen() {
   const columns: DataTableColumn<ImageReceptionSummary>[] = [
     {
       key: "imageOrderNo",
-      header: "오더 / 환자",
+      header: "Order / Patient",
       render: (r) => (
         // 행 선택은 오더번호 클릭으로 한다. (공통 DataTable 은 행 클릭을 지원하지 않는다)
         <button
@@ -66,22 +66,22 @@ export default function ConsentScreen() {
           {r.imageOrderNo}
           {/* 환자번호는 화면에서 쓰지 않는다. 식별은 이름으로. (2026-08-25) */}
           <span className="ml-2 font-normal text-slate-400">
-            {patientNames[r.patientId] ?? "미상"}
+            {patientNames[r.patientId] ?? "Unknown"}
           </span>
         </button>
       ),
     },
     {
       key: "receptionNo",
-      header: "접수번호",
+      header: "Reception No.",
       render: (r) => <span className="text-slate-500">{r.receptionNo}</span>,
     },
     {
       key: "scheduledAt",
-      header: "촬영예정",
+      header: "Scheduled",
       render: (r) => (
         <span className="text-slate-500">
-          {r.scheduledAt ? r.scheduledAt.replace("T", " ").slice(0, 16) : "미정"}
+          {r.scheduledAt ? r.scheduledAt.replace("T", " ").slice(0, 16) : "TBD"}
         </span>
       ),
     },
@@ -97,7 +97,7 @@ export default function ConsentScreen() {
             onClick={() => dispatch(fetchImageReceptionsRequest("ALL"))}
             disabled={loading}
           >
-            새로고침
+            Refresh
           </Button>
         </div>
 
@@ -109,7 +109,8 @@ export default function ConsentScreen() {
           rowKey={(r) => r.imageReceptionId}
           loading={loading}
           minWidthClassName="min-w-[420px]"
-          emptyMessage="접수된 영상오더가 없습니다."
+          loadingMessage="Loading..."
+          emptyMessage="No imaging orders received."
         />
       </div>
 
@@ -117,7 +118,7 @@ export default function ConsentScreen() {
       <Panel className="min-h-0 flex-1 p-5">
         {selected === null ? (
           <div className="flex h-full items-center justify-center text-sm text-slate-400">
-            왼쪽 목록에서 오더번호를 클릭하세요.
+            Select an order number from the list on the left.
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -126,7 +127,7 @@ export default function ConsentScreen() {
                 {selected.imageOrderNo}
               </p>
               <p className="text-sm text-slate-500">
-                환자 {patientNames[selected.patientId] ?? "미상"} · 접수{" "}
+                Patient {patientNames[selected.patientId] ?? "Unknown"} · Reception{" "}
                 {selected.receptionNo}
               </p>
             </div>

@@ -15,6 +15,9 @@ import {
   searchBillingDetailFailure,
   searchBillingDetailRequest,
   searchBillingDetailSuccess,
+  updateBillingStatusFailure,
+  updateBillingStatusRequest,
+  updateBillingStatusSuccess,
   visitBillingDetailFailure,
   visitBillingDetailRequest,
   visitBillingDetailSuccess
@@ -63,9 +66,20 @@ function* visitBillingDetailSaga(action: PayloadAction<string>) {
   }
 }
 
+function* updateBillingStatusSaga(action: PayloadAction<string>) {
+  try {
+    yield call(updateBillingStatusApi, action.payload);
+    yield put(updateBillingStatusSuccess());
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "정산 상태 변경에 실패했습니다.";
+    yield put(updateBillingStatusFailure(message));
+  }
+}
+
 export default function* billingDetailSaga() {
   yield takeLatest(searchBillingDetailRequest.type, searchBillingDetailSaga);
   yield takeLatest(fetchBillingDetailRequest.type, fetchBillingDetailSaga);
   yield takeLatest(admissionBillingDetailRequest.type, admissionBillingDetailSaga);
   yield takeLatest(visitBillingDetailRequest.type, visitBillingDetailSaga);
+  yield takeLatest(updateBillingStatusRequest.type, updateBillingStatusSaga);
 }

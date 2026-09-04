@@ -68,7 +68,7 @@ function* fetchConsentsSaga(action: PayloadAction<string>) {
   } catch (err) {
     yield put(
       fetchConsentsFailure(
-        getSurgeryErrorMessage(err, "동의서 조회에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to load consents."),
       ),
     );
   }
@@ -84,7 +84,7 @@ function* fetchPatientConsentsSaga(action: PayloadAction<string>) {
   } catch (err) {
     yield put(
       fetchPatientConsentsFailure(
-        getSurgeryErrorMessage(err, "동의서 이력 조회에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to load the consent history."),
       ),
     );
   }
@@ -102,7 +102,7 @@ function* createConsentSaga(
   } catch (err) {
     yield put(
       consentMutationFailure(
-        getSurgeryErrorMessage(err, "동의 확인 기록에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to record the consent confirmation."),
       ),
     );
   }

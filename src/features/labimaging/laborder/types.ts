@@ -11,7 +11,7 @@
 
 /** 검사항목 (LAB_ORDER_ITEM) — 백엔드 LabOrderItemRequestDto */
 export interface LabOrderItemRequest {
-  /** 검사항목코드 (예: "CBC") */
+  /** 검사항목코드 (예: "01") */
   labItemCode: string;
 }
 
@@ -97,6 +97,18 @@ export interface LabWorklistItem {
   judgedCount: number;
   /** 해소되지 않은 재채취 요청이 있는지 */
   recollectionRequestedYn: "Y" | "N";
+
+  /**
+   * ⚠ 결과도 검체처럼 개수로 받는다. 검사항목이 오더 1건에 여러 개 달리고 결과는 항목마다 1건이라
+   *   "2건 중 1건 등록" 같은 중간 상태가 실제로 생긴다. Y/N 으로는 표현할 수 없다.
+   * ⚠ 등록과 확정을 따로 센다. 전부 등록됐지만 아직 확정 전인 상태를 등록 수만으로는 구분 못 한다.
+   */
+  /** 검사항목 수 */
+  labItemCount: number;
+  /** 결과가 등록된 검사항목 수 */
+  resultCount: number;
+  /** 확정까지 끝난 결과 수 */
+  confirmedResultCount: number;
   nextStep: WorklistStep;
 
   /** ACCEPTED = 처리 대상, EXCLUDED = 제외됨 */
@@ -115,18 +127,18 @@ export const WORKLIST_FILTER_OPTIONS: ReadonlyArray<{
   value: WorklistStatusFilter;
   label: string;
 }> = [
-  { value: "ACCEPTED", label: "처리 대상" },
-  { value: "EXCLUDED", label: "제외됨" },
-  { value: "ALL", label: "전체" },
+  { value: "ACCEPTED", label: "Active" },
+  { value: "EXCLUDED", label: "Excluded" },
+  { value: "ALL", label: "All" },
 ];
 
 /** 다음 단계 한글 표시. 백엔드 WorklistStep enum 과 값을 맞춘다. */
 export const WORKLIST_STEP_LABELS: Record<WorklistStep, string> = {
-  SCHEDULE: "일정 등록",
-  SPECIMEN: "검체 등록",
-  RECOLLECT: "재채취",
-  ACCEPTANCE: "적합성 판정",
-  RESULT: "결과 등록",
+  SCHEDULE: "Schedule",
+  SPECIMEN: "Specimen",
+  RECOLLECT: "Recollection",
+  ACCEPTANCE: "Fitness Check",
+  RESULT: "Result",
 };
 
 /** 접수 제외 요청 — 백엔드 ReceptionExclusionRequestDto */
@@ -180,8 +192,8 @@ export interface LabOrderState {
  * — 이쪽은 공통코드가 아니라 API 계약상 고정값이라 상수로 유지한다.
  */
 export const URGENCY_YN_OPTIONS: ReadonlyArray<{ value: "Y" | "N"; label: string }> = [
-  { value: "N", label: "일반" },
-  { value: "Y", label: "긴급" },
+  { value: "N", label: "Routine" },
+  { value: "Y", label: "Urgent" },
 ];
 
 /*
@@ -235,9 +247,9 @@ export interface LabReceptionDetail extends LabReceptionContext {
  *   백엔드 enum 에 값이 추가되면 여기도 같이 추가해야 한다.
  */
 export const ORDER_STATUS_LABELS: Record<string, string> = {
-  RECEIVED: "수신",
-  COMPLETED: "처리완료",
-  ERROR: "오류",
+  RECEIVED: "Received",
+  COMPLETED: "Completed",
+  ERROR: "Error",
 };
 
 /**
@@ -245,7 +257,7 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
  * 백엔드 common/status/ReceptionStatus enum 과 값을 맞춘다. (ACCEPTED)
  */
 export const RECEPTION_STATUS_LABELS: Record<string, string> = {
-  ACCEPTED: "접수완료",
+  ACCEPTED: "Accepted",
 };
 
 /** 코드값을 한글 라벨로. 사전에 없으면 원본 코드를 그대로 보여준다(누락을 숨기지 않기 위함). */

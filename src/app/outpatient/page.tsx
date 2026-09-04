@@ -3,10 +3,13 @@ import Link from "next/link";
 export default function Page() {
     return (
         <div>
-            <h2>외래 (Outpatient)</h2>
+            {/* 외래 (Outpatient) */}
+            <h2>Outpatient</h2>
             <ul>
-                <li><Link href="/outpatient/encounter">당일 진료 목록</Link></li>
-                <li><Link href="/outpatient/medicalrecord">진료기록 조회</Link></li>
+                {/* 당일 진료 목록 */}
+                <li><Link href="/outpatient/encounter">Today&apos;s Patient List</Link></li>
+                {/* 진료기록 조회 */}
+                <li><Link href="/outpatient/medicalrecord">Medical Records</Link></li>
             </ul>
         </div>
     );

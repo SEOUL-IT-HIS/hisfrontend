@@ -26,13 +26,9 @@ type Props = {
  * <p>진입 시 단건 조회로 기존 값을 폼 초기값에 바인딩한다(SL2-115).
  * 백엔드 PUT /rooms/{roomCode} 는 이름만 교체하므로 코드는 읽기 전용으로 보여준다.</p>
  *
- * <p><b>페이지가 아니라 모달 안에서 쓴다</b>(2026-08-24) — 이름 한 칸 고치자고 목록을
- * 떠났다가 돌아오는 이동이 잦았다. 그래서 {@code router.push} 대신 {@code onDone} 콜백을
+ * <p><b>페이지가 아니라 모달 안에서 쓴다</b> — 이름 한 칸 고치자고 목록을
+ * 떠났다가 돌아오는 이동이 잦다. 그래서 {@code router.push} 대신 {@code onDone} 콜백을
  * 받는다. 이동을 이 컴포넌트가 정하지 않으므로 나중에 다른 화면에 끼워 넣기도 쉽다.</p>
- *
- * <p>더 큰 문제도 있었다 — 이 폼으로 들어오는 길이 <b>어디에도 없었다</b>. 목록에 수정
- * 진입점이 없어 수술실명을 고칠 방법 자체가 없었고, 장비만 수정 링크를 갖고 있었다.
- * 같은 마스터 관리인데 둘이 갈려 있던 것을 맞췄다.</p>
  */
 export default function RoomUpdateForm({ roomCode, onDone }: Props) {
   const dispatch = useDispatch<AppDispatch>();
@@ -69,7 +65,7 @@ export default function RoomUpdateForm({ roomCode, onDone }: Props) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!roomName.trim()) {
-      setNameError("수술실명을 입력해주세요.");
+      setNameError("Please enter a room name.");
       return;
     }
     setNameError("");
@@ -78,17 +74,17 @@ export default function RoomUpdateForm({ roomCode, onDone }: Props) {
   }
 
   if (loading && !room) {
-    return <p className="text-sm text-slate-500">불러오는 중입니다…</p>;
+    return <p className="text-sm text-slate-500">Loading…</p>;
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <FormField label="수술실 코드" hint="코드는 수정할 수 없습니다.">
+      <FormField label="Room code" hint="The code cannot be changed.">
         {/* PK 라 수정 대상이 아니다 */}
         <Input value={roomCode} readOnly disabled />
       </FormField>
 
-      <FormField label="수술실명" required htmlFor="roomName">
+      <FormField label="Room name" required htmlFor="roomName">
         <Input
           id="roomName"
           value={roomName}
@@ -104,10 +100,10 @@ export default function RoomUpdateForm({ roomCode, onDone }: Props) {
 
       <FormActions
         onCancel={onDone}
-        cancelLabel="취소"
-        submitLabel="수정"
+        cancelLabel="Cancel"
+        submitLabel="Edit"
         loading={saving}
-        loadingLabel="저장 중…"
+        loadingLabel="Saving…"
       />
     </form>
   );

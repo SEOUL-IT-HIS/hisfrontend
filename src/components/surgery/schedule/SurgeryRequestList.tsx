@@ -17,6 +17,7 @@ import {
 } from "@/components/common";
 import SurgeryAssignForm from "@/components/surgery/schedule/SurgeryAssignForm";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
+import { usePatientNames } from "@/features/surgery/common/usePatientNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   fetchOrdersRequest,
@@ -34,7 +35,7 @@ import { ORDER_STATUS, type SurgeryOrder } from "@/features/surgery/order/types"
  * <p>진료(일반)와 응급실(응급)에서 올라온 <b>요청</b> 중 아직 수술실이 잡히지 않은 건이다.
  * 배정하면 수락(01)이 되어 이 목록에서 빠지고, 그때 비로소 수술이 만들어진다.</p>
  *
- * <p><b>수술이 아니라 오더를 본다</b>(2026-08-13) — 예전에는 요청도 수술 행이라
+ * <p><b>수술이 아니라 오더를 본다</b> — 예전에는 요청도 수술 행이라
  * 이 화면이 수술 목록을 상태로 걸러 보여줬다. 이제 SURGERY_ORDER 를 본다.
  * 반려된 요청은 수술이 되지 않으므로 수술 통계에 섞이지 않는다.</p>
  *
@@ -47,11 +48,11 @@ import { ORDER_STATUS, type SurgeryOrder } from "@/features/surgery/order/types"
  * 되돌릴 수 없는 조작이라 한 번 더 확인받는 편이 낫고, 사유를 남겨야 나중에 "왜 반려됐나"에
  * 답할 수 있다.</p>
  *
- * <p><b>사유는 필수다</b>(2026-08-26). 예전에는 선택이었는데, 사유 코드 그룹
+ * <p><b>사유는 필수다</b>. 예전에는 선택이었는데, 사유 코드 그룹
  * (SURGERY_ORDER_REJECT_CD)이 admin 에 없어 필수로 두면 고를 값이 없었기 때문이다.
  * 2026-08-25 에 등록해 그 이유가 사라졌고, 수술 취소(SL2-178)와 같은 판단으로 맞췄다.</p>
  *
- * <h3>배정 폼을 옆에 붙였다 (2026-08-27)</h3>
+ * <h3>배정 폼을 옆에 붙였다</h3>
  *
  * <p>배정 버튼이 {@code /surgery/schedule/assign/[orderId]} 로 <b>페이지를 옮겼다.</b>
  * 대기 건을 연달아 처리하려면 목록 → 배정 → 목록 을 반복하게 되고, 돌아올 때마다
@@ -93,7 +94,7 @@ export default function SurgeryRequestList() {
   }
 
   function confirmReject() {
-    // 사유는 필수다(2026-08-26) — 백엔드 @NotBlank 가 400 으로 막으므로 화면에서 먼저 거른다.
+    // 사유는 필수다 — 백엔드 @NotBlank 가 400 으로 막으므로 화면에서 먼저 거른다.
     //   버튼도 잠가 두지만, 폼 제출(Enter)로도 들어올 수 있어 여기서 한 번 더 본다.
     if (!rejectTarget || !reasonCd) {
       return;
@@ -108,28 +109,37 @@ export default function SurgeryRequestList() {
     setSelectedId(null);
   }
 
+  const { names: patientNames } = usePatientNames(
+    orders.map((o) => o.patientId),
+  );
+
   const columns: DataTableColumn<SurgeryOrder>[] = [
     {
       key: "emergencyYn",
-      header: "구분",
+      header: "Type",
       render: (o) => (
         <StatusBadge
           value={o.emergencyYn}
-          activeLabel="응급"
-          inactiveLabel="일반"
+          activeLabel="Emergency"
+          inactiveLabel="Routine"
         />
       ),
     },
-    { key: "requestedDt", header: "희망 수술일", render: (o) => o.requestedDt },
-    { key: "surgeryName", header: "수술명", render: (o) => o.surgeryName ?? "-" },
-    { key: "patientId", header: "환자ID", render: (o) => o.patientId },
+    { key: "requestedDt", header: "Requested date", render: (o) => o.requestedDt },
+    { key: "surgeryName", header: "Surgery", render: (o) => o.surgeryName ?? "-" },
+    // 오더도 환자 식별자만 들고 온다. 목록에서는 이름으로 보여준다.
+    {
+      key: "patientId",
+      header: "Patient",
+      render: (o) => patientNames[o.patientId] ?? o.patientId,
+    },
     {
       key: "actions",
-      header: "처리",
+      header: "Action",
       render: (o) => (
         <div className="flex items-center gap-2">
           {/*
-            배정은 이제 이동이 아니라 <b>선택</b>이다(2026-08-27) — 오른쪽 폼이 이 오더를
+            배정은 이제 이동이 아니라 <b>선택</b>이다 — 오른쪽 폼이 이 오더를
             보게 한다. 버튼 모양은 8/26 그대로 둔다. 같은 칸의 '반려'가 버튼이라
             링크로 두면 더 중요한 동작이 오히려 약해 보였다.
           */}
@@ -138,7 +148,7 @@ export default function SurgeryRequestList() {
             className="h-8 px-3"
             onClick={() => setSelectedId(o.orderId)}
           >
-            배정
+            Assign
           </Button>
           <Button
             variant="secondary"
@@ -146,7 +156,7 @@ export default function SurgeryRequestList() {
             className="h-8 px-3"
             onClick={() => setRejectTarget(o)}
           >
-            반려
+            Reject
           </Button>
         </div>
       ),
@@ -164,7 +174,7 @@ export default function SurgeryRequestList() {
           rows={orders}
           rowKey={(o) => o.orderId}
           loading={loading}
-          emptyMessage="배정 대기 중인 요청이 없습니다."
+          emptyMessage="No orders are waiting for assignment."
           minWidthClassName="min-w-[520px]"
         />
       </div>
@@ -173,7 +183,7 @@ export default function SurgeryRequestList() {
       <Panel className="min-h-0 flex-1 overflow-auto p-5">
         {!selected ? (
           <div className="flex h-full items-center justify-center text-sm text-slate-400">
-            왼쪽에서 요청의 &lsquo;배정&rsquo; 을 누르세요.
+            Press &lsquo;Assign&rsquo; on an order to the left.
           </div>
         ) : (
           // key 로 오더마다 새로 마운트한다 — 앞서 고른 수술실·마취의가 남으면
@@ -189,7 +199,7 @@ export default function SurgeryRequestList() {
 
       <Modal
         open={rejectTarget !== null}
-        title="수술 요청 반려"
+        title="Reject surgery order"
         onClose={closeReject}
         maxWidthClassName="max-w-md"
       >
@@ -201,17 +211,17 @@ export default function SurgeryRequestList() {
           className="flex flex-col gap-4"
         >
           <p className="text-sm text-slate-700">
-            {rejectTarget?.surgeryName ?? "수술명 미입력"} (환자{" "}
-            {rejectTarget?.patientId}) 요청을 반려합니다.
+            Rejecting {rejectTarget?.surgeryName ?? "No surgery name"} (patient{" "}
+            {rejectTarget ? (patientNames[rejectTarget.patientId] ?? rejectTarget.patientId) : ""}).
           </p>
 
           <FormField
-            label="반려 사유"
+            label="Reason"
             htmlFor="rejectReasonCd"
             required
             hint={
               reasonOptions.length === 0
-                ? "사유 코드를 불러오지 못했습니다. admin 서비스를 확인하세요."
+                ? "Failed to load reason codes. Please check the admin service."
                 : undefined
             }
           >
@@ -222,7 +232,7 @@ export default function SurgeryRequestList() {
             */}
             <Select
               id="rejectReasonCd"
-              placeholder="선택"
+              placeholder="Select"
               options={reasonOptions}
               value={reasonCd}
               onChange={(e) => setReasonCd(e.target.value)}
@@ -232,11 +242,11 @@ export default function SurgeryRequestList() {
 
           <FormActions
             onCancel={closeReject}
-            cancelLabel="닫기"
-            submitLabel="반려"
+            cancelLabel="Close"
+            submitLabel="Reject"
             submitDisabled={!reasonCd}
             loading={saving}
-            loadingLabel="반려 중…"
+            loadingLabel="Rejecting…"
           />
         </form>
       </Modal>

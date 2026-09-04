@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Panel } from "@/components/common";
+import TodaySurgeryBoard from "@/components/surgery/schedule/TodaySurgeryBoard";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import { ORDER_STATUS } from "@/features/surgery/order/types";
 import {
@@ -20,7 +21,7 @@ import {
 } from "@/features/surgery/schedule/slice";
 
 /**
- * 수술관리 진입 화면 (2026-08-24)
+ * 수술관리 진입 화면
  *
  * <h3>왜 링크 나열을 걷어냈나</h3>
  *
@@ -36,19 +37,39 @@ import {
  * <p>금일 수술은 {@code selectTodaySurgeries}, 배정 대기는 오더 목록을 접수(00)로 걸러
  * 센다. 둘 다 이미 있는 조회다. 요약 전용 API 를 만들면 백엔드에 집계 엔드포인트가
  * 하나 더 생기는데, 화면 하나 때문에 그럴 일은 아니다.</p>
+ *
+ * <h3>모니터링 화면을 여기로 합쳤다</h3>
+ *
+ * <p>{@code /surgery/monitoring} 은 금일 수술 목록 하나만 보여주는 화면이었다.
+ * 그런데 이 홈이 이미 같은 조회({@code fetchTodaySurgeriesRequest})로 금일 건수를
+ * 세고 있었다 — <b>같은 데이터를 두 화면이 각자 받아다 절반씩 보여주고</b> 있었던
+ * 셈이다. 홈에서 "금일 진행중 3건"을 보고 그 3건이 뭔지 알려면 메뉴를 하나 더
+ * 눌러야 했다.</p>
+ *
+ * <p>이제 숫자 바로 아래에 그 목록이 있다. {@code /surgery/monitoring} 라우트는
+ * 지웠다 — 사이드바의 'OR Monitoring' 메뉴가 지워질 때까지는 그 메뉴를 누르면 404 다.
+ * 메뉴 테이블이 admin-service DB 소유라 우리가 못 지우고, 삭제를 따로 요청해 두었다.
+ * 리다이렉트로 가려 두지 않은 이유는 같은 사정으로 깨져 있는 메뉴가 셋 더 있어서다
+ * (OR Checklist·Consent·Records — 수술 업무 탭으로 합치면서 라우트를 지웠다).
+ * 넷 중 하나만 가리면 admin 쪽에서 남은 셋의 삭제가 덜 급해 보인다.</p>
  */
 
 const STATUS_LABEL: { key: string; label: string }[] = [
-  { key: SURGERY_STATUS.SCHEDULED, label: "예약" },
-  { key: SURGERY_STATUS.IN_PROGRESS, label: "진행중" },
-  { key: SURGERY_STATUS.COMPLETED, label: "완료" },
+  { key: SURGERY_STATUS.SCHEDULED, label: "Scheduled" },
+  { key: SURGERY_STATUS.IN_PROGRESS, label: "In progress" },
+  { key: SURGERY_STATUS.COMPLETED, label: "Completed" },
 ];
 
-/** 지금 손이 필요한 곳으로 가는 길만 둔다 — 전체 메뉴는 사이드바가 갖는다 */
+/**
+ * 지금 손이 필요한 곳으로 가는 길만 둔다 — 전체 메뉴는 사이드바가 갖는다.
+ *
+ * <p>'수술 현황'이 빠졌다. 그 화면이 이 화면 안으로 들어와서 자기 자신으로 가는
+ * 링크가 됐기 때문이다.</p>
+ */
 const SHORTCUTS = [
-  { href: "/surgery/schedule/requests", label: "배정 대기" },
-  { href: "/surgery/worklist", label: "수술 업무" },
-  { href: "/surgery/monitoring", label: "수술 현황" },
+  { href: "/surgery/schedule/requests", label: "Pending assignment" },
+  { href: "/surgery/worklist", label: "Surgery worklist" },
+  { href: "/surgery/schedule", label: "Surgery assignment" },
 ];
 
 export default function SurgeryHome() {
@@ -78,16 +99,16 @@ export default function SurgeryHome() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {/* 배정 대기를 맨 앞에 둔다 — 유일하게 '지금 해야 할 일'이다 */}
         <Panel className="p-4">
-          <p className="text-xs text-slate-500">배정 대기</p>
+          <p className="text-xs text-slate-500">Pending assignment</p>
           <p className="mt-1 text-2xl font-medium text-slate-800">{waiting}</p>
           {emergencyWaiting > 0 ? (
-            <p className="mt-1 text-xs text-rose-600">응급 {emergencyWaiting}건</p>
+            <p className="mt-1 text-xs text-rose-600">{emergencyWaiting} emergency</p>
           ) : null}
         </Panel>
 
         {STATUS_LABEL.map((s) => (
           <Panel key={s.key} className="p-4">
-            <p className="text-xs text-slate-500">금일 {s.label}</p>
+            <p className="text-xs text-slate-500">Today · {s.label}</p>
             <p className="mt-1 text-2xl font-medium text-slate-800">
               {rows.filter((r) => r.statusCd === s.key).length}
             </p>
@@ -105,6 +126,12 @@ export default function SurgeryHome() {
             {s.label}
           </Link>
         ))}
+      </div>
+
+      {/* 위 카드가 센 그 건들의 목록. 같은 조회 결과를 쓰므로 요청이 늘지 않는다 */}
+      <div>
+        <h2 className="mb-3 text-sm font-medium text-slate-700">Today&apos;s surgeries</h2>
+        <TodaySurgeryBoard />
       </div>
     </div>
   );

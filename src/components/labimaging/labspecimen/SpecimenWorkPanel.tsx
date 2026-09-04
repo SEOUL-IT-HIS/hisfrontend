@@ -98,9 +98,9 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!form.specimenContainerCode) next.specimenContainerCode = "검체용기는 필수입니다.";
-    if (!form.collectedAt) next.collectedAt = "채취일시는 필수입니다.";
-    if (!form.collectedById.trim()) next.collectedById = "채취자ID는 필수입니다.";
+    if (!form.specimenContainerCode) next.specimenContainerCode = "Specimen container is required.";
+    if (!form.collectedAt) next.collectedAt = "Collection date and time is required.";
+    if (!form.collectedById.trim()) next.collectedById = "Collecting staff ID is required.";
     return next;
   }
 
@@ -130,21 +130,21 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
   const columns: DataTableColumn<SpecimenSummary>[] = [
     {
       key: "specimenBarcode",
-      header: "바코드",
+      header: "Barcode",
       render: (s) => (
         <span className="font-semibold text-slate-700">{s.specimenBarcode}</span>
       ),
     },
     {
       key: "specimenType",
-      header: "종류",
+      header: "Type",
       render: (s) => SPECIMEN_TYPE_LABELS[s.specimenType] ?? s.specimenType,
     },
-    { key: "collectedAt", header: "채취일시", render: (s) => formatDateTime(s.collectedAt) },
-    { key: "collectedById", header: "채취자", render: (s) => s.collectedById },
+    { key: "collectedAt", header: "Collected At", render: (s) => formatDateTime(s.collectedAt) },
+    { key: "collectedById", header: "Collected By", render: (s) => s.collectedById },
     {
       key: "fitnessStatus",
-      header: "적합성",
+      header: "Fitness",
       render: (s) =>
         s.fitnessStatus ? (
           <span
@@ -155,7 +155,7 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
             {FITNESS_STATUS_LABELS[s.fitnessStatus]}
           </span>
         ) : (
-          <span className="text-slate-400">미판정</span>
+          <span className="text-slate-400">Not assessed</span>
         ),
     },
   ];
@@ -172,34 +172,34 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
         */}
         {reception.patientId ? null : (
           <Alert>
-            이 접수에는 환자ID가 없어 검체를 등록할 수 없습니다. (접수번호{" "}
-            {reception.receptionNo}) 접수 데이터의 patient_id 를 채워야 합니다.
+            This reception has no patient ID, so a specimen cannot be registered. (Reception No.{" "}
+            {reception.receptionNo}) The patient_id of the reception record must be filled in.
           </Alert>
         )}
 
         {lastCreated ? (
           <Alert variant="success">
-            검체가 등록되었습니다. (바코드: {lastCreated.specimenBarcode})
+            Specimen registered. (Barcode: {lastCreated.specimenBarcode})
           </Alert>
         ) : null}
         {createError ? <Alert>{resolveLabSpecimenMessage(createError)}</Alert> : null}
         {containerCodes.error ? <Alert>{containerCodes.error}</Alert> : null}
 
         <p className="text-sm text-slate-500">
-          대상 환자{" "}
+          Patient{" "}
           <span className="font-semibold text-slate-800">
-            {patientNames[reception.patientId] ?? "미상"}
+            {patientNames[reception.patientId] ?? "Unknown"}
           </span>
         </p>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField label="검체용기" required>
+          <FormField label="Specimen Container" required>
             <Select
               name="specimenContainerCode"
               value={form.specimenContainerCode}
               onChange={handleChange}
               options={containerCodes.options}
-              placeholder={containerCodes.loading ? "불러오는 중..." : "선택하세요"}
+              placeholder={containerCodes.loading ? "Loading..." : "Select"}
               disabled={creating || containerCodes.loading}
             />
             {errors.specimenContainerCode ? (
@@ -207,7 +207,7 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
             ) : null}
           </FormField>
 
-          <FormField label="검체종류" required>
+          <FormField label="Specimen Type" required>
             <Select
               name="specimenType"
               value={form.specimenType}
@@ -217,8 +217,14 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
             />
           </FormField>
 
-          <FormField label="채취일시" required>
+          <FormField label="Collected At" required>
             <Input
+              /*
+                ⚠ 날짜 위젯의 안내 문구("연도-월-일 --:--")는 우리 문자열이 아니라 브라우저가 그린다.
+                  Chrome 은 그 언어를 element 가 물려받은 lang 으로 정하는데, 루트가 <html lang="ko"> 라
+                  한글로 나온다. 루트 레이아웃은 공용(가이드 5.3)이라 손대지 않고 이 입력칸에만 en 을 건다.
+              */
+              lang="en"
               type="datetime-local"
               name="collectedAt"
               value={form.collectedAt}
@@ -230,14 +236,14 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
             ) : null}
           </FormField>
 
-          <FormField label="채취자ID" required>
+          <FormField label="Collecting Staff ID" required>
             <Input
               name="collectedById"
               value={form.collectedById}
               onChange={handleChange}
               maxLength={20}
               disabled={creating}
-              placeholder="예: STF00021"
+              placeholder="e.g. STF00021"
             />
             {errors.collectedById ? (
               <span className="text-xs text-rose-500">{errors.collectedById}</span>
@@ -247,7 +253,7 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
 
         <div className="flex justify-end">
           <Button type="submit" disabled={creating || !reception.patientId}>
-            {creating ? "등록 중..." : "검체 등록"}
+            {creating ? "Registering..." : "Register Specimen"}
           </Button>
         </div>
       </form>
@@ -255,7 +261,7 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
       {/* ---------- 이 접수의 검체 목록 ---------- */}
       <div className="flex min-h-0 flex-1 flex-col gap-2">
         <p className="text-sm font-semibold text-slate-700">
-          등록된 검체 {specimens.length}건
+          Registered Specimens ({specimens.length})
         </p>
         {listError ? <Alert>{resolveLabSpecimenMessage(listError)}</Alert> : null}
         <DataTable
@@ -264,7 +270,8 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
           rowKey={(s) => s.specimenId}
           loading={listLoading}
           minWidthClassName="min-w-[560px]"
-          emptyMessage="아직 등록된 검체가 없습니다."
+          loadingMessage="Loading..."
+          emptyMessage="No specimens registered yet."
         />
       </div>
     </div>

@@ -36,6 +36,26 @@ export async function fetchSpecimensByReceptionNo(
 }
 
 /**
+ * 검체바코드로 검체 1건을 조회한다. (ZP2-75 바코드 검증)
+ * GET /api/lab-imaging/specimens/barcode/{specimenBarcode}
+ *
+ * ⚠ 서버는 조회만 한다. "지금 선택한 접수의 검체인지" 대조는 화면에서 한다.
+ *   서버는 화면이 어느 접수를 보고 있는지 모른다. 접수번호를 파라미터로 보내 비교시키면
+ *   화면이 이미 아는 값을 왕복시키는 꼴이 된다. 응답의 receptionNo 로 화면이 직접 대조한다.
+ *
+ * ⚠ 없는 바코드는 400 + LAB020 으로 온다. 서버가 내려주는 문구에 입력한 바코드가 들어 있어
+ *   화면에서 문구를 다시 만들지 않고 그대로 보여준다. (오타 확인에 그 값이 필요하다)
+ */
+export async function fetchSpecimenByBarcode(
+  specimenBarcode: string,
+): Promise<SpecimenSummary> {
+  const { data } = await apiClient.get<ApiResponse<SpecimenSummary>>(
+    `${SPECIMEN_PATH}/barcode/${encodeURIComponent(specimenBarcode)}`,
+  );
+  return data.data;
+}
+
+/**
  * 검체 채취정보를 등록한다.
  * POST /api/lab-imaging/specimens → 201 + SpecimenSummaryDto
  *

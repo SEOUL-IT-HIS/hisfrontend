@@ -81,10 +81,10 @@ export default function EquipmentRegisterForm() {
 
     // 오류를 모아서 한 번에 보여준다 — 첫 항목에서 멈추면 사용자가 여러 번 시도하게 된다.
     const nextErrors: FieldErrors = {};
-    if (!equipmentId.trim()) nextErrors.equipmentId = "장비 ID를 입력해주세요.";
-    if (!roomCode) nextErrors.roomCode = "소속 수술실을 선택해주세요.";
+    if (!equipmentId.trim()) nextErrors.equipmentId = "Please enter an equipment ID.";
+    if (!roomCode) nextErrors.roomCode = "Please select an operating room.";
     if (!equipmentName.trim())
-      nextErrors.equipmentName = "장비명을 입력해주세요.";
+      nextErrors.equipmentName = "Please enter an equipment name.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -101,7 +101,7 @@ export default function EquipmentRegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <FormField label="장비 ID" required htmlFor="equipmentId">
+      <FormField label="Equipment ID" required htmlFor="equipmentId">
         <Input
           id="equipmentId"
           value={equipmentId}
@@ -113,7 +113,7 @@ export default function EquipmentRegisterForm() {
         ) : null}
       </FormField>
 
-      <FormField label="장비명" required htmlFor="equipmentName">
+      <FormField label="Equipment name" required htmlFor="equipmentName">
         <Input
           id="equipmentName"
           value={equipmentName}
@@ -125,10 +125,10 @@ export default function EquipmentRegisterForm() {
         ) : null}
       </FormField>
 
-      <FormField label="소속 수술실" required htmlFor="equipmentRoomCode">
+      <FormField label="Operating room" required htmlFor="equipmentRoomCode">
         <Select
           id="equipmentRoomCode"
-          placeholder="수술실 선택"
+          placeholder="Select an operating room"
           options={roomOptions}
           value={roomCode}
           onChange={(e) => setRoomCode(e.target.value)}
@@ -143,10 +143,10 @@ export default function EquipmentRegisterForm() {
 
       <FormActions
         onCancel={reset}
-        cancelLabel="초기화"
-        submitLabel="등록"
+        cancelLabel="Reset"
+        submitLabel="Register"
         loading={saving}
-        loadingLabel="등록 중…"
+        loadingLabel="Registering…"
       />
     </form>
   );

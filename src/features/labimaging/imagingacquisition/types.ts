@@ -47,8 +47,8 @@ export interface ConsentSummary {
 
 /** 동의여부 표시용 옵션. 공통코드가 아니라 API 계약상 고정값이라 상수로 둔다. */
 export const CONSENT_YN_OPTIONS: ReadonlyArray<{ value: "Y" | "N"; label: string }> = [
-  { value: "Y", label: "동의" },
-  { value: "N", label: "거부" },
+  { value: "Y", label: "Consented" },
+  { value: "N", label: "Declined" },
 ];
 
 /**
