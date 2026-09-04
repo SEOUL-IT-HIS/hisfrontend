@@ -15,7 +15,10 @@ import {
   type DataTableColumn,
 } from "@/components/common";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
-import { getGenderLabel } from "@/features/patient/util/genderCode";
+import {
+  formatPatientDateTime,
+  getGenderLabel,
+} from "@/features/patient/util/patientUtils";
 import type {
   PatientListItem,
   PatientSearchCondition,
@@ -28,8 +31,6 @@ const initialSearchCondition: PatientSearchCondition = {
   birthDate: "",
   statusCd: undefined,
 };
-
-const formatDateTime = (value: string) => value.replace("T", " ").slice(0, 19);
 
 const columns: DataTableColumn<PatientListItem>[] = [
   {
@@ -69,12 +70,12 @@ const columns: DataTableColumn<PatientListItem>[] = [
   {
     key: "createdAt",
     header: "등록일시",
-    render: (patient) => formatDateTime(patient.createdAt),
+    render: (patient) => formatPatientDateTime(patient.createdAt),
   },
   {
     key: "updatedAt",
     header: "수정일시",
-    render: (patient) => formatDateTime(patient.updatedAt),
+    render: (patient) => formatPatientDateTime(patient.updatedAt),
   },
 ];
 

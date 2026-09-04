@@ -22,6 +22,9 @@ type PatientState = {
   duplicateCheckLoading: boolean;
   listError: string | null;
   detailError: string | null;
+  registerError: string | null;
+  duplicateCheckError: string | null;
+  /** @deprecated registerError 또는 duplicateCheckError를 사용한다. */
   error: string | null;
   updateLoading: boolean;
   updateError: string | null;
@@ -45,6 +48,8 @@ const initialState: PatientState = {
   duplicateCheckLoading: false,
   listError: null,
   detailError: null,
+  registerError: null,
+  duplicateCheckError: null,
   error: null,
   updateLoading: false,
   updateError: null,
@@ -183,6 +188,7 @@ const patientSlice = createSlice({
     registerPatientRequest: {
       reducer(state) {
         state.registerLoading = true;
+        state.registerError = null;
         state.error = null;
       },
       prepare(patientData: PatientRegisterRequest) {
@@ -195,12 +201,14 @@ const patientSlice = createSlice({
     },
     registerPatientFailure(state, action: PayloadAction<string>) {
       state.registerLoading = false;
+      state.registerError = action.payload;
       state.error = action.payload;
     },
     checkPatientDuplicateRequest: {
       reducer(state) {
         state.duplicateCheckLoading = true;
         state.duplicated = null;
+        state.duplicateCheckError = null;
         state.error = null;
       },
       prepare(duplicateCheckData: PatientDuplicateCheckRequest) {
@@ -213,11 +221,14 @@ const patientSlice = createSlice({
     },
     checkPatientDuplicateFailure(state, action: PayloadAction<string>) {
       state.duplicateCheckLoading = false;
+      state.duplicateCheckError = action.payload;
       state.error = action.payload;
     },
     resetPatientRegistration(state) {
       state.registeredPatient = null;
       state.duplicated = null;
+      state.registerError = null;
+      state.duplicateCheckError = null;
       state.error = null;
     },
   },

@@ -22,7 +22,16 @@ import {
   updatePatientDeathRequest,
   updatePatientRequest,
 } from "@/features/patient/slice/patientSlice";
-import { getGenderLabel } from "@/features/patient/util/genderCode";
+import {
+  formatPatientDateTime,
+  formatPhoneNo,
+  getGenderLabel,
+  normalizePhoneNo,
+  validatePatientName,
+  validatePhoneNo,
+  validateZipCode,
+} from "@/features/patient/util/patientUtils";
+import type { PatientDetail, Yn } from "@/features/patient/type/patientType";
 import type { AppDispatch, RootState } from "@/store/store";
 import PostcodeSearchButton from "./PostcodeSearchButton";
 
@@ -30,29 +39,51 @@ type PatientDetailFormProps = {
   patientId: string;
 };
 
-const formatDateTime = (value: string) => value.replace("T", " ").slice(0, 19);
-
-const formatPhoneNo = (value: string) => {
-  const digits = value.replace(/[^0-9]/g, "").slice(0, 11);
-
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+type PatientEditForm = {
+  patientName: string;
+  zipCode: string;
+  address: string;
+  addressDetail: string;
+  phoneNo: string;
 };
+
+type PatientDeathForm = {
+  deathYn: Yn;
+  deathDtm: string;
+};
+
+const emptyEditForm: PatientEditForm = {
+  patientName: "",
+  zipCode: "",
+  address: "",
+  addressDetail: "",
+  phoneNo: "",
+};
+
+const emptyDeathForm: PatientDeathForm = {
+  deathYn: "N",
+  deathDtm: "",
+};
+
+function createEditForm(patient: PatientDetail): PatientEditForm {
+  return {
+    patientName: patient.patientName,
+    zipCode: patient.zipCode ?? "",
+    address: patient.address ?? "",
+    addressDetail: patient.addressDetail ?? "",
+    phoneNo: formatPhoneNo(patient.phoneNo ?? ""),
+  };
+}
 
 export default function PatientDetailForm({
   patientId,
 }: PatientDetailFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const [editing, setEditing] = useState(false);
-  const [patientName, setPatientName] = useState("");
-  const [zipCode, setZipCode] = useState("");
-  const [address, setAddress] = useState("");
-  const [addressDetail, setAddressDetail] = useState("");
-  const [phoneNo, setPhoneNo] = useState("");
+  const [editForm, setEditForm] = useState<PatientEditForm>(emptyEditForm);
   const [deathEditing, setDeathEditing] = useState(false);
-  const [deathYn, setDeathYn] = useState<"Y" | "N">("N");
-  const [deathDtm, setDeathDtm] = useState("");
+  const [deathForm, setDeathForm] =
+    useState<PatientDeathForm>(emptyDeathForm);
   const [validationError, setValidationError] = useState<string | null>(null);
   const {
     patientDetail,
@@ -71,6 +102,14 @@ export default function PatientDetailForm({
 
   const isEditing = editing && !updateSuccess;
 
+  const updateEditForm = <K extends keyof PatientEditForm>(
+    field: K,
+    value: PatientEditForm[K],
+  ) => {
+    setEditForm((previous) => ({ ...previous, [field]: value }));
+    setValidationError(null);
+  };
+
   useEffect(() => {
     dispatch(resetPatientUpdate());
     dispatch(resetPatientDeactivation());
@@ -83,11 +122,7 @@ export default function PatientDetailForm({
       return;
     }
 
-    setPatientName(patientDetail.patientName);
-    setZipCode(patientDetail.zipCode ?? "");
-    setAddress(patientDetail.address ?? "");
-    setAddressDetail(patientDetail.addressDetail ?? "");
-    setPhoneNo(formatPhoneNo(patientDetail.phoneNo ?? ""));
+    setEditForm(createEditForm(patientDetail));
     setValidationError(null);
     dispatch(resetPatientUpdate());
     dispatch(resetPatientDeactivation());
@@ -99,11 +134,7 @@ export default function PatientDetailForm({
       return;
     }
 
-    setPatientName(patientDetail.patientName);
-    setZipCode(patientDetail.zipCode ?? "");
-    setAddress(patientDetail.address ?? "");
-    setAddressDetail(patientDetail.addressDetail ?? "");
-    setPhoneNo(formatPhoneNo(patientDetail.phoneNo ?? ""));
+    setEditForm(createEditForm(patientDetail));
     setValidationError(null);
     dispatch(resetPatientUpdate());
     setEditing(false);
@@ -114,10 +145,12 @@ export default function PatientDetailForm({
       return;
     }
 
-    setDeathYn(patientDetail.deathYn);
-    setDeathDtm(
-      patientDetail.deathDtm ? patientDetail.deathDtm.slice(0, 16) : "",
-    );
+    setDeathForm({
+      deathYn: patientDetail.deathYn,
+      deathDtm: patientDetail.deathDtm
+        ? patientDetail.deathDtm.slice(0, 16)
+        : "",
+    });
 
     dispatch(resetPatientDeathUpdate());
     setDeathEditing(true);
@@ -158,27 +191,27 @@ export default function PatientDetailForm({
   const submitUpdate = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const normalizedPatientName = patientName.trim();
-    const normalizedZipCode = zipCode.trim();
-    const normalizedAddress = address.trim();
-    const normalizedAddressDetail = addressDetail.trim();
-    const normalizedPhoneNo = phoneNo.replace(/[^0-9]/g, "");
+    const normalizedPatientName = editForm.patientName.trim();
+    const normalizedZipCode = editForm.zipCode.trim();
+    const normalizedAddress = editForm.address.trim();
+    const normalizedAddressDetail = editForm.addressDetail.trim();
+    const normalizedPhoneNo = normalizePhoneNo(editForm.phoneNo);
 
-    if (
-      normalizedPatientName.length < 2 ||
-      normalizedPatientName.length > 100
-    ) {
-      setValidationError("환자명은 2자 이상 100자 이하로 입력해 주세요.");
+    const patientNameError = validatePatientName(normalizedPatientName);
+    if (patientNameError) {
+      setValidationError(patientNameError);
       return;
     }
 
-    if (normalizedZipCode && !/^\d{5}$/.test(normalizedZipCode)) {
-      setValidationError("우편번호는 숫자 5자리로 입력해 주세요.");
+    const zipCodeError = validateZipCode(normalizedZipCode);
+    if (zipCodeError) {
+      setValidationError(zipCodeError);
       return;
     }
 
-    if (normalizedPhoneNo && !/^\d{9,11}$/.test(normalizedPhoneNo)) {
-      setValidationError("연락처는 숫자 9~11자리로 입력해 주세요.");
+    const phoneNoError = validatePhoneNo(normalizedPhoneNo);
+    if (phoneNoError) {
+      setValidationError(phoneNoError);
       return;
     }
 
@@ -210,18 +243,21 @@ export default function PatientDetailForm({
   };
 
   const submitDeathUpdate = () => {
-    if (deathYn === "Y" && !deathDtm) {
+    if (deathForm.deathYn === "Y" && !deathForm.deathDtm) {
       window.alert("사망일시를 입력해 주세요.");
       return;
     }
 
-    if (deathYn === "Y" && new Date(deathDtm).getTime() > Date.now()) {
+    if (
+      deathForm.deathYn === "Y" &&
+      new Date(deathForm.deathDtm).getTime() > Date.now()
+    ) {
       window.alert("사망일시는 미래일 수 없습니다.");
       return;
     }
 
     const confirmed = window.confirm(
-      deathYn === "Y"
+      deathForm.deathYn === "Y"
         ? "사망 정보를 등록하시겠습니까?"
         : "등록된 사망 정보를 해제하시겠습니까?",
     );
@@ -233,8 +269,9 @@ export default function PatientDetailForm({
     dispatch(
       updatePatientDeathRequest({
         patientId,
-        deathYn,
-        deathDtm: deathYn === "Y" ? `${deathDtm}:00` : null,
+        deathYn: deathForm.deathYn,
+        deathDtm:
+          deathForm.deathYn === "Y" ? `${deathForm.deathDtm}:00` : null,
       }),
     );
     setDeathEditing(false);
@@ -327,11 +364,10 @@ export default function PatientDetailForm({
                   <dd className="mt-1">
                     <Input
                       id="patientName"
-                      value={patientName}
-                      onChange={(event) => {
-                        setPatientName(event.target.value);
-                        setValidationError(null);
-                      }}
+                      value={editForm.patientName}
+                      onChange={(event) =>
+                        updateEditForm("patientName", event.target.value)
+                      }
                       minLength={2}
                       maxLength={100}
                       disabled={updateLoading}
@@ -372,7 +408,7 @@ export default function PatientDetailForm({
                   label="사망일시"
                   value={
                     patientDetail.deathDtm
-                      ? formatDateTime(patientDetail.deathDtm)
+                      ? formatPatientDateTime(patientDetail.deathDtm)
                       : "-"
                   }
                 />
@@ -397,15 +433,15 @@ export default function PatientDetailForm({
                       <div className="flex gap-2">
                         <Input
                           id="zipCode"
-                          value={zipCode}
-                          onChange={(event) => {
-                            setZipCode(
+                          value={editForm.zipCode}
+                          onChange={(event) =>
+                            updateEditForm(
+                              "zipCode",
                               event.target.value
                                 .replace(/[^0-9]/g, "")
                                 .slice(0, 5),
-                            );
-                            setValidationError(null);
-                          }}
+                            )
+                          }
                           disabled={updateLoading}
                           inputMode="numeric"
                           maxLength={5}
@@ -415,8 +451,11 @@ export default function PatientDetailForm({
                         <PostcodeSearchButton
                           disabled={updateLoading}
                           onSelect={(result) => {
-                            setZipCode(result.zipCode);
-                            setAddress(result.address);
+                            setEditForm((previous) => ({
+                              ...previous,
+                              zipCode: result.zipCode,
+                              address: result.address,
+                            }));
                             setValidationError(null);
                             window.setTimeout(
                               () =>
@@ -430,11 +469,10 @@ export default function PatientDetailForm({
                       </div>
                       <Input
                         id="address"
-                        value={address}
-                        onChange={(event) => {
-                          setAddress(event.target.value);
-                          setValidationError(null);
-                        }}
+                        value={editForm.address}
+                        onChange={(event) =>
+                          updateEditForm("address", event.target.value)
+                        }
                         disabled={updateLoading}
                         maxLength={300}
                         placeholder="기본주소"
@@ -442,11 +480,10 @@ export default function PatientDetailForm({
                       />
                       <Input
                         id="addressDetail"
-                        value={addressDetail}
-                        onChange={(event) => {
-                          setAddressDetail(event.target.value);
-                          setValidationError(null);
-                        }}
+                        value={editForm.addressDetail}
+                        onChange={(event) =>
+                          updateEditForm("addressDetail", event.target.value)
+                        }
                         disabled={updateLoading}
                         maxLength={300}
                         placeholder="상세주소를 입력하세요 (예: 101동 202호)"
@@ -475,13 +512,13 @@ export default function PatientDetailForm({
                   <dd className="mt-1">
                     <Input
                       id="phoneNo"
-                      value={phoneNo}
-                      onChange={(event) => {
-                        setPhoneNo(
+                      value={editForm.phoneNo}
+                      onChange={(event) =>
+                        updateEditForm(
+                          "phoneNo",
                           formatPhoneNo(event.target.value),
-                        );
-                        setValidationError(null);
-                      }}
+                        )
+                      }
                       disabled={updateLoading}
                       inputMode="tel"
                       maxLength={13}
@@ -503,12 +540,12 @@ export default function PatientDetailForm({
 
               <DetailItem
                 label="등록일시"
-                value={formatDateTime(patientDetail.createdAt)}
+                value={formatPatientDateTime(patientDetail.createdAt)}
               />
 
               <DetailItem
                 label="수정일시"
-                value={formatDateTime(patientDetail.updatedAt)}
+                value={formatPatientDateTime(patientDetail.updatedAt)}
               />
             </dl>
 
@@ -557,7 +594,7 @@ export default function PatientDetailForm({
                 <>
                   <FormField label="사망 여부" required>
                     <Select
-                      value={deathYn}
+                      value={deathForm.deathYn}
                       options={[
                         { value: "N", label: "사망정보 없음" },
                         { value: "Y", label: "사망" },
@@ -565,22 +602,32 @@ export default function PatientDetailForm({
                       onChange={(event) => {
                         const value = event.target.value as "Y" | "N";
 
-                        setDeathYn(value);
-
-                        if (value === "N") {
-                          setDeathDtm("");
-                        }
+                        setDeathForm((previous) => ({
+                          ...previous,
+                          deathYn: value,
+                          deathDtm: value === "N" ? "" : previous.deathDtm,
+                        }));
                       }}
                       disabled={deathUpdateLoading}
                     />
                   </FormField>
 
-                  <FormField label="사망일시" required={deathYn === "Y"}>
+                  <FormField
+                    label="사망일시"
+                    required={deathForm.deathYn === "Y"}
+                  >
                     <Input
                       type="datetime-local"
-                      value={deathDtm}
-                      onChange={(event) => setDeathDtm(event.target.value)}
-                      disabled={deathYn === "N" || deathUpdateLoading}
+                      value={deathForm.deathDtm}
+                      onChange={(event) =>
+                        setDeathForm((previous) => ({
+                          ...previous,
+                          deathDtm: event.target.value,
+                        }))
+                      }
+                      disabled={
+                        deathForm.deathYn === "N" || deathUpdateLoading
+                      }
                     />
                   </FormField>
 
@@ -617,7 +664,7 @@ export default function PatientDetailForm({
                     label="사망일시"
                     value={
                       patientDetail.deathDtm
-                        ? formatDateTime(patientDetail.deathDtm)
+                        ? formatPatientDateTime(patientDetail.deathDtm)
                         : "-"
                     }
                   />

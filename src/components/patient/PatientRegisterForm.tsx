@@ -20,6 +20,14 @@ import type {
   GenderCd,
   PatientRegisterRequest,
 } from "@/features/patient/type/patientType";
+import {
+  formatPhoneNo,
+  getBirthDateFromResidentRegNo,
+  normalizePhoneNo,
+  validatePatientName,
+  validatePhoneNo,
+  validateZipCode,
+} from "@/features/patient/util/patientUtils";
 import type { AppDispatch, RootState } from "@/store/store";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import PostcodeSearchButton from "./PostcodeSearchButton";
@@ -27,75 +35,6 @@ import PostcodeSearchButton from "./PostcodeSearchButton";
 type PatientRegisterFormState = Omit<PatientRegisterRequest, "genderCd"> & {
   genderCd: GenderCd | "";
 };
-// Omit은 기존 타입에서 특정 속성을 제외하는 TypeScript 유틸리티 타입
-// &는 교차 타입(Intersection Type) : 두 타입 합치기
-// |는 유니온 타입(Union Type) : 둘 중 하나 허용
-
-function formatPhoneNo(value: string): string {
-  const digits = value.replace(/[^0-9]/g, "").slice(0, 11);
-
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
-}
-
-function getBirthDateFromResidentRegNo(residentRegNo: string): string | null {
-  if (!/^\d{13}$/.test(residentRegNo)) {
-    return null;
-  }
-  // /^\d{13}$/ : 정규표현식(Regular Expression)
-  // : 문자열의 처음부터 끝까지 숫자로만 이루어져 있고, 그 숫자가 정확히 13개인가?
-  // ^ : 문자열의 시작, \d : 숫자 0~9, {13} : 앞의 숫자가 정확히 13개, $ : 문자열의 끝
-  // test()는 문자열이 정규표현식 조건에 맞는지 검사하는 함수, 결과는 boolean
-
-  const yearPart = Number(residentRegNo.slice(0, 2));
-  const month = Number(residentRegNo.slice(2, 4));
-  const day = Number(residentRegNo.slice(4, 6));
-  const typeCode = residentRegNo.charAt(6);
-  // slice(시작위치, 끝위치) : 문자열의 일부분을 잘라내는 함수(시작위치는 포함, 끝위치는 포함 X)
-  // charAt() : 문자열의 특정 위치에 있는 문자 하나를 가져오는 함수
-  // 차례대로 출생년도, 출생월, 출생일, 출생 세기 판정코드
-
-  const centuryByTypeCode: Record<string, number> = {
-    "1": 1900,
-    "2": 1900,
-    "3": 2000,
-    "4": 2000,
-    "5": 1900,
-    "6": 1900,
-    "7": 2000,
-    "8": 2000,
-  };
-  // Record : 객체의 key와 value가 어떤 타입인지 지정하는 TypeScript 유틸리티 타입
-
-  const century = centuryByTypeCode[typeCode];
-
-  if (century === undefined) {
-    return null;
-  }
-
-  const year = century + yearPart;
-  const date = new Date(year, month - 1, day);
-  // year 예시 : 1900 + 99, 2000 + 00
-  // date 예시 : 2000 , 8 - 1, 13 , 이때 -1을 하는 이유는 Date는 1월이 0부터 시작이기 때문
-
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    return null;
-  }
-  // 실제로 생성된 날짜의 연도가 원래 계산한 연도와 다른가?
-  // || : OR(또는) 연산자
-  // getDate() : 몇 일인지와 getDay() : 요일을 가져오는 함수
-
-  return [
-    year,
-    String(month).padStart(2, "0"),
-    String(day).padStart(2, "0"),
-  ].join("-");
-}
 
 const initialForm: PatientRegisterFormState = {
   patientName: "",
@@ -122,8 +61,19 @@ export default function PatientRegisterForm() {
     duplicated,
     registerLoading,
     duplicateCheckLoading,
-    error,
+    registerError,
+    duplicateCheckError,
   } = useSelector((state: RootState) => state.patient);
+
+  const hasUnsavedChanges =
+    form.patientName.trim() !== "" ||
+    form.residentRegNo !== "" ||
+    form.genderCd !== "" ||
+    form.tempPatientYn !== initialForm.tempPatientYn ||
+    form.zipCode !== "" ||
+    form.address.trim() !== "" ||
+    form.addressDetail.trim() !== "" ||
+    form.phoneNo !== "";
 
   const residentRegNoError =
     form.residentRegNo.length === 0
@@ -178,17 +128,6 @@ export default function PatientRegisterForm() {
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      const hasUnsavedChanges =
-        form.patientName.trim() !== "" ||
-        form.residentRegNo !== "" ||
-        form.birthDate !== "" ||
-        form.genderCd !== "" ||
-        form.tempPatientYn !== initialForm.tempPatientYn ||
-        form.zipCode !== "" ||
-        form.address.trim() !== "" ||
-        form.addressDetail.trim() !== "" ||
-        form.phoneNo !== "";
-
       if (!hasUnsavedChanges || submitted) {
         return;
       }
@@ -202,7 +141,7 @@ export default function PatientRegisterForm() {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [form, submitted]);
+  }, [hasUnsavedChanges, submitted]);
 
   const updateForm = <K extends keyof PatientRegisterFormState>(
     field: K,
@@ -292,26 +231,26 @@ export default function PatientRegisterForm() {
       return;
     }
 
-    if (
-      form.patientName.trim().length < 2 ||
-      form.patientName.trim().length > 100
-    ) {
+    const patientNameError = validatePatientName(form.patientName);
+    if (patientNameError) {
       setPatientNameTouched(true);
-      setValidationError("환자명은 2자 이상 100자 이하로 입력해 주세요.");
+      setValidationError(patientNameError);
       return;
     }
 
-    if (form.zipCode && !/^\d{5}$/.test(form.zipCode)) {
-      setValidationError("우편번호는 숫자 5자리로 입력해 주세요.");
+    const zipCodeError = validateZipCode(form.zipCode);
+    if (zipCodeError) {
+      setValidationError(zipCodeError);
       return;
     }
 
-    const normalizedPhoneNo = form.phoneNo.replace(/[^0-9]/g, "");
-
-    if (normalizedPhoneNo && !/^\d{9,11}$/.test(normalizedPhoneNo)) {
-      setValidationError("연락처는 숫자 9~11자리로 입력해 주세요.");
+    const phoneNoError = validatePhoneNo(form.phoneNo);
+    if (phoneNoError) {
+      setValidationError(phoneNoError);
       return;
     }
+
+    const normalizedPhoneNo = normalizePhoneNo(form.phoneNo);
 
     if (duplicated === null) {
       setValidationError("주민등록번호 중복 확인을 먼저 진행해 주세요.");
@@ -341,17 +280,6 @@ export default function PatientRegisterForm() {
   };
 
   const cancelForm = () => {
-    const hasUnsavedChanges =
-      form.patientName.trim() !== "" ||
-      form.residentRegNo !== "" ||
-      form.birthDate !== "" ||
-      form.genderCd !== "" ||
-      form.tempPatientYn !== initialForm.tempPatientYn ||
-      form.zipCode !== "" ||
-      form.address.trim() !== "" ||
-      form.addressDetail.trim() !== "" ||
-      form.phoneNo !== "";
-
     if (
       hasUnsavedChanges &&
       !window.confirm("작성 중인 내용이 사라집니다. 이동하시겠습니까?")
@@ -363,17 +291,6 @@ export default function PatientRegisterForm() {
   };
 
   const resetForm = () => {
-    const hasUnsavedChanges =
-      form.patientName.trim() !== "" ||
-      form.residentRegNo !== "" ||
-      form.birthDate !== "" ||
-      form.genderCd !== "" ||
-      form.tempPatientYn !== initialForm.tempPatientYn ||
-      form.zipCode !== "" ||
-      form.address.trim() !== "" ||
-      form.addressDetail.trim() !== "" ||
-      form.phoneNo !== "";
-
     if (
       hasUnsavedChanges &&
       !window.confirm("입력한 내용을 모두 초기화하시겠습니까?")
@@ -395,7 +312,10 @@ export default function PatientRegisterForm() {
       {validationError ? (
         <Alert variant="error">{validationError}</Alert>
       ) : null}
-      {error ? <Alert variant="error">{error}</Alert> : null}
+      {registerError ? <Alert variant="error">{registerError}</Alert> : null}
+      {duplicateCheckError ? (
+        <Alert variant="error">{duplicateCheckError}</Alert>
+      ) : null}
       {duplicated === false ? (
         <Alert variant="success">등록 가능한 주민등록번호입니다.</Alert>
       ) : null}
