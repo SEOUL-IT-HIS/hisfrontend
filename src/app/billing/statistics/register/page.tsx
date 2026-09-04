@@ -1,4 +1,4 @@
-import BillingMasterRegisterForm from "@/components/billing/billingMasterRegisterForm";
+import BillingMasterRegisterForm from "@/components/billing/master/billingMasterRegisterForm";
 
 const BillingMasterRegisterPage = () => {
   return <BillingMasterRegisterForm />;

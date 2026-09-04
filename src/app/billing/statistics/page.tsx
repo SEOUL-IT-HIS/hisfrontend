@@ -1,4 +1,4 @@
-import BillingMaster from "@/components/billing/billingMaster";
+import BillingMaster from "@/components/billing/master/billingMaster";
 
 const BillingMasterPage = () => {
   return <BillingMaster />;
