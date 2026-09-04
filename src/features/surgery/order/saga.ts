@@ -54,7 +54,7 @@ function* fetchOrdersSaga(
   } catch (err) {
     yield put(
       fetchOrdersFailure(
-        getSurgeryErrorMessage(err, "수술 요청 목록 조회에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to load surgery orders."),
       ),
     );
   }
@@ -68,7 +68,7 @@ function* createOrderSaga(action: PayloadAction<CreateSurgeryOrderRequest>) {
   } catch (err) {
     yield put(
       orderMutationFailure(
-        getSurgeryErrorMessage(err, "수술 요청 접수에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to submit the surgery order."),
       ),
     );
   }
@@ -84,7 +84,7 @@ function* createEmergencyOrderSaga(
   } catch (err) {
     yield put(
       orderMutationFailure(
-        getSurgeryErrorMessage(err, "응급 수술 요청 접수에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to submit the emergency surgery order."),
       ),
     );
   }
@@ -107,7 +107,7 @@ function* assignOrderSaga(
   } catch (err) {
     yield put(
       orderMutationFailure(
-        getSurgeryErrorMessage(err, "수술실 배정에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to assign the surgery."),
       ),
     );
   }
@@ -130,7 +130,7 @@ function* rejectOrderSaga(
   } catch (err) {
     yield put(
       orderMutationFailure(
-        getSurgeryErrorMessage(err, "수술 요청 반려에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to reject the surgery order."),
       ),
     );
   }

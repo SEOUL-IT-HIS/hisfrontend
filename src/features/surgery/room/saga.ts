@@ -113,7 +113,7 @@ function* fetchRoomsSaga(action: PayloadAction<PageParams | undefined>) {
   } catch (err) {
     yield put(
       fetchRoomsFailure(
-        getSurgeryErrorMessage(err, "수술실 목록 조회에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to load operating rooms."),
       ),
     );
   }
@@ -127,7 +127,7 @@ function* fetchAvailableRoomsSaga() {
     const message =
       err instanceof Error
         ? err.message
-        : "사용 가능한 수술실 조회에 실패했습니다.";
+        : "Failed to load available operating rooms.";
     yield put(fetchAvailableRoomsFailure(message));
   }
 }
@@ -139,7 +139,7 @@ function* fetchRoomSaga(action: PayloadAction<string>) {
   } catch (err) {
     yield put(
       fetchRoomFailure(
-        getSurgeryErrorMessage(err, "수술실 조회에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to load the operating room."),
       ),
     );
   }
@@ -155,7 +155,7 @@ function* createRoomSaga(action: PayloadAction<CreateRoomRequest>) {
   } catch (err) {
     yield put(
       roomMutationFailure(
-        getSurgeryErrorMessage(err, "수술실 등록에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to create the operating room."),
       ),
     );
   }
@@ -172,7 +172,7 @@ function* updateRoomSaga(
   } catch (err) {
     yield put(
       roomMutationFailure(
-        getSurgeryErrorMessage(err, "수술실 수정에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to update the operating room."),
       ),
     );
   }
@@ -189,7 +189,7 @@ function* changeRoomStatusSaga(
   } catch (err) {
     yield put(
       roomMutationFailure(
-        getSurgeryErrorMessage(err, "수술실 상태 변경에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to change the operating room status."),
       ),
     );
   }
@@ -209,7 +209,7 @@ function* changeRoomTurnoverSaga(
   } catch (err) {
     yield put(
       roomMutationFailure(
-        getSurgeryErrorMessage(err, "턴오버 상태 변경에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to change the turnover status."),
       ),
     );
   }
@@ -227,7 +227,7 @@ function* fetchEquipmentsSaga(action: PayloadAction<PageParams | undefined>) {
   } catch (err) {
     yield put(
       fetchEquipmentsFailure(
-        getSurgeryErrorMessage(err, "장비 목록 조회에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to load equipment."),
       ),
     );
   }
@@ -243,7 +243,7 @@ function* fetchEquipmentSaga(action: PayloadAction<string>) {
   } catch (err) {
     yield put(
       fetchEquipmentFailure(
-        getSurgeryErrorMessage(err, "장비 조회에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to load the equipment."),
       ),
     );
   }
@@ -259,7 +259,7 @@ function* createEquipmentSaga(action: PayloadAction<CreateEquipmentRequest>) {
   } catch (err) {
     yield put(
       equipmentMutationFailure(
-        getSurgeryErrorMessage(err, "장비 등록에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to create the equipment."),
       ),
     );
   }
@@ -279,7 +279,7 @@ function* updateEquipmentSaga(
   } catch (err) {
     yield put(
       equipmentMutationFailure(
-        getSurgeryErrorMessage(err, "장비 수정에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to update the equipment."),
       ),
     );
   }
@@ -299,7 +299,7 @@ function* changeEquipmentStatusSaga(
   } catch (err) {
     yield put(
       equipmentMutationFailure(
-        getSurgeryErrorMessage(err, "장비 상태 변경에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to change the equipment status."),
       ),
     );
   }
@@ -319,7 +319,7 @@ function* changeEquipmentInoutSaga(
   } catch (err) {
     yield put(
       equipmentMutationFailure(
-        getSurgeryErrorMessage(err, "출고/반입 처리에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to process the check-out / check-in."),
       ),
     );
   }

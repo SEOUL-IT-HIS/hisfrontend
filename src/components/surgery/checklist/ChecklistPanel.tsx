@@ -72,37 +72,37 @@ const PHASES: {
   {
     code: CHECKLIST_PHASE.SIGN_IN,
     label: "Sign In",
-    timing: "마취 시작 전",
+    timing: "Before anesthesia induction",
     checks: [
-      "환자 본인 확인",
-      "수술 부위 및 표시 확인",
-      "동의서 확인",
-      "마취 장비·약물 점검",
-      "알레르기 여부 확인",
+      "Confirm patient identity",
+      "Confirm site and marking",
+      "Confirm consent",
+      "Check anesthesia equipment and drugs",
+      "Confirm known allergies",
     ],
   },
   {
     code: CHECKLIST_PHASE.TIME_OUT,
     label: "Time Out",
-    timing: "피부 절개 직전",
+    timing: "Just before skin incision",
     checks: [
-      "팀 전원 이름·역할 소개",
-      "환자·부위·술식 재확인",
-      "예상 소요 시간 및 출혈량 공유",
-      "예방적 항생제 투여 확인",
-      "필요 영상 준비 확인",
+      "All team members state name and role",
+      "Reconfirm patient, site and procedure",
+      "Share expected duration and blood loss",
+      "Confirm antibiotic prophylaxis",
+      "Confirm required imaging is ready",
     ],
   },
   {
     code: CHECKLIST_PHASE.SIGN_OUT,
     label: "Sign Out",
-    timing: "환자 퇴실 전",
+    timing: "Before the patient leaves the room",
     checks: [
-      "시행한 술식명 확인",
-      "기구·거즈·바늘 수량 확인",
-      "검체 표기 확인",
-      "장비 이상 여부 확인",
-      "회복 및 관리 계획 공유",
+      "Confirm the procedure performed",
+      "Confirm instrument, sponge and needle counts",
+      "Confirm specimen labelling",
+      "Confirm any equipment problems",
+      "Share recovery and management plan",
     ],
   },
 ];
@@ -186,7 +186,7 @@ export default function ChecklistPanel({ surgeryId }: Props) {
       {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
       {loading ? (
-        <p className="text-sm text-slate-500">불러오는 중입니다…</p>
+        <p className="text-sm text-slate-500">Loading…</p>
       ) : (
         PHASES.map((phase, index) => {
           const item = itemOf(phase.code);
@@ -207,11 +207,11 @@ export default function ChecklistPanel({ surgeryId }: Props) {
                     </span>
                     {phase.label}
                     {completed ? (
-                      <StatusBadge value="Y" activeLabel="완료" />
+                      <StatusBadge value="Y" activeLabel="Completed" />
                     ) : item ? (
                       /* 행은 있는데 아직 N — 누군가 작성을 시작해 둔 단계다 */
                       <span className="rounded-md bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
-                        작성 중
+                        In progress
                       </span>
                     ) : null}
                   </p>
@@ -221,7 +221,7 @@ export default function ChecklistPanel({ surgeryId }: Props) {
                 {/* 잠긴 단계에는 버튼을 아예 두지 않는다 — 누를 수 없는 버튼보다 사유가 명확하다 */}
                 {!unlocked ? (
                   <span className="shrink-0 text-xs text-slate-400">
-                    이전 단계 완료 후 진행
+                    Complete the previous phase first
                   </span>
                 ) : !item ? (
                   /*
@@ -242,7 +242,7 @@ export default function ChecklistPanel({ surgeryId }: Props) {
                       )
                     }
                   >
-                    작성 시작
+                    Start
                   </Button>
                 ) : (
                   <div className="flex shrink-0 flex-col items-stretch gap-1.5">
@@ -259,7 +259,7 @@ export default function ChecklistPanel({ surgeryId }: Props) {
                         )
                       }
                     >
-                      {completed ? "완료 취소" : "확인 완료"}
+                      {completed ? "Undo completion" : "Mark complete"}
                     </Button>
 
                     {/* 완료된 단계는 항목 목록을 접어 두므로 이 버튼도 둘 이유가 없다 */}
@@ -270,7 +270,7 @@ export default function ChecklistPanel({ surgeryId }: Props) {
                         disabled={saving}
                         onClick={() => toggleAll(phase.code)}
                       >
-                        {allChecked(phase.code) ? "전체 해제" : "전체 체크"}
+                        {allChecked(phase.code) ? "Clear all" : "Check all"}
                       </Button>
                     ) : null}
                   </div>
@@ -302,15 +302,15 @@ export default function ChecklistPanel({ surgeryId }: Props) {
                   ))}
                   <li className="mt-1 text-xs text-slate-500">
                     {allChecked(phase.code)
-                      ? "모든 항목을 확인했습니다. 완료 처리할 수 있습니다."
-                      : `${checkedOf(phase.code).size} / ${phase.checks.length} 확인 — 전부 확인해야 완료할 수 있습니다.`}
+                      ? "All items confirmed. You can mark this phase complete."
+                      : `${checkedOf(phase.code).size} / ${phase.checks.length} confirmed — all items are required to complete.`}
                   </li>
                 </ul>
               )}
 
               {item && (
                 <p className="mt-3 text-xs text-slate-400">
-                  최종 변경 {item.updatedAt?.slice(0, 16).replace("T", " ")}
+                  Last changed {item.updatedAt?.slice(0, 16).replace("T", " ")}
                 </p>
               )}
             </Panel>

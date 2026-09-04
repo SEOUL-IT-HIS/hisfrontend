@@ -22,8 +22,8 @@ export default function Page() {
   return (
     <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-4 p-6">
       <PageHeader
-        title="수술관리"
-        description="배정이 필요한 요청과 금일 수술 현황입니다."
+        title="Surgery"
+        description="Orders waiting for assignment and today's surgeries."
       />
       <SurgeryHome />
     </div>

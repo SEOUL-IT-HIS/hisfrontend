@@ -65,8 +65,8 @@ const BedAssignmentDetail = ({ assignmentId: assignmentIdProp, onClose }: BedAss
         <div className="w-full p-6">
             <div className="mb-6 flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-semibold text-slate-800">병상 배정 상세</h1>
-                    <p className="mt-1 text-sm text-slate-500">배정 정보와 퇴상 처리 상태입니다.</p>
+                    <h1 className="text-lg font-semibold text-slate-800">Bed Assignment Details</h1>
+                    <p className="mt-1 text-sm text-slate-500">Assignment details and release status.</p>
                 </div>
                 {onClose && (
                     <button
@@ -74,12 +74,12 @@ const BedAssignmentDetail = ({ assignmentId: assignmentIdProp, onClose }: BedAss
                         onClick={onClose}
                         className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
                     >
-                        선택 해제
+                        Deselect
                     </button>
                 )}
             </div>
 
-            {loading && <p className="text-sm text-slate-500">로딩중...</p>}
+            {loading && <p className="text-sm text-slate-500">Loading...</p>}
             {error && <p className="text-sm text-red-600">{error}</p>}
 
             {!loading && bedAssignment && (
@@ -94,36 +94,36 @@ const BedAssignmentDetail = ({ assignmentId: assignmentIdProp, onClose }: BedAss
                                         : "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
                                 }`}
                             >
-                                {isActive ? "배정중" : "퇴상완료"}
+                                {isActive ? "Assigned" : "Released"}
                             </span>
                         </div>
                         <div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">배정ID</span>
+                                <span className="text-slate-500">Assignment ID</span>
                                 <span className="text-slate-800">{bedAssignment.assignmentId}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">병상ID</span>
+                                <span className="text-slate-500">Bed ID</span>
                                 <span className="text-slate-800">{bedAssignment.bedId}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">입원ID</span>
+                                <span className="text-slate-500">Admission ID</span>
                                 <span className="text-slate-800">{bedAssignment.admissionId}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">배정시각</span>
+                                <span className="text-slate-500">Assigned At</span>
                                 <span className="text-slate-800">{bedAssignment.assignedAt}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">퇴상시각</span>
+                                <span className="text-slate-500">Released At</span>
                                 <span className="text-slate-800">{bedAssignment.releasedAt ?? "-"}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">생성일시</span>
+                                <span className="text-slate-500">Created At</span>
                                 <span className="text-slate-800">{bedAssignment.createdAt}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">수정일시</span>
+                                <span className="text-slate-500">Updated At</span>
                                 <span className="text-slate-800">{bedAssignment.updatedAt}</span>
                             </div>
                         </div>
@@ -136,10 +136,10 @@ const BedAssignmentDetail = ({ assignmentId: assignmentIdProp, onClose }: BedAss
                                 disabled={updateStatus.loading}
                                 className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                             >
-                                {updateStatus.loading ? "처리중..." : "퇴상처리"}
+                                {updateStatus.loading ? "Processing..." : "Release Bed"}
                             </button>
                             {updateStatus.error && <p className="mt-2 text-sm text-red-600">{updateStatus.error}</p>}
-                            {updateStatus.success && <p className="mt-2 text-sm text-emerald-600">퇴상처리 완료</p>}
+                            {updateStatus.success && <p className="mt-2 text-sm text-emerald-600">Bed released successfully</p>}
                         </div>
                     )}
                 </div>

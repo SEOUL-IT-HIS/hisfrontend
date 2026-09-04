@@ -66,7 +66,7 @@ export default function EquipmentUpdateForm({ equipmentId, onDone }: Props) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!equipmentName.trim()) {
-      setNameError("장비명을 입력해주세요.");
+      setNameError("Please enter an equipment name.");
       return;
     }
     setNameError("");
@@ -79,24 +79,24 @@ export default function EquipmentUpdateForm({ equipmentId, onDone }: Props) {
   }
 
   if (loading && !equipment) {
-    return <p className="text-sm text-slate-500">불러오는 중입니다…</p>;
+    return <p className="text-sm text-slate-500">Loading…</p>;
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <FormField label="장비 ID" hint="ID 는 수정할 수 없습니다.">
+      <FormField label="Equipment ID" hint="The ID cannot be changed.">
         <Input value={equipmentId} readOnly disabled />
       </FormField>
 
       <FormField
-        label="소속 수술실"
-        hint="변경은 수술실의 보유장비 배정에서 처리합니다."
+        label="Operating room"
+        hint="Reassignment is handled from the room's equipment list."
       >
         {/* 변경은 수술실 쪽 보유장비 배정(SL2-141)에서 처리한다 */}
         <Input value={equipment?.roomCode ?? ""} readOnly disabled />
       </FormField>
 
-      <FormField label="장비명" required htmlFor="equipmentName">
+      <FormField label="Equipment name" required htmlFor="equipmentName">
         <Input
           id="equipmentName"
           value={equipmentName}
@@ -112,10 +112,10 @@ export default function EquipmentUpdateForm({ equipmentId, onDone }: Props) {
 
       <FormActions
         onCancel={onDone}
-        cancelLabel="취소"
-        submitLabel="수정"
+        cancelLabel="Cancel"
+        submitLabel="Edit"
         loading={saving}
-        loadingLabel="저장 중…"
+        loadingLabel="Saving…"
       />
     </form>
   );

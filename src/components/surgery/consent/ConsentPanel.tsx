@@ -94,15 +94,15 @@ export default function ConsentPanel({ surgeryId }: Props) {
   const consentColumns: DataTableColumn<(typeof consents)[number]>[] = [
     {
       key: "consentTypeCd",
-      header: "동의 종류",
+      header: "Consent type",
       // 코드값 그대로가 아니라 이름으로 보여준다. 아직 못 받았거나 목록에 없는
       //   코드면 값을 그대로 두어 빈칸이 되지 않게 한다
       render: (consent) =>
         codeOptions.find((o) => o.value === consent.consentTypeCd)?.label ??
         consent.consentTypeCd,
     },
-    { key: "signedBy", header: "서명자", render: (c) => c.signedBy },
-    { key: "signedDt", header: "서명일", render: (c) => c.signedDt },
+    { key: "signedBy", header: "Signed by", render: (c) => c.signedBy },
+    { key: "signedDt", header: "Signed on", render: (c) => c.signedDt },
   ];
 
   function reset() {
@@ -117,9 +117,9 @@ export default function ConsentPanel({ surgeryId }: Props) {
 
     // 백엔드 @NotBlank/@NotNull 과 같은 항목을 화면에서 먼저 잡는다(§15.3)
     const nextErrors: FieldErrors = {};
-    if (!consentTypeCd) nextErrors.consentTypeCd = "동의 종류를 선택해주세요.";
-    if (!signedBy.trim()) nextErrors.signedBy = "서명자 성명을 입력해주세요.";
-    if (!signedDt) nextErrors.signedDt = "서명일을 선택해주세요.";
+    if (!consentTypeCd) nextErrors.consentTypeCd = "Please select a consent type.";
+    if (!signedBy.trim()) nextErrors.signedBy = "Please enter the signer name.";
+    if (!signedDt) nextErrors.signedDt = "Please select the signing date.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -144,24 +144,24 @@ export default function ConsentPanel({ surgeryId }: Props) {
         rows={consents}
         rowKey={(consent) => consent.consentId}
         loading={loading}
-        emptyMessage="기록된 동의서가 없습니다."
+        emptyMessage="No consents recorded."
         minWidthClassName="min-w-[480px]"
       />
 
       {/* ----- 등록 (SL2-53) ----- */}
       {availableTypes.length === 0 ? (
         <p className="text-sm text-slate-500">
-          세 종류의 동의서가 모두 기록되었습니다.
+          All three consent types have been recorded.
         </p>
       ) : (
         <Panel className="p-4">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <p className="text-sm font-medium text-slate-700">동의 확인 기록</p>
+            <p className="text-sm font-medium text-slate-700">Record consent confirmation</p>
 
-            <FormField label="동의 종류" required htmlFor="consentTypeCd">
+            <FormField label="Consent type" required htmlFor="consentTypeCd">
               <Select
                 id="consentTypeCd"
-                placeholder="선택"
+                placeholder="Select"
                 options={availableTypes}
                 value={consentTypeCd}
                 onChange={(e) => setConsentTypeCd(e.target.value)}
@@ -172,7 +172,7 @@ export default function ConsentPanel({ surgeryId }: Props) {
               ) : null}
             </FormField>
 
-            <FormField label="서명자 성명" required htmlFor="signedBy">
+            <FormField label="Signer name" required htmlFor="signedBy">
               <Input
                 id="signedBy"
                 value={signedBy}
@@ -184,10 +184,11 @@ export default function ConsentPanel({ surgeryId }: Props) {
               ) : null}
             </FormField>
 
-            <FormField label="서명일" required htmlFor="signedDt">
+            <FormField label="Signed on" required htmlFor="signedDt">
               <Input
                 id="signedDt"
                 type="date"
+                lang="en"
                 value={signedDt}
                 onChange={(e) => setSignedDt(e.target.value)}
                 disabled={saving}
@@ -201,10 +202,10 @@ export default function ConsentPanel({ surgeryId }: Props) {
 
             <FormActions
               onCancel={reset}
-              cancelLabel="초기화"
-              submitLabel="동의 확인 기록"
+              cancelLabel="Reset"
+              submitLabel="Record consent confirmation"
               loading={saving}
-              loadingLabel="기록 중…"
+              loadingLabel="Saving…"
             />
           </form>
         </Panel>

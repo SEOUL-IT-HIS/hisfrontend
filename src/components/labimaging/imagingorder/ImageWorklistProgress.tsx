@@ -53,15 +53,25 @@ export default function ImageWorklistProgress({
 }: {
   item: ImageWorklistItem;
 }) {
-  const scheduled = Boolean(item.scheduledAt);
+  const hasItems = item.imageItemCount > 0;
+  const allScheduled = hasItems && item.scheduledItemCount === item.imageItemCount;
   const consented = item.consentYn === "Y";
   const hasFiles = item.imageFileCount > 0;
 
   return (
     <div className="flex flex-wrap items-center gap-1">
+      {/*
+        ⚠ 일정도 개수로 보여준다. 촬영항목마다 일정이 1건이라 "3건 중 1건" 상태가 실제로 생긴다.
+          (2026-09-03 — 일정이 접수 단위에서 항목 단위로 바뀌면서)
+          CT 만 잡고 MRI·초음파를 안 잡았는데 완료로 보이면 안 잡힌 촬영이 그대로 묻힌다.
+      */}
       <StepChip
-        label={scheduled ? "Schedule" : "Schedule −"}
-        tone={scheduled ? "done" : "pending"}
+        label={
+          hasItems
+            ? `Schedule ${item.scheduledItemCount}/${item.imageItemCount}`
+            : "Schedule −"
+        }
+        tone={allScheduled ? "done" : "pending"}
       />
       <StepChip
         label={consented ? "Consent" : "Consent −"}

@@ -5,8 +5,8 @@ import RiskAssessmentList from "@/components/inpatient/nursingrecord/riskassessm
 import VitalSignList from "@/components/inpatient/nursingrecord/vitalsign/list";
 
 const TABS = [
-  { key: "riskassessment", label: "위험도 평가" },
-  { key: "vitalsign", label: "간호기록" },
+  { key: "riskassessment", label: "Risk Assessment" },
+  { key: "vitalsign", label: "Nursing Record" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -17,8 +17,8 @@ const NursingRecordHome = () => {
   return (
     <div className="mx-auto w-full max-w-[1800px] p-6">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-slate-800">간호기록관리</h1>
-        <p className="mt-1 text-sm text-slate-500">위험도 평가와 활력징후 기록을 한 화면에서 확인합니다.</p>
+        <h1 className="text-lg font-semibold text-slate-800">Nursing Record Management</h1>
+        <p className="mt-1 text-sm text-slate-500">View risk assessments and vital sign records in one place.</p>
       </div>
 
       <div className="mb-6 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">

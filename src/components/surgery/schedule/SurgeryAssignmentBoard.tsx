@@ -16,6 +16,7 @@ import {
   type DataTableColumn,
 } from "@/components/common";
 import SurgeryScheduleDetail from "@/components/surgery/schedule/SurgeryScheduleDetail";
+import { usePatientNames } from "@/features/surgery/common/usePatientNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   SURGERY_STATUS,
@@ -57,27 +58,38 @@ import {
  * 대부분인 목록을 보게 된다. 지난 건을 확인할 일은 있어서 다른 상태로 넘길 수는 있다.</p>
  */
 
-/** 검색 입력칸의 초기값. "조건 없음"을 빈 문자열로 표현한다 */
+/**
+ * 검색 입력칸의 초기값. "조건 없음"을 빈 문자열로 표현한다.
+ *
+ * <p><b>환자·집도의 칸을 걷어냈다</b>(수술 업무 화면과 같은 이유다). 둘 다
+ * 식별자(UUID)로만 찾을 수 있었는데 그 식별자가 화면 어디에도 나오지 않는다 —
+ * 목록의 환자 열은 이제 이름을 띄우고, 집도의는 애초에 열이 없다. 사용자가 넣을
+ * 값을 알 수 없는 검색칸이었다.</p>
+ *
+ * <p>백엔드 {@code patientId}·{@code surgeonId} 파라미터는 그대로 살아 있으니,
+ * 이름으로 찾는 방법이 생기면 그때 다시 붙이면 된다.</p>
+ *
+ * <p>상태(statusCd)는 남긴다 — 셀렉트라 고를 값이 화면에 다 보이고, 이 화면에서
+ * 배정을 고칠 수 있는 상태가 예약(01)뿐이라 거르는 의미가 크다.</p>
+ */
 const EMPTY_FORM = {
-  patientId: "",
-  surgeonId: "",
   roomCode: "",
   fromDt: "",
   toDt: "",
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  [SURGERY_STATUS.SCHEDULED]: "예약",
-  [SURGERY_STATUS.IN_PROGRESS]: "진행중",
-  [SURGERY_STATUS.COMPLETED]: "완료",
-  [SURGERY_STATUS.CANCELLED]: "취소",
+  [SURGERY_STATUS.SCHEDULED]: "Scheduled",
+  [SURGERY_STATUS.IN_PROGRESS]: "In progress",
+  [SURGERY_STATUS.COMPLETED]: "Completed",
+  [SURGERY_STATUS.CANCELLED]: "Cancelled",
 };
 
 const STATUS_OPTIONS = [
-  { value: SURGERY_STATUS.SCHEDULED, label: "예약" },
-  { value: SURGERY_STATUS.IN_PROGRESS, label: "진행중" },
-  { value: SURGERY_STATUS.COMPLETED, label: "완료" },
-  { value: SURGERY_STATUS.CANCELLED, label: "취소" },
+  { value: SURGERY_STATUS.SCHEDULED, label: "Scheduled" },
+  { value: SURGERY_STATUS.IN_PROGRESS, label: "In progress" },
+  { value: SURGERY_STATUS.COMPLETED, label: "Completed" },
+  { value: SURGERY_STATUS.CANCELLED, label: "Cancelled" },
 ];
 
 export default function SurgeryAssignmentBoard() {
@@ -97,8 +109,6 @@ export default function SurgeryAssignmentBoard() {
   /** 폼 + 페이지를 검색 파라미터로 만든다. 빈 칸은 아예 빼서 조건 없음으로 둔다 */
   const buildParams = (p: number): SurgerySearchParams => {
     const params: SurgerySearchParams = { page: p - 1, size: 20 };
-    if (form.patientId.trim()) params.patientId = form.patientId.trim();
-    if (form.surgeonId.trim()) params.surgeonId = form.surgeonId.trim();
     if (form.roomCode.trim()) params.roomCode = form.roomCode.trim();
     if (statusCd) params.statusCd = statusCd;
     if (form.fromDt) params.fromDt = form.fromDt;
@@ -159,12 +169,22 @@ export default function SurgeryAssignmentBoard() {
     setSelectedId(null);
   }
 
+  // 지금 보이는 행들의 환자명. rows 가 바뀔 때만 다시 부른다(훅 안에서 키로 거른다).
+  const { names: patientNames } = usePatientNames(rows.map((s) => s.patientId));
+
   const columns: DataTableColumn<Surgery>[] = [
-    { key: "surgeryDt", header: "수술일", render: (s) => s.surgeryDt },
+    { key: "surgeryDt", header: "Date", render: (s) => s.surgeryDt },
     {
       key: "patientId",
-      header: "환자",
-      // 행 선택은 환자 클릭으로 한다 — 공통 DataTable 이 행 클릭을 지원하지 않는다
+      header: "Patient",
+      /*
+        행 선택은 환자 클릭으로 한다 — 공통 DataTable 이 행 클릭을 지원하지 않는다.
+
+        표시는 이름이다. SURGERY 테이블은 patient_id 만 갖고 있어서(§14.1 스냅샷 금지)
+        예전에는 UUID 를 그대로 띄웠는데, 사람이 알아볼 수 없는 값이라 목록으로서
+        의미가 없었다. 못 불러오면 ID 로 되돌아간다 — 이름은 표시용이라
+        patient-service 가 죽어도 배정 업무는 계속돼야 한다.
+      */
       render: (s) => (
         <button
           type="button"
@@ -175,28 +195,28 @@ export default function SurgeryAssignmentBoard() {
               : "text-left font-medium text-slate-700 hover:text-sky-600"
           }
         >
-          {s.patientId}
+          {patientNames[s.patientId] ?? s.patientId}
         </button>
       ),
     },
-    { key: "surgeryName", header: "수술명", render: (s) => s.surgeryName ?? "-" },
+    { key: "surgeryName", header: "Surgery", render: (s) => s.surgeryName ?? "-" },
     {
       key: "roomCode",
-      header: "수술실",
+      header: "Room",
       // 배정 화면이므로 미배정을 눈에 띄게 둔다 — 여기서 채워야 할 값이다
       render: (s) =>
-        s.roomCode ?? <span className="text-amber-600">미배정</span>,
+        s.roomCode ?? <span className="text-amber-600">Unassigned</span>,
     },
     {
       key: "statusCd",
-      header: "상태",
+      header: "Status",
       render: (s) => (
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-600">
             {STATUS_LABEL[s.statusCd ?? ""] ?? s.statusCd}
           </span>
           {s.emergencyYn === "Y" ? (
-            <StatusBadge value="Y" activeLabel="응급" />
+            <StatusBadge value="Y" activeLabel="Emergency" />
           ) : null}
         </div>
       ),
@@ -208,38 +228,26 @@ export default function SurgeryAssignmentBoard() {
       {/* ---- 왼쪽: 수술 목록 ---- */}
       <div className="flex min-h-0 w-[46%] min-w-[440px] flex-col gap-3">
         {/*
-          환자·집도의는 이름이 아니라 식별자로 찾는다 — 이름은 다른 서비스가 갖고 있어
-          우리 DB 에 없다(§21.9). 그래서 부분일치가 아니라 정확일치다.
+          수술실·상태·날짜만 받는다. 환자·집도의 칸이 있었지만 식별자(UUID)로만 찾을 수
+          있었고, 그 식별자는 화면 어디에도 나오지 않아 입력할 방법이 없었다.
+
+          날짜 입력에 lang="en" 을 준 이유 — <input type="date"> 는 브라우저·OS 로캘을
+          따라 '2026. 09. 03.' 처럼 그리는데, lang 을 명시하면 Chrome 이 그 언어의
+          표기(yyyy-mm-dd)를 쓴다. 브라우저가 만드는 UI 라 완전히 통제하지는 못한다.
         */}
         <div className="grid grid-cols-2 gap-2 rounded-lg border border-slate-200 p-3">
-          <FormField label="환자 ID" htmlFor="s-patient">
-            <Input
-              id="s-patient"
-              value={form.patientId}
-              onChange={(e) => setForm({ ...form, patientId: e.target.value })}
-              placeholder="정확히 일치"
-            />
-          </FormField>
-          <FormField label="집도의 ID" htmlFor="s-surgeon">
-            <Input
-              id="s-surgeon"
-              value={form.surgeonId}
-              onChange={(e) => setForm({ ...form, surgeonId: e.target.value })}
-              placeholder="정확히 일치"
-            />
-          </FormField>
-          <FormField label="수술실" htmlFor="s-room">
+          <FormField label="Room" htmlFor="s-room">
             <Input
               id="s-room"
               value={form.roomCode}
               onChange={(e) => setForm({ ...form, roomCode: e.target.value })}
-              placeholder="수술실 코드"
+              placeholder="Room code"
             />
           </FormField>
-          <FormField label="상태" htmlFor="s-status">
+          <FormField label="Status" htmlFor="s-status">
             <Select
               id="s-status"
-              placeholder="전체"
+              placeholder="All"
               options={STATUS_OPTIONS}
               value={statusCd}
               onChange={(e) => {
@@ -258,30 +266,32 @@ export default function SurgeryAssignmentBoard() {
               }}
             />
           </FormField>
-          <FormField label="수술일" htmlFor="s-from">
+          <FormField label="Date" htmlFor="s-from">
             <div className="flex items-center gap-1">
               <Input
                 id="s-from"
                 type="date"
+                lang="en"
                 value={form.fromDt}
                 onChange={(e) => setForm({ ...form, fromDt: e.target.value })}
               />
               <span className="text-xs text-slate-400">~</span>
               <Input
                 type="date"
+                lang="en"
                 value={form.toDt}
                 onChange={(e) => setForm({ ...form, toDt: e.target.value })}
               />
             </div>
           </FormField>
           <div className="col-span-2 flex justify-end gap-2">
-            <Button onClick={handleReset}>초기화</Button>
-            <Button onClick={handleSearch}>검색</Button>
+            <Button onClick={handleReset}>Reset</Button>
+            <Button onClick={handleSearch}>Search</Button>
           </div>
         </div>
 
         <p className="text-xs text-slate-500">
-          수술을 고르면 오른쪽에서 배정을 이어서 처리합니다.
+          Pick a surgery to work on its assignment on the right.
         </p>
 
         {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
@@ -293,8 +303,8 @@ export default function SurgeryAssignmentBoard() {
           loading={loading}
           emptyMessage={
             statusCd === SURGERY_STATUS.SCHEDULED
-              ? "예약 상태인 수술이 없습니다. 배정 대기 목록에서 요청을 배정해야 나타납니다."
-              : "조건에 맞는 수술이 없습니다."
+              ? "No scheduled surgeries. A surgery appears here once a pending order is assigned."
+              : "No surgeries match these conditions."
           }
           minWidthClassName="min-w-[560px]"
         />
@@ -302,8 +312,8 @@ export default function SurgeryAssignmentBoard() {
         {result ? (
           <div className="flex items-center justify-between">
             <p className="text-xs text-slate-500">
-              {statusCd ? `${STATUS_LABEL[statusCd]} ` : "전체 "}
-              {result.totalElements}건
+              {statusCd ? `${STATUS_LABEL[statusCd]} ` : "All "}
+              {result.totalElements} total
             </p>
             <Pagination
               page={page}
@@ -318,7 +328,7 @@ export default function SurgeryAssignmentBoard() {
       <Panel className="min-h-0 flex-1 overflow-auto p-5">
         {!selected ? (
           <div className="flex h-full items-center justify-center text-sm text-slate-400">
-            왼쪽에서 수술을 선택하세요.
+            Select a surgery on the left.
           </div>
         ) : (
           // key 로 수술마다 새로 마운트한다 — 상세가 들고 있는 배정 입력값이

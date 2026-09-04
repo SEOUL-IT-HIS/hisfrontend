@@ -15,7 +15,7 @@ export default async function Page({ params }: Props) {
 
   return (
     <div className="mx-auto w-full max-w-3xl p-6">
-      <h1 className="mb-6 text-lg font-semibold text-slate-800">배정 등록</h1>
+      <h1 className="mb-6 text-lg font-semibold text-slate-800">New assignment</h1>
       <SurgeryAssignForm orderId={orderId} />
     </div>
   );
