@@ -85,7 +85,17 @@ export default function LabWorklist() {
   const exclusionError = useSelector(selectExclusionError);
 
   const [filter, setFilter] = useState<WorklistStatusFilter>("ACCEPTED");
-  const [tab, setTab] = useState<WorkTab>("specimen");
+  /*
+   * ⚠ 첫 탭은 일정이다. 검체가 아니다. (2026-09-03 — 영상 워크리스트와 통일)
+   *   업무의 시작이 일정 등록이라, 접수를 처음 고른 담당자가 바로 해야 할 일이 거기 있다.
+   *   예전에 검체로 열었던 건 결과 등록 기능이 없던 시절 "검체가 주 작업"이었기 때문인데,
+   *   지금은 일정 → 검체 → 판정 → 결과가 다 갖춰져 순서대로 여는 게 맞다.
+   *
+   * ⚠ 탭은 담당자가 다시 고를 수 있다. 진행 상태를 보고 자동으로 옮기지는 않는다.
+   *   일정 재조정처럼 되돌아가는 작업이 있어서, 서버가 판단한 nextStep 으로 탭을 강제하면
+   *   이미 끝낸 단계로 갈 수가 없다. (WORK_TABS 아래 주석 참고)
+   */
+  const [tab, setTab] = useState<WorkTab>("schedule");
   /** 제외 다이얼로그를 띄운 대상 접수번호. null 이면 닫힌 상태 */
   const [excludeTarget, setExcludeTarget] = useState<string | null>(null);
 
@@ -307,10 +317,15 @@ export default function LabWorklist() {
                * 같은 탭에 머문 채 다른 접수를 고르면 이전 접수의 모드·입력값이 그대로 남는다.
                * 일정이 있는 접수에 "신규 등록"이 걸린 채로 저장하면 DB 제약(latest_yn UNIQUE)에 걸린다.
                */
+              /*
+               * ⚠ key 는 그대로 두되 모드는 프롭으로 파생시킨다. (2026-09-03)
+               *   등록 성공 시 워크리스트가 목록을 다시 부르므로 scheduledAt 이 채워지고,
+               *   hasSchedule 이 true 가 되어 폼이 저절로 재등록으로 넘어간다.
+               */
               <LabScheduleRegisterForm
                 key={selected.labReceptionId}
                 labReceptionId={selected.labReceptionId}
-                defaultMode={selected.scheduledAt ? "reschedule" : "create"}
+                hasSchedule={Boolean(selected.scheduledAt)}
                 showReceptionSummary={false}
                 onCancel={() => dispatch(clearWorklistSelection())}
               />

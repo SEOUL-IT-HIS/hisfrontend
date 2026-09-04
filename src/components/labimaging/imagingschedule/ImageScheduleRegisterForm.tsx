@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ChangeEvent, type SubmitEvent } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import {
@@ -48,6 +48,10 @@ import { selectSelectedImageReception } from "@/features/labimaging/imagingorder
  *   담당자가 고를 이유가 없는 값이고, 잘못 고르면 UNIQUE 제약(UX_ISCH_LATEST)에 걸린다.
  *   (예전에 이 버튼 때문에 "처리 중 오류가 발생했습니다" 500 이 났다)
  *
+ * ⚠ 단독 페이지(/labimaging/imagingschedule/register/{id})는 없앴다. (2026-09-03)
+ *   워크리스트 Schedule 탭이 같은 일을 하고 있어 두 벌을 유지할 이유가 없었다.
+ *   그래서 대상 접수는 프롭으로만 받는다.
+ *
  * ⚠ 입력 UI 는 전역 공통 컴포넌트(@/components/common)를 사용한다. 자체 스타일을 만들지 않는다.
  *   금기사항 메모(textarea)만 공통 컴포넌트가 없어 직접 마크업한다.
  */
@@ -81,7 +85,7 @@ function formatDateTime(value?: string) {
 }
 
 type Props = {
-  /** 대상 접수ID. 없으면 URL 경로변수에서 읽는다. (단독 페이지로 열렸을 때) */
+  /** 대상 접수ID. */
   imageReceptionId?: string;
   /** 항목 목록 조회에 쓰는 접수번호. 없으면 store 컨텍스트에서 읽는다. */
   receptionNo?: string;
@@ -100,21 +104,13 @@ export default function ImageScheduleRegisterForm({
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
-  /*
-   * 훅은 조건부로 부를 수 없어 useParams 는 항상 호출한다.
-   * 워크리스트 패널에서 쓸 때는 URL 이 /worklist 라 값이 없고, 그때는 프롭이 대상을 정한다.
-   */
-  const params = useParams<{ imageReceptionId: string }>();
-  const imageReceptionId = imageReceptionIdProp ?? params?.imageReceptionId ?? "";
+  const imageReceptionId = imageReceptionIdProp ?? "";
 
   const selected = useSelector(selectSelectedImageReception);
   const reception =
     selected && selected.imageReceptionId === imageReceptionId ? selected : null;
 
-  /*
-   * ⚠ 항목 목록은 접수번호로 조회한다. 단독 페이지는 URL 에 접수ID만 있어서
-   *   목록에서 넘어올 때 store 에 담아 둔 컨텍스트의 접수번호를 쓴다.
-   */
+  /** 항목 목록은 접수번호로 조회한다. 워크리스트가 프롭으로 넘겨준다. */
   const receptionNo = receptionNoProp ?? reception?.receptionNo ?? "";
 
   const items = useSelector(selectImageScheduleItems);
@@ -465,8 +461,8 @@ export default function ImageScheduleRegisterForm({
 
           <FormActions
             // 패널에서는 화면을 옮기면 안 되므로 호출하는 쪽이 동작을 넘긴다.
-            onCancel={onCancel ?? (() => router.push("/labimaging/imagingorder/receptions"))}
-            cancelLabel={onCancel ? "Clear Selection" : "To List"}
+            onCancel={onCancel ?? (() => router.push("/labimaging/imagingorder/worklist"))}
+            cancelLabel={onCancel ? "Clear Selection" : "To Worklist"}
             submitLabel={isReschedule ? "Reschedule" : "Schedule"}
             loadingLabel="Processing…"
             loading={creating}
