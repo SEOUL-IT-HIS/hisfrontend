@@ -12,3 +12,11 @@ export const fetchBedDetailApi = async (bedId: string) => {
 
   return data.data;
 };
+
+export const updateBedRoomTypeApi = async (bedId: string, roomTypeCode: string) => {
+  const { data } = await apiClient.patch<ApiResponse<BedDTO>>(
+    `/api/inpatient/bed/${bedId}/room-type`,
+    { roomTypeCode },
+  );
+  return data.data;
+};
