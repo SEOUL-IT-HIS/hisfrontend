@@ -1,5 +1,5 @@
 import { all, call, put, takeLatest } from "redux-saga/effects";
-import { fetchBedApi, fetchBedDetailApi } from "./api";
+import { fetchBedApi, fetchBedDetailApi, updateBedRoomTypeApi } from "./api";
 import { fetchBedFailure } from "./slice";
 import { BedDTO } from "../types";
 import { PayloadAction } from "@reduxjs/toolkit";
@@ -28,10 +28,19 @@ function* fetchBedDetailSaga(action: PayloadAction<string>) {
     yield put({ type: "bed/fetchBedDetailFailure", payload: extractErrorMessage(e) });
   }
 }
+function* updateBedRoomTypeSaga(action: PayloadAction<{ bedId: string; roomTypeCode: string }>) {
+  try {
+    const bed: BedDTO = yield call(updateBedRoomTypeApi, action.payload.bedId, action.payload.roomTypeCode);
+    yield put({ type: "bed/updateBedRoomTypeSuccess", payload: bed });
+  } catch (e: unknown) {
+    yield put({ type: "bed/updateBedRoomTypeFailure", payload: extractErrorMessage(e) });
+  }
+}
 
 export default function* bedSaga() {
   yield all([
     takeLatest("bed/fetchBedRequest", fetchBedSaga),
     takeLatest("bed/fetchBedDetailRequest", fetchBedDetailSaga),
+    takeLatest("bed/updateBedRoomTypeRequest", updateBedRoomTypeSaga),
   ]);
 }

@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import type { AppDispatch } from "@/store/store";
+import { calculateAdmissionDays } from "@/features/inpatient/admissiondischarge/utils";
 import {
   fetchAdmissionDetailRequest,
   changeStatusRequest,
