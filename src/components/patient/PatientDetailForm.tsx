@@ -208,12 +208,12 @@ export default function PatientDetailForm({
 
   const checkConversionDuplicate = () => {
     if (!/^\d{13}$/.test(conversionResidentRegNo)) {
-      setValidationError("주민등록번호 13자리를 먼저 입력해 주세요.");
+      setValidationError("Please enter all 13 digits of the resident registration number first.");
       return;
     }
 
     if (!getBirthDateFromResidentRegNo(conversionResidentRegNo)) {
-      setValidationError("올바른 주민등록번호를 입력해 주세요.");
+      setValidationError("Please enter a valid resident registration number.");
       return;
     }
 
@@ -230,12 +230,12 @@ export default function PatientDetailForm({
     const normalizedName = conversionPatientName.trim();
 
     if (normalizedName.length < 2 || normalizedName.length > 100) {
-      setValidationError("환자명은 2자 이상 100자 이하로 입력해 주세요.");
+      setValidationError("Patient name must be between 2 and 100 characters.");
       return;
     }
 
     if (!/^\d{13}$/.test(conversionResidentRegNo)) {
-      setValidationError("주민등록번호 13자리를 입력해 주세요.");
+      setValidationError("Please enter all 13 digits of the resident registration number.");
       return;
     }
 
@@ -244,16 +244,16 @@ export default function PatientDetailForm({
     );
 
     if (!calculatedBirthDate || calculatedBirthDate !== conversionBirthDate) {
-      setValidationError("올바른 주민등록번호를 입력해 주세요.");
+      setValidationError("Please enter a valid resident registration number.");
       return;
     }
 
     if (conversionDuplicated !== false) {
-      setValidationError("주민등록번호 중복 확인을 완료해 주세요.");
+      setValidationError("Please check the resident registration number before converting.");
       return;
     }
 
-    if (!window.confirm("입력한 정보로 정규환자 전환을 진행하시겠습니까?")) {
+    if (!window.confirm("Convert this patient to a regular patient using the entered information?")) {
       return;
     }
 
@@ -279,7 +279,7 @@ export default function PatientDetailForm({
     }
 
     const confirmed = window.confirm(
-      "환자를 비활성화하시겠습니까?\n비활성화된 환자는 신규 접수에 사용할 수 없습니다.",
+      "Deactivate this patient?\nAn inactive patient cannot be used for new registrations.",
     );
 
     if (!confirmed) {
@@ -306,7 +306,7 @@ export default function PatientDetailForm({
       return;
     }
 
-    if (!window.confirm("환자를 활성화하시겠습니까?\n활성화 후 신규 접수에 사용할 수 있습니다.")) {
+    if (!window.confirm("Activate this patient?\nThe patient can be used for new registrations after activation.")) {
       return;
     }
 
@@ -327,17 +327,17 @@ export default function PatientDetailForm({
       normalizedPatientName.length < 2 ||
       normalizedPatientName.length > 100
     ) {
-      setValidationError("환자명은 2자 이상 100자 이하로 입력해 주세요.");
+      setValidationError("Patient name must be between 2 and 100 characters.");
       return;
     }
 
     if (normalizedZipCode && !/^\d{5}$/.test(normalizedZipCode)) {
-      setValidationError("우편번호는 숫자 5자리로 입력해 주세요.");
+      setValidationError("Postal code must contain exactly 5 digits.");
       return;
     }
 
     if (normalizedPhoneNo && !/^\d{9,11}$/.test(normalizedPhoneNo)) {
-      setValidationError("연락처는 숫자 9~11자리로 입력해 주세요.");
+      setValidationError("Phone number must contain 9 to 11 digits.");
       return;
     }
 
@@ -350,7 +350,7 @@ export default function PatientDetailForm({
         normalizedPhoneNo !== (patientDetail.phoneNo ?? ""));
 
     if (!hasChanges) {
-      setValidationError("변경된 환자 정보가 없습니다.");
+      setValidationError("No patient information has changed.");
       return;
     }
 
@@ -370,19 +370,19 @@ export default function PatientDetailForm({
 
   const submitDeathUpdate = () => {
     if (deathYn === "Y" && !deathDtm) {
-      window.alert("사망일시를 입력해 주세요.");
+      window.alert("Please enter the date and time of death.");
       return;
     }
 
     if (deathYn === "Y" && new Date(deathDtm).getTime() > Date.now()) {
-      window.alert("사망일시는 미래일 수 없습니다.");
+      window.alert("The date and time of death cannot be in the future.");
       return;
     }
 
     const confirmed = window.confirm(
       deathYn === "Y"
-        ? "사망 정보를 등록하시겠습니까?"
-        : "등록된 사망 정보를 해제하시겠습니까?",
+        ? "Register this patient's death information?"
+        : "Clear the registered death information?",
     );
 
     if (!confirmed) {
@@ -402,15 +402,15 @@ export default function PatientDetailForm({
   return (
     <div className="flex min-h-full flex-col gap-3 p-3">
       <PageHeader
-        title="환자 상세"
+        title="Patient Details"
         actions={
           <Link href="/reception/patientmanagement">
-            <Button>목록으로</Button>
+            <Button>Back to List</Button>
           </Link>
         }
       />
 
-      {detailLoading ? <Alert>환자 정보를 불러오는 중입니다...</Alert> : null}
+      {detailLoading ? <Alert>Loading patient information...</Alert> : null}
 
       {detailError ? <Alert variant="error">{detailError}</Alert> : null}
 
@@ -421,7 +421,7 @@ export default function PatientDetailForm({
       {updateError ? <Alert variant="error">{updateError}</Alert> : null}
 
       {updateSuccess ? (
-        <Alert variant="success">환자 정보가 수정되었습니다.</Alert>
+        <Alert variant="success">Patient information updated successfully.</Alert>
       ) : null}
 
       {deactivateError ? (
@@ -429,13 +429,13 @@ export default function PatientDetailForm({
       ) : null}
 
       {deactivateSuccess ? (
-        <Alert variant="success">환자가 비활성화되었습니다.</Alert>
+        <Alert variant="success">Patient deactivated successfully.</Alert>
       ) : null}
 
       {activateError ? <Alert variant="error">{activateError}</Alert> : null}
 
       {activateSuccess ? (
-        <Alert variant="success">환자가 활성화되었습니다.</Alert>
+        <Alert variant="success">Patient activated successfully.</Alert>
       ) : null}
 
       {deathUpdateError ? (
@@ -445,8 +445,8 @@ export default function PatientDetailForm({
       {deathUpdateSuccess ? (
         <Alert variant="success">
           {patientDetail?.deathYn === "N" && patientDetail.statusCd === "INACTIVE"
-            ? "사망정보가 해제되었습니다. 환자를 다시 사용하려면 환자관리상태를 활성화해 주세요."
-            : "사망정보가 수정되었습니다."}
+            ? "Death information has been cleared. Activate the patient status before using this patient again."
+            : "Death information updated successfully."}
         </Alert>
       ) : null}
 
@@ -455,13 +455,13 @@ export default function PatientDetailForm({
       ) : null}
 
       {temporaryConversionSuccess ? (
-        <Alert variant="success">정규환자 전환이 완료되었습니다.</Alert>
+        <Alert variant="success">Patient converted to a regular patient successfully.</Alert>
       ) : null}
 
       {patientDetail?.tempPatientYn === "Y" ? (
         <Alert>
-          신원이 확인되지 않은 임시환자입니다. 신원 확인 후 정규환자로
-          전환해 주세요.
+          This is a temporary patient whose identity has not been confirmed. Convert
+          the patient after identity confirmation.
         </Alert>
       ) : null}
 
@@ -471,16 +471,16 @@ export default function PatientDetailForm({
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-base font-semibold text-slate-800">
-                  {patientDetail.patientName} 환자 정보
+                  Patient Information — {patientDetail.patientName}
                 </h2>
                 {patientDetail.tempPatientYn === "Y" ? (
                   <span className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
-                    임시환자
+                    Temporary
                   </span>
                 ) : null}
                 {patientDetail.deathYn === "Y" ? (
                   <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
-                    사망
+                    Deceased
                   </span>
                 ) : null}
               </div>
@@ -494,7 +494,7 @@ export default function PatientDetailForm({
                       onClick={startTemporaryConversion}
                       disabled={temporaryConversionLoading}
                     >
-                      정규환자 전환
+                      Convert to Regular Patient
                     </Button>
                   ) : null}
                   {patientDetail.statusCd === "ACTIVE" ? (
@@ -504,7 +504,7 @@ export default function PatientDetailForm({
                       onClick={deactivatePatient}
                       disabled={deactivateLoading}
                     >
-                      {deactivateLoading ? "처리 중..." : "비활성화"}
+                      {deactivateLoading ? "Processing..." : "Deactivate"}
                     </Button>
                   ) : patientDetail.deathYn === "N" ? (
                     <Button
@@ -513,11 +513,11 @@ export default function PatientDetailForm({
                       onClick={activatePatient}
                       disabled={activateLoading}
                     >
-                      {activateLoading ? "처리 중..." : "활성화"}
+                      {activateLoading ? "Processing..." : "Activate"}
                     </Button>
                   ) : (
                     <Button type="button" variant="secondary" disabled>
-                      사망 환자 활성화 불가
+                      Cannot Activate Deceased Patient
                     </Button>
                   )}
 
@@ -527,7 +527,7 @@ export default function PatientDetailForm({
                     onClick={startEditing}
                     disabled={deactivateLoading}
                   >
-                    수정
+                    Edit
                   </Button>
                 </div>
               ) : null}
@@ -535,13 +535,13 @@ export default function PatientDetailForm({
 
             <dl className="grid grid-cols-1 gap-x-8 gap-y-5 p-5 sm:grid-cols-2 lg:grid-cols-3">
               <DetailItem
-                label="환자 ID"
+                label="Patient ID"
                 value={String(patientDetail.patientId)}
               />
 
               {isEditing ? (
                 <div>
-                  <dt className="text-xs font-medium text-slate-400">환자명</dt>
+                  <dt className="text-xs font-medium text-slate-400">Patient Name</dt>
 
                   <dd className="mt-1">
                     <Input
@@ -560,12 +560,12 @@ export default function PatientDetailForm({
                   </dd>
                 </div>
               ) : (
-                <DetailItem label="환자명" value={patientDetail.patientName} />
+                <DetailItem label="Patient Name" value={patientDetail.patientName} />
               )}
 
               <div>
                 <dt className="text-xs font-medium text-slate-400">
-                  환자관리상태코드
+                  Patient Status
                 </dt>
 
                 <dd className="mt-1">
@@ -575,27 +575,27 @@ export default function PatientDetailForm({
                         ? "active"
                         : "inactive"
                     }
-                    activeLabel="활성"
-                    inactiveLabel="비활성"
+                    activeLabel="Active"
+                    inactiveLabel="Inactive"
                   />
                 </dd>
               </div>
 
               <DetailItem
-                label="사망 여부"
-                value={patientDetail.deathYn === "Y" ? "사망" : "사망정보 없음"}
+                label="Death Status"
+                value={patientDetail.deathYn === "Y" ? "Deceased" : "No Death Record"}
               />
 
               {patientDetail.tempPatientYn === "Y" ? (
                 <DetailItem
-                  label="임시등록 사유"
+                  label="Temporary Registration Reason"
                   value={patientDetail.tempRegisterReason ?? "-"}
                 />
               ) : null}
 
               {patientDetail.deathYn === "Y" ? (
                 <DetailItem
-                  label="사망일시"
+                  label="Date and Time of Death"
                   value={
                     patientDetail.deathDtm
                       ? formatDateTime(patientDetail.deathDtm)
@@ -605,23 +605,23 @@ export default function PatientDetailForm({
               ) : null}
 
               <DetailItem
-                label="주민등록번호"
+                label="Resident Registration Number"
                 value={patientDetail.residentRegNo || "-"}
               />
 
               <DetailItem
-                label="성별"
+                label="Gender"
                 value={getGenderLabel(patientDetail.genderCd)}
               />
 
               <DetailItem
-                label="생년월일"
+                label="Date of Birth"
                 value={patientDetail.birthDate ?? "-"}
               />
 
               {isEditing ? (
                 <div className="sm:col-span-2 lg:col-span-3">
-                  <FormField label="주소" htmlFor="zipCode">
+                  <FormField label="Address" htmlFor="zipCode">
                     <div className="space-y-3">
                       <div className="flex gap-2">
                         <Input
@@ -638,7 +638,7 @@ export default function PatientDetailForm({
                           disabled={updateLoading}
                           inputMode="numeric"
                           maxLength={5}
-                          placeholder="우편번호"
+                          placeholder="Postal code"
                           autoComplete="postal-code"
                         />
                         <PostcodeSearchButton
@@ -666,7 +666,7 @@ export default function PatientDetailForm({
                         }}
                         disabled={updateLoading}
                         maxLength={300}
-                        placeholder="기본주소"
+                        placeholder="Address"
                         autoComplete="street-address"
                       />
                       <Input
@@ -678,21 +678,21 @@ export default function PatientDetailForm({
                         }}
                         disabled={updateLoading}
                         maxLength={300}
-                        placeholder="상세주소를 입력하세요 (예: 101동 202호)"
+                        placeholder="Enter address details"
                         autoComplete="address-line2"
                       />
                       <p className="text-xs text-slate-400">
-                        우편번호는 숫자 5자리로 입력해 주세요.
+                        Postal code must contain exactly 5 digits.
                       </p>
                     </div>
                   </FormField>
                 </div>
               ) : (
                 <>
-                  <DetailItem label="우편번호" value={patientDetail.zipCode ?? "-"} />
-                  <DetailItem label="기본주소" value={patientDetail.address ?? "-"} />
+                  <DetailItem label="Postal Code" value={patientDetail.zipCode ?? "-"} />
+                  <DetailItem label="Address" value={patientDetail.address ?? "-"} />
                   <DetailItem
-                    label="상세주소"
+                    label="Address Details"
                     value={patientDetail.addressDetail ?? "-"}
                   />
                 </>
@@ -700,7 +700,7 @@ export default function PatientDetailForm({
 
               {isEditing ? (
                 <div>
-                  <dt className="text-xs font-medium text-slate-400">연락처</dt>
+                  <dt className="text-xs font-medium text-slate-400">Phone Number</dt>
                   <dd className="mt-1">
                     <Input
                       id="phoneNo"
@@ -721,7 +721,7 @@ export default function PatientDetailForm({
                 </div>
               ) : (
                 <DetailItem
-                  label="연락처"
+                  label="Phone Number"
                   value={
                     patientDetail.phoneNo
                       ? formatPhoneNo(patientDetail.phoneNo)
@@ -731,12 +731,12 @@ export default function PatientDetailForm({
               )}
 
               <DetailItem
-                label="등록일시"
+                label="Registered At"
                 value={formatDateTime(patientDetail.createdAt)}
               />
 
               <DetailItem
-                label="수정일시"
+                label="Updated At"
                 value={formatDateTime(patientDetail.updatedAt)}
               />
             </dl>
@@ -749,7 +749,7 @@ export default function PatientDetailForm({
                   onClick={cancelEditing}
                   disabled={updateLoading}
                 >
-                  취소
+                  Cancel
                 </Button>
 
                 <Button
@@ -757,7 +757,7 @@ export default function PatientDetailForm({
                   variant="primary"
                   disabled={updateLoading}
                 >
-                  {updateLoading ? "저장 중..." : "저장"}
+                  {updateLoading ? "Saving..." : "Save"}
                 </Button>
               </div>
             ) : null}
@@ -767,15 +767,15 @@ export default function PatientDetailForm({
             <div className="border-t border-slate-200">
               <div className="px-5 py-4">
                 <h2 className="text-base font-semibold text-slate-800">
-                  정규환자 전환
+                  Convert to Regular Patient
                 </h2>
                 <p className="mt-1 text-xs text-slate-500">
-                  환자 ID와 기존 기록은 유지되고 임시환자 표시만 해제됩니다.
+                  The patient ID and existing records will be retained. Only the temporary patient status will be removed.
                 </p>
               </div>
 
               <div className="grid gap-4 border-t border-slate-100 p-5 sm:grid-cols-2">
-                <FormField label="실제 환자명" required>
+                <FormField label="Confirmed Patient Name" required>
                   <Input
                     value={conversionPatientName}
                     onChange={(event) => {
@@ -789,7 +789,7 @@ export default function PatientDetailForm({
                   />
                 </FormField>
 
-                <FormField label="주민등록번호" required>
+                <FormField label="Resident Registration Number" required>
                   <div className="flex gap-2">
                     <Input
                       value={conversionResidentRegNo}
@@ -811,7 +811,7 @@ export default function PatientDetailForm({
                       }
                       inputMode="numeric"
                       maxLength={13}
-                      placeholder="숫자 13자리"
+                      placeholder="13 digits"
                       autoComplete="off"
                     />
                     <Button
@@ -825,17 +825,17 @@ export default function PatientDetailForm({
                         conversionDuplicateLoading
                       }
                     >
-                      {conversionDuplicateLoading ? "확인 중..." : "중복 확인"}
+                      {conversionDuplicateLoading ? "Checking..." : "Check Duplicate"}
                     </Button>
                   </div>
                   {conversionDuplicated === false ? (
                     <p className="mt-1 text-sm text-emerald-600">
-                      사용 가능한 주민등록번호입니다.
+                      This resident registration number is available.
                     </p>
                   ) : null}
                   {conversionDuplicated === true ? (
                     <p className="mt-1 text-sm text-red-600">
-                      이미 등록된 주민등록번호입니다.
+                      This resident registration number is already registered.
                     </p>
                   ) : null}
                   {conversionDuplicateError ? (
@@ -846,9 +846,9 @@ export default function PatientDetailForm({
                 </FormField>
 
                 <FormField
-                  label="생년월일"
+                  label="Date of Birth"
                   required
-                  hint="주민등록번호에서 자동으로 계산됩니다."
+                  hint="Calculated automatically from the resident registration number."
                 >
                   <Input
                     type="date"
@@ -858,7 +858,7 @@ export default function PatientDetailForm({
                   />
                 </FormField>
 
-                <FormField label="성별" required>
+                <FormField label="Gender" required>
                   <Select
                     value={conversionGenderCd}
                     onChange={(event) =>
@@ -867,10 +867,10 @@ export default function PatientDetailForm({
                       )
                     }
                     options={[
-                      { value: "01", label: "남성" },
-                      { value: "02", label: "여성" },
-                      { value: "03", label: "미상" },
-                      { value: "04", label: "기타" },
+                      { value: "01", label: "Male" },
+                      { value: "02", label: "Female" },
+                      { value: "03", label: "Unknown" },
+                      { value: "04", label: "Other" },
                     ]}
                     disabled={temporaryConversionLoading}
                   />
@@ -883,7 +883,7 @@ export default function PatientDetailForm({
                     onClick={cancelTemporaryConversion}
                     disabled={temporaryConversionLoading}
                   >
-                    취소
+                    Cancel
                   </Button>
                   <Button
                     type="button"
@@ -895,7 +895,7 @@ export default function PatientDetailForm({
                       conversionDuplicated !== false
                     }
                   >
-                    {temporaryConversionLoading ? "전환 중..." : "전환"}
+                    {temporaryConversionLoading ? "Converting..." : "Convert"}
                   </Button>
                 </div>
               </div>
@@ -905,7 +905,7 @@ export default function PatientDetailForm({
           <div className="border-t border-slate-200">
             <div className="flex items-center justify-between px-5 py-4">
               <h2 className="text-base font-semibold text-slate-800">
-                사망정보 관리
+                Death Information
               </h2>
 
               {!deathEditing ? (
@@ -915,7 +915,7 @@ export default function PatientDetailForm({
                   onClick={startDeathEditing}
                   disabled={deathUpdateLoading}
                 >
-                  사망정보 수정
+                  Edit Death Information
                 </Button>
               ) : null}
             </div>
@@ -923,12 +923,12 @@ export default function PatientDetailForm({
             <div className="grid gap-4 border-t border-slate-100 p-5 sm:grid-cols-2">
               {deathEditing ? (
                 <>
-                  <FormField label="사망 여부" required>
+                  <FormField label="Death Status" required>
                     <Select
                       value={deathYn}
                       options={[
-                        { value: "N", label: "사망정보 없음" },
-                        { value: "Y", label: "사망" },
+                        { value: "N", label: "No Death Record" },
+                        { value: "Y", label: "Deceased" },
                       ]}
                       onChange={(event) => {
                         const value = event.target.value as "Y" | "N";
@@ -943,7 +943,7 @@ export default function PatientDetailForm({
                     />
                   </FormField>
 
-                  <FormField label="사망일시" required={deathYn === "Y"}>
+                  <FormField label="Date and Time of Death" required={deathYn === "Y"}>
                     <Input
                       type="datetime-local"
                       value={deathDtm}
@@ -959,7 +959,7 @@ export default function PatientDetailForm({
                       onClick={cancelDeathEditing}
                       disabled={deathUpdateLoading}
                     >
-                      취소
+                      Cancel
                     </Button>
 
                     <Button
@@ -968,21 +968,21 @@ export default function PatientDetailForm({
                       onClick={submitDeathUpdate}
                       disabled={deathUpdateLoading}
                     >
-                      {deathUpdateLoading ? "저장 중..." : "저장"}
+                      {deathUpdateLoading ? "Saving..." : "Save"}
                     </Button>
                   </div>
                 </>
               ) : (
                 <>
                   <DetailItem
-                    label="사망 여부"
+                    label="Death Status"
                     value={
-                      patientDetail.deathYn === "Y" ? "사망" : "사망정보 없음"
+                      patientDetail.deathYn === "Y" ? "Deceased" : "No Death Record"
                     }
                   />
 
                   <DetailItem
-                    label="사망일시"
+                    label="Date and Time of Death"
                     value={
                       patientDetail.deathDtm
                         ? formatDateTime(patientDetail.deathDtm)
