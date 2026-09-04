@@ -1,4 +1,4 @@
-import Detail from "@/components/billing/billingMasterDetail";
+import Detail from "@/components/billing/master/billingMasterDetail";
 
 const BillingMasterDetailPage = () => {
   return <Detail />;
