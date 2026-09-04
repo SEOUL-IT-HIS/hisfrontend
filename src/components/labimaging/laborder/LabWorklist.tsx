@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, DataTable, Panel } from "@/components/common";
 import type { DataTableColumn } from "@/components/common";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { resolveLabOrderMessage } from "@/features/labimaging/laborder/messages";
 import {
   clearWorklistSelection,
@@ -30,12 +31,14 @@ import {
   selectLastAcceptedSpecimen,
   selectLastCreatedSpecimen,
 } from "@/features/labimaging/labspecimen/slice";
-import ReceptionExcludeDialog from "@/components/labimaging/laborder/ReceptionExcludeDialog";
+import { selectLastSubmittedLabResult } from "@/features/labimaging/labresult/slice";
+import ReceptionExcludeDialog from "@/components/labimaging/common/ReceptionExcludeDialog";
 import WorklistProgress from "@/components/labimaging/laborder/WorklistProgress";
 import WorklistReceptionHeader from "@/components/labimaging/laborder/WorklistReceptionHeader";
 import LabScheduleRegisterForm from "@/components/labimaging/labschedule/LabScheduleRegisterForm";
 import SpecimenWorkPanel from "@/components/labimaging/labspecimen/SpecimenWorkPanel";
 import SpecimenAcceptancePanel from "@/components/labimaging/labspecimen/SpecimenAcceptancePanel";
+import LabResultWorkPanel from "@/components/labimaging/labresult/LabResultWorkPanel";
 
 /**
  * 검사 워크리스트 — 왼쪽 접수 목록 + 오른쪽 작업 폼 (마스터-디테일).
@@ -65,10 +68,10 @@ function formatDateTime(value?: string) {
 type WorkTab = "schedule" | "specimen" | "acceptance" | "result";
 
 const WORK_TABS: ReadonlyArray<{ value: WorkTab; label: string; enabled: boolean }> = [
-  { value: "schedule", label: "일정", enabled: true },
-  { value: "specimen", label: "검체", enabled: true },
-  { value: "acceptance", label: "적합성 판정", enabled: true },
-  { value: "result", label: "결과", enabled: false },
+  { value: "schedule", label: "Schedule", enabled: true },
+  { value: "specimen", label: "Specimen", enabled: true },
+  { value: "acceptance", label: "Fitness Check", enabled: true },
+  { value: "result", label: "Result", enabled: true },
 ];
 
 export default function LabWorklist() {
@@ -97,6 +100,8 @@ export default function LabWorklist() {
   const lastScheduleId = useSelector(selectLastCreatedLabSchedule)?.labScheduleId ?? null;
   const lastSpecimenId = useSelector(selectLastCreatedSpecimen)?.specimenId ?? null;
   const lastAcceptedId = useSelector(selectLastAcceptedSpecimen)?.specimenId ?? null;
+  // 결과가 등록·수정·확정되면 nextStep 이 바뀌므로 목록을 다시 부른다.
+  const lastResultId = useSelector(selectLastSubmittedLabResult)?.labResultId ?? null;
 
   /*
    * 목록을 다시 부르는 지점은 이 효과 하나로 모은다.
@@ -106,7 +111,14 @@ export default function LabWorklist() {
    */
   useEffect(() => {
     dispatch(fetchLabWorklistRequest(filter));
-  }, [dispatch, filter, lastScheduleId, lastSpecimenId, lastAcceptedId]);
+  }, [dispatch, filter, lastScheduleId, lastSpecimenId, lastAcceptedId, lastResultId]);
+
+  /*
+   * 목록에 보이는 환자들의 이름을 한 번에 불러온다. (POST /api/patient/batch)
+   * 행마다 부르면 목록 크기만큼 요청이 나가므로, 목록이 바뀔 때 한 번만 부른다.
+   * 환자번호가 발급되지 않는 상태라 화면에서 환자를 알아보는 수단이 사실상 이름뿐이다.
+   */
+  const { names: patientNames } = usePatientNames(worklist.map((r) => r.patientId));
 
   const selected =
     worklist.find((item) => item.receptionNo === selectedReceptionNo) ?? null;
@@ -120,14 +132,14 @@ export default function LabWorklist() {
   const columns: DataTableColumn<LabWorklistItem>[] = [
     {
       key: "receivedAt",
-      header: "접수시각",
+      header: "Received",
       render: (r) => (
         <span className="text-slate-500">{formatDateTime(r.receivedAt)}</span>
       ),
     },
     {
       key: "receptionNo",
-      header: "접수 / 환자",
+      header: "Reception / Patient",
       render: (r) => (
         // 행 선택은 접수번호 클릭으로 한다. (공통 DataTable 은 행 클릭을 지원하지 않는다)
         <button
@@ -140,10 +152,13 @@ export default function LabWorklist() {
           }
         >
           {r.receptionNo}
-          <span className="ml-2 font-normal text-slate-400">{r.patientNo}</span>
+          {/* 환자 식별은 이름으로 한다. 환자번호는 화면에서 쓰지 않기로 했다. (2026-08-25) */}
+          <span className="ml-2 font-normal text-slate-500">
+            {patientNames[r.patientId] ?? "Unknown patient"}
+          </span>
           {r.urgencyYn === "Y" ? (
             <span className="ml-2 rounded bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-600">
-              긴급
+              Urgent
             </span>
           ) : null}
         </button>
@@ -151,16 +166,16 @@ export default function LabWorklist() {
     },
     {
       key: "progress",
-      header: "진행",
+      header: "Progress",
       render: (r) => <WorklistProgress item={r} />,
     },
     {
       key: "nextStep",
-      header: "다음 할 일",
+      header: "Next Step",
       render: (r) =>
         r.receptionStatusCode === "EXCLUDED" ? (
           <span className="text-slate-400" title={r.exclusionReason}>
-            제외됨
+            Excluded
           </span>
         ) : (
           <span className="font-medium text-slate-700">
@@ -179,7 +194,7 @@ export default function LabWorklist() {
             onClick={() => dispatch(restoreReceptionRequest(r.receptionNo, filter))}
             disabled={exclusionSubmitting}
           >
-            복구
+            Restore
           </Button>
         ) : (
           <Button
@@ -187,7 +202,7 @@ export default function LabWorklist() {
             onClick={() => setExcludeTarget(r.receptionNo)}
             disabled={exclusionSubmitting}
           >
-            제외
+            Exclude
           </Button>
         ),
     },
@@ -215,7 +230,7 @@ export default function LabWorklist() {
             onClick={() => dispatch(fetchLabWorklistRequest(filter))}
             disabled={loading}
           >
-            새로고침
+            Refresh
           </Button>
         </div>
 
@@ -228,10 +243,11 @@ export default function LabWorklist() {
           rowKey={(r) => r.labReceptionId}
           loading={loading}
           minWidthClassName="min-w-[680px]"
+          loadingMessage="Loading..."
           emptyMessage={
             filter === "EXCLUDED"
-              ? "제외된 접수가 없습니다."
-              : "처리할 접수가 없습니다."
+              ? "No excluded receptions."
+              : "No receptions to process."
           }
         />
       </div>
@@ -240,7 +256,7 @@ export default function LabWorklist() {
       <Panel className="min-h-0 flex-1 p-5">
         {selected === null ? (
           <div className="flex h-full items-center justify-center text-sm text-slate-400">
-            왼쪽 목록에서 접수번호를 클릭하세요.
+            Select a reception number from the list on the left.
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -255,18 +271,32 @@ export default function LabWorklist() {
                   variant={tab === t.value ? "primary" : "secondary"}
                   onClick={() => setTab(t.value)}
                   disabled={!t.enabled}
-                  title={t.enabled ? undefined : "아직 구현되지 않은 단계입니다."}
+                  title={t.enabled ? undefined : "This step is not implemented yet."}
                 >
                   {t.label}
                 </Button>
               ))}
             </div>
 
-            {tab === "specimen" ? (
+            {/*
+              ⚠ 작업 영역에만 스크롤을 준다.
+                오른쪽 Panel 은 고정 높이(min-h-0 flex-1)라, 내용이 넘치면 스크롤바도 없이 잘린다.
+                실제로 첫 판정 뒤 성공 Alert 가 한 줄 늘어나는 것만으로 아래쪽 입력 폼이
+                화면 밖으로 밀려 안 보였다. (2026-09-02)
+                머리말·탭은 고정해야 하므로 패널 각각이 아니라 탭 내용만 감싼다.
+            */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+              {tab === "specimen" ? (
               <SpecimenWorkPanel reception={selected} />
             ) : tab === "acceptance" ? (
               // key 로 접수마다 새로 마운트해 이전 접수의 검체 선택·입력값이 남지 않게 한다.
               <SpecimenAcceptancePanel
+                key={selected.labReceptionId}
+                reception={selected}
+              />
+            ) : tab === "result" ? (
+              // key 로 접수마다 새로 마운트해 이전 접수의 항목 선택·입력값이 남지 않게 한다.
+              <LabResultWorkPanel
                 key={selected.labReceptionId}
                 reception={selected}
               />
@@ -284,11 +314,12 @@ export default function LabWorklist() {
                 showReceptionSummary={false}
                 onCancel={() => dispatch(clearWorklistSelection())}
               />
-            ) : (
-              <div className="text-sm text-slate-400">
-                아직 구현되지 않은 단계입니다.
-              </div>
-            )}
+              ) : (
+                <div className="text-sm text-slate-400">
+                  This step is not implemented yet.
+                </div>
+              )}
+            </div>
           </div>
         )}
       </Panel>

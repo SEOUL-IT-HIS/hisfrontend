@@ -5,6 +5,7 @@ import type {
   ReceptionDetail,
   ReceptionListQuery,
   ReceptionRegisterRequest,
+  ReceptionCancelRequest,
   DepartmentOption,
   DoctorOption,
 } from "./types";
@@ -30,6 +31,9 @@ type ReceptionManagementState = {
   registerError: string | null;
   /** 등록 성공 시마다 증가 — 등록 폼을 key 로 리마운트해 초기화하는 데 사용 */
   registerSuccessCount: number;
+
+  cancelLoading: boolean;
+  cancelError: string | null;
 };
 
 const initialState: ReceptionManagementState = {
@@ -52,6 +56,9 @@ const initialState: ReceptionManagementState = {
   registerLoading: false,
   registerError: null,
   registerSuccessCount: 0,
+
+  cancelLoading: false,
+  cancelError: null,
 };
 
 const receptionManagementSlice = createSlice({
@@ -103,10 +110,7 @@ const receptionManagementSlice = createSlice({
       state.departmentsLoading = true;
       state.departmentsError = null;
     },
-    fetchDepartmentsSuccess(
-      state,
-      action: PayloadAction<DepartmentOption[]>,
-    ) {
+    fetchDepartmentsSuccess(state, action: PayloadAction<DepartmentOption[]>) {
       state.departmentsLoading = false;
       state.departments = action.payload;
     },
@@ -149,6 +153,23 @@ const receptionManagementSlice = createSlice({
       state.registerLoading = false;
       state.registerError = action.payload;
     },
+
+    cancelReceptionRequest: {
+      reducer(state) {
+        state.cancelLoading = true;
+        state.cancelError = null;
+      },
+      prepare(request: ReceptionCancelRequest) {
+        return { payload: request };
+      },
+    },
+    cancelReceptionSuccess(state) {
+      state.cancelLoading = false;
+    },
+    cancelReceptionFailure(state, action: PayloadAction<string>) {
+      state.cancelLoading = false;
+      state.cancelError = action.payload;
+    },
   },
 });
 
@@ -170,6 +191,9 @@ export const {
   registerReceptionRequest,
   registerReceptionSuccess,
   registerReceptionFailure,
+  cancelReceptionRequest,
+  cancelReceptionSuccess,
+  cancelReceptionFailure,
 } = receptionManagementSlice.actions;
 
 export const selectReceptionList = (state: RootState) =>
@@ -196,5 +220,9 @@ export const selectRegisterError = (state: RootState) =>
   state.reception.receptionmanagement.registerError;
 export const selectRegisterSuccessCount = (state: RootState) =>
   state.reception.receptionmanagement.registerSuccessCount;
+export const selectCancelLoading = (state: RootState) =>
+  state.reception.receptionmanagement.cancelLoading;
+export const selectCancelError = (state: RootState) =>
+  state.reception.receptionmanagement.cancelError;
 
 export default receptionManagementSlice.reducer;

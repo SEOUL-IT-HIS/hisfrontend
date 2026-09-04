@@ -16,10 +16,10 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-    EMPTY: "빈 병상",
-    OCCUPIED: "사용중",
-    RESERVED: "예약됨",
-    MAINTENANCE: "유지보수",
+    EMPTY: "Empty",
+    OCCUPIED: "Occupied",
+    RESERVED: "Reserved",
+    MAINTENANCE: "Maintenance",
 };
 
 const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
@@ -63,8 +63,8 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
         <div className="w-full p-6">
             <div className="mb-6 flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-semibold text-slate-800">병상 상태 상세</h1>
-                    <p className="mt-1 text-sm text-slate-500">병상의 현재 사용 현황입니다.</p>
+                    <h1 className="text-lg font-semibold text-slate-800">Bed Status Details</h1>
+                    <p className="mt-1 text-sm text-slate-500">Current usage status of the bed.</p>
                 </div>
                 {onClose && (
                     <button
@@ -72,12 +72,12 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
                         onClick={onClose}
                         className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
                     >
-                        선택 해제
+                        Deselect
                     </button>
                 )}
             </div>
 
-            {loading && <p className="text-sm text-slate-500">로딩중...</p>}
+            {loading && <p className="text-sm text-slate-500">Loading...</p>}
             {error && <p className="text-sm text-red-600">{error}</p>}
 
             {!loading && bed && (
@@ -94,21 +94,21 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
                     </div>
                     <div>
                         <div className={INFO_ROW}>
-                            <span className="text-slate-500">환자명</span>
+                            <span className="text-slate-500">Patient Name</span>
                             <span className="text-slate-800">
-                                {bed.patientId ? (patientDetail?.patientId === bed.patientId ? patientDetail.patientName : "조회중...") : "없음"}
+                                {bed.patientId ? (patientDetail?.patientId === bed.patientId ? patientDetail.patientName : "Loading...") : "None"}
                             </span>
                         </div>
                         <div className={INFO_ROW}>
-                            <span className="text-slate-500">환자ID</span>
-                            <span className="text-slate-800">{bed.patientId ?? "없음"}</span>
+                            <span className="text-slate-500">Patient ID</span>
+                            <span className="text-slate-800">{bed.patientId ?? "None"}</span>
                         </div>
                         <div className={INFO_ROW}>
-                            <span className="text-slate-500">병실번호</span>
+                            <span className="text-slate-500">Room No.</span>
                             <span className="text-slate-800">{bed.roomNo}</span>
                         </div>
                         <div className={INFO_ROW}>
-                            <span className="text-slate-500">병상번호</span>
+                            <span className="text-slate-500">Bed No.</span>
                             <span className="text-slate-800">{bed.bedNo}</span>
                         </div>
                         <div className={INFO_ROW}>

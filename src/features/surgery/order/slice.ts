@@ -14,7 +14,7 @@ import type {
  * <p>상태만 관리하고 API 호출은 saga 가 담당한다(§10.3).
  * createSlice name = "surgery/order" (§10.2 서비스 prefix 유지)</p>
  *
- * <p><b>schedule slice 에서 분리한 이유</b>(2026-08-13) — 요청과 수술은 다른 것이다.
+ * <p><b>schedule slice 에서 분리한 이유</b> — 요청과 수술은 다른 것이다.
  * 예전에는 요청도 수술 행이라 한 slice 가 둘을 다뤘는데, 그래서 "배정 대기 목록"과
  * "수술 목록"이 같은 배열을 상태만 달리 담고 있었다. 이제 오더는 오더대로 관리한다.</p>
  *
@@ -90,7 +90,7 @@ const surgeryOrderSlice = createSlice({
         state.saving = true;
         state.error = "";
       },
-      prepare(orderId: string, request?: RejectSurgeryOrderRequest) {
+      prepare(orderId: string, request: RejectSurgeryOrderRequest) {
         return { payload: { orderId, request } };
       },
     },

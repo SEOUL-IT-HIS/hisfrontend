@@ -9,8 +9,8 @@ type BillingDetailSearchListProps = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-    READY: "미수납",
-    SUCCESS: "수납완료",
+    READY: "Unpaid",
+    SUCCESS: "Paid",
 };
 
 const billingDetailSearchList = ({ patient, selected, onSelect }: BillingDetailSearchListProps) => {
@@ -32,8 +32,8 @@ const billingDetailSearchList = ({ patient, selected, onSelect }: BillingDetailS
                 </span>
             </td>
             <td className="px-5 py-3.5 text-slate-600">{patient.birthDate}</td>
-            <td className="px-5 py-3.5 text-slate-600">{patient.tel}</td>
-            <td className="px-5 py-3.5 text-slate-600">{patient.addr}</td>
+            <td className="px-5 py-3.5 text-slate-600">{patient.phoneNo}</td>
+            <td className="px-5 py-3.5 text-slate-600">{patient.address}</td>
             <td className="px-5 py-3.5 text-slate-600">{patient.itemName}</td>
             <td className="px-5 py-3.5">
                 <span

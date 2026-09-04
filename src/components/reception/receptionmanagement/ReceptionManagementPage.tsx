@@ -6,7 +6,9 @@ import ReceptionRegisterForm from "./ReceptionRegisterForm";
 import ReceptionListSection from "./ReceptionListSection";
 import ReceptionDetailModal from "./ReceptionDetailModal";
 import PatientSearchModal from "@/components/reception/patientmanagement/PatientSearchModal";
+import PatientRegisterModal from "@/components/reception/patientmanagement/PatientRegisterModal";
 import type { PatientSearchItem } from "@/features/reception/patientmanagement/types";
+import type { Patient } from "@/features/patient/type/patientType";
 
 /**
  * 접수관리 화면
@@ -17,9 +19,20 @@ export default function ReceptionManagementPage() {
   const [selectedPatient, setSelectedPatient] =
     useState<PatientSearchItem | null>(null);
   const [patientSearchOpen, setPatientSearchOpen] = useState(false);
+  const [patientRegisterOpen, setPatientRegisterOpen] = useState(false);
   const [selectedReceptionId, setSelectedReceptionId] = useState<
     string | null
   >(null);
+
+  function handlePatientRegistered(patient: Patient) {
+    setPatientRegisterOpen(false);
+    setSelectedPatient({
+      patientId: patient.patientId,
+      patientName: patient.patientName,
+      birthDate: patient.birthDate,
+      genderCd: patient.genderCd,
+    });
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-3">
@@ -33,6 +46,7 @@ export default function ReceptionManagementPage() {
           <ReceptionRegisterForm
             selectedPatient={selectedPatient}
             onOpenPatientSearch={() => setPatientSearchOpen(true)}
+            onOpenPatientRegister={() => setPatientRegisterOpen(true)}
             onClearPatient={() => setSelectedPatient(null)}
           />
         </Panel>
@@ -46,6 +60,12 @@ export default function ReceptionManagementPage() {
         open={patientSearchOpen}
         onClose={() => setPatientSearchOpen(false)}
         onSelect={(patient) => setSelectedPatient(patient)}
+      />
+
+      <PatientRegisterModal
+        open={patientRegisterOpen}
+        onClose={() => setPatientRegisterOpen(false)}
+        onRegistered={handlePatientRegistered}
       />
 
       <ReceptionDetailModal

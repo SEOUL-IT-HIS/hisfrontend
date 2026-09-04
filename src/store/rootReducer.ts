@@ -2,13 +2,13 @@ import { combineReducers } from "@reduxjs/toolkit";
 
 // ----- 서비스별 reducer (담당자 slice 준비되면 import 후 아래에 등록) -----
 // import patientReducer from "@/features/patient/slice";
-// import receptionReducer from "@/features/reception/slice";
+import receptionReducer from "@/features/reception/slice";
 // import billingReducer from "@/features/billing/slice";
  import outpatientReducer from "@/features/outpatient/common/slice";
 import emergencyReducer from "@/features/emergency/common/slice";
 import inpatientReducer from "@/features/inpatient/slice";
 import labImagingReducer from "@/features/labimaging/common/slice";
-// import pharmacyReducer from "@/features/pharmacy/slice";
+import pharmacyReducer from "@/features/pharmacy/slice";
 import surgeryReducer from "@/features/surgery/slice";
 // import adminReducer from "@/features/admin/slice";
 import commonCodeItemReducer from "@/features/commonCode/slice/commonCodeItemSlice";
@@ -45,7 +45,7 @@ const rootReducer = combineReducers({
   patient: patientReducer,
 
   // 접수 (RCP)
-  // reception: receptionReducer,
+  reception: receptionReducer,
 
   // 수납/청구 (BIL)
   billingDetail: billingDetailReducer,
@@ -65,7 +65,7 @@ const rootReducer = combineReducers({
   labImaging: labImagingReducer,
 
   // 약국 (PHM)
-  // pharmacy: pharmacyReducer,
+  pharmacy: pharmacyReducer,
 
   // 수술 (SUR)
   surgery: surgeryReducer,

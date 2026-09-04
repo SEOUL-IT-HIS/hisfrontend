@@ -21,9 +21,9 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  ADMITTED: "입원중",
-  DISCHARGE_REQUESTED: "퇴원 신청",
-  DISCHARGED: "퇴원 완료",
+  ADMITTED: "Admitted",
+  DISCHARGE_REQUESTED: "Discharge Requested",
+  DISCHARGED: "Discharged",
 };
 
 const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
@@ -59,17 +59,12 @@ const DischargeRequestDetail = ({ admissionId: admissionIdProp, onClose }: Disch
     dispatch(changeStatusRequest({ admissionId, status: "DISCHARGE_REQUESTED" }));
   };
 
-  const handleCompleteDischarge = () => {
-    if (!admissionId) return;
-    dispatch(changeStatusRequest({ admissionId, status: "DISCHARGED" }));
-  };
-
   return (
     <div className="w-full p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-slate-800">퇴원 처리</h1>
-          <p className="mt-1 text-sm text-slate-500">퇴원 신청 및 완료 처리를 진행합니다.</p>
+          <h1 className="text-lg font-semibold text-slate-800">Discharge Processing</h1>
+          <p className="mt-1 text-sm text-slate-500">Submit the discharge request and complete discharge processing.</p>
         </div>
         {onClose && (
           <button
@@ -77,12 +72,12 @@ const DischargeRequestDetail = ({ admissionId: admissionIdProp, onClose }: Disch
             onClick={onClose}
             className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
           >
-            선택 해제
+            Deselect
           </button>
         )}
       </div>
 
-      {loading && <p className="text-sm text-slate-500">로딩중...</p>}
+      {loading && <p className="text-sm text-slate-500">Loading...</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {!loading && admission && (
@@ -100,22 +95,22 @@ const DischargeRequestDetail = ({ admissionId: admissionIdProp, onClose }: Disch
             </div>
             <div>
               <div className={INFO_ROW}>
-                <span className="text-slate-500">환자ID</span>
+                <span className="text-slate-500">Patient ID</span>
                 <span className="text-slate-800">{admission.patientId}</span>
               </div>
               <div className={INFO_ROW}>
-                <span className="text-slate-500">입원과ID</span>
+                <span className="text-slate-500">Admission Dept ID</span>
                 <span className="text-slate-800">{admission.admissionDeptId}</span>
               </div>
               <div className={INFO_ROW}>
-                <span className="text-slate-500">입원날짜</span>
+                <span className="text-slate-500">Admission Date</span>
                 <span className="text-slate-800">{admission.admissionDate}</span>
               </div>
             </div>
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="mb-3 text-sm font-medium text-slate-800">다음 단계</p>
+            <p className="mb-3 text-sm font-medium text-slate-800">Next Step</p>
             <div className="flex flex-wrap items-center gap-2">
               {admission.status === "ADMITTED" && (
                 <button
@@ -123,31 +118,22 @@ const DischargeRequestDetail = ({ admissionId: admissionIdProp, onClose }: Disch
                   disabled={changeStatusStatus.loading}
                   className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                 >
-                  {changeStatusStatus.loading ? "처리중..." : "퇴원 신청"}
+                  {changeStatusStatus.loading ? "Processing..." : "Request Discharge"}
                 </button>
               )}
               {admission.status === "DISCHARGE_REQUESTED" && (
                 <>
-                  <span className="text-sm text-slate-600">퇴원 신청 완료 — 처리 대기 중</span>
-                  <button
-                    onClick={handleCompleteDischarge}
-                    disabled={changeStatusStatus.loading}
-                    className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
-                  >
-                    {changeStatusStatus.loading ? "처리중..." : "퇴원 완료 처리"}
-                  </button>
-                </>
-              )}
-              {admission.status === "DISCHARGED" && (
-                <>
-                  <span className="text-sm text-slate-600">퇴원 완료됨</span>
+                  <span className="text-sm text-slate-600">Waiting for payment completion — discharge will complete automatically once billing is finalized</span>
                   <Link
                     href={`/inpatient/admissiondischarge/discharge/settlement/${admissionId}`}
                     className="inline-flex items-center rounded-lg border border-sky-600 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50"
                   >
-                    정산 확인하기
+                    View Billing
                   </Link>
                 </>
+              )}
+              {admission.status === "DISCHARGED" && (
+                <span className="text-sm text-slate-600">Discharged</span>
               )}
             </div>
             {changeStatusStatus.error && <p className="mt-2 text-sm text-red-600">{changeStatusStatus.error}</p>}

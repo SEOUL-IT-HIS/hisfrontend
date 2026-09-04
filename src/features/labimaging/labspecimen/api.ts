@@ -17,8 +17,13 @@ const SPECIMEN_PATH = "/api/lab-imaging/specimens";
  * 접수 1건의 검체 목록을 조회한다.
  * GET /api/lab-imaging/specimens?receptionNo={receptionNo}
  *
- * ⚠ 접수번호를 주면 백엔드가 judgedYn 필터를 무시하고 그 접수의 검체만 반환한다.
- *   워크리스트 오른쪽 작업 폼은 "이 접수의 검체"만 보면 되므로 이 형태를 쓴다.
+ * ⚠ 판정 여부(judgedYn)는 보내지 않는다. 백엔드에 필터가 있지만 일부러 안 쓴다.
+ *   판정이 끝난 검체도 화면에 회색으로 남겨 "3건 중 2건 판정" 을 보여줘야 하는데,
+ *   서버에서 걸러 받으면 판정한 줄이 사라져 그 화면이 성립하지 않는다.
+ *   접수 하나의 검체는 보통 1~3건이라 전체를 받아도 부담이 없다.
+ *
+ * TODO(ZP2-79 검체 이력 조회, 후반 작업): 접수를 넘나드는 이력 화면이 생기면
+ *   judgedYn 을 쓰는 별도 조회 함수를 여기에 추가한다. (백엔드는 이미 지원)
  */
 export async function fetchSpecimensByReceptionNo(
   receptionNo: string,
@@ -26,6 +31,26 @@ export async function fetchSpecimensByReceptionNo(
   const { data } = await apiClient.get<ApiResponse<SpecimenSummary[]>>(
     SPECIMEN_PATH,
     { params: { receptionNo } },
+  );
+  return data.data;
+}
+
+/**
+ * 검체바코드로 검체 1건을 조회한다. (ZP2-75 바코드 검증)
+ * GET /api/lab-imaging/specimens/barcode/{specimenBarcode}
+ *
+ * ⚠ 서버는 조회만 한다. "지금 선택한 접수의 검체인지" 대조는 화면에서 한다.
+ *   서버는 화면이 어느 접수를 보고 있는지 모른다. 접수번호를 파라미터로 보내 비교시키면
+ *   화면이 이미 아는 값을 왕복시키는 꼴이 된다. 응답의 receptionNo 로 화면이 직접 대조한다.
+ *
+ * ⚠ 없는 바코드는 400 + LAB020 으로 온다. 서버가 내려주는 문구에 입력한 바코드가 들어 있어
+ *   화면에서 문구를 다시 만들지 않고 그대로 보여준다. (오타 확인에 그 값이 필요하다)
+ */
+export async function fetchSpecimenByBarcode(
+  specimenBarcode: string,
+): Promise<SpecimenSummary> {
+  const { data } = await apiClient.get<ApiResponse<SpecimenSummary>>(
+    `${SPECIMEN_PATH}/barcode/${encodeURIComponent(specimenBarcode)}`,
   );
   return data.data;
 }

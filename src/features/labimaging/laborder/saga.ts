@@ -43,7 +43,7 @@ function* createLabOrderSaga(action: PayloadAction<LabOrderCreateRequest>) {
     yield put(createLabOrderSuccess(response));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "검사 오더 접수에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to create lab reception.";
     yield put(createLabOrderFailure(message));
   }
 }
@@ -57,7 +57,7 @@ function* fetchLabReceptionByNoSaga(action: PayloadAction<string>) {
     yield put(fetchLabReceptionByNoSuccess(reception));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "접수 조회에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to load reception.";
     yield put(fetchLabReceptionByNoFailure(message));
   }
 }
@@ -78,7 +78,7 @@ function* fetchLabWorklistSaga(
     yield put(fetchLabWorklistSuccess(list));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "워크리스트 조회에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to load worklist.";
     yield put(fetchLabWorklistFailure(message));
   }
 }
@@ -101,7 +101,7 @@ function* excludeReceptionSaga(
     yield put(fetchLabWorklistRequest(filter));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "접수 제외에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to exclude reception.";
     yield put(exclusionFailure(message));
   }
 }
@@ -116,7 +116,7 @@ function* restoreReceptionSaga(
     yield put(fetchLabWorklistRequest(filter));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "접수 복구에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to restore reception.";
     yield put(exclusionFailure(message));
   }
 }

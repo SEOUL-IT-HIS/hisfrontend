@@ -18,10 +18,10 @@ import SurgeryWorklist from "@/components/surgery/worklist/SurgeryWorklist";
  */
 export default function Page() {
   return (
-    <div className="flex h-full w-full flex-col gap-4 p-6">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-[1800px] flex-col gap-4 p-6">
       <PageHeader
-        title="수술 업무"
-        description="수술을 고르면 동의서·체크리스트·마취기록·수술기록지를 한 화면에서 작성합니다."
+        title="Surgery worklist"
+        description="Pick a surgery to handle start / end / cancel, consents, checklist, anesthesia and operative records in one place."
       />
       <SurgeryWorklist />
     </div>

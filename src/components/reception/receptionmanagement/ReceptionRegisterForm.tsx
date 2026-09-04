@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
@@ -12,12 +12,8 @@ import {
 } from "@/components/common";
 import {
   fetchDepartmentsRequest,
-  fetchDoctorsRequest,
-  clearDoctors,
   registerReceptionRequest,
   selectDepartments,
-  selectDoctors,
-  selectDoctorsLoading,
   selectRegisterLoading,
   selectRegisterError,
   selectRegisterSuccessCount,
@@ -25,7 +21,6 @@ import {
 import type {
   ReceptionType,
   DepartmentOption,
-  DoctorOption,
 } from "@/features/reception/receptionmanagement/types";
 import type { PatientSearchItem } from "@/features/reception/patientmanagement/types";
 import type { AppDispatch } from "@/store/store";
@@ -38,12 +33,12 @@ const RECEPTION_TYPE_OPTIONS = [
 type FieldErrors = {
   patient?: string;
   deptId?: string;
-  doctorId?: string;
 };
 
 type ReceptionRegisterFormProps = {
   selectedPatient: PatientSearchItem | null;
   onOpenPatientSearch: () => void;
+  onOpenPatientRegister: () => void;
   onClearPatient: () => void;
 };
 
@@ -57,9 +52,17 @@ export default function ReceptionRegisterForm(
 ) {
   const resetSignal = useSelector(selectRegisterSuccessCount);
   const { onClearPatient } = props;
+  /**
+   * onClearPatient 는 부모가 넘기는 인라인 함수라 렌더될 때마다 레퍼런스가 바뀐다.
+   * resetSignal 을 deps 에 넣더라도 onClearPatient 레퍼런스 변경만으로 effect가 다시 돌면
+   * (예: 두 번째 환자 선택으로 부모가 리렌더될 때) 방금 선택한 환자가 다시 초기화돼버린다.
+   * 그래서 "resetSignal 값 자체가 실제로 바뀐 시점"만 ref 로 추적해서 그때만 호출한다.
+   */
+  const lastResetSignal = useRef(resetSignal);
 
   useEffect(() => {
-    if (resetSignal === 0) return;
+    if (resetSignal === lastResetSignal.current) return;
+    lastResetSignal.current = resetSignal;
     onClearPatient();
   }, [resetSignal, onClearPatient]);
 
@@ -69,12 +72,11 @@ export default function ReceptionRegisterForm(
 function ReceptionRegisterFormFields({
   selectedPatient,
   onOpenPatientSearch,
+  onOpenPatientRegister,
   onClearPatient,
 }: ReceptionRegisterFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const departments = useSelector(selectDepartments);
-  const doctors = useSelector(selectDoctors);
-  const doctorsLoading = useSelector(selectDoctorsLoading);
   const registerLoading = useSelector(selectRegisterLoading);
   const registerError = useSelector(selectRegisterError);
 
@@ -88,19 +90,6 @@ function ReceptionRegisterFormFields({
   useEffect(() => {
     dispatch(fetchDepartmentsRequest());
   }, [dispatch]);
-
-  useEffect(() => {
-    if (!deptId) {
-      dispatch(clearDoctors());
-      return;
-    }
-    dispatch(fetchDoctorsRequest(deptId));
-  }, [deptId, dispatch]);
-
-  function handleDeptChange(value: string) {
-    setDeptId(value);
-    setDoctorId("");
-  }
 
   function handleReset() {
     setDeptId("");
@@ -117,7 +106,6 @@ function ReceptionRegisterFormFields({
     const nextErrors: FieldErrors = {};
     if (!selectedPatient) nextErrors.patient = "환자를 검색하여 선택해주세요.";
     if (!deptId) nextErrors.deptId = "진료과를 선택해주세요.";
-    if (!doctorId) nextErrors.doctorId = "의사를 선택해주세요.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0 || !selectedPatient) return;
 
@@ -155,6 +143,13 @@ function ReceptionRegisterFormFields({
             >
               환자검색
             </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onOpenPatientRegister}
+            >
+              환자등록
+            </Button>
           </div>
           {errors.patient && (
             <p className="text-xs text-rose-600">{errors.patient}</p>
@@ -166,7 +161,7 @@ function ReceptionRegisterFormFields({
             id="deptId"
             value={deptId}
             placeholder="선택"
-            onChange={(e) => handleDeptChange(e.target.value)}
+            onChange={(e) => setDeptId(e.target.value)}
             options={departments.map((d: DepartmentOption) => ({
               value: d.deptId,
               label: d.deptName,
@@ -177,21 +172,14 @@ function ReceptionRegisterFormFields({
           )}
         </FormField>
 
-        <FormField label="의사" required htmlFor="doctorId">
-          <Select
+        {/* admin-service에 의사 role이 아직 없어 목록 조회가 안 되는 동안은 직접 입력 */}
+        <FormField label="의사" htmlFor="doctorId">
+          <Input
             id="doctorId"
             value={doctorId}
-            placeholder={doctorsLoading ? "불러오는 중..." : "선택"}
-            disabled={!deptId || doctorsLoading}
+            placeholder="의사 ID를 입력하세요"
             onChange={(e) => setDoctorId(e.target.value)}
-            options={doctors.map((d: DoctorOption) => ({
-              value: d.doctorId,
-              label: d.doctorName,
-            }))}
           />
-          {errors.doctorId && (
-            <p className="text-xs text-rose-600">{errors.doctorId}</p>
-          )}
         </FormField>
 
         <FormField label="접수구분" required htmlFor="receptionType">

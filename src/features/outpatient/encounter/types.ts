@@ -1,14 +1,13 @@
 export interface EncounterDto {
     encounterId: string;
     patientId: string;
-    patientNo: string | null;
     patientName: string | null;
     receptionId: string;
     departmentCode: string;
     doctorId: string;
     status: string;
-    visitDate: string;   // "YYYY-MM-DD"
-    createdAt: string;   // ISO datetime
+    visitDate: string;
+    createdAt: string;
 }
 
 export interface EncounterSearchParams {

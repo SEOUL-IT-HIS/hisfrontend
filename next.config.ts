@@ -19,8 +19,9 @@ const inpatientApiOrigin =
   process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.140:8080";
 const outpatientApiOrigin =
   process.env.OUTPATIENT_API_ORIGIN ?? "http://192.168.1.112:8080";
+// emergency-service 만 8080 이 아니라 8085 를 쓴다
 const emergencyApiOrigin =
-  process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.130:8080";
+  process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.130:8085";
 // surgery-service 만 8080 이 아니라 8383 을 쓴다
 const surgeryApiOrigin =
   process.env.SURGERY_API_ORIGIN ?? "http://192.168.1.120:8383";
@@ -28,6 +29,10 @@ const receptionApiOrigin =
   process.env.RECEPTION_API_ORIGIN ?? "http://192.168.1.105:8080";
 const billingApiOrigin =
   process.env.BILLING_API_ORIGIN ?? "http://192.168.1.143:8989";
+// pharmacy-service. 담당자 PC 로컬 기본값 (다른 PC에서 접근해야 하면 .env.local 에서
+// PHARMACY_API_ORIGIN 을 본인 LAN IP로 덮어쓰면 됨)
+const pharmacyApiOrigin =
+  process.env.PHARMACY_API_ORIGIN ?? "http://192.168.1.115:8088";
 
 const nextConfig: NextConfig = {
   // LAN IP로 접속할 때 /_next 정적 리소스 403 방지
@@ -98,12 +103,21 @@ const nextConfig: NextConfig = {
       },
       // ---------- billing-service (구체 경로 먼저) ----------
       {
-        source: "/api/billing",     
+        source: "/api/billing",
         destination: `${billingApiOrigin}/api/billing`,
       },
       {
         source: "/api/billing/:path*",
         destination: `${billingApiOrigin}/api/billing/:path*`,
+      },
+      // ----------- reception-service (구체 경로 먼저) ----------
+      {
+        source: "/api/reception",
+        destination: `${receptionApiOrigin}/api/reception`,
+      },
+      {
+        source: "/api/reception/:path*",
+        destination: `${receptionApiOrigin}/api/reception/:path*`,
       },
       // ---------- inpatient-service (구체 경로 먼저) ----------
       {
@@ -114,6 +128,17 @@ const nextConfig: NextConfig = {
         source: "/api/inpatient/:path*",
         destination: `${inpatientApiOrigin}/api/inpatient/:path*`,
       },
+
+      // ---------- pharmacy-service (구체 경로 먼저) ----------
+      {
+        source: "/api/pharmacy",
+        destination: `${pharmacyApiOrigin}/api/pharmacy`,
+      },
+      {
+        source: "/api/pharmacy/:path*",
+        destination: `${pharmacyApiOrigin}/api/pharmacy/:path*`,
+      },
+
       // ---------- admin-service (나머지 /api) ----------
       {
         source: "/api/:path*",

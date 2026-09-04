@@ -5,8 +5,7 @@
  * `_dt`(DATE)는 yyyy-MM-dd 문자열, `_at`(TIMESTAMP)은 ISO 일시 문자열이다.</p>
  *
  * <p><b>오더는 수술이 아니다</b> — 진료·응급실이 "이 환자 수술해 달라"고 보낸 요청이고,
- * 수술은 우리가 수술실을 배정해 받아들였을 때 만들어진다. 반려된 오더에는 수술이 없다.
- * (2026-08-13 결정)</p>
+ * 수술은 우리가 수술실을 배정해 받아들였을 때 만들어진다. 반려된 오더에는 수술이 없다.</p>
  */
 import type { CodeValue, PageParams, YnFlag } from "@/features/surgery/types";
 
@@ -24,7 +23,7 @@ export const ORDER_STATUS = {
   /** 반려 — 사유를 남기고 되돌려보냄. 수술은 만들어지지 않음 */
   REJECTED: "02",
   /**
-   * 취소 — 수락 후 수술이 취소되어 무산됨 (2026-08-14)
+   * 취소 — 수락 후 수술이 취소되어 무산됨
    *
    * <p>반려(02)와 다르다. 반려는 우리가 받지 않은 요청이고, 취소는 받아서 수술까지
    * 만들었다가 무산된 요청이다. 합치면 "요청 반려율"에 수술실·환자 사정으로 무산된
@@ -98,13 +97,27 @@ export type AssignSurgeryOrderRequest = {
   roomCode: string;
   /** 확정 수술일. 비우면 오더의 희망일을 그대로 쓴다 */
   surgeryDt?: string;
+  /**
+   * 마취 시행 여부. 필수다.
+   *
+   * <p>Y 면 마취의도 함께 보내야 한다. N 은 마취과가 붙지 않는 시술이다 —
+   * 단순 봉합, 표재성 종물 제거 같은 것들.</p>
+   */
+  anesthesiaYn: "Y" | "N";
+  /** 마취의. {@code anesthesiaYn === "Y"} 일 때 필수 */
   anesthesiologistId?: string | null;
-  nurseId?: string | null;
+  /** 간호사. 필수다 — 마취 여부와 무관하게 수술에는 간호사가 붙는다 */
+  nurseId: string;
 };
 
-/** 반려 요청 (SL2-226). 사유 코드 그룹이 admin 에 없어 비워 보낼 수 있다 */
+/**
+ * 반려 요청 (SL2-226)
+ *
+ * <p><b>사유는 필수다</b>. 예전에는 코드 그룹이 admin 에 없어 비워 보낼 수
+ * 있었는데, 2026-08-25 에 등록해 그 예외가 사라졌다. 백엔드도 {@code @NotBlank} 다.</p>
+ */
 export type RejectSurgeryOrderRequest = {
-  rejectReasonCd?: CodeValue | null;
+  rejectReasonCd: CodeValue;
 };
 
 /** 오더 목록 검색·페이지 파라미터 (SL2-225) */

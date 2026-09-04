@@ -8,7 +8,7 @@ import ImageReceptionDetail from "@/components/labimaging/imagingorder/ImageRece
 export default function Page() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-6">
-      <PageHeader title="영상 접수 상세" description="접수 정보와 확정된 촬영 예정일시를 확인합니다." />
+      <PageHeader title="Imaging Reception Detail" description="Review the reception details and the confirmed imaging date and time." />
       <ImageReceptionDetail />
     </div>
   );

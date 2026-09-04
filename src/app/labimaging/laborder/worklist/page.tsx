@@ -15,8 +15,8 @@ export default function Page() {
   return (
     <div className="flex h-full w-full flex-col gap-4 p-6">
       <PageHeader
-        title="검사 업무"
-        description="접수를 고르면 오른쪽에서 일정·검체 작업을 이어서 처리합니다. 결과가 등록되기 전까지 접수는 목록에 남습니다."
+        title="Lab Worklist"
+        description="Select a reception to continue with scheduling and specimen work on the right. Receptions stay on the list until a result is registered."
       />
       <LabWorklist />
     </div>

@@ -49,36 +49,36 @@ const RiskAssessmentRegisterForm = () => {
     return (
         <div className="mx-auto w-full max-w-lg p-6">
             <div className="mb-6">
-                <h1 className="text-lg font-semibold text-slate-800">환자위험도평가 등록</h1>
-                <p className="mt-1 text-sm text-slate-500">환자의 위험도 평가 결과를 등록합니다.</p>
+                <h1 className="text-lg font-semibold text-slate-800">Register Patient Risk Assessment</h1>
+                <p className="mt-1 text-sm text-slate-500">Register a patient's risk assessment results.</p>
             </div>
 
-            {loading && <p className="mb-3 text-sm text-slate-500">로딩중...</p>}
+            {loading && <p className="mb-3 text-sm text-slate-500">Loading...</p>}
             {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
             <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div>
-                    <label htmlFor="admissionId" className={LABEL}>입원ID</label>
+                    <label htmlFor="admissionId" className={LABEL}>Admission ID</label>
                     <input type="text" id="admissionId" name="admissionId" value={form.admissionId} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="assessmentTypeCd" className={LABEL}>평가유형코드</label>
+                    <label htmlFor="assessmentTypeCd" className={LABEL}>Assessment Type Code</label>
                     <input type="text" id="assessmentTypeCd" name="assessmentTypeCd" value={form.assessmentTypeCd} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="score" className={LABEL}>평가점수</label>
+                    <label htmlFor="score" className={LABEL}>Assessment Score</label>
                     <input type="number" id="score" name="score" value={form.score} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="riskLevelCd" className={LABEL}>위험도등급코드</label>
+                    <label htmlFor="riskLevelCd" className={LABEL}>Risk Level Code</label>
                     <input type="text" id="riskLevelCd" name="riskLevelCd" value={form.riskLevelCd} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="assessedAt" className={LABEL}>평가일시</label>
+                    <label htmlFor="assessedAt" className={LABEL}>Assessment Date/Time</label>
                     <input type="datetime-local" id="assessedAt" name="assessedAt" value={form.assessedAt} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="assessorId" className={LABEL}>평가자ID</label>
+                    <label htmlFor="assessorId" className={LABEL}>Assessor ID</label>
                     <input type="number" id="assessorId" name="assessorId" value={form.assessorId} onChange={onChange} required className={FIELD} />
                 </div>
                 <button
@@ -86,7 +86,7 @@ const RiskAssessmentRegisterForm = () => {
                     disabled={loading}
                     className="w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                 >
-                    등록
+                    Register
                 </button>
             </form>
         </div>

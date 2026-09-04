@@ -31,7 +31,6 @@ import {
   hasValidConsent,
   type ConsentSummary,
 } from "@/features/labimaging/imagingacquisition/types";
-import type { ImageReceptionSummary } from "@/features/labimaging/imagingorder/types";
 
 /**
  * 선택한 영상오더의 동의 작업 영역 — 등록 폼 + 동의 이력.
@@ -65,10 +64,22 @@ function formatDateTime(value?: string) {
   return value.replace("T", " ").slice(0, 16);
 }
 
+/**
+ * ⚠ 프롭 타입을 특정 DTO 로 고정하지 않고 필요한 필드만 받는다.
+ *   이 패널은 동의 화면(ImageReceptionSummary)과 영상 워크리스트(ImageWorklistItem)
+ *   양쪽에서 쓰이는데, 정작 쓰는 값은 아래 두 개뿐이다.
+ *   DTO 를 통째로 요구하면 목록이 하나 늘 때마다 이 파일을 고쳐야 한다.
+ */
+type ConsentWorkTarget = {
+  /** 동의는 접수가 아니라 오더에 붙는다. (CONSENT.image_order_id) */
+  imageOrderId: string;
+  patientId: string;
+};
+
 export default function ConsentWorkPanel({
   reception,
 }: {
-  reception: ImageReceptionSummary;
+  reception: ConsentWorkTarget;
 }) {
   const dispatch = useDispatch<AppDispatch>();
 
@@ -105,12 +116,12 @@ export default function ConsentWorkPanel({
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!form.consentTypeCode) next.consentTypeCode = "동의서유형은 필수입니다.";
+    if (!form.consentTypeCode) next.consentTypeCode = "Consent type is required.";
     if (!form.documentTemplateId.trim())
-      next.documentTemplateId = "동의서양식ID는 필수입니다.";
-    if (!form.consentDt) next.consentDt = "동의일자는 필수입니다.";
-    if (!form.signedByName.trim()) next.signedByName = "서명자명은 필수입니다.";
-    if (!form.witnessId.trim()) next.witnessId = "확인자ID는 필수입니다.";
+      next.documentTemplateId = "Consent template ID is required.";
+    if (!form.consentDt) next.consentDt = "Consent date is required.";
+    if (!form.signedByName.trim()) next.signedByName = "Signer name is required.";
+    if (!form.witnessId.trim()) next.witnessId = "Witness ID is required.";
     return next;
   }
 
@@ -123,7 +134,6 @@ export default function ConsentWorkPanel({
     dispatch(
       createConsentRequest({
         imageOrderId: reception.imageOrderId,
-        patientNo: reception.patientNo,
         patientId: reception.patientId,
         consentTypeCode: form.consentTypeCode,
         documentTemplateId: form.documentTemplateId.trim(),
@@ -143,7 +153,7 @@ export default function ConsentWorkPanel({
   const columns: DataTableColumn<ConsentSummary>[] = [
     {
       key: "consentTypeCode",
-      header: "유형",
+      header: "Type",
       render: (c) => (
         <span className="font-semibold text-slate-700">
           {consentTypeLabel(c.consentTypeCode)}
@@ -152,24 +162,24 @@ export default function ConsentWorkPanel({
     },
     {
       key: "consentYn",
-      header: "동의여부",
+      header: "Consent",
       render: (c) =>
         c.consentYn === "Y" ? (
-          <span className="text-emerald-600">동의</span>
+          <span className="text-emerald-600">Consented</span>
         ) : (
-          <span className="text-rose-600">거부</span>
+          <span className="text-rose-600">Declined</span>
         ),
     },
-    { key: "consentDt", header: "동의일자", render: (c) => c.consentDt ?? "-" },
-    { key: "signedByName", header: "서명자", render: (c) => c.signedByName },
-    { key: "witnessId", header: "확인자", render: (c) => c.witnessId },
+    { key: "consentDt", header: "Consent Date", render: (c) => c.consentDt ?? "-" },
+    { key: "signedByName", header: "Signer", render: (c) => c.signedByName },
+    { key: "witnessId", header: "Witness", render: (c) => c.witnessId },
     {
       key: "withdrawnYn",
-      header: "철회",
+      header: "Withdrawal",
       render: (c) =>
         c.withdrawnYn === "Y" ? (
           <span className="text-rose-600" title={c.withdrawnReasonCode}>
-            철회됨 ({formatDateTime(c.withdrawnAt)})
+            Withdrawn ({formatDateTime(c.withdrawnAt)})
           </span>
         ) : (
           <span className="text-slate-400">-</span>
@@ -191,29 +201,29 @@ export default function ConsentWorkPanel({
     <div className="flex min-h-0 flex-1 flex-col gap-5">
       {/* ---------- 현재 동의 상태 (ZP2-80) ---------- */}
       {!loaded || listLoading ? null : hasValidConsent(consents) ? (
-        <Alert variant="success">유효한 동의가 등록되어 있습니다.</Alert>
+        <Alert variant="success">A valid consent is on file.</Alert>
       ) : (
-        <Alert>유효한 동의가 없습니다. 촬영 전 동의를 받아야 합니다.</Alert>
+        <Alert>No valid consent on file. Consent must be obtained before imaging.</Alert>
       )}
 
       {/* ---------- 등록 폼 ---------- */}
       <form onSubmit={handleSubmit} className="space-y-4">
         {lastCreated ? (
           <Alert variant="success">
-            동의가 등록되었습니다. ({consentTypeLabel(lastCreated.consentTypeCode)})
+            Consent registered. ({consentTypeLabel(lastCreated.consentTypeCode)})
           </Alert>
         ) : null}
         {createError ? <Alert>{resolveConsentMessage(createError)}</Alert> : null}
         {consentTypes.error ? <Alert>{consentTypes.error}</Alert> : null}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField label="동의서유형" required>
+          <FormField label="Consent Type" required>
             <Select
               name="consentTypeCode"
               value={form.consentTypeCode}
               onChange={handleChange}
               options={consentTypes.options}
-              placeholder={consentTypes.loading ? "불러오는 중..." : "선택하세요"}
+              placeholder={consentTypes.loading ? "Loading..." : "Select"}
               disabled={creating || consentTypes.loading}
             />
             {errors.consentTypeCode ? (
@@ -221,7 +231,7 @@ export default function ConsentWorkPanel({
             ) : null}
           </FormField>
 
-          <FormField label="동의여부" required>
+          <FormField label="Consent" required>
             <Select
               name="consentYn"
               value={form.consentYn}
@@ -231,8 +241,14 @@ export default function ConsentWorkPanel({
             />
           </FormField>
 
-          <FormField label="동의일자" required>
+          <FormField label="Consent Date" required>
             <Input
+              /*
+                ⚠ 날짜 위젯의 안내 문구("연도-월-일 --:--")는 우리 문자열이 아니라 브라우저가 그린다.
+                  Chrome 은 그 언어를 element 가 물려받은 lang 으로 정하는데, 루트가 <html lang="ko"> 라
+                  한글로 나온다. 루트 레이아웃은 공용(가이드 5.3)이라 손대지 않고 이 입력칸에만 en 을 건다.
+              */
+              lang="en"
               type="date"
               name="consentDt"
               value={form.consentDt}
@@ -244,28 +260,28 @@ export default function ConsentWorkPanel({
             ) : null}
           </FormField>
 
-          <FormField label="서명자명" required>
+          <FormField label="Signer Name" required>
             <Input
               name="signedByName"
               value={form.signedByName}
               onChange={handleChange}
               maxLength={50}
               disabled={creating}
-              placeholder="환자 또는 법정대리인"
+              placeholder="Patient or legal guardian"
             />
             {errors.signedByName ? (
               <span className="text-xs text-rose-500">{errors.signedByName}</span>
             ) : null}
           </FormField>
 
-          <FormField label="확인자ID" required>
+          <FormField label="Witness ID" required>
             <Input
               name="witnessId"
               value={form.witnessId}
               onChange={handleChange}
               maxLength={20}
               disabled={creating}
-              placeholder="예: STF00021"
+              placeholder="e.g. STF00021"
             />
             {errors.witnessId ? (
               <span className="text-xs text-rose-500">{errors.witnessId}</span>
@@ -277,14 +293,14 @@ export default function ConsentWorkPanel({
               양식 목록을 내려주는 API 가 아직 없어 임시로 직접 입력받는다.
               admin 에 양식 조회 API 가 생기면 Select 로 바꿀 것.
           */}
-          <FormField label="동의서양식ID" required>
+          <FormField label="Consent Template ID" required>
             <Input
               name="documentTemplateId"
               value={form.documentTemplateId}
               onChange={handleChange}
               maxLength={36}
               disabled={creating}
-              placeholder="admin 문서양식 UUID (임시 직접 입력)"
+              placeholder="admin document template UUID (temporary manual entry)"
             />
             {errors.documentTemplateId ? (
               <span className="text-xs text-rose-500">{errors.documentTemplateId}</span>
@@ -294,7 +310,7 @@ export default function ConsentWorkPanel({
 
         <div className="flex justify-end">
           <Button type="submit" disabled={creating}>
-            {creating ? "등록 중..." : "동의 등록"}
+            {creating ? "Registering..." : "Register Consent"}
           </Button>
         </div>
       </form>
@@ -302,7 +318,7 @@ export default function ConsentWorkPanel({
       {/* ---------- 이 오더의 동의 이력 ---------- */}
       <div className="flex min-h-0 flex-1 flex-col gap-2">
         <p className="text-sm font-semibold text-slate-700">
-          동의 이력 {loaded ? `${consents.length}건` : ""}
+          Consent History {loaded ? `(${consents.length})` : ""}
         </p>
         {listError ? <Alert>{resolveConsentMessage(listError)}</Alert> : null}
         <DataTable
@@ -312,7 +328,8 @@ export default function ConsentWorkPanel({
           // 아직 이 오더의 이력이 아니면 이전 오더 행을 보여주는 대신 로딩으로 둔다.
           loading={listLoading || !loaded}
           minWidthClassName="min-w-[620px]"
-          emptyMessage="아직 등록된 동의가 없습니다."
+          loadingMessage="Loading..."
+          emptyMessage="No consent registered yet."
         />
       </div>
     </div>

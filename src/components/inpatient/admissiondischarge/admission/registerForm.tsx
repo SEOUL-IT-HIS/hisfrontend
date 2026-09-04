@@ -58,20 +58,20 @@ const AdmissionRegisterForm = () => {
     return (
         <div className="mx-auto w-full max-w-lg p-6">
             <div className="mb-6">
-                <h1 className="text-lg font-semibold text-slate-800">입원 요청 등록</h1>
+                <h1 className="text-lg font-semibold text-slate-800">Register Admission Request</h1>
                 <p className="mt-1 text-sm text-slate-500">
-                    접수(원무) 연동 전까지 임시로 입원 요청을 직접 등록합니다.
+                    Manually register admission requests until integration with front-desk registration is complete.
                 </p>
             </div>
 
-            {loading && <p className="mb-3 text-sm text-slate-500">등록중...</p>}
+            {loading && <p className="mb-3 text-sm text-slate-500">Registering...</p>}
             {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
             <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div>
-                    <label htmlFor="patientId" className={LABEL}>환자</label>
+                    <label htmlFor="patientId" className={LABEL}>Patient</label>
                     <select id="patientId" name="patientId" value={form.patientId} onChange={onChange} required className={FIELD}>
-                        <option value="">선택하세요</option>
+                        <option value="">Select</option>
                         {availablePatients.map((patient) => (
                             <option key={patient.patientId} value={patient.patientId}>
                                 {patient.patientName}
@@ -80,24 +80,23 @@ const AdmissionRegisterForm = () => {
                     </select>
                 </div>
                 <div>
-                    <label htmlFor="doctorId" className={LABEL}>담당의ID</label>
+                    <label htmlFor="doctorId" className={LABEL}>Attending Doctor ID</label>
                     <input type="text" id="doctorId" name="doctorId" value={form.doctorId} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="admissionDeptId" className={LABEL}>입원과ID</label>
+                    <label htmlFor="admissionDeptId" className={LABEL}>Admission Dept ID</label>
                     <input type="text" id="admissionDeptId" name="admissionDeptId" value={form.admissionDeptId} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="admissionRoute" className={LABEL}>입원경로</label>
+                    <label htmlFor="admissionRoute" className={LABEL}>Admission Route</label>
                     <select id="admissionRoute" name="admissionRoute" value={form.admissionRoute} onChange={onChange} required className={FIELD}>
-                        <option value="">선택하세요</option>
-                        <option value="외래">외래</option>
-                        <option value="응급">응급</option>
-                        <option value="OPD">OPD</option>
+                        <option value="">Select</option>
+                        <option value="Outpatient">Outpatient</option>
+                        <option value="Emergency">Emergency</option>
                     </select>
                 </div>
                 <div>
-                    <label htmlFor="admissionDate" className={LABEL}>입원일시</label>
+                    <label htmlFor="admissionDate" className={LABEL}>Admission Date/Time</label>
                     <input type="datetime-local" id="admissionDate" name="admissionDate" value={form.admissionDate} onChange={onChange} required className={FIELD} />
                 </div>
                 <button
@@ -105,7 +104,7 @@ const AdmissionRegisterForm = () => {
                     disabled={loading}
                     className="w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                 >
-                    등록
+                    Register
                 </button>
             </form>
         </div>

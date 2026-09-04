@@ -5,8 +5,8 @@ import type {
   Surgery,
   SurgeryListParams,
   SurgerySearchParams,
+  SurgeryStatusHistory,
   UpdateProgressRequest,
-  UpdateSurgeryRequest,
 } from "@/features/surgery/schedule/types";
 import type { PageResponse } from "@/features/surgery/types";
 
@@ -41,7 +41,7 @@ import type { PageResponse } from "@/features/surgery/types";
  * payload 로 묶어주므로, 컴포넌트에서는 {@code dispatch(액션(id, request))} 처럼 자연스럽게 부른다.</p>
  *
  * <p>surgeries(전체)·todaySurgeries(금일)를 각각 들고 있다. 배정 대기 요청은
- * 수술이 아니라 오더라서 features/surgery/order 가 따로 관리한다(2026-08-13).
+ * 수술이 아니라 오더라서 features/surgery/order 가 따로 관리한다.
  * 같은 Surgery 배열이지만 조회 조건이 달라, 한 배열을 돌려쓰면 화면을 오갈 때 목록이 뒤섞인다.</p>
  */
 const initialState: ScheduleState = {
@@ -50,6 +50,7 @@ const initialState: ScheduleState = {
   selectedSurgery: null,
   searchResult: null,
   searchParams: {},
+  history: [],
   loading: false,
   saving: false,
   error: "",
@@ -137,16 +138,35 @@ const scheduleSlice = createSlice({
       state.error = action.payload;
     },
 
-    // ----- 등록/수정 (SL2-36 / SL2-44 긴급 / SL2-37) -----
-    updateSurgeryRequest: {
+    // ----- 상태변경 이력 (SL2-282) -----
+    fetchHistoryRequest: {
       reducer(state) {
-        state.saving = true;
+        state.loading = true;
         state.error = "";
       },
-      prepare(surgeryId: string, request: UpdateSurgeryRequest) {
-        return { payload: { surgeryId, request } };
+      prepare(surgeryId: string, type?: string) {
+        return { payload: { surgeryId, type } };
       },
     },
+    fetchHistorySuccess(state, action: PayloadAction<SurgeryStatusHistory[]>) {
+      state.loading = false;
+      state.history = action.payload;
+    },
+    fetchHistoryFailure(state, action: PayloadAction<string>) {
+      state.loading = false;
+      state.error = action.payload;
+    },
+
+    /*
+      개별 배정(assignFieldRequest)과 스케줄 수정(updateSurgeryRequest)을 걷어냈다.
+
+      배정은 요청을 승인할 때 한 번에 확정되고 그 뒤로는 바꿀 수 없다. 백엔드가
+      개별 배정 PATCH 4종을 SUR059 로 거절하므로, 이 액션들은 눌러도 오류만
+      돌려주는 상태였다. 화면(SurgeryScheduleDetail)도 읽기 전용이 되어 아무도
+      dispatch 하지 않는다.
+
+      api.ts 의 assignSurgeryField·updateSurgerySchedule 도 함께 지웠다.
+    */
 
     // ----- 배정 (요청접수 → 예약) -----
 
@@ -157,7 +177,7 @@ const scheduleSlice = createSlice({
         state.saving = true;
         state.error = "";
       },
-      prepare(surgeryId: string, request?: CancelSurgeryRequest) {
+      prepare(surgeryId: string, request: CancelSurgeryRequest) {
         return { payload: { surgeryId, request } };
       },
     },
@@ -218,7 +238,9 @@ export const {
   fetchSurgeryRequest,
   fetchSurgerySuccess,
   fetchSurgeryFailure,
-  updateSurgeryRequest,
+  fetchHistoryRequest,
+  fetchHistorySuccess,
+  fetchHistoryFailure,
   cancelSurgeryRequest,
   updateProgressRequest,
   startSurgeryRequest,
@@ -254,3 +276,7 @@ export const selectSurgerySearchResult = (state: ScheduleRoot) =>
 /** 마지막 검색 조건 — 페이지 이동 시 그대로 다시 쓴다 */
 export const selectSurgerySearchParams = (state: ScheduleRoot) =>
   state.surgery.schedule.searchParams;
+
+/** 선택한 수술의 상태변경 이력 (SL2-282) */
+export const selectSurgeryHistory = (state: ScheduleRoot) =>
+  state.surgery.schedule.history;

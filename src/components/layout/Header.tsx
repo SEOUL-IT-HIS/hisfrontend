@@ -31,13 +31,13 @@ export default function Header() {
           <h1 className="text-sm font-semibold tracking-tight text-slate-900">
             Hospital Information System
           </h1>
-          <p className="text-[11px] text-slate-400">산대의원 · Admin Console</p>
+          <p className="text-[11px] text-slate-400">SANDAE HOSPITAL · Admin Console</p>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
         <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/15 sm:inline-flex">
-          운영중
+          Operational
         </span>
         <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5">
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-[10px] font-semibold text-white">
