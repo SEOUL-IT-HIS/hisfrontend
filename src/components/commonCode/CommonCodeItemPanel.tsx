@@ -52,15 +52,16 @@ export default function CommonCodeItemPanel({ group }: CommonCodeItemPanelProps)
   const [useYnFilter, setUseYnFilter] = useState("");
 
   /**
-   * 그룹이 바뀌면:
-   * 1) 해당 groupId 항목 목록 API 호출
-   * 2) 이전 그룹의 검색 조건 초기화
+   * 그룹이 바뀌면 해당 groupId 항목 목록 API 호출
+   *
+   * 검색 조건 초기화(setKeyword/setUseYnFilter)는 여기서 하지 않는다.
+   * 부모(CommonCodeGroupList)가 key={selectedGroupId} 를 주므로 그룹이 바뀌면
+   * 이 컴포넌트가 새로 마운트되어 검색 조건이 초기값("")으로 돌아간다.
+   * (effect 안에서 setState 를 부르면 렌더가 한 번 더 돌아 react-hooks 규칙에 걸린다)
    */
   useEffect(() => {
     if (group != null) {
       dispatch(fetchCommonCodeItemRequest(group.groupId));
-      setKeyword("");
-      setUseYnFilter("");
     }
   }, [dispatch, group]);
 

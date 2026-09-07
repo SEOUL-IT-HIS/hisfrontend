@@ -284,7 +284,9 @@ export default function EmpList() {
         </Panel>
 
         {/* ========== 오른쪽: 상세 패널 ========== */}
+        {/* key 가 바뀌면 패널이 새로 마운트되어 수정 모달 열림 상태가 초기화된다 */}
         <EmpDetailPanel
+          key={selectedEmpId}
           empId={selectedEmpId}
           deptCodes={deptCodes}
           statusCodes={statusCodes}
