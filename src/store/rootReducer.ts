@@ -15,6 +15,7 @@ import commonCodeItemReducer from "@/features/commonCode/slice/commonCodeItemSli
 import commonCodeGroupReducer from "@/features/commonCode/slice/commonCodeGroupSlice";
 import authReducer from "@/features/auth/slice/authSlice";
 import empReducer from "@/features/emp/slice/empSlice";
+import roleMenuReducer from "@/features/roleMenu/slice/roleMenuSlice";
 import systemReducer from "@/features/system/slice/menuSlice";
 import patientReducer from "@/features/patient/slice/patientSlice";
 import billingDetailReducer from "@/features/billing/searchBillingDetail/slice";
@@ -37,6 +38,7 @@ const rootReducer = combineReducers({
   commonCodeGroup: commonCodeGroupReducer,
   commonCodeItem: commonCodeItemReducer,
   emp: empReducer,
+  roleMenu: roleMenuReducer,
 
   // 관리자 (ADM)
   // admin: adminReducer,
