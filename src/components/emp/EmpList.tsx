@@ -300,7 +300,6 @@ export default function EmpList() {
       >
         <EmpRegisterForm
           deptCodes={deptCodes}
-          roles={roles}
           onClose={() => setRegisterOpen(false)}
         />
       </Modal>
