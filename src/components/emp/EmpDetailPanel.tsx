@@ -69,11 +69,17 @@ export default function EmpDetailPanel({
 
   const [editOpen, setEditOpen] = useState(false);
 
-  /** empId 가 바뀌면 상세 API 호출 */
+  /**
+   * empId 가 바뀌면 상세 API 호출
+   *
+   * 수정 모달 닫기(setEditOpen(false))는 여기서 하지 않는다.
+   * 부모(EmpList)가 key={selectedEmpId} 를 주므로 직원이 바뀌면
+   * 이 컴포넌트가 새로 마운트되어 editOpen 이 초기값 false 로 돌아간다.
+   * (effect 안에서 setState 를 부르면 렌더가 한 번 더 돌아 react-hooks 규칙에 걸린다)
+   */
   useEffect(() => {
     if (empId != null) {
       dispatch(fetchEmpDetailRequest(empId));
-      setEditOpen(false);
     }
   }, [dispatch, empId]);
 
