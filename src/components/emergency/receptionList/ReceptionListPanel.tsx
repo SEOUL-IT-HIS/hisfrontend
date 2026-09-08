@@ -39,17 +39,27 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
     const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
     const columns: DataTableColumn<ReceptionListItem>[] = [
-        { key: "receptionNo", header: "접수번호", render: (r) => r.receptionNo },
-        { key: "receivedAt", header: "접수시간", render: (r) => r.receivedAt },
-        { key: "patientName", header: "환자명", render: (r) => r.patientName },
+        // 접수번호
+        { key: "receptionNo", header: "Reception No.", render: (r) => r.receptionNo },
+        // 접수시간
+        { key: "receivedAt", header: "Received At", render: (r) => r.receivedAt },
+        // 환자명
+        { key: "patientName", header: "Patient Name", render: (r) => r.patientName },
         { key: "ktas", header: "KTAS", render: (r) => <KtasLevelBadge level={r.ktasLevelCode} /> },
     ];
 
     return (
         <div className="flex h-[calc(100vh-180px)] flex-col gap-3">
-            <SearchBar onSearch={() => setPage(1)} onReset={() => { setKeyword(""); setPage(1); }}>
+            {/* 조회 / 초기화 — 공용 SearchBar 기본값(한글)을 이 화면에서만 영어로 덮어씀 */}
+            <SearchBar
+                onSearch={() => setPage(1)}
+                searchLabel="Search"
+                onReset={() => { setKeyword(""); setPage(1); }}
+                resetLabel="Reset"
+            >
                 <Input
-                    placeholder="환자명 검색"
+                    // 환자명 검색
+                    placeholder="Search patient name"
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
                     className="max-w-[200px]"
@@ -64,12 +74,14 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
                     onRowClick={(r) => onSelect(r.receptionNo)}
                     isRowActive={(r) => r.receptionNo === activeReceptionNo}
                     loading={loading}
-                    emptyMessage="오늘 접수된 응급 환자가 없습니다."
+                    // 오늘 접수된 응급 환자가 없습니다.
+                    emptyMessage="No emergency patients received today."
                     minWidthClassName="min-w-0"
                     className="!rounded-b-none !border-b-0 !shadow-none"
                 />
                 <div className="flex justify-center rounded-b-2xl border border-t-0 border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                    <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                    {/* 이전 / 다음 — 공용 Pagination 기본값(한글)을 이 화면에서만 영어로 덮어씀 */}
+                    <Pagination page={page} totalPages={totalPages} onPageChange={setPage} prevLabel="Previous" nextLabel="Next" />
                 </div>
             </div>
         </div>

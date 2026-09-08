@@ -10,13 +10,15 @@ const KTAS_STYLE: Record<string, string> = {
 
 export default function KtasLevelBadge({ level }: { level?: string }) {
     if (!level) {
-        return <span className="text-xs text-slate-400">미분류</span>;
+        // 미분류
+        return <span className="text-xs text-slate-400">Unclassified</span>;
     }
     return (
         <span
             className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${KTAS_STYLE[level] ?? KTAS_STYLE["5"]}`}
         >
-      {level}급
+      {/* {level}급 */}
+      Level {level}
     </span>
     );
 }

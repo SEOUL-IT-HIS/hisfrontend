@@ -77,10 +77,12 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
 
   return (
     <section className={`rounded-xl border border-slate-200 bg-white p-4 ${className}`}>
-      <h3 className="mb-3 text-sm font-semibold text-slate-800">감염병 격리 관리</h3>
+      {/* 감염병 격리 관리 */}
+      <h3 className="mb-3 text-sm font-semibold text-slate-800">Infection Isolation Management</h3>
 
       {loading ? (
-        <p className="py-4 text-center text-sm text-slate-400">격리 이력을 불러오는 중입니다...</p>
+        // 격리 이력을 불러오는 중입니다...
+        <p className="py-4 text-center text-sm text-slate-400">Loading isolation history...</p>
       ) : error ? (
         <Alert variant="error">{resolveEmergencyMessage(error)}</Alert>
       ) : (
@@ -98,18 +100,21 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
                         item.isolationTypeCode}
                     </span>{" "}
                     <span className="text-xs text-slate-500">
-                      (격리필요: {item.requiredYn} · {formatDateTime(item.decidedAt)} 결정)
+                      {/* (격리필요: ... · ... 결정) */}
+                      (Required: {item.requiredYn} · Decided {formatDateTime(item.decidedAt)})
                     </span>
                   </span>
+                  {/* 해제 */}
                   <Button type="button" variant="secondary" onClick={() => handleRelease(item.id)} disabled={submitting}>
-                    해제
+                    Release
                   </Button>
                 </li>
               ))}
             </ul>
           ) : (
             <p className="mb-3 rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-400">
-              현재 활성 격리가 없습니다.
+              {/* 현재 활성 격리가 없습니다. */}
+              No active isolation at this time.
             </p>
           )}
 
@@ -121,45 +126,53 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
                   <li key={item.id}>
                     {ISOLATION_TYPE_OPTIONS.find((o) => o.value === item.isolationTypeCode)?.label ??
                       item.isolationTypeCode}{" "}
-                    · 해제됨 ({formatDateTime(item.releasedAt)})
+                    {/* 해제됨 (...) */}
+                    · Released ({formatDateTime(item.releasedAt)})
                   </li>
                 ))}
             </ul>
           ) : null}
 
           <p className="mb-3 rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-400">
-            DUR(약물 상호작용) 이력은 GR2/PHM 조회 대상입니다. 실연동 전이라 이 화면에서는 표시하지 않습니다.
+            {/* DUR(약물 상호작용) 이력은 GR2/PHM 조회 대상입니다. 실연동 전이라 이 화면에서는 표시하지 않습니다. */}
+            DUR (drug interaction) history is retrieved from GR2/PHM. Not shown here until integration is complete.
           </p>
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <FormField label="격리 유형" required>
+            {/* 격리 유형 */}
+            <FormField label="Isolation Type" required>
               <Select
                 name="isolationTypeCode"
                 value={form.isolationTypeCode}
                 onChange={handleChange}
                 options={[...ISOLATION_TYPE_OPTIONS]}
-                placeholder="선택"
+                // 선택
+                placeholder="Select"
                 disabled={submitting}
               />
             </FormField>
-            <FormField label="격리 필요 여부">
+            {/* 격리 필요 여부 */}
+            <FormField label="Isolation Required">
               <Select
                 name="requiredYn"
                 value={form.requiredYn}
                 onChange={handleChange}
-                options={[{ value: "Y", label: "필요" }, { value: "N", label: "불필요" }]}
+                // 필요 / 불필요
+                options={[{ value: "Y", label: "Required" }, { value: "N", label: "Not Required" }]}
                 disabled={submitting}
               />
             </FormField>
-            <FormField label="결정자ID">
+            {/* 결정자ID */}
+            <FormField label="Decided By ID">
               <Input name="decidedById" value={form.decidedById} onChange={handleChange} disabled={submitting} maxLength={36} />
             </FormField>
           </div>
           <div className="mt-3 flex justify-end">
             <Button type="button" onClick={handleRegister} disabled={submitting || !form.isolationTypeCode}>
-              {submitting ? "저장 중..." : "격리 등록"}
+              {/* 저장 중... / 격리 등록 */}
+              {submitting ? "Saving..." : "Register Isolation"}
             </Button>
           </div>
         </>
