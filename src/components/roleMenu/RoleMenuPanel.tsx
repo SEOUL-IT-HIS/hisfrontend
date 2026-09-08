@@ -18,6 +18,7 @@ import type { RoleType } from "@/features/emp/types/roleType";
 import {
   fetchRoleMenuSaveRequest,
   toggleRoleMenu,
+  toggleRoleMenuGroup,
 } from "@/features/roleMenu/slice/roleMenuSlice";
 import type { RoleMenu } from "@/features/roleMenu/types/roleMenuTypes";
 import type { AppDispatch, RootState } from "@/store/store";
@@ -57,6 +58,18 @@ function flattenMenus(
   return rows;
 }
 
+/**
+ * 자기 자신 + 모든 하위 메뉴 ID 를 모은다 (손자까지 재귀).
+ * 최상위 그룹 체크박스가 한꺼번에 켜고 끌 대상이다.
+ */
+function collectSubtreeIds(menus: RoleMenu[], menuId: string): string[] {
+  const ids = [menuId];
+  for (const child of menus.filter((menu) => menu.parentMenuId === menuId)) {
+    ids.push(...collectSubtreeIds(menus, child.menuId));
+  }
+  return ids;
+}
+
 export default function RoleMenuPanel({ role }: RoleMenuPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
   const roleMenus = useSelector((state: RootState) => state.roleMenu.roleMenus);
@@ -69,6 +82,21 @@ export default function RoleMenuPanel({ role }: RoleMenuPanelProps) {
 
   /** roleMenus 가 바뀔 때만 트리를 다시 만든다 (체크박스 클릭마다 재계산하지 않도록) */
   const menuRows = useMemo(() => flattenMenus(roleMenus, null, 0), [roleMenus]);
+
+  /**
+   * 최상위(depth 0) 메뉴별 [자기 + 하위 전체] ID 목록.
+   * 여기에 있는 메뉴가 곧 "그룹 체크박스" 이고, 없으면 개별 체크박스다.
+   * 체크할 때마다 재귀를 돌지 않도록 미리 만들어 둔다.
+   */
+  const groupIds = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const row of menuRows) {
+      if (row.depth === 0) {
+        map[row.menu.menuId] = collectSubtreeIds(roleMenus, row.menu.menuId);
+      }
+    }
+    return map;
+  }, [menuRows, roleMenus]);
 
   function onSave() {
     if (role === null) return;
@@ -125,7 +153,20 @@ export default function RoleMenuPanel({ role }: RoleMenuPanelProps) {
           <p className="py-10 text-center text-sm text-slate-400">No menus.</p>
         ) : (
           <ul className="flex flex-col">
-            {menuRows.map(({ menu, depth }) => (
+            {menuRows.map(({ menu, depth }) => {
+              /* 최상위면 [자기 + 하위 전체] ID 가 있고, 아니면 undefined */
+              const subtreeIds = groupIds[menu.menuId];
+              const isGroup = subtreeIds != null;
+
+              /* 그룹은 하위가 전부 켜졌을 때만 체크, 일부만 켜졌으면 줄표(-) */
+              const checkedCount = isGroup
+                ? subtreeIds.filter((id) => checkedMenuIds.includes(id)).length
+                : 0;
+              const allChecked = isGroup && checkedCount === subtreeIds.length;
+              const someChecked =
+                isGroup && checkedCount > 0 && checkedCount < subtreeIds.length;
+
+              return (
               <li key={menu.menuId}>
                 {/* 들여쓰기(depth)로 부모-자식 관계를 표시한다 */}
                 <label
@@ -134,8 +175,28 @@ export default function RoleMenuPanel({ role }: RoleMenuPanelProps) {
                 >
                   <input
                     type="checkbox"
-                    checked={checkedMenuIds.includes(menu.menuId)}
-                    onChange={() => dispatch(toggleRoleMenu(menu.menuId))}
+                    checked={
+                      isGroup ? allChecked : checkedMenuIds.includes(menu.menuId)
+                    }
+                    /*
+                     * 줄표(-) 상태는 checked 처럼 JSX 속성으로 못 넣는다.
+                     * HTML 속성이 아니라 DOM 프로퍼티라서 ref 로 실제 요소를 잡아 직접 넣는다.
+                     */
+                    ref={(el) => {
+                      if (el) el.indeterminate = someChecked;
+                    }}
+                    onChange={() => {
+                      if (isGroup) {
+                        dispatch(
+                          toggleRoleMenuGroup({
+                            menuIds: subtreeIds,
+                            checked: !allChecked,
+                          }),
+                        );
+                      } else {
+                        dispatch(toggleRoleMenu(menu.menuId));
+                      }
+                    }}
                     className="h-4 w-4 shrink-0 accent-sky-600"
                   />
                   <span
@@ -152,7 +213,8 @@ export default function RoleMenuPanel({ role }: RoleMenuPanelProps) {
                   ) : null}
                 </label>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </div>
