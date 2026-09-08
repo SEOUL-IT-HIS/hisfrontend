@@ -13,7 +13,7 @@ import {
 } from "@/components/common";
 import type { DataTableColumn } from "@/components/common";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
-import { resolveConsentMessage } from "@/features/labimaging/imagingacquisition/messages";
+import { resolveConsentMessage } from "@/features/labimaging/imagingconsent/messages";
 import {
   createConsentRequest,
   fetchConsentsRequest,
@@ -25,12 +25,12 @@ import {
   selectConsentsLoading,
   selectLastCreatedConsent,
   selectLoadedConsentOrderId,
-} from "@/features/labimaging/imagingacquisition/slice";
+} from "@/features/labimaging/imagingconsent/slice";
 import {
   CONSENT_YN_OPTIONS,
   hasValidConsent,
   type ConsentSummary,
-} from "@/features/labimaging/imagingacquisition/types";
+} from "@/features/labimaging/imagingconsent/types";
 
 /**
  * 선택한 영상오더의 동의 작업 영역 — 등록 폼 + 동의 이력.
