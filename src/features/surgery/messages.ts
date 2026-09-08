@@ -38,6 +38,8 @@ export const SURGERY_MESSAGES = {
   SUR058: "This surgery order has already been processed.",
   SUR059:
     "Assignment is fixed once the order is approved. To change it, cancel the surgery and have it requested again.",
+  SUR060:
+    "The Sign Out checklist must be completed before the surgery can be marked as finished.",
 } as const;
 
 export type SurgeryMessageCode = keyof typeof SURGERY_MESSAGES;

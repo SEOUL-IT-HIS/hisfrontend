@@ -97,12 +97,15 @@ function* assignOrderSaga(
   }>,
 ) {
   try {
-    yield call(
+    // 배정 응답이 방금 만들어진 수술의 ID 를 들고 온다. 이걸 흘려보내면
+    // 화면이 "그 수술"로 이어서 넘어갈 방법이 없다 — 목록을 다시 읽는 순간
+    // 그 오더는 대기 목록에서 빠져나가기 때문이다.
+    const assigned: SurgeryOrder = yield call(
       assignSurgeryOrder,
       action.payload.orderId,
       action.payload.request,
     );
-    yield put(orderMutationSuccess());
+    yield put(orderMutationSuccess(assigned?.surgeryId ?? undefined));
     yield put(fetchOrdersRequest(yield select(selectOrderLastParams)));
   } catch (err) {
     yield put(

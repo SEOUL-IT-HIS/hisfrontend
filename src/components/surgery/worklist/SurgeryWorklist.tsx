@@ -19,7 +19,12 @@ import AnesthesiaRecordPanel from "@/components/surgery/anesthesia/AnesthesiaRec
 import ChecklistPanel from "@/components/surgery/checklist/ChecklistPanel";
 import ConsentPanel from "@/components/surgery/consent/ConsentPanel";
 import OperativeRecordPanel from "@/components/surgery/operativeRecord/OperativeRecordPanel";
+import { useSearchParams } from "next/navigation";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
+import {
+  fetchChecklistRequest,
+  selectChecklistItems,
+} from "@/features/surgery/checklist/slice";
 import { usePatientNames } from "@/features/surgery/common/usePatientNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
@@ -128,7 +133,18 @@ export default function SurgeryWorklist() {
   const saving = useSelector(selectScheduleSaving);
   const error = useSelector(selectScheduleError);
 
+  /**
+   * 주소로 넘어온 수술 — 홈에서 배정을 마쳤거나 Open 을 누른 경우다.
+   *
+   * <p>{@code /surgery/worklist?surgeryId=...} 로 들어오면 그 수술을 바로 선택한다.
+   * 배정만 하고 끝나는 일이 거의 없어서(동의서·체크리스트·시작이 다 여기 있다)
+   * 넘어오자마자 그 환자 화면이 열려 있어야 한다.</p>
+   */
+  const surgeryIdFromUrl = useSearchParams().get("surgeryId");
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  /** 이미 반영한 주소 값. 사용자가 다른 수술을 고른 뒤 되돌아가지 않게 한다 */
+  const [boundUrlId, setBoundUrlId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("consent");
   const [showAll, setShowAll] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -152,6 +168,19 @@ export default function SurgeryWorklist() {
     // 첫 진입은 조건 없이 1페이지
     dispatch(searchSurgeriesRequest({ page: 0, size: 20 }));
   }, [dispatch]);
+
+  /*
+    주소로 온 수술을 선택한다. effect 가 아니라 렌더 중에 처리하는 이유 —
+    effect 로 하면 첫 렌더가 "선택 없음"으로 한 번 그려진 뒤 다시 그려진다.
+    배정 폼(SurgeryAssignForm)이 오더를 물릴 때 쓰는 것과 같은 방식이다.
+
+    boundUrlId 로 "이미 반영했다"를 기억한다 — 안 그러면 사용자가 목록에서 다른
+    수술을 골라도 매 렌더마다 주소의 값으로 되돌아간다.
+  */
+  if (surgeryIdFromUrl && surgeryIdFromUrl !== boundUrlId) {
+    setBoundUrlId(surgeryIdFromUrl);
+    setSelectedId(surgeryIdFromUrl);
+  }
 
   function handleSearch() {
     setPage(1);
@@ -177,14 +206,42 @@ export default function SurgeryWorklist() {
     (s) => showAll || WORKABLE.includes(s.statusCd ?? ""),
   );
 
-  // 목록이 바뀌어 고른 수술이 사라졌으면 선택을 놓는다(필터를 좁혔을 때 생긴다)
+  /*
+    목록이 바뀌어 고른 수술이 사라졌으면 선택을 놓는다(필터를 좁혔을 때 생긴다).
+
+    단 주소로 넘어온 건은 놓지 않는다. 조회가 끝나기 전에는 rows 가 비어 있어
+    "없다"로 판정되는데, 여기서 선택을 지우면 목록이 도착해도 이미 null 이라
+    아무것도 안 열린다. 아래에서 목록이 다 온 뒤에도 못 찾은 경우만 안내한다.
+  */
   const selected = rows.find((s) => s.surgeryId === selectedId) ?? null;
-  if (selectedId && !selected) {
+  if (selectedId && !selected && selectedId !== surgeryIdFromUrl) {
     setSelectedId(null);
   }
 
+  /** 주소로 지정된 수술이 지금 목록에 없다 — 뒤 페이지에 있거나 필터 밖이다 */
+  const urlSurgeryMissing =
+    Boolean(surgeryIdFromUrl) && !loading && selectedId === surgeryIdFromUrl && !selected;
+
   const isScheduled = selected?.statusCd === SURGERY_STATUS.SCHEDULED;
   const isInProgress = selected?.statusCd === SURGERY_STATUS.IN_PROGRESS;
+
+  /*
+    Sign Out 이 끝나야 수술을 종료할 수 있다(SUR060).
+
+    백엔드가 막지만 버튼을 눌러 400 을 받고 나서야 알면 늦다 — 시작을 동의서로
+    막는 것과 같은 이유로 화면에서 먼저 알린다(§15.3).
+
+    체크리스트는 옆 탭이 이미 읽고 있지만, 다른 탭을 보고 있으면 아직 없을 수
+    있어 여기서도 한 번 부른다. 같은 액션이라 slice 가 덮어쓸 뿐이다.
+  */
+  const checklistItems = useSelector(selectChecklistItems);
+  const signOutDone = checklistItems.some(
+    (i) => i.phaseCd === "03" && i.completedYn === "Y",
+  );
+
+  useEffect(() => {
+    if (selected) dispatch(fetchChecklistRequest(selected.surgeryId));
+  }, [dispatch, selected]);
 
   // 지금 보이는 행들의 환자명. rows 가 바뀔 때만 다시 부른다(훅 안에서 키로 거른다).
   const { names: patientNames } = usePatientNames(rows.map((s) => s.patientId));
@@ -347,8 +404,13 @@ export default function SurgeryWorklist() {
       {/* ---- 오른쪽: 고른 수술의 기록 ---- */}
       <Panel className="min-h-0 flex-1 p-5">
         {!selected ? (
-          <div className="flex h-full items-center justify-center text-sm text-slate-400">
-            Select a surgery on the left.
+          <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-400">
+            {urlSurgeryMissing
+              ? // 방금 배정한 수술은 목록 첫 페이지에 없을 수 있다 — 수술일 기준
+                // 정렬이라 오늘 만든 건이 뒤로 밀린다. 조용히 빈 화면을 보여주면
+                // 이동이 실패한 것처럼 보이므로 사유를 밝힌다.
+                "That surgery is not on this page. Search by its date or room, or turn on Show all."
+              : "Select a surgery on the left."}
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -381,7 +443,7 @@ export default function SurgeryWorklist() {
                   Start surgery
                 </Button>
                 <Button
-                  disabled={saving || !isInProgress}
+                  disabled={saving || !isInProgress || !signOutDone}
                   onClick={() => dispatch(endSurgeryRequest(selected.surgeryId))}
                 >
                   End surgery
@@ -418,6 +480,16 @@ export default function SurgeryWorklist() {
             {isScheduled && cancelOptions.length === 0 ? (
               <p className="text-xs text-amber-600">
                 Failed to load cancellation reason codes. Please check the admin service.
+              </p>
+            ) : null}
+
+            {/*
+              진행중인데 Sign Out 이 안 끝났으면 종료 버튼이 잠겨 있다.
+              왜 잠겼는지 적어 두지 않으면 버튼이 고장난 것으로 보인다.
+            */}
+            {isInProgress && !signOutDone ? (
+              <p className="text-xs text-amber-700">
+                Complete the Sign Out checklist before ending the surgery.
               </p>
             ) : null}
 

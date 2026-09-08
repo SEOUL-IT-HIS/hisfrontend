@@ -2,10 +2,10 @@
  * 수술 동의서 타입 (SL2-42)
  *
  * <p>백엔드 ConsentDto 와 1:1 대응. 시스템은 종이 동의서 원본을 저장하지 않고
- * 동의 여부·서명자·서명일만 관리한다(§21.5). 빈 양식(PDF)은 admin-service
+ * <b>받았는지 여부만</b> 관리한다(§21.5). 빈 양식(PDF)은 admin-service
  * 문서양식관리 소관이라 여기서 다루지 않는다.</p>
  */
-import type { CodeValue } from "@/features/surgery/types";
+import type { CodeValue, YnFlag } from "@/features/surgery/types";
 
 /** 동의서 (CONSENT) */
 export type Consent = {
@@ -21,29 +21,37 @@ export type Consent = {
   authorStaffId: string | null;
   /** SURG_CONSENT_CD: 01수술/02마취/03비용견적 */
   consentTypeCd: CodeValue;
-  /** 서명자 성명 — 이 화면에서 직접 입력받는 원본이라 저장한다(§14.1 예외) */
-  signedBy: string;
-  /** DATE — yyyy-MM-dd (§14.2 `_dt`) */
-  signedDt: string;
+  /**
+   * 동의서 수령 여부.
+   *
+   * <p>서명자(signedBy)·서명일(signedDt)을 대신한다(2026-09-03). 종이에 이미 적혀
+   * 있는 값을 화면에서 다시 타이핑하게 하고 있었고, 시스템이 실제로 필요한 것은
+   * "받았는가" 하나였다. 언제 체크했는지는 createdAt·updatedAt 에 남는다.</p>
+   *
+   * <p><b>N 인 행이 존재할 수 있다</b> — 체크를 해제하면 행을 지우지 않고 N 으로
+   * 둔다(§21.6). 그래서 "동의서가 있다"가 아니라 "signedYn 이 Y 다"로 판단해야 한다.</p>
+   */
+  signedYn: YnFlag;
   createdAt: string;
   updatedAt: string;
 };
 
 /**
- * 동의 확인 기록 (SL2-53)
+ * 동의 확인 기록 (SL2-53) — <b>체크 한 번이 이 요청이다.</b>
  *
- * <p>surgeryId 를 보내지 않는 이유 — 경로변수가 우선이라 백엔드가 덮어쓴다.
- * 세 항목은 백엔드 @NotBlank/@NotNull 대상이라 비우면 SUR038 로 거절된다(SL2-218).</p>
+ * <p>surgeryId 를 보내지 않는 이유 — 경로변수가 우선이라 백엔드가 덮어쓴다.</p>
  *
- * <p>서명자 관계(signerRelationCd)는 2026-08-10 제거했다 — 프로젝트 범위를
- * "동의 여부 확인"으로 축소하기로 정해졌고, admin 의 RELATION_CD 코드그룹도 함께 내려갔다.
- * 본인/법정대리인 구분은 종이 동의서에서 관리한다(§21.5).</p>
+ * <p><b>같은 종류를 다시 보내면 갱신된다.</b> 예전에는 중복이면 SUR044 로 거절했는데,
+ * 체크를 되돌리는 것이 정상 동작이 되면서 "있으면 갱신"으로 바뀌었다. 그래서 체크와
+ * 해제가 같은 요청이고, 같은 값을 두 번 보내도 결과가 같다.</p>
+ *
+ * <p>서명자 관계(signerRelationCd)는 2026-08-10, 서명자·서명일은 2026-09-03 제거했다.
+ * 본인/법정대리인 구분과 서명 시각은 종이 동의서에서 관리한다(§21.5).</p>
  */
 export type CreateConsentRequest = {
   consentTypeCd: CodeValue;
-  signedBy: string;
-  /** yyyy-MM-dd */
-  signedDt: string;
+  /** 안 보내면 백엔드가 Y 로 본다. 해제할 때만 "N" 을 보낸다 */
+  signedYn?: YnFlag;
   /** 선택 — 안 보내면 백엔드가 null 로 둔다(§21.9) */
   authorStaffId?: string | null;
 };

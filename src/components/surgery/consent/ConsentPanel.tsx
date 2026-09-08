@@ -1,18 +1,9 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import {
-  Alert,
-  DataTable,
-  FormActions,
-  FormField,
-  Input,
-  Panel,
-  Select,
-  type DataTableColumn,
-} from "@/components/common";
+import { Alert, Button, Panel } from "@/components/common";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
@@ -29,16 +20,26 @@ type Props = { surgeryId: string };
 /**
  * 수술 동의서 패널 (SL2-53 확인 기록 / SL2-54 조회)
  *
- * <p>시스템은 종이 동의서를 저장하지 않고 동의 여부·서명자·서명일만 남긴다(§21.5).
- * 수정 기능이 없는 이유는 동의서가 서명 시점의 사실 기록이기 때문이다 — 내용이 바뀌면
- * 새로 동의를 받아 다른 행으로 남긴다(§21.6).</p>
+ * <p>시스템은 종이 동의서를 저장하지 않는다(§21.5). 원본은 부서에 비치되고,
+ * 여기서 남기는 것은 <b>그 종이를 받았는가</b> 하나뿐이다.</p>
  *
- * <p>서명자 관계는 2026-08-10 제거했다. 프로젝트 범위를 "동의 여부 확인"으로 축소하기로
- * 정해졌고, admin 의 RELATION_CD 코드그룹도 함께 내려갔다. 본인/법정대리인 구분은
- * 종이 동의서에서 관리한다.</p>
+ * <h3>폼에서 체크로 바꾼 이유</h3>
  *
- * <p>같은 수술에 같은 종류의 동의서는 한 번만 남길 수 있다. 두 번 등록하면 백엔드가
- * SUR044 로 거절하므로, 이미 기록된 종류는 선택지에서 빼 둔다.</p>
+ * <p>예전에는 종류를 고르고 서명자 이름과 서명일을 타이핑해 저장하는 폼이었다.
+ * 그런데 그 두 값은 <b>종이에 이미 적혀 있는 것</b>이라, 화면이 하는 일은 옮겨 적기였다.
+ * 입력만 늘고 오타가 들어갈 자리도 생겼다. 세 종류를 다 기록하려면 같은 폼을
+ * 세 번 채워야 했다.</p>
+ *
+ * <p>이제 세 종류가 체크박스로 놓여 있고, 체크가 곧 "받았다"다. 백엔드도
+ * {@code signed_by}·{@code signed_dt} 를 걷어내고 {@code signed_yn} 하나로 바꿨다.
+ * 체크한 시각은 {@code createdAt}·{@code updatedAt} 에 남는다.</p>
+ *
+ * <p><b>해제할 수 있게 둔 이유</b> — 잘못 눌렀을 때 되돌릴 방법이 없으면 행을 지우게
+ * 되는데, 지우면 "받은 적 없음"과 "받았다가 취소함"이 구분되지 않는다. 행은 남기고
+ * 값만 N 으로 되돌린다(§21.6).</p>
+ *
+ * <p>체크리스트 패널과 달리 <b>이 체크는 저장된다</b>. 체크리스트의 항목별 체크는
+ * 저장할 테이블이 없어 화면 상태로만 있지만, 동의서는 종류마다 행이 있다.</p>
  */
 
 /**
@@ -56,11 +57,8 @@ type Props = { surgeryId: string };
  */
 const SURGERY_CONSENT_CODES = ["01", "02", "03"];
 
-type FieldErrors = {
-  consentTypeCd?: string;
-  signedBy?: string;
-  signedDt?: string;
-};
+const YES = "Y";
+const NO = "N";
 
 export default function ConsentPanel({ surgeryId }: Props) {
   const dispatch = useDispatch<AppDispatch>();
@@ -69,145 +67,115 @@ export default function ConsentPanel({ surgeryId }: Props) {
   const saving = useSelector(selectConsentSaving);
   const error = useSelector(selectConsentError);
 
-  const [consentTypeCd, setConsentTypeCd] = useState("");
-  const [signedBy, setSignedBy] = useState("");
-  const [signedDt, setSignedDt] = useState("");
-  const [errors, setErrors] = useState<FieldErrors>({});
-
   const { options: codeOptions } = useCommonCodeOptions("CONSENT_TYPE_CD");
 
   useEffect(() => {
     dispatch(fetchConsentsRequest(surgeryId));
   }, [dispatch, surgeryId]);
 
-  // 공통 그룹에서 수술이 다루는 것만 골라 SURGERY_CONSENT_CODES 순서로 세운다
-  const consentTypeOptions = SURGERY_CONSENT_CODES.map((code) =>
-    codeOptions.find((option) => option.value === code),
-  ).filter((option): option is (typeof codeOptions)[number] => Boolean(option));
+  /**
+   * 화면에 세울 세 줄. admin 코드명을 붙이되, 못 받았으면 코드값이라도 보여준다.
+   *
+   * <p>admin 조회가 실패해도 체크는 되어야 한다 — 코드명은 표시용이고,
+   * 우리가 보내는 값은 {@link SURGERY_CONSENT_CODES} 에 적힌 코드 그 자체다.</p>
+   */
+  const rows = SURGERY_CONSENT_CODES.map((code) => {
+    const consent = consents.find((c) => c.consentTypeCd === code);
+    return {
+      code,
+      label: codeOptions.find((o) => o.value === code)?.label ?? code,
+      checked: consent?.signedYn === YES,
+      /** 마지막으로 손댄 시각. 행이 없으면 아직 아무도 건드리지 않은 것이다 */
+      updatedAt: consent?.updatedAt ?? null,
+    };
+  });
 
-  // 이미 기록된 동의 종류는 다시 고를 수 없다(백엔드 중복 차단과 같은 규칙)
-  const recordedTypes = consents.map((consent) => consent.consentTypeCd);
-  const availableTypes = consentTypeOptions.filter(
-    (option) => !recordedTypes.includes(option.value),
-  );
+  const allChecked = rows.every((r) => r.checked);
 
-  const consentColumns: DataTableColumn<(typeof consents)[number]>[] = [
-    {
-      key: "consentTypeCd",
-      header: "Consent type",
-      // 코드값 그대로가 아니라 이름으로 보여준다. 아직 못 받았거나 목록에 없는
-      //   코드면 값을 그대로 두어 빈칸이 되지 않게 한다
-      render: (consent) =>
-        codeOptions.find((o) => o.value === consent.consentTypeCd)?.label ??
-        consent.consentTypeCd,
-    },
-    { key: "signedBy", header: "Signed by", render: (c) => c.signedBy },
-    { key: "signedDt", header: "Signed on", render: (c) => c.signedDt },
-  ];
-
-  function reset() {
-    setConsentTypeCd("");
-    setSignedBy("");
-    setSignedDt("");
-    setErrors({});
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    // 백엔드 @NotBlank/@NotNull 과 같은 항목을 화면에서 먼저 잡는다(§15.3)
-    const nextErrors: FieldErrors = {};
-    if (!consentTypeCd) nextErrors.consentTypeCd = "Please select a consent type.";
-    if (!signedBy.trim()) nextErrors.signedBy = "Please enter the signer name.";
-    if (!signedDt) nextErrors.signedDt = "Please select the signing date.";
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
-
+  function toggle(code: string, next: boolean) {
     dispatch(
       createConsentRequest(surgeryId, {
-        consentTypeCd,
-        signedBy: signedBy.trim(),
-        // Input type="date" 값이 이미 yyyy-MM-dd 라 그대로 보낸다(§14.2 `_dt`)
-        signedDt,
+        consentTypeCd: code,
+        signedYn: next ? YES : NO,
       }),
     );
-    setConsentTypeCd("");
-    setSignedBy("");
-    setSignedDt("");
+  }
+
+  /**
+   * 세 종류를 한꺼번에 켜거나 끈다.
+   *
+   * <p>이미 전부 켜져 있으면 전부 끈다 — 켜는 버튼과 끄는 버튼을 따로 두면
+   * 둘 중 하나는 늘 아무 일도 하지 않는 상태로 놓인다(체크리스트와 같은 방식).</p>
+   *
+   * <p><b>이미 원하는 값인 행도 다시 보낸다.</b> 걸러내면 "세 건 보냈는데 두 건만
+   * 반영됐다" 같은 상황에서 무엇이 빠졌는지 알기 어렵다. 등록이 멱등이라
+   * 같은 값을 다시 보내도 결과가 같다.</p>
+   */
+  function toggleAll() {
+    const next = !allChecked;
+    for (const row of rows) {
+      toggle(row.code, next);
+    }
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* ----- 목록 (SL2-54) ----- */}
-      <DataTable
-        columns={consentColumns}
-        rows={consents}
-        rowKey={(consent) => consent.consentId}
-        loading={loading}
-        emptyMessage="No consents recorded."
-        minWidthClassName="min-w-[480px]"
-      />
+    <div className="flex flex-col gap-4">
+      {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
-      {/* ----- 등록 (SL2-53) ----- */}
-      {availableTypes.length === 0 ? (
-        <p className="text-sm text-slate-500">
-          All three consent types have been recorded.
-        </p>
+      {loading ? (
+        <p className="text-sm text-slate-500">Loading…</p>
       ) : (
         <Panel className="p-4">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <p className="text-sm font-medium text-slate-700">Record consent confirmation</p>
+          <div className="mb-3 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-slate-700">
+                Consent forms received
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Tick each form once the signed paper copy is in hand.
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              className="h-7 shrink-0 px-2 text-xs"
+              disabled={saving}
+              onClick={toggleAll}
+            >
+              {allChecked ? "Clear all" : "Check all"}
+            </Button>
+          </div>
 
-            <FormField label="Consent type" required htmlFor="consentTypeCd">
-              <Select
-                id="consentTypeCd"
-                placeholder="Select"
-                options={availableTypes}
-                value={consentTypeCd}
-                onChange={(e) => setConsentTypeCd(e.target.value)}
-                disabled={saving}
-              />
-              {errors.consentTypeCd ? (
-                <span className="text-xs text-rose-600">{errors.consentTypeCd}</span>
-              ) : null}
-            </FormField>
+          <ul className="flex flex-col gap-2 text-sm text-slate-700">
+            {rows.map((row) => (
+              <li key={row.code}>
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={row.checked}
+                    disabled={saving}
+                    onChange={(e) => toggle(row.code, e.target.checked)}
+                  />
+                  <span className="text-xs text-slate-400">{row.code}</span>
+                  {row.label}
+                  {row.updatedAt ? (
+                    <span className="ml-auto text-xs text-slate-400">
+                      {row.updatedAt.slice(0, 16).replace("T", " ")}
+                    </span>
+                  ) : null}
+                </label>
+              </li>
+            ))}
+          </ul>
 
-            <FormField label="Signer name" required htmlFor="signedBy">
-              <Input
-                id="signedBy"
-                value={signedBy}
-                onChange={(e) => setSignedBy(e.target.value)}
-                disabled={saving}
-              />
-              {errors.signedBy ? (
-                <span className="text-xs text-rose-600">{errors.signedBy}</span>
-              ) : null}
-            </FormField>
-
-            <FormField label="Signed on" required htmlFor="signedDt">
-              <Input
-                id="signedDt"
-                type="date"
-                lang="en"
-                value={signedDt}
-                onChange={(e) => setSignedDt(e.target.value)}
-                disabled={saving}
-              />
-              {errors.signedDt ? (
-                <span className="text-xs text-rose-600">{errors.signedDt}</span>
-              ) : null}
-            </FormField>
-
-            {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
-
-            <FormActions
-              onCancel={reset}
-              cancelLabel="Reset"
-              submitLabel="Record consent confirmation"
-              loading={saving}
-              loadingLabel="Saving…"
-            />
-          </form>
+          {/*
+            수술 동의서(01)가 없으면 수술을 시작할 수 없다(SL2-217, SUR047).
+            시작 버튼을 눌러 400 을 받고 나서야 알게 되면 늦으므로 여기서 먼저 알린다.
+          */}
+          {!rows[0].checked ? (
+            <p className="mt-3 text-xs text-amber-700">
+              The surgical consent (01) is required before the surgery can start.
+            </p>
+          ) : null}
         </Panel>
       )}
     </div>
