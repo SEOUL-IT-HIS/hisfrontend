@@ -94,6 +94,33 @@ const roleMenuSlice = createSlice({
       // 다시 건드렸으니 "저장되었습니다" 안내는 지운다
       state.saved = false;
     },
+
+    /**
+     * 최상위 그룹 체크 — 자기 자신 + 하위 전체(손자까지)를 한꺼번에 켜거나 끈다.
+     *
+     * toggleRoleMenu 처럼 "뒤집기"가 아니라 "전부 이 상태로 맞추기" 다.
+     * 하위가 일부만 체크된 상태에서 각각 뒤집으면 켜진 게 꺼지고 꺼진 게 켜져 엉망이 된다.
+     * 그래서 checked 를 화면이 정해서 넘겨준다.
+     */
+    toggleRoleMenuGroup(
+      state,
+      action: PayloadAction<{ menuIds: string[]; checked: boolean }>,
+    ) {
+      const { menuIds, checked } = action.payload;
+      if (checked) {
+        for (const menuId of menuIds) {
+          // 이미 체크된 건 건너뛴다 (같은 ID 가 두 번 들어가면 안 되므로)
+          if (!state.checkedMenuIds.includes(menuId)) {
+            state.checkedMenuIds.push(menuId);
+          }
+        }
+      } else {
+        state.checkedMenuIds = state.checkedMenuIds.filter(
+          (id) => !menuIds.includes(id),
+        );
+      }
+      state.saved = false;
+    },
   },
 });
 
@@ -105,6 +132,7 @@ export const {
   fetchRoleMenuSaveSuccess,
   fetchRoleMenuSaveFailure,
   toggleRoleMenu,
+  toggleRoleMenuGroup,
 } = roleMenuSlice.actions;
 
 export default roleMenuSlice.reducer;
