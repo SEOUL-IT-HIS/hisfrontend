@@ -1,5 +1,5 @@
 import axios from "@/lib/axios";
-import { PrescriptionDto, PrescriptionSearchParams } from "./types";
+import { MedicationDto, PrescriptionDto, PrescriptionSearchParams } from "./types";
 
 // 처방 목록 조회 API
 export const fetchPrescriptionList = async (
@@ -18,5 +18,13 @@ export const fetchPrescriptionDetail = async (
     prescriptionId: string
 ): Promise<PrescriptionDto> => {
     const response = await axios.get(`/api/outpatient/prescriptions/${prescriptionId}`);
+    return response.data.data;
+};
+
+// 약 검색 API
+export const searchMedication = async (name: string): Promise<MedicationDto[]> => {
+    const response = await axios.get("/api/outpatient/prescriptions/medications/search", {
+        params: { name }
+    });
     return response.data.data;
 };

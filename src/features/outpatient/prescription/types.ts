@@ -60,3 +60,20 @@ export interface PrescriptionItemInput {
     durationDays?: string;
     detailInfo?: string;
 }
+
+//약 검색 결과
+export interface MedicationDto {
+    medicationId: number;
+    medicationName: string;
+    itemSeq: string;
+    itemEngName?: string | null;
+    entpName?: string | null;
+    etcOtcName?: string | null;
+    classNo?: string | null;
+    className?: string | null;
+    formCodeName?: string | null;
+    chart?: string | null;
+    itemPermitDate?: string | null;
+    ediCode: string;
+    stdCd?: string | null;
+}
