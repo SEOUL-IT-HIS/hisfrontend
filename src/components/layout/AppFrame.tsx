@@ -12,8 +12,7 @@ type AppFrameProps = {
 };
 
 /** 사이드바/헤더 없이 보여주는 경로 (로그인 등) */
-// TODO: 로그인 없이 화면 확인용 임시 우회 — 작업 끝나면 "/billing/detail" 제거할 것
-const BARE_PATHS = ["/login", "/billing/detail"];
+const BARE_PATHS = ["/login"];
 const ACTIVITY_CHECK_INTERVAL = 1000 * 60 * 5;
 
 /** 로컬 개발 전용: admin-service 없이 화면만 보고 싶을 때 .env.local 에서 true 로 설정 */
