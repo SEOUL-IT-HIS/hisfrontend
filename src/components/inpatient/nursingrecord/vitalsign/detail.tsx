@@ -99,17 +99,17 @@ const VitalSignDetail = () => {
     };
 
     const patientName = admission?.admissionId === vitalSign?.admissionId
-        ? (patientDetail?.patientId === admission?.patientId ? patientDetail?.patientName : "조회중...")
-        : "조회중...";
+        ? (patientDetail?.patientId === admission?.patientId ? patientDetail?.patientName : "Loading...")
+        : "Loading...";
 
     return (
         <div className="mx-auto w-full max-w-2xl p-6">
             <div className="mb-6">
-                <h1 className="text-lg font-semibold text-slate-800">활력징후 상세</h1>
-                <p className="mt-1 text-sm text-slate-500">측정 기록 조회, 수정 및 변경 이력을 관리합니다.</p>
+                <h1 className="text-lg font-semibold text-slate-800">Vital Signs Detail</h1>
+                <p className="mt-1 text-sm text-slate-500">View and manage measurement records, edits, and change history.</p>
             </div>
 
-            {loading && <p className="text-sm text-slate-500">로딩중...</p>}
+            {loading && <p className="text-sm text-slate-500">Loading...</p>}
             {error && <p className="text-sm text-red-600">{error}</p>}
 
             {!loading && vitalSign && (
@@ -120,76 +120,76 @@ const VitalSignDetail = () => {
                         </div>
                         <div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">활력징후ID</span>
+                                <span className="text-slate-500">Vital Signs ID</span>
                                 <span className="text-slate-800">{vitalSign.vitalSignId}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">입원ID</span>
+                                <span className="text-slate-500">Admission ID</span>
                                 <span className="text-slate-800">{vitalSign.admissionId}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">측정일시</span>
+                                <span className="text-slate-500">Measured At</span>
                                 <span className="text-slate-800">{new Date(vitalSign.measuredAt).toLocaleString()}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">체온</span>
+                                <span className="text-slate-500">Temperature</span>
                                 <span className="text-slate-800">{vitalSign.temperature}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">맥박</span>
+                                <span className="text-slate-500">Pulse</span>
                                 <span className="text-slate-800">{vitalSign.pulse}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">호흡수</span>
+                                <span className="text-slate-500">Respiration Rate</span>
                                 <span className="text-slate-800">{vitalSign.respiration}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">혈압</span>
+                                <span className="text-slate-500">Blood Pressure</span>
                                 <span className="text-slate-800">{vitalSign.bpSystolic}/{vitalSign.bpDiastolic}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">산소포화도</span>
+                                <span className="text-slate-500">SpO2</span>
                                 <span className="text-slate-800">{vitalSign.spo2}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">측정자</span>
+                                <span className="text-slate-500">Recorded By</span>
                                 <span className="text-slate-800">{vitalSign.recorderId}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">생성일시</span>
+                                <span className="text-slate-500">Created At</span>
                                 <span className="text-slate-800">{new Date(vitalSign.createdAt).toLocaleString()}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">수정일시</span>
+                                <span className="text-slate-500">Updated At</span>
                                 <span className="text-slate-800">{new Date(vitalSign.updatedAt).toLocaleString()}</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p className="text-sm font-medium text-slate-800">활력징후 수정</p>
+                        <p className="text-sm font-medium text-slate-800">Edit Vital Signs</p>
                         <div>
-                            <label htmlFor="temperature" className={LABEL}>체온</label>
+                            <label htmlFor="temperature" className={LABEL}>Temperature</label>
                             <input type="number" id="temperature" name="temperature" value={editForm.temperature} onChange={onEditChange} step="0.1" className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="pulse" className={LABEL}>맥박</label>
+                            <label htmlFor="pulse" className={LABEL}>Pulse</label>
                             <input type="number" id="pulse" name="pulse" value={editForm.pulse} onChange={onEditChange} min="60" max="100" className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="respiration" className={LABEL}>호흡수</label>
+                            <label htmlFor="respiration" className={LABEL}>Respiration Rate</label>
                             <input type="number" id="respiration" name="respiration" value={editForm.respiration} onChange={onEditChange} min="12" max="20" className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="bpSystolic" className={LABEL}>수축기 혈압</label>
+                            <label htmlFor="bpSystolic" className={LABEL}>Systolic Blood Pressure</label>
                             <input type="number" id="bpSystolic" name="bpSystolic" value={editForm.bpSystolic} onChange={onEditChange} min="0" className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="bpDiastolic" className={LABEL}>이완기 혈압</label>
+                            <label htmlFor="bpDiastolic" className={LABEL}>Diastolic Blood Pressure</label>
                             <input type="number" id="bpDiastolic" name="bpDiastolic" value={editForm.bpDiastolic} onChange={onEditChange} min="0" className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="spo2" className={LABEL}>산소포화도</label>
+                            <label htmlFor="spo2" className={LABEL}>SpO2</label>
                             <input type="number" id="spo2" name="spo2" value={editForm.spo2} onChange={onEditChange} step="0.1" min="0" max="100" className={FIELD} />
                         </div>
                         <button
@@ -197,31 +197,31 @@ const VitalSignDetail = () => {
                             disabled={updateStatus.loading}
                             className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                         >
-                            {updateStatus.loading ? "수정중..." : "수정"}
+                            {updateStatus.loading ? "Updating..." : "Update"}
                         </button>
                         {updateStatus.error && <p className="text-sm text-red-600">{updateStatus.error}</p>}
-                        {updateStatus.success && <p className="text-sm text-emerald-600">수정 완료</p>}
+                        {updateStatus.success && <p className="text-sm text-emerald-600">Update completed</p>}
                     </div>
 
                     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p className="mb-3 text-sm font-medium text-slate-800">변경 이력</p>
-                        {historyStatus.loading && <p className="text-sm text-slate-500">이력 로딩중...</p>}
+                        <p className="mb-3 text-sm font-medium text-slate-800">Change History</p>
+                        {historyStatus.loading && <p className="text-sm text-slate-500">Loading history...</p>}
                         {historyStatus.error && <p className="text-sm text-red-600">{historyStatus.error}</p>}
                         {history.length === 0 && !historyStatus.loading && (
-                            <p className="text-sm text-slate-500">변경 이력 없음</p>
+                            <p className="text-sm text-slate-500">No change history</p>
                         )}
                         {history.length > 0 && (
                             <div className="overflow-x-auto rounded-lg border border-slate-200">
                                 <table className="w-full text-left text-sm">
                                     <thead>
                                         <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                                            <th className="whitespace-nowrap px-3 py-2">구분</th>
-                                            <th className="whitespace-nowrap px-3 py-2">변경일시</th>
-                                            <th className="whitespace-nowrap px-3 py-2">체온</th>
-                                            <th className="whitespace-nowrap px-3 py-2">맥박</th>
-                                            <th className="whitespace-nowrap px-3 py-2">호흡수</th>
-                                            <th className="whitespace-nowrap px-3 py-2">혈압</th>
-                                            <th className="whitespace-nowrap px-3 py-2">산소포화도</th>
+                                            <th className="whitespace-nowrap px-3 py-2">Type</th>
+                                            <th className="whitespace-nowrap px-3 py-2">Changed At</th>
+                                            <th className="whitespace-nowrap px-3 py-2">Temperature</th>
+                                            <th className="whitespace-nowrap px-3 py-2">Pulse</th>
+                                            <th className="whitespace-nowrap px-3 py-2">Respiration Rate</th>
+                                            <th className="whitespace-nowrap px-3 py-2">Blood Pressure</th>
+                                            <th className="whitespace-nowrap px-3 py-2">SpO2</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -235,7 +235,7 @@ const VitalSignDetail = () => {
                                                                 : "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200"
                                                         }`}
                                                     >
-                                                        {h.changeType === "UPDATED" ? "수정" : "삭제"}
+                                                        {h.changeType === "UPDATED" ? "Updated" : "Deleted"}
                                                     </span>
                                                 </td>
                                                 <td className="whitespace-nowrap px-3 py-2 text-slate-600">{new Date(h.changedAt).toLocaleString()}</td>
@@ -258,7 +258,7 @@ const VitalSignDetail = () => {
                             disabled={deleteStatus.loading}
                             className="inline-flex items-center rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
                         >
-                            {deleteStatus.loading ? "삭제중..." : "삭제"}
+                            {deleteStatus.loading ? "Deleting..." : "Delete"}
                         </button>
                         {deleteStatus.error && <p className="mt-2 text-sm text-red-600">{deleteStatus.error}</p>}
                     </div>

@@ -8,6 +8,7 @@ const initialState: BedState = {
     detail: null,
     listStatus: { ...initialStatus },
     detailStatus: { ...initialStatus },
+    updateRoomTypeStatus: { ...initialStatus },
 };
 
 const bedSlice = createSlice({
@@ -34,6 +35,17 @@ const bedSlice = createSlice({
         fetchBedDetailFailure(state, action: PayloadAction<string>) {
             state.detailStatus = { ...initialStatus, error: action.payload };
         },
+        updateBedRoomTypeRequest(state, action: PayloadAction<{ bedId: string; roomTypeCode: string }>) {
+        state.updateRoomTypeStatus = { ...initialStatus, loading: true };
+        },
+        updateBedRoomTypeSuccess(state, action: PayloadAction<BedDTO>) {
+        state.detail = action.payload;
+        state.updateRoomTypeStatus = { ...initialStatus, success: true };
+        },
+        updateBedRoomTypeFailure(state, action: PayloadAction<string>) {
+        state.updateRoomTypeStatus = { ...initialStatus, error: action.payload };
+        },
+
     },
 });
 
@@ -44,6 +56,9 @@ export const {
     fetchBedDetailRequest,
     fetchBedDetailSuccess,
     fetchBedDetailFailure,
+    updateBedRoomTypeRequest,
+    updateBedRoomTypeSuccess,
+    updateBedRoomTypeFailure,
 } = bedSlice.actions;
 export default bedSlice.reducer;
 
@@ -55,3 +70,4 @@ export const selectBed = (state: BedRoot) => state.inpatient.bed.list;
 export const selectBedListStatus = (state: BedRoot) => state.inpatient.bed.listStatus;
 export const selectBedDetail = (state: BedRoot) => state.inpatient.bed.detail;
 export const selectBedDetailStatus = (state: BedRoot) => state.inpatient.bed.detailStatus;
+export const selectUpdateRoomTypeStatus = (state: BedRoot) => state.inpatient.bed.updateRoomTypeStatus;

@@ -272,28 +272,43 @@ export default function ImageWorklist() {
               ))}
             </div>
 
-            {tab === "schedule" ? (
+            {/*
+              ⚠ 작업 영역에만 스크롤을 준다.
+                오른쪽 Panel 은 고정 높이(min-h-0 flex-1)라, 내용이 넘치면 스크롤바도 없이 잘린다.
+                실제로 첫 판정 뒤 성공 Alert 가 한 줄 늘어나는 것만으로 아래쪽 입력 폼이
+                화면 밖으로 밀려 안 보였다. (2026-09-02)
+                머리말·탭은 고정해야 하므로 패널 각각이 아니라 탭 내용만 감싼다.
+            */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+              {tab === "schedule" ? (
               /*
                * key 로 접수마다 새로 마운트시킨다.
                * defaultMode 는 useState 초기값이라 첫 렌더에만 반영되는데,
                * 같은 탭에 머문 채 다른 접수를 고르면 이전 접수의 모드·입력값이 그대로 남는다.
                * 일정이 있는 접수에 "신규 등록"이 걸린 채로 저장하면 DB 제약(latest_yn UNIQUE)에 걸린다.
                */
+              /*
+               * ⚠ defaultMode 를 넘기지 않는다. 일정이 항목 단위가 되면서
+               *   신규/재등록은 접수가 아니라 "고른 항목에 일정이 있는가"로 정해진다. (2026-09-03)
+               *   접수 기준으로 모드를 미리 정하면, 3건 중 1건만 잡힌 접수에서 나머지 2건이
+               *   재등록 모드로 열려 LAB016(재등록할 일정 없음)이 난다.
+               */
               <ImageScheduleRegisterForm
                 key={selected.imageReceptionId}
                 imageReceptionId={selected.imageReceptionId}
-                defaultMode={selected.scheduledAt ? "reschedule" : "create"}
+                receptionNo={selected.receptionNo}
                 showReceptionSummary={false}
                 onCancel={() => dispatch(clearImageWorklistSelection())}
               />
             ) : tab === "consent" ? (
               // key 로 접수마다 새로 마운트해 이전 오더의 입력값·검증오류가 남지 않게 한다.
               <ConsentWorkPanel key={selected.imageReceptionId} reception={selected} />
-            ) : (
-              <div className="text-sm text-slate-400">
-                This step is not implemented yet.
-              </div>
-            )}
+              ) : (
+                <div className="text-sm text-slate-400">
+                  This step is not implemented yet.
+                </div>
+              )}
+            </div>
           </div>
         )}
       </Panel>

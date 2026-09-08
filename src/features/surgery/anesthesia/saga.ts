@@ -73,7 +73,7 @@ function* fetchAnesthesiaRecordsSaga(action: PayloadAction<string>) {
   } catch (err) {
     yield put(
       fetchAnesthesiaRecordsFailure(
-        getSurgeryErrorMessage(err, "마취기록 조회에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to load the anesthesia record."),
       ),
     );
   }
@@ -89,7 +89,7 @@ function* fetchAnesthesiaRecordSaga(action: PayloadAction<string>) {
   } catch (err) {
     yield put(
       fetchAnesthesiaRecordFailure(
-        getSurgeryErrorMessage(err, "마취기록 조회에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to load the anesthesia record."),
       ),
     );
   }
@@ -109,7 +109,7 @@ function* createAnesthesiaRecordSaga(
   } catch (err) {
     yield put(
       anesthesiaMutationFailure(
-        getSurgeryErrorMessage(err, "마취기록 등록에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to create the anesthesia record."),
       ),
     );
   }
@@ -135,7 +135,7 @@ function* appendVitalSignsSaga(
   } catch (err) {
     yield put(
       anesthesiaMutationFailure(
-        getSurgeryErrorMessage(err, "활력징후 기록에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to record vital signs."),
       ),
     );
   }

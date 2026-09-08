@@ -69,26 +69,26 @@ export default function EquipmentList() {
   const columns: DataTableColumn<SurgicalEquipment>[] = [
     {
       key: "equipmentId",
-      header: "장비 ID",
+      header: "Equipment ID",
       render: (equipment) => equipment.equipmentId,
     },
     {
       key: "equipmentName",
-      header: "장비명",
+      header: "Equipment name",
       render: (equipment) => equipment.equipmentName,
     },
     {
       key: "roomCode",
-      header: "소속 수술실",
+      header: "Operating room",
       render: (equipment) => equipment.roomCode,
     },
     {
       key: "statusCd",
-      header: "상태",
+      header: "Status",
       render: (equipment) => (
         <Select
           className="h-8 text-xs"
-          placeholder="미지정"
+          placeholder="Not set"
           options={statusOptions}
           value={equipment.statusCd ?? ""}
           disabled={saving || equipment.inoutCd === STATUS_LOCKED_INOUT}
@@ -107,11 +107,11 @@ export default function EquipmentList() {
     },
     {
       key: "inoutCd",
-      header: "출고/반입",
+      header: "Check-out / in",
       render: (equipment) => (
         <Select
           className="h-8 text-xs"
-          placeholder="미지정"
+          placeholder="Not set"
           options={inoutOptions}
           value={equipment.inoutCd ?? ""}
           disabled={saving}
@@ -130,7 +130,7 @@ export default function EquipmentList() {
     },
     {
       key: "actions",
-      header: "수정",
+      header: "Edit",
       render: (equipment) => (
         // 페이지 이동 대신 모달을 연다 — 장비명 한 칸 고치자고 목록을 떠날 이유가 없다
         <button
@@ -138,7 +138,7 @@ export default function EquipmentList() {
           className="text-sky-600 underline"
           onClick={() => setEditingId(equipment.equipmentId)}
         >
-          수정
+          Edit
         </button>
       ),
     },
@@ -153,13 +153,13 @@ export default function EquipmentList() {
         rows={items}
         rowKey={(equipment) => equipment.equipmentId}
         loading={loading}
-        emptyMessage="등록된 장비가 없습니다."
+        emptyMessage="No equipment registered."
       />
 
       {equipments ? (
         <div className="flex items-center justify-between">
           <p className="text-xs text-slate-500">
-            전체 {equipments.totalElements}건
+            {equipments.totalElements} total
           </p>
           <Pagination
             page={page}
@@ -175,7 +175,7 @@ export default function EquipmentList() {
       */}
       <Modal
         open={editingId !== null}
-        title="수술장비 수정"
+        title="Edit equipment"
         onClose={() => setEditingId(null)}
         closeDisabled={saving}
       >

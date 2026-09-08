@@ -9,13 +9,13 @@ import NotReadyNotice from "@/components/surgery/common/NotReadyNotice";
 export default function Page() {
   return (
     <NotReadyNotice
-      title="수술 견적/청구 연계 관리"
-      jira="SL2-64 · SL2-65 자원목록 등록 / SL2-66 조회 / SL2-67 연계상태 조회 / SL2-68 변경 / SL2-72 청구 Push"
-      reason="백엔드도 보류 중입니다. 수납(Billing) 팀과 API 계약·멱등성·실패 정책이 정해져야 구현할 수 있습니다. 엔티티와 DTO 는 준비돼 있고, 서비스 로직은 초안을 주석으로 남겨두었습니다."
+      title="Surgery estimate and billing link"
+      jira="SL2-64 · SL2-65 planned items / SL2-66 read / SL2-67 link status / SL2-68 update / SL2-72 billing push"
+      reason="The backend is on hold too. The API contract, idempotency and failure policy have to be settled with the Billing team first. Entities and DTOs are ready, and a draft of the service logic is left in comments."
       apis={[
-        "(미구현) GET  /api/surgery/{surgeryId}/planned-items",
-        "(미구현) POST /api/surgery/{surgeryId}/planned-items",
-        "(미구현) GET  /api/surgery/{surgeryId}/estimate-link",
+        "(not implemented) GET  /api/surgery/{surgeryId}/planned-items",
+        "(not implemented) POST /api/surgery/{surgeryId}/planned-items",
+        "(not implemented) GET  /api/surgery/{surgeryId}/estimate-link",
       ]}
     />
   );

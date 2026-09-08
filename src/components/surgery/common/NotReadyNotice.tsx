@@ -32,15 +32,15 @@ export default function NotReadyNotice({ title, jira, apis, reason }: Props) {
       <PageHeader title={title} description={jira} />
 
       <Alert variant="info">
-        <span className="font-medium">화면 준비 중입니다</span> — {reason}
+        <span className="font-medium">This screen is not ready yet</span> — {reason}
       </Alert>
 
       <Panel className="p-4">
         <h2 className="mb-2 text-sm font-medium text-slate-700">
-          백엔드는 이미 동작합니다
+          The backend already works
         </h2>
         <p className="mb-3 text-xs text-slate-500">
-          아래 API 는 구현돼 있어 Swagger 에서 바로 호출해볼 수 있습니다.
+          The APIs below are implemented and can be called directly from Swagger.
         </p>
         <ul className="flex flex-col gap-1">
           {apis.map((api) => (
@@ -59,15 +59,15 @@ export default function NotReadyNotice({ title, jira, apis, reason }: Props) {
             rel="noreferrer"
             className="text-sky-600 underline"
           >
-            Swagger UI 열기
+            Open Swagger UI
           </a>{" "}
-          (백엔드 실행 중일 때)
+          (while the backend is running)
         </p>
       </Panel>
 
       <p className="text-xs text-slate-500">
         <Link href="/surgery" className="text-sky-600 underline">
-          수술관리 홈
+          Surgery home
         </Link>
       </p>
     </div>

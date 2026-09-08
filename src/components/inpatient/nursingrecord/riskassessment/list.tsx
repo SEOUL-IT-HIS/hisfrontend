@@ -15,9 +15,9 @@ const RISK_BADGE: Record<string, string> = {
 };
 
 const RISK_LABEL: Record<string, string> = {
-  HIGH: "고위험",
-  MEDIUM: "중위험",
-  LOW: "저위험",
+  HIGH: "High Risk",
+  MEDIUM: "Medium Risk",
+  LOW: "Low Risk",
 };
 
 type RiskAssessmentListProps = {
@@ -53,19 +53,19 @@ const RiskAssessmentList = ({ embedded = false }: RiskAssessmentListProps = {}) 
           <div />
         ) : (
           <div>
-            <h1 className="text-lg font-semibold text-slate-800">환자위험도평가 목록</h1>
-            <p className="mt-1 text-sm text-slate-500">환자별 위험도 평가 기록입니다.</p>
+            <h1 className="text-lg font-semibold text-slate-800">Patient Risk Assessment List</h1>
+            <p className="mt-1 text-sm text-slate-500">Risk assessment records by patient.</p>
           </div>
         )}
         <Link
           href="/inpatient/nursingrecord/riskassessment/create"
           className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
         >
-          평가 등록
+          Register Assessment
         </Link>
       </div>
 
-      {listStatus.loading && <p className="text-sm text-slate-500">로딩중...</p>}
+      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
       {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
 
       {!listStatus.loading && !listStatus.error && (
@@ -73,22 +73,22 @@ const RiskAssessmentList = ({ embedded = false }: RiskAssessmentListProps = {}) 
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <th className="whitespace-nowrap px-4 py-3">환자명</th>
-                <th className="whitespace-nowrap px-4 py-3">위험도평가ID</th>
-                <th className="whitespace-nowrap px-4 py-3">입원ID</th>
-                <th className="whitespace-nowrap px-4 py-3">평가유형코드</th>
-                <th className="whitespace-nowrap px-4 py-3">평가점수</th>
-                <th className="whitespace-nowrap px-4 py-3">위험도등급</th>
-                <th className="whitespace-nowrap px-4 py-3">평가일</th>
-                <th className="whitespace-nowrap px-4 py-3">평가자ID</th>
-                <th className="whitespace-nowrap px-4 py-3">생성일시</th>
-                <th className="whitespace-nowrap px-4 py-3">수정일시</th>
+                <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
+                <th className="whitespace-nowrap px-4 py-3">Risk Assessment ID</th>
+                <th className="whitespace-nowrap px-4 py-3">Admission ID</th>
+                <th className="whitespace-nowrap px-4 py-3">Assessment Type Code</th>
+                <th className="whitespace-nowrap px-4 py-3">Assessment Score</th>
+                <th className="whitespace-nowrap px-4 py-3">Risk Level</th>
+                <th className="whitespace-nowrap px-4 py-3">Assessment Date</th>
+                <th className="whitespace-nowrap px-4 py-3">Assessor ID</th>
+                <th className="whitespace-nowrap px-4 py-3">Created At</th>
+                <th className="whitespace-nowrap px-4 py-3">Updated At</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {riskAssessments.map((riskAssessment) => {
                 const patientId = patientIdByAdmissionId.get(riskAssessment.admissionId);
-                const patientName = patientId ? (patientNameById.get(patientId) ?? "조회중...") : "없음";
+                const patientName = patientId ? (patientNameById.get(patientId) ?? "Loading...") : "None";
                 return (
                   <tr key={riskAssessment.patientRiskAssessmentId} className="hover:bg-slate-50">
                     <td className="whitespace-nowrap px-4 py-3 text-slate-800">{patientName}</td>
@@ -122,7 +122,7 @@ const RiskAssessmentList = ({ embedded = false }: RiskAssessmentListProps = {}) 
             </tbody>
           </table>
           {riskAssessments.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-slate-500">위험도평가 데이터가 없습니다.</p>
+            <p className="px-4 py-6 text-center text-sm text-slate-500">No risk assessment data available.</p>
           )}
         </div>
       )}

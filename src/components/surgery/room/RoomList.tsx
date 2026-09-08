@@ -75,21 +75,21 @@ export default function RoomList() {
   const columns: DataTableColumn<SurgeryRoom>[] = [
     {
       key: "roomCode",
-      header: "수술실 코드",
+      header: "Room code",
       render: (room) => room.roomCode,
     },
     {
       key: "roomName",
-      header: "수술실명",
+      header: "Room name",
       render: (room) => room.roomName,
     },
     {
       key: "statusCd",
-      header: "상태",
+      header: "Status",
       render: (room) => (
         <Select
           className="h-8 text-xs"
-          placeholder="미지정"
+          placeholder="Not set"
           options={statusOptions}
           value={room.statusCd ?? ""}
           disabled={saving}
@@ -105,11 +105,11 @@ export default function RoomList() {
     },
     {
       key: "turnoverCd",
-      header: "턴오버",
+      header: "Turnover",
       render: (room) => (
         <Select
           className="h-8 text-xs"
-          placeholder="미지정"
+          placeholder="Not set"
           options={turnoverOptions}
           value={room.turnoverCd ?? ""}
           disabled={saving || TURNOVER_LOCKED_STATUS.includes(room.statusCd ?? "")}
@@ -129,7 +129,7 @@ export default function RoomList() {
     },
     {
       key: "actions",
-      header: "수정",
+      header: "Edit",
       render: (room) => (
         // 수술실명을 고칠 길이 여기 없었다 — 수정 폼은 있는데 아무도 부르지 않았다.
         // 장비 목록과 같은 방식(모달)으로 맞춘다.
@@ -138,7 +138,7 @@ export default function RoomList() {
           className="text-sky-600 underline"
           onClick={() => setEditingCode(room.roomCode)}
         >
-          수정
+          Edit
         </button>
       ),
     },
@@ -153,13 +153,13 @@ export default function RoomList() {
         rows={items}
         rowKey={(room) => room.roomCode}
         loading={loading}
-        emptyMessage="등록된 수술실이 없습니다."
+        emptyMessage="No operating rooms registered."
         minWidthClassName="min-w-[640px]"
       />
 
       {rooms ? (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-slate-500">전체 {rooms.totalElements}건</p>
+          <p className="text-xs text-slate-500">{rooms.totalElements} total</p>
           <Pagination
             page={page}
             totalPages={rooms.totalPages}
@@ -174,7 +174,7 @@ export default function RoomList() {
       */}
       <Modal
         open={editingCode !== null}
-        title="수술실 수정"
+        title="Edit operating room"
         onClose={() => setEditingCode(null)}
         closeDisabled={saving}
       >

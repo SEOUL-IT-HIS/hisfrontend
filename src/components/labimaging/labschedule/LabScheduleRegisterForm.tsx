@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState, type ChangeEvent, type SubmitEvent } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import {
   Alert,
-  Button,
   FormActions,
   FormField,
   Input,
@@ -26,22 +25,20 @@ import { RESERVATION_YN_OPTIONS } from "@/features/labimaging/labschedule/types"
 import { selectSelectedLabReception } from "@/features/labimaging/laborder/slice";
 
 /**
- * 검사 일정 등록/재등록 폼.
+ * 검사 일정 등록/재등록 폼. 워크리스트 오른쪽 패널의 "Schedule" 탭에서만 쓴다.
  *
- * 두 곳에서 쓴다.
- *   1) 단독 페이지  /labimaging/labschedule/register/{labReceptionId}
- *   2) 워크리스트 오른쪽 패널의 "일정" 탭
+ * ⚠ 단독 페이지(/labimaging/labschedule/register/{id})는 없앴다. (2026-09-03)
+ *   워크리스트 탭이 같은 일을 하고 있어 두 벌을 유지할 이유가 없었다.
  *
- * ⚠ 그래서 대상 접수를 프롭으로도, URL 경로변수로도 받을 수 있게 열어 뒀다.
- *   패널 안에서는 URL 이 /worklist 라 경로변수가 없다. 프롭이 없으면 예전처럼 useParams 로 떨어진다.
- *   (기존 페이지 라우트는 프롭 없이 호출되므로 동작이 그대로다)
+ * ⚠ 신규/재등록을 담당자가 버튼으로 고르지 않는다. 대상 접수에 일정이 있으면 재등록이다.
+ *   예전에는 New/Reschedule 버튼이 있었는데, defaultMode 가 useState 초기값이라
+ *   등록에 성공해도 모드가 "New" 에 머물렀다. 그 상태로 다시 저장하면
+ *   latest_yn='Y' 조건부 UNIQUE(UX_LSCH_LATEST)에 걸린다.
+ *   (검사는 LAB027 로 걸러졌지만 영상은 같은 자리에서 500 이 났다 — 영상 쪽과 함께 정리)
  *
- * - 구분(신규/재등록)에 따라 dispatch 하는 액션이 달라진다.
- *   · 신규: createLabScheduleRequest({ labReceptionId, ... })
- *   · 재등록: rescheduleLabScheduleRequest(labReceptionId, { ... })
- *   ※ 재등록은 이미 latest 일정이 있는 접수 대상이다. 미일정 접수에 재등록하면 백엔드가 LAB014 로 실패.
- *   ※ 반대로 이미 일정이 있는 접수에 "신규 등록"을 하면 latest_yn='Y' 조건부 UNIQUE 에 걸린다.
- *     그래서 호출하는 쪽이 defaultMode 로 맞는 모드를 골라준다.
+ * ⚠ hasSchedule 은 useState 로 받지 않는다. 워크리스트가 저장 후 목록을 다시 불러오므로
+ *   프롭이 갱신되고, 모드가 저절로 재등록으로 넘어간다. 상태로 들고 있으면 그게 안 된다.
+ *
  * - 입력 UI 는 전역 공통 컴포넌트(@/components/common)를 사용한다. 자체 스타일을 만들지 않는다.
  *
  * ⚠ 안내메모(textarea)만 공통 컴포넌트가 없어 직접 마크업한다.
@@ -59,13 +56,12 @@ const initialForm = {
 
 type FormState = typeof initialForm;
 type FieldErrors = Partial<Record<keyof FormState, string>>;
-type Mode = "create" | "reschedule";
 
 type Props = {
-  /** 대상 접수ID. 없으면 URL 경로변수에서 읽는다. (단독 페이지로 열렸을 때) */
+  /** 대상 접수ID. */
   labReceptionId?: string;
-  /** 신규/재등록 초기 선택. 대상 접수에 일정이 있으면 "reschedule" 을 넘긴다. */
-  defaultMode?: Mode;
+  /** 대상 접수에 이미 일정이 있는지. 있으면 재등록으로 동작한다. */
+  hasSchedule?: boolean;
   /** 대상 접수 요약 박스 표시 여부. 패널에서는 위쪽 머리말과 겹쳐서 끈다. */
   showReceptionSummary?: boolean;
   /** 취소 동작. 없으면 워크리스트로 이동한다. */
@@ -74,19 +70,14 @@ type Props = {
 
 export default function LabScheduleRegisterForm({
   labReceptionId: labReceptionIdProp,
-  defaultMode = "create",
+  hasSchedule = false,
   showReceptionSummary = true,
   onCancel,
 }: Props = {}) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
-  /*
-   * 훅은 조건부로 부를 수 없어 useParams 는 항상 호출한다.
-   * 패널에서 쓸 때는 URL 이 /worklist 라 값이 없고, 그때는 프롭이 대상을 정한다.
-   */
-  const params = useParams<{ labReceptionId: string }>();
-  const labReceptionId = labReceptionIdProp ?? params?.labReceptionId ?? "";
+  const labReceptionId = labReceptionIdProp ?? "";
 
   const selected = useSelector(selectSelectedLabReception);
   // URL 의 대상과 store 컨텍스트가 일치할 때만 상세를 표시 (다른 접수 stale 방지)
@@ -97,7 +88,8 @@ export default function LabScheduleRegisterForm({
   const createError = useSelector(selectLabScheduleCreateError);
   const lastCreated = useSelector(selectLastCreatedLabSchedule);
 
-  const [mode, setMode] = useState<Mode>(defaultMode);
+  /** 일정이 이미 있으면 재등록이다. 담당자가 고르는 값이 아니다. */
+  const isReschedule = hasSchedule;
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [lastResetId, setLastResetId] = useState<string | null>(null);
@@ -136,7 +128,7 @@ export default function LabScheduleRegisterForm({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    if (mode === "create") {
+    if (!isReschedule) {
       dispatch(
         createLabScheduleRequest({
           labReceptionId,
@@ -174,27 +166,13 @@ export default function LabScheduleRegisterForm({
 
       {lastCreated ? (
         <Alert variant="success">
-          {mode === "create"
-            ? "Lab schedule has been registered."
-            : "Lab schedule has been rescheduled."}{" "}
+          {isReschedule
+            ? "Lab schedule has been rescheduled."
+            : "Lab schedule has been registered."}{" "}
           (Schedule ID: {lastCreated.labScheduleId})
         </Alert>
       ) : null}
       {createError ? <Alert>{resolveLabScheduleMessage(createError)}</Alert> : null}
-
-      {/* 구분: 신규 / 재등록 */}
-      <div className="flex gap-2">
-        {(["create", "reschedule"] as Mode[]).map((m) => (
-          <Button
-            key={m}
-            variant={mode === m ? "primary" : "secondary"}
-            onClick={() => setMode(m)}
-            disabled={creating}
-          >
-            {m === "create" ? "New" : "Reschedule"}
-          </Button>
-        ))}
-      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField
@@ -262,7 +240,7 @@ export default function LabScheduleRegisterForm({
         // 패널에서는 화면을 옮기면 안 되므로 호출하는 쪽이 동작을 넘긴다.
         onCancel={onCancel ?? (() => router.push("/labimaging/laborder/worklist"))}
         cancelLabel={onCancel ? "Clear Selection" : "To Worklist"}
-        submitLabel={mode === "create" ? "Schedule" : "Reschedule"}
+        submitLabel={isReschedule ? "Reschedule" : "Schedule"}
         loadingLabel="Processing…"
         loading={creating}
         submitDisabled={!labReceptionId}

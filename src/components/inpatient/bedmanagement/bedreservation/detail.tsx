@@ -16,9 +16,9 @@ const STATUS_BADGE: Record<string, string> = {
 
 // 예약 상태 코드 → 화면에 보여줄 한글 라벨
 const STATUS_LABEL: Record<string, string> = {
-    REQUESTED: "예약 대기",
-    RESERVED: "예약중",
-    RELEASED: "해제됨",
+    REQUESTED: "Pending",
+    RESERVED: "Reserved",
+    RELEASED: "Released",
 };
 
 const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
@@ -109,8 +109,8 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
         <div className="w-full p-6">
             <div className="mb-6 flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-semibold text-slate-800">병상 예약 상세</h1>
-                    <p className="mt-1 text-sm text-slate-500">예약 정보와 일정을 관리합니다.</p>
+                    <h1 className="text-lg font-semibold text-slate-800">Bed Reservation Details</h1>
+                    <p className="mt-1 text-sm text-slate-500">Manage reservation details and schedule.</p>
                 </div>
                 {/* 목록 옆에 끼워 넣었을 때(onClose가 전달된 경우)만 노출 */}
                 {onClose && (
@@ -119,12 +119,12 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
                         onClick={onClose}
                         className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
                     >
-                        선택 해제
+                        Deselect
                     </button>
                 )}
             </div>
 
-            {loading && <p className="text-sm text-slate-500">로딩중...</p>}
+            {loading && <p className="text-sm text-slate-500">Loading...</p>}
             {error && <p className="text-sm text-red-600">{error}</p>}
 
             {!loading && bedReservation && (
@@ -139,8 +139,8 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
                                   둘 다 맞아떨어지면 실제 이름 표시
                                 */}
                                 {bedReservation.patientId
-                                    ? (patientDetail?.patientId === bedReservation.patientId ? patientDetail.patientName : "조회중...")
-                                    : "없음"}
+                                    ? (patientDetail?.patientId === bedReservation.patientId ? patientDetail.patientName : "Loading...")
+                                    : "None"}
                             </span>
                             <span
                                 className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
@@ -152,23 +152,23 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
                         </div>
                         <div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">예약ID</span>
+                                <span className="text-slate-500">Reservation ID</span>
                                 <span className="text-slate-800">{bedReservation.bedReservationId}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">병상ID</span>
+                                <span className="text-slate-500">Bed ID</span>
                                 <span className="text-slate-800">{bedReservation.bedId}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">환자ID</span>
+                                <span className="text-slate-500">Patient ID</span>
                                 <span className="text-slate-800">{bedReservation.patientId}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">예약시각</span>
+                                <span className="text-slate-500">Reserved At</span>
                                 <span className="text-slate-800">{bedReservation.reserveAt}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">예상입원시각</span>
+                                <span className="text-slate-500">Expected Admission At</span>
                                 <span className="text-slate-800">{bedReservation.expectedAdmissionAt}</span>
                             </div>
                         </div>
@@ -176,9 +176,9 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
 
                     {/* 일정 변경 카드 — scheduleForm(로컬 입력값)을 수정하고 저장 시 handleUpdateSchedule 호출 */}
                     <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p className="text-sm font-medium text-slate-800">일정 변경</p>
+                        <p className="text-sm font-medium text-slate-800">Update Schedule</p>
                         <div>
-                            <label htmlFor="reserveAt" className={LABEL}>예약시각</label>
+                            <label htmlFor="reserveAt" className={LABEL}>Reserved At</label>
                             <input
                                 type="datetime-local"
                                 id="reserveAt"
@@ -189,7 +189,7 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
                             />
                         </div>
                         <div>
-                            <label htmlFor="expectedAdmissionAt" className={LABEL}>예상입원시각</label>
+                            <label htmlFor="expectedAdmissionAt" className={LABEL}>Expected Admission At</label>
                             <input
                                 type="datetime-local"
                                 id="expectedAdmissionAt"
@@ -204,7 +204,7 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
                             disabled={scheduleUpdateStatus.loading}
                             className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                         >
-                            {scheduleUpdateStatus.loading ? "일정 업데이트중..." : "일정 업데이트"}
+                            {scheduleUpdateStatus.loading ? "Updating..." : "Update Schedule"}
                         </button>
                     </div>
 
@@ -215,7 +215,7 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
                             disabled={deleteStatus.loading}
                             className="inline-flex items-center rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
                         >
-                            {deleteStatus.loading ? "삭제중..." : "예약 삭제"}
+                            {deleteStatus.loading ? "Deleting..." : "Delete Reservation"}
                         </button>
                     </div>
                 </div>

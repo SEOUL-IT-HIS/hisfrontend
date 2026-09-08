@@ -3,7 +3,13 @@
 import { useEffect, useState, type ChangeEvent, type SubmitEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input } from "@/components/common";
+import {
+  Alert,
+  Button,
+  ConfirmDialog,
+  FormField,
+  Input,
+} from "@/components/common";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
@@ -56,6 +62,60 @@ function formatDateTime(value?: string) {
   return value.replace("T", " ").slice(0, 16);
 }
 
+/**
+ * 비정상 결과가 참고범위의 어느 쪽을 벗어났는지 알아낸다. (표시 전용)
+ *
+ * ⚠ 정상/비정상 판정 자체는 하지 않는다. 그건 서버가 정해서 abnormalYn 으로 내려주고,
+ *   이 함수는 이미 "비정상"으로 확정된 값에 대해 화면 문구만 고른다.
+ *   여기서 Y/N 을 다시 계산하면 서버와 화면이 서로 다르게 판단하기 시작한다.
+ *
+ * ⚠ 참고범위가 "3.5-5.5" 형태이고 결과값이 숫자일 때만 방향을 알 수 있다.
+ *   정성 결과("양성")는 위아래 개념이 없어 방향 없이 "Abnormal" 로만 표시한다.
+ *   (서버 LabResultService.decideAbnormalYn 의 정량/정성 구분과 같은 기준)
+ */
+function abnormalDirection(
+  resultValue: string,
+  referenceRange?: string,
+): "High" | "Low" | "Abnormal" {
+  if (!referenceRange) return "Abnormal";
+
+  const bounds = referenceRange.split("-");
+  if (bounds.length !== 2) return "Abnormal";
+
+  const min = Number(bounds[0].trim());
+  const max = Number(bounds[1].trim());
+  const value = Number(resultValue.trim());
+
+  if ([min, max, value].some((n) => Number.isNaN(n))) return "Abnormal";
+
+  if (value > max) return "High";
+  if (value < min) return "Low";
+  // 서버는 비정상이라 했는데 범위 안이면, 참고범위가 그 뒤에 바뀐 경우다. 방향은 말하지 않는다.
+  return "Abnormal";
+}
+
+/**
+ * 확정 확인 문구.
+ *
+ * ⚠ "정말 확정하시겠습니까?" 로 끝내지 않는다. 무엇을 확정하는지(항목·결과값)를 같이 보여줘야
+ *   목록에서 엉뚱한 줄의 버튼을 눌렀을 때 다이얼로그에서 알아챌 수 있다.
+ * ⚠ 되돌릴 수 없다는 사실을 문구에 넣는다. 확정 후에는 수정이 서버에서 막힌다(LAB040).
+ */
+function confirmMessage(
+  target: LabResultItem | null,
+  testTypeOptions: CommonCodeOption[],
+) {
+  if (!target?.result) return "";
+
+  const itemLabel = toCodeLabel(testTypeOptions, target.labItemCode);
+  const unit = target.result.resultUnit ? ` ${target.result.resultUnit}` : "";
+
+  return (
+    `Confirm ${itemLabel} = ${target.result.resultValue}${unit}? ` +
+    "A confirmed result can no longer be edited."
+  );
+}
+
 const initialForm = {
   resultValue: "",
   resultUnit: "",
@@ -91,8 +151,8 @@ export default function LabResultWorkPanel({
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
-  /** 확정 버튼을 누른 항목. 한 번 더 눌러야 실제로 확정된다. */
-  const [confirmTargetId, setConfirmTargetId] = useState<string>("");
+  /** 확정 확인 다이얼로그의 대상 항목. null 이면 닫힌 상태다. */
+  const [confirmTarget, setConfirmTarget] = useState<LabResultItem | null>(null);
 
   /*
    * 접수가 바뀌면 이전 접수의 목록·결과·오류를 지우고 새로 불러온다.
@@ -121,7 +181,7 @@ export default function LabResultWorkPanel({
   function handleSelectItem(item: LabResultItem) {
     setSelectedItemId(item.labOrderItemId);
     setErrors({});
-    setConfirmTargetId("");
+    setConfirmTarget(null);
 
     if (item.result) {
       setForm({
@@ -191,30 +251,28 @@ export default function LabResultWorkPanel({
   }
 
   /**
-   * 확정. 한 번 더 눌러야 실제로 보낸다.
+   * 확정을 실제로 보낸다. 다이얼로그에서 [Confirm] 을 눌렀을 때만 호출된다.
    *
-   * ⚠ 확정은 되돌릴 수 없고 그 뒤로는 수정도 막힌다. 목록에서 잘못 눌러 확정되면
-   *   고칠 방법이 없어 두 단계로 나눈다. (공통 ConfirmDialog 는 사유 입력이 없어 쓰지 않고,
-   *   버튼 자체를 2단으로 만드는 편이 목록 안에서는 덜 방해된다)
+   * ⚠ 확정은 되돌릴 수 없고 그 뒤로는 수정도 막힌다(서버가 LAB040 으로 거절).
+   *   그래서 목록에서 바로 보내지 않고 공통 ConfirmDialog 로 한 번 더 묻는다.
+   *   버튼 라벨만 바꾸는 2단 클릭도 검토했지만, 그 방식은 "되돌릴 수 없다"는 사실을
+   *   전달하지 못한다. 되돌릴 수 있는 접수 제외조차 모달로 확인받고 있어(ReceptionExcludeDialog)
+   *   더 위험한 확정이 더 가벼운 확인을 받는 건 앞뒤가 맞지 않는다.
    */
-  function handleConfirmClick(item: LabResultItem) {
-    if (!item.result) return;
+  function handleConfirm() {
+    if (!confirmTarget?.result) return;
 
-    if (confirmTargetId !== item.labOrderItemId) {
-      setConfirmTargetId(item.labOrderItemId);
-      return;
-    }
     dispatch(
       confirmLabResultRequest(
-        item.result.labResultId,
+        confirmTarget.result.labResultId,
         // 확정자는 입력자와 다를 수 있으나, 별도 입력칸을 두면 목록이 폼이 된다.
         // 지금은 입력자ID를 그대로 쓴다. 로그인 사용자가 붙으면 그 값으로 바꾼다.
         // TODO(인증 연동): confirmedById 를 로그인 사용자 ID 로 교체한다.
-        { confirmedById: item.result.recordedById },
+        { confirmedById: confirmTarget.result.recordedById },
         reception.receptionNo,
       ),
     );
-    setConfirmTargetId("");
+    setConfirmTarget(null);
   }
 
   /** 결과 상태 표시. 미등록이면 회색. */
@@ -268,9 +326,23 @@ export default function LabResultWorkPanel({
           </p>
         ) : (
           <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+            {/*
+              ⚠ 머리글을 둔다. 값과 참고범위가 나란히 있는데 어느 쪽이 무엇인지 표시가 없으면
+                "7.0 / 3.5-5.5" 를 보고도 무엇이 기준인지 알 수 없다.
+                DataTable 을 쓰지 않는 이유는 행 안에 [Confirm] 버튼이 들어가야 하기 때문이다.
+            */}
+            <li className="flex items-center gap-3 bg-slate-50/70 px-4 py-2 text-xs font-medium text-slate-400">
+              <span className="h-2.5 w-2.5 shrink-0" />
+              <span className="w-32 shrink-0">Test Item</span>
+              <span className="w-28 shrink-0">Result</span>
+              <span className="w-24 shrink-0">Reference</span>
+              <span className="w-20 shrink-0">Flag</span>
+              <span className="flex-1">Status</span>
+            </li>
             {items.map((item) => {
               const confirmed =
                 item.result?.resultStatusCode === RESULT_STATUS.CONFIRMED;
+              const abnormal = item.result?.abnormalYn === "Y";
               const isSelected = item.labOrderItemId === selectedItemId;
               return (
                 <li
@@ -301,7 +373,17 @@ export default function LabResultWorkPanel({
                     <span className="w-32 shrink-0 font-semibold">
                       {toCodeLabel(testTypes.options, item.labItemCode)}
                     </span>
-                    <span className="w-28 shrink-0">
+                    {/*
+                      ⚠ 비정상이면 결과값 자체를 빨갛고 굵게 쓴다.
+                        배지만 따로 두면 값 열을 훑을 때 어느 값이 문제인지 눈에 안 들어온다.
+                        참고범위를 바로 옆 칸에 붙여 둔 것도 같은 이유다 — 값과 범위를 나란히 봐야
+                        "얼마나 벗어났는지"를 알 수 있다.
+                    */}
+                    <span
+                      className={`w-28 shrink-0 ${
+                        abnormal ? "font-semibold text-rose-600" : ""
+                      }`}
+                    >
                       {item.result ? (
                         <>
                           {item.result.resultValue}
@@ -314,11 +396,18 @@ export default function LabResultWorkPanel({
                     <span className="w-24 shrink-0 text-slate-400">
                       {item.result?.referenceRange ?? "-"}
                     </span>
-                    {/* 비정상은 서버가 계산한 값이다. 눈에 띄어야 하므로 색을 준다. */}
+                    {/*
+                      ⚠ 비정상 여부는 서버가 계산한 값(abnormalYn)이다.
+                        방향(High/Low)만 화면에서 덧붙인다 — 판정이 아니라 이미 나온 판정의 표현이다.
+                        정성 결과("양성")는 위아래가 없어 방향 없이 Abnormal 로만 뜬다.
+                    */}
                     <span className="w-20 shrink-0">
-                      {item.result?.abnormalYn === "Y" ? (
+                      {abnormal && item.result ? (
                         <span className="rounded bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-600">
-                          Abnormal
+                          {abnormalDirection(
+                            item.result.resultValue,
+                            item.result.referenceRange,
+                          )}
                         </span>
                       ) : null}
                     </span>
@@ -328,16 +417,12 @@ export default function LabResultWorkPanel({
                   {/* 확정 — 결과가 있고 아직 확정 전인 항목에만 뜬다. */}
                   {item.result && !confirmed ? (
                     <Button
-                      variant={
-                        confirmTargetId === item.labOrderItemId ? "danger" : "secondary"
-                      }
-                      onClick={() => handleConfirmClick(item)}
+                      variant="secondary"
+                      onClick={() => setConfirmTarget(item)}
                       disabled={submitting}
                       className="shrink-0"
                     >
-                      {confirmTargetId === item.labOrderItemId
-                        ? "Confirm?"
-                        : "Confirm"}
+                      Confirm
                     </Button>
                   ) : null}
                 </li>
@@ -456,6 +541,24 @@ export default function LabResultWorkPanel({
           </div>
         </form>
       )}
+
+      {/*
+        ⚠ 확정은 되돌릴 수 없다. 무엇을 확정하는지(항목·결과값)와 그 사실을 문구로 함께 밝힌다.
+          danger 로 두어 되돌릴 수 없는 동작임을 색으로도 구분한다.
+        ⚠ 공통 ConfirmDialog 의 기본 라벨은 한글("확인"/"취소")이라 영문으로 덮어쓴다.
+          공용 컴포넌트 자체는 손대지 않는다. (12.4 화면 텍스트 언어 원칙)
+      */}
+      <ConfirmDialog
+        open={confirmTarget !== null}
+        title="Confirm Test Result"
+        message={confirmMessage(confirmTarget, testTypes.options)}
+        confirmLabel="Confirm"
+        cancelLabel="Cancel"
+        danger
+        submitting={submitting}
+        onConfirm={handleConfirm}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   );
 }

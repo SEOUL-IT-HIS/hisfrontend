@@ -84,6 +84,7 @@ export type PatientDetail = {
 /** POST /api/patient/duplicate-check 요청 */
 export type PatientDuplicateCheckRequest = {
   residentRegNo: string;
+  excludePatientId?: string;
 };
 
 /** PATCH /api/patient/{patientId} 요청 */
@@ -116,6 +117,11 @@ export type PatientDeactivateRequest = {
   patientId: string;
 };
 
+/** PATCH /api/patient/{patientId}/activate 요청 */
+export type PatientActivateRequest = {
+  patientId: string;
+};
+
 export type PatientRegisterApiResponse = ApiResponse<Patient>;
 
 export type PatientDuplicateCheckApiResponse = ApiResponse<boolean>;
@@ -129,6 +135,9 @@ export type PatientUpdateApiResponse = ApiResponse<PatientDetail>;
 
 /** PATCH /api/patient/{patientId}/deactivate 응답 */
 export type PatientDeactivateApiResponse = ApiResponse<PatientDetail>;
+
+/** PATCH /api/patient/{patientId}/activate 응답 */
+export type PatientActivateApiResponse = ApiResponse<PatientDetail>;
 
 /** PATCH /api/patient/{patientId}/death-status 응답 */
 export type PatientDeathUpdateApiResponse = ApiResponse<PatientDetail>;

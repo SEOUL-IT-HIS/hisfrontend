@@ -65,7 +65,7 @@ export default function RoomUpdateForm({ roomCode, onDone }: Props) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!roomName.trim()) {
-      setNameError("수술실명을 입력해주세요.");
+      setNameError("Please enter a room name.");
       return;
     }
     setNameError("");
@@ -74,17 +74,17 @@ export default function RoomUpdateForm({ roomCode, onDone }: Props) {
   }
 
   if (loading && !room) {
-    return <p className="text-sm text-slate-500">불러오는 중입니다…</p>;
+    return <p className="text-sm text-slate-500">Loading…</p>;
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <FormField label="수술실 코드" hint="코드는 수정할 수 없습니다.">
+      <FormField label="Room code" hint="The code cannot be changed.">
         {/* PK 라 수정 대상이 아니다 */}
         <Input value={roomCode} readOnly disabled />
       </FormField>
 
-      <FormField label="수술실명" required htmlFor="roomName">
+      <FormField label="Room name" required htmlFor="roomName">
         <Input
           id="roomName"
           value={roomName}
@@ -100,10 +100,10 @@ export default function RoomUpdateForm({ roomCode, onDone }: Props) {
 
       <FormActions
         onCancel={onDone}
-        cancelLabel="취소"
-        submitLabel="수정"
+        cancelLabel="Cancel"
+        submitLabel="Edit"
         loading={saving}
-        loadingLabel="저장 중…"
+        loadingLabel="Saving…"
       />
     </form>
   );

@@ -20,12 +20,58 @@ import {
   FormField,
   Input,
   Panel,
+  Select,
 } from "@/components/common";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 
 type Props = {
   surgeryId: string;
 };
+
+/**
+ * 마취 유형·ASA 등급 선택지.
+ *
+ * <p>값은 백엔드 {@code AnesthesiaRecord} 엔티티에 적힌 정의 그대로다
+ * (ANESTHESIA_TYPE_CD 01~04, ASA_GRADE_CD 01~06). 예전에는 코드를 직접 타이핑하게
+ * 하고 "01 general / 02 spinal …" 을 힌트로 띄웠는데, 사용자가 코드를 외워야 했고
+ * 오타나 없는 코드도 그대로 저장됐다.</p>
+ *
+ * <p><b>admin 공통코드에서 읽지 않는 이유</b> — 두 그룹 모두 아직 admin 에 등록돼
+ * 있지 않다. {@code useCommonCodeOptions} 를 쓰면 목록이 비어 마취기록 등록 자체가
+ * 막힌다. 등록이 끝나면 다른 화면들처럼 그쪽으로 옮긴다(§21.4, admin 이관 요청서
+ * 13·14번 항목).</p>
+ */
+const ANESTHESIA_TYPE_OPTIONS = [
+  { value: "01", label: "01 General" },
+  { value: "02", label: "02 Spinal" },
+  { value: "03", label: "03 Local" },
+  { value: "04", label: "04 Other" },
+];
+
+/** ASA 신체상태 분류 1~6등급. 값은 01~06 이다. */
+const ASA_GRADE_OPTIONS = [
+  { value: "01", label: "01 · ASA I — healthy" },
+  { value: "02", label: "02 · ASA II — mild systemic disease" },
+  { value: "03", label: "03 · ASA III — severe systemic disease" },
+  { value: "04", label: "04 · ASA IV — constant threat to life" },
+  { value: "05", label: "05 · ASA V — moribund" },
+  { value: "06", label: "06 · ASA VI — brain-dead donor" },
+];
+
+/**
+ * 저장된 코드를 선택지 문구로 되돌린다.
+ *
+ * <p>목록에 없는 값이면 코드를 그대로 보여준다 — 선택지가 바뀌기 전에 저장된
+ * 기록이나 API 로 직접 넣은 값이 있을 수 있고, 그때 빈칸으로 두면 기록이
+ * 사라진 것처럼 보인다.</p>
+ */
+function labelOf(
+  options: { value: string; label: string }[],
+  code: string | null | undefined,
+): string {
+  if (!code) return "-";
+  return options.find((o) => o.value === code)?.label ?? code;
+}
 
 /**
  * 마취기록 패널 (SL2-34 조회 / SL2-21 생성 / SL2-18 활력징후)
@@ -84,7 +130,7 @@ export default function AnesthesiaRecordPanel({ surgeryId }: Props) {
     const value = (vitalInput[anesthesiaId] ?? "").trim();
     if (!value) {
       // 빈 값을 보내면 시각만 붙은 빈 줄이 쌓이므로 화면에서 막는다
-      dispatch(anesthesiaMutationFailure("활력징후 값을 입력해주세요."));
+      dispatch(anesthesiaMutationFailure("Please enter a vital sign value."));
       return;
     }
     dispatch(
@@ -99,24 +145,24 @@ export default function AnesthesiaRecordPanel({ surgeryId }: Props) {
     <div className="flex flex-col gap-6">
       <Panel className="p-4">
         <form onSubmit={handleCreate} className="flex flex-col gap-3">
-          <h3 className="text-sm font-medium text-slate-700">마취기록 등록</h3>
+          <h3 className="text-sm font-medium text-slate-700">New anesthesia record</h3>
 
-          <FormField
-            label="마취 유형 코드"
-            htmlFor="anesthesiaTypeCd"
-            hint="01전신 / 02척추 / 03국소 / 04기타"
-          >
-            <Input
+          <FormField label="Anesthesia type" htmlFor="anesthesiaTypeCd">
+            <Select
               id="anesthesiaTypeCd"
+              placeholder="Select"
+              options={ANESTHESIA_TYPE_OPTIONS}
               value={anesthesiaTypeCd}
               onChange={(e) => setAnesthesiaTypeCd(e.target.value)}
               disabled={saving}
             />
           </FormField>
 
-          <FormField label="ASA 등급 코드" htmlFor="asaGradeCd" hint="01~06">
-            <Input
+          <FormField label="ASA grade" htmlFor="asaGradeCd">
+            <Select
               id="asaGradeCd"
+              placeholder="Select"
+              options={ASA_GRADE_OPTIONS}
               value={asaGradeCd}
               onChange={(e) => setAsaGradeCd(e.target.value)}
               disabled={saving}
@@ -128,8 +174,8 @@ export default function AnesthesiaRecordPanel({ surgeryId }: Props) {
               setAnesthesiaTypeCd("");
               setAsaGradeCd("");
             }}
-            cancelLabel="초기화"
-            submitLabel="마취기록 등록"
+            cancelLabel="Reset"
+            submitLabel="New anesthesia record"
             loading={saving}
           />
         </form>
@@ -138,11 +184,11 @@ export default function AnesthesiaRecordPanel({ surgeryId }: Props) {
       {error ? <Alert>{resolveSurgeryMessage(error)}</Alert> : null}
 
       {loading ? (
-        <p className="text-sm text-slate-500">불러오는 중입니다…</p>
+        <p className="text-sm text-slate-500">Loading…</p>
       ) : null}
 
       {!loading && records.length === 0 ? (
-        <p className="text-sm text-slate-500">등록된 마취기록이 없습니다.</p>
+        <p className="text-sm text-slate-500">No anesthesia record yet.</p>
       ) : null}
 
       {records.map((record) => {
@@ -155,13 +201,15 @@ export default function AnesthesiaRecordPanel({ surgeryId }: Props) {
         return (
           <Panel key={record.anesthesiaId} className="p-4">
             <div className="mb-3 flex gap-4 text-xs text-slate-600">
-              <span>마취유형 {record.anesthesiaTypeCd ?? "-"}</span>
-              <span>ASA {record.asaGradeCd ?? "-"}</span>
+              {/* 목록에서도 코드가 아니라 고른 문구로 보여준다 — 입력만 목록으로
+                  바꾸고 표시가 "01" 로 남으면 뭘 골랐는지 다시 외워야 한다 */}
+              <span>{labelOf(ANESTHESIA_TYPE_OPTIONS, record.anesthesiaTypeCd)}</span>
+              <span>{labelOf(ASA_GRADE_OPTIONS, record.asaGradeCd)}</span>
             </div>
 
             <div className="mb-3 flex gap-2">
               <Input
-                placeholder="예: BP 120/80, HR 72"
+                placeholder="e.g. BP 120/80, HR 72"
                 value={vitalInput[record.anesthesiaId] ?? ""}
                 onChange={(e) =>
                   setVitalInput((prev) => ({
@@ -177,13 +225,13 @@ export default function AnesthesiaRecordPanel({ surgeryId }: Props) {
                 disabled={saving}
                 className="h-10 shrink-0"
               >
-                활력징후 추가
+                Add vital signs
               </Button>
             </div>
 
             {lines.length === 0 ? (
               <p className="text-xs text-slate-500">
-                기록된 활력징후가 없습니다.
+                No vital signs recorded.
               </p>
             ) : (
               <ul className="flex flex-col gap-1 text-xs text-slate-700">

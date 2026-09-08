@@ -9,9 +9,9 @@ import NotReadyNotice from "@/components/surgery/common/NotReadyNotice";
 export default function Page() {
   return (
     <NotReadyNotice
-      title="수술 간호 기록 관리"
-      jira="SL2-52 · SL2-58 작성 / SL2-59 물품카운트 / SL2-60 검체관리 / SL2-61 조회"
-      reason="백엔드는 작성·조회가 동작합니다. 물품 수량 확인과 검체 정보가 한 서식에 담기는 구조라, 화면 설계를 먼저 정한 뒤 프론트 상태 관리를 만들 예정입니다."
+      title="Perioperative nursing records"
+      jira="SL2-52 · SL2-58 create / SL2-59 item count / SL2-60 specimens / SL2-61 read"
+      reason="Create and read already work on the backend. Item counts and specimen details share one form, so the screen layout has to be settled before the front-end state management is built."
       apis={[
         "GET  /api/surgery/{surgeryId}/nursing-records",
         "POST /api/surgery/{surgeryId}/nursing-records",

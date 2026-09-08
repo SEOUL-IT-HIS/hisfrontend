@@ -76,7 +76,7 @@ const BedAssignmentRegisterForm = () => {
     <div className="mx-auto w-full max-w-lg p-6">
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <p className="text-sm text-slate-700">
-          {assignedBed?.roomNo}호 {assignedBed?.bedNo}번 병상에 배정을 완료했습니다.
+          Assignment complete: Room {assignedBed?.roomNo}, Bed {assignedBed?.bedNo}.
         </p>
         <div className="mt-4 flex gap-2">
           {admissionIdParam && (
@@ -84,14 +84,14 @@ const BedAssignmentRegisterForm = () => {
               onClick={() => router.push(`/inpatient/admissiondischarge/admission/detail?admissionId=${admissionIdParam}`)}
               className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white"
             >
-              입원상세로 돌아가기
+              Back to Admission Details
             </button>
           )}
           <button
             onClick={() => router.push(`/inpatient/bedmanagement/bedassignment/list?highlight=${lastBedAssignment.assignmentId}`)}
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700"
           >
-            배정목록에서 확인하기
+            View in Assignment List
           </button>
         </div>
       </div>
@@ -102,33 +102,33 @@ const BedAssignmentRegisterForm = () => {
     return (
         <div className="mx-auto w-full max-w-lg p-6">
             <div className="mb-6">
-                <h1 className="text-lg font-semibold text-slate-800">병상 배정 등록</h1>
-                <p className="mt-1 text-sm text-slate-500">환자를 병상에 배정합니다.</p>
+                <h1 className="text-lg font-semibold text-slate-800">Register Bed Assignment</h1>
+                <p className="mt-1 text-sm text-slate-500">Assign a patient to a bed.</p>
             </div>
 
-            {loading && <p className="mb-3 text-sm text-slate-500">로딩중...</p>}
+            {loading && <p className="mb-3 text-sm text-slate-500">Loading...</p>}
             {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
             <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div>
-                    <label htmlFor="bedId" className={LABEL}>병상ID</label>
+                    <label htmlFor="bedId" className={LABEL}>Bed ID</label>
                     <select id="bedId" name="bedId" value={form.bedId} onChange={onChange} required className={FIELD}>
-                        <option value="">선택하세요</option>
+                        <option value="">Select</option>
                         {emptyBeds.map((bed) => (
                             <option key={bed.bedId} value={bed.bedId}>
-                                {bed.roomNo}호 {bed.bedNo}번
+                                Room {bed.roomNo}, Bed {bed.bedNo}
                             </option>
                         ))}
                     </select>
                 </div>
                 <div>
-                    <label htmlFor="admissionId" className={LABEL}>입원ID</label>
+                    <label htmlFor="admissionId" className={LABEL}>Admission ID</label>
                     {/* 링크로 admissionId를 받아 들어왔으면 수정 못 하게 고정 표시, 아니면 드롭다운으로 직접 선택 */}
                     {admissionIdParam ? (
                         <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">{form.admissionId}</div>
                     ) : (
                         <select id="admissionId" name="admissionId" value={form.admissionId} onChange={onChange} required className={FIELD}>
-                            <option value="">선택하세요</option>
+                            <option value="">Select</option>
                             {availableAdmissions.map((admission) => (
                                 <option key={admission.admissionId} value={admission.admissionId}>
                                     {admission.admissionId}
@@ -138,7 +138,7 @@ const BedAssignmentRegisterForm = () => {
                     )}
                 </div>
                 <div>
-                    <label htmlFor="assignedAt" className={LABEL}>배정시각</label>
+                    <label htmlFor="assignedAt" className={LABEL}>Assigned At</label>
                     <input type="datetime-local" id="assignedAt" name="assignedAt" value={form.assignedAt} onChange={onChange} required className={FIELD} />
                 </div>
                 <button
@@ -146,7 +146,7 @@ const BedAssignmentRegisterForm = () => {
                     disabled={loading}
                     className="w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                 >
-                    등록
+                    Register
                 </button>
             </form>
         </div>

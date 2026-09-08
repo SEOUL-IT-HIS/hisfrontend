@@ -15,9 +15,9 @@ interface PaymentRequestProps {
 }
 
 const PAYMENT_METHODS: { code: PaymentMethodCode; label: string }[] = [
-  { code: "CASH", label: "현금" },
-  { code: "CARD", label: "카드" },
-  { code: "KAKAO_PAY", label: "카카오페이" },
+  { code: "CASH", label: "Cash" },
+  { code: "CARD", label: "Card" },
+  { code: "KAKAO_PAY", label: "KakaoPay" },
 ];
 
 const PaymentRequest = ({ billingId, paymentAmount, open, onClose }: PaymentRequestProps) => {
@@ -28,7 +28,7 @@ const PaymentRequest = ({ billingId, paymentAmount, open, onClose }: PaymentRequ
 
   const handlePayment = () => {
     if (!paymentMethodCode) {
-      alert("결제 수단을 선택해주세요.");
+      alert("Please select a payment method.");
       return;
     }
     dispatch(paymentRequest({ billingId, paymentMethodCode }));
@@ -41,12 +41,12 @@ const PaymentRequest = ({ billingId, paymentAmount, open, onClose }: PaymentRequ
   };
 
   return (
-    <Modal open={open} title="결제 처리" onClose={handleClose} closeDisabled={loading}>
+    <Modal open={open} title="Payment" onClose={handleClose} closeDisabled={loading}>
       <div className="flex flex-col gap-4">
         <div className="rounded-xl bg-slate-50/80 px-4 py-3">
-          <p className="text-xs font-medium text-slate-400">결제 금액</p>
+          <p className="text-xs font-medium text-slate-400">Payment Amount</p>
           <p className="mt-1 text-lg font-semibold text-slate-900">
-            {paymentAmount.toLocaleString()}원
+            ₩{paymentAmount.toLocaleString()}
           </p>
         </div>
 
@@ -74,15 +74,15 @@ const PaymentRequest = ({ billingId, paymentAmount, open, onClose }: PaymentRequ
         </div>
 
         {error ? <Alert variant="error">{error}</Alert> : null}
-        {success ? <Alert variant="success">결제가 성공적으로 완료되었습니다.</Alert> : null}
+        {success ? <Alert variant="success">Payment completed successfully.</Alert> : null}
 
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
           <Button variant="secondary" onClick={handleClose} disabled={loading}>
-            {success ? "닫기" : "취소"}
+            {success ? "Close" : "Cancel"}
           </Button>
           {!success ? (
             <Button variant="primary" onClick={handlePayment} disabled={loading}>
-              {loading ? "결제 처리중..." : "결제"}
+              {loading ? "Processing..." : "Pay"}
             </Button>
           ) : null}
         </div>

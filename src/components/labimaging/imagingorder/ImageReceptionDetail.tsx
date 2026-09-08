@@ -14,7 +14,7 @@ import {
   selectImageReceptionDetail,
   selectImageReceptionLoading,
   selectImageReceptionError,
-  selectImageReception,
+  selectImageWorklistReception,
 } from "@/features/labimaging/imagingorder/slice";
 import {
   ORDER_STATUS_LABELS,
@@ -103,16 +103,19 @@ export default function ImageReceptionDetail() {
       </Panel>
       <div className="flex justify-end gap-2">
         <Link
-          href="/labimaging/imagingorder/receptions"
+          href="/labimaging/imagingorder/worklist"
           className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
         >
-          List
+          Worklist
         </Link>
+        {/*
+          ⚠ 단독 일정 페이지는 없앴다. (2026-09-03 — 워크리스트 Schedule 탭이 같은 일을 한다)
+            워크리스트로 보내면서 이 접수를 선택 상태로 만들어, 도착하자마자 항목별 일정 폼이 열리게 한다.
+        */}
         <Button
           onClick={() => {
-            // 일정 화면이 쓸 컨텍스트만 넘긴다. (ImageReceptionContext)
-            dispatch(selectImageReception(reception));
-            router.push(`/labimaging/imagingschedule/register/${reception.imageReceptionId}`);
+            dispatch(selectImageWorklistReception(reception.receptionNo));
+            router.push("/labimaging/imagingorder/worklist");
           }}
         >
           {reception.scheduledAt ? "Reschedule" : "Schedule"}

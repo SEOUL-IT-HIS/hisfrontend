@@ -65,13 +65,13 @@ export default function OperativeRecordPanel({ surgeryId }: Props) {
   }, [dispatch, surgeryId]);
 
   const columns: DataTableColumn<(typeof records)[number]>[] = [
-    { key: "procedureName", header: "술식명", render: (r) => r.procedureName },
-    { key: "procedureCd", header: "술식 코드", render: (r) => r.procedureCd ?? "-" },
+    { key: "procedureName", header: "Procedure", render: (r) => r.procedureName },
+    { key: "procedureCd", header: "Procedure code", render: (r) => r.procedureCd ?? "-" },
     {
       key: "opStatusCd",
-      header: "상태",
+      header: "Status",
       render: (r) =>
-        r.opStatusCd === STATUS_FIXED ? "확정" : (r.opStatusCd ?? "작성중"),
+        r.opStatusCd === STATUS_FIXED ? "Finalized" : (r.opStatusCd ?? "Draft"),
     },
   ];
 
@@ -80,7 +80,7 @@ export default function OperativeRecordPanel({ surgeryId }: Props) {
 
     // procedure_name 은 DDL 상 NOT NULL — 백엔드도 거부하지만 왕복 전에 막는다
     if (!procedureName.trim()) {
-      setNameError("술식명을 입력해주세요.");
+      setNameError("Please enter the procedure name.");
       return;
     }
     setNameError("");
@@ -99,9 +99,9 @@ export default function OperativeRecordPanel({ surgeryId }: Props) {
     <div className="flex flex-col gap-6">
       <Panel className="p-4">
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <h3 className="text-sm font-medium text-slate-700">수술기록지 작성</h3>
+          <h3 className="text-sm font-medium text-slate-700">New operative record</h3>
 
-          <FormField label="술식명" required htmlFor="procedureName">
+          <FormField label="Procedure" required htmlFor="procedureName">
             <Input
               id="procedureName"
               value={procedureName}
@@ -113,7 +113,7 @@ export default function OperativeRecordPanel({ surgeryId }: Props) {
             ) : null}
           </FormField>
 
-          <FormField label="술식 코드" htmlFor="procedureCd" hint="선택 항목입니다.">
+          <FormField label="Procedure code" htmlFor="procedureCd" hint="Optional.">
             <Input
               id="procedureCd"
               value={procedureCd}
@@ -128,10 +128,10 @@ export default function OperativeRecordPanel({ surgeryId }: Props) {
               setProcedureCd("");
               setNameError("");
             }}
-            cancelLabel="초기화"
-            submitLabel="작성"
+            cancelLabel="Reset"
+            submitLabel="Save"
             loading={saving}
-            loadingLabel="저장 중…"
+            loadingLabel="Saving…"
           />
         </form>
       </Panel>
@@ -143,7 +143,7 @@ export default function OperativeRecordPanel({ surgeryId }: Props) {
         rows={records}
         rowKey={(r) => r.recordId}
         loading={loading}
-        emptyMessage="작성된 수술기록이 없습니다."
+        emptyMessage="No operative records yet."
         minWidthClassName="min-w-[480px]"
       />
     </div>

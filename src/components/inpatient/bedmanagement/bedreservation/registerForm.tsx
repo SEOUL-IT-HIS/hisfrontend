@@ -62,32 +62,32 @@ const BedReservationRegisterForm = () => {
     return (
         <div className="mx-auto w-full max-w-lg p-6">
             <div className="mb-6">
-                <h1 className="text-lg font-semibold text-slate-800">병상 예약 등록</h1>
-                <p className="mt-1 text-sm text-slate-500">아직 입원 전인 환자를 위해 병상을 미리 확보합니다.</p>
+                <h1 className="text-lg font-semibold text-slate-800">Register Bed Reservation</h1>
+                <p className="mt-1 text-sm text-slate-500">Reserve a bed in advance for a patient who has not yet been admitted.</p>
             </div>
 
-            {loading && <p className="mb-3 text-sm text-slate-500">로딩중...</p>}
+            {loading && <p className="mb-3 text-sm text-slate-500">Loading...</p>}
             {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
             <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div>
-                    <label htmlFor="bedId" className={LABEL}>병상ID</label>
+                    <label htmlFor="bedId" className={LABEL}>Bed ID</label>
                     <select id="bedId" name="bedId" value={form.bedId} onChange={onChange} required className={FIELD}>
-                        <option value="">선택하세요</option>
+                        <option value="">Select</option>
                         {emptyBeds.map((bed) => (
                             <option key={bed.bedId} value={bed.bedId}>
-                                {bed.roomNo}호 {bed.bedNo}번
+                                Room {bed.roomNo}, Bed {bed.bedNo}
                             </option>
                         ))}
                     </select>
                 </div>
                 <div>
-                    <label htmlFor="patientId" className={LABEL}>환자</label>
+                    <label htmlFor="patientId" className={LABEL}>Patient</label>
                     {patientIdParam ? (
                         <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">{patientName}</div>
                     ) : (
                         <select id="patientId" name="patientId" value={form.patientId} onChange={onChange} required className={FIELD}>
-                            <option value="">선택하세요</option>
+                            <option value="">Select</option>
                             {patients.map((patient) => (
                                 <option key={patient.patientId} value={patient.patientId}>
                                     {patient.patientName}
@@ -97,11 +97,11 @@ const BedReservationRegisterForm = () => {
                     )}
                 </div>
                 <div>
-                    <label htmlFor="reserveAt" className={LABEL}>예약시각</label>
+                    <label htmlFor="reserveAt" className={LABEL}>Reserved At</label>
                     <input type="datetime-local" id="reserveAt" name="reserveAt" value={form.reserveAt} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="expectedAdmissionAt" className={LABEL}>예상입원시각</label>
+                    <label htmlFor="expectedAdmissionAt" className={LABEL}>Expected Admission At</label>
                     <input type="datetime-local" id="expectedAdmissionAt" name="expectedAdmissionAt" value={form.expectedAdmissionAt} onChange={onChange} required className={FIELD} />
                 </div>
                 <button
@@ -109,7 +109,7 @@ const BedReservationRegisterForm = () => {
                     disabled={loading}
                     className="w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                 >
-                    등록
+                    Register
                 </button>
             </form>
         </div>

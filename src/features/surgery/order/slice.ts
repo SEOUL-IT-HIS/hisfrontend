@@ -95,9 +95,21 @@ const surgeryOrderSlice = createSlice({
       },
     },
 
-    /** 접수·배정·반려 공통 결과. 성공하면 saga 가 목록을 다시 읽는다 */
-    orderMutationSuccess(state) {
+    /**
+     * 접수·배정·반려 공통 결과. 성공하면 saga 가 목록을 다시 읽는다.
+     *
+     * <p>배정일 때만 만들어진 수술 ID 가 함께 온다. 다른 전이는 만들 것이 없어
+     * 인자를 주지 않고, 그때는 이전 값을 지운다 — 남겨 두면 반려 뒤에
+     * 엉뚱한 수술로 넘어간다.</p>
+     */
+    orderMutationSuccess(state, action: PayloadAction<string | undefined>) {
       state.saving = false;
+      state.assignedSurgeryId = action.payload ?? null;
+    },
+
+    /** 이동을 마친 화면이 호출한다. 안 비우면 다음 진입 때 또 넘어간다 */
+    clearAssignedSurgery(state) {
+      state.assignedSurgeryId = null;
     },
     orderMutationFailure(state, action: PayloadAction<string>) {
       state.saving = false;
@@ -116,6 +128,7 @@ export const {
   rejectOrderRequest,
   orderMutationSuccess,
   orderMutationFailure,
+  clearAssignedSurgery,
 } = surgeryOrderSlice.actions;
 
 /** 오더 목록 */
@@ -134,6 +147,16 @@ export const selectOrderSaving = (state: {
 export const selectOrderError = (state: {
   surgery: { order: SurgeryOrderState };
 }) => state.surgery.order.error;
+
+/**
+ * 방금 배정을 마친 수술의 ID — 화면이 그 수술로 이어서 넘어갈 때 쓴다.
+ *
+ * <p>값이 있으면 "직전 배정이 성공했다"는 뜻이다. 읽은 화면은 이동한 뒤
+ * {@code clearAssignedSurgery} 로 비워야 한다(안 비우면 다시 들어올 때 또 이동한다).</p>
+ */
+export const selectAssignedSurgeryId = (state: {
+  surgery: { order: SurgeryOrderState };
+}) => state.surgery.order.assignedSurgeryId ?? null;
 
 /** 마지막 조회 조건 — saga 가 변경 후 목록을 다시 읽을 때 쓴다 */
 export const selectOrderLastParams = (state: {

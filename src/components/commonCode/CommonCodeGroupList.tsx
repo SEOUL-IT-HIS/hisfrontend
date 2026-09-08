@@ -214,7 +214,8 @@ export default function CommonCodeGroupList() {
         </Panel>
 
         {/* ========== 오른쪽: 항목 패널 ========== */}
-        <CommonCodeItemPanel group={selectedGroup} />
+        {/* key 가 바뀌면 패널이 새로 마운트되어 검색 조건이 초기화된다 */}
+        <CommonCodeItemPanel key={selectedGroupId} group={selectedGroup} />
       </div>
 
       {/* 그룹 등록 Modal */}

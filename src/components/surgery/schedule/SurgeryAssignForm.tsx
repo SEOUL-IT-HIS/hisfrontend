@@ -12,6 +12,7 @@ import {
   Panel,
   Select,
 } from "@/components/common";
+import { usePatientNames } from "@/features/surgery/common/usePatientNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   fetchAvailableRoomsRequest,
@@ -114,7 +115,7 @@ export default function SurgeryAssignForm({
       .catch((err: unknown) => {
         if (ignore) return;
         setEmployeeLoadError(
-          err instanceof Error ? err.message : "직원 목록 조회에 실패했습니다.",
+          err instanceof Error ? err.message : "Failed to load the employee list.",
         );
       });
     return () => {
@@ -133,6 +134,11 @@ export default function SurgeryAssignForm({
   }, [saving, error, router, onAssigned]);
 
   const order = orders.find((o) => o.orderId === orderId);
+
+  // 배정 담당자가 누구를 배정하는지 알아야 한다 — UUID 로는 확인할 수 없다
+  const { names: patientNames } = usePatientNames(
+    order ? [order.patientId] : [],
+  );
 
   // 진료가 올린 희망일을 초기값으로 채운다. 아직 안 채운 오더일 때만 넣어,
   //   사용자가 고쳐둔 값을 뒤늦게 도착한 응답이 덮어쓰지 않게 한다.
@@ -159,13 +165,13 @@ export default function SurgeryAssignForm({
   */
   function validate() {
     const errors: Record<string, string> = {};
-    if (!roomCode) errors.roomCode = "수술실을 선택해주세요.";
-    if (!anesthesiaYn) errors.anesthesiaYn = "마취 여부를 선택해주세요.";
+    if (!roomCode) errors.roomCode = "Please select an operating room.";
+    if (!anesthesiaYn) errors.anesthesiaYn = "Please select whether anesthesia is used.";
     if (anesthesiaYn === "Y" && !anesthesiologistId) {
       errors.anesthesiologistId =
-        "마취를 시행하는 수술은 마취의를 배정해야 합니다.";
+        "A surgery under anesthesia requires an anesthesiologist.";
     }
-    if (!nurseId) errors.nurseId = "간호사를 선택해주세요.";
+    if (!nurseId) errors.nurseId = "Please select a nurse.";
     return errors;
   }
 
@@ -193,8 +199,8 @@ export default function SurgeryAssignForm({
   if (!order) {
     return (
       <p className="p-4 text-sm text-slate-500">
-        배정 대기 중인 요청이 아닙니다. 이미 처리되었거나 목록에서 다시 선택해
-        주세요.
+        This order is no longer waiting for assignment. It may already have been
+        processed — please pick another one from the list.
       </p>
     );
   }
@@ -204,35 +210,36 @@ export default function SurgeryAssignForm({
       {/* 진료·응급실이 확정한 값 — 읽기 전용 */}
       <Panel className="p-3">
         <dl className="grid grid-cols-2 gap-2 text-sm">
-          <dt className="text-slate-500">환자ID</dt>
-          <dd>{order.patientId}</dd>
-          <dt className="text-slate-500">집도의ID</dt>
+          <dt className="text-slate-500">Patient</dt>
+          <dd>{patientNames[order.patientId] ?? order.patientId}</dd>
+          <dt className="text-slate-500">Surgeon ID</dt>
           <dd>{order.surgeonId}</dd>
-          <dt className="text-slate-500">수술명</dt>
+          <dt className="text-slate-500">Surgery</dt>
           <dd>{order.surgeryName ?? "-"}</dd>
-          <dt className="text-slate-500">희망 수술일</dt>
+          <dt className="text-slate-500">Requested date</dt>
           <dd>{order.requestedDt}</dd>
-          <dt className="text-slate-500">구분</dt>
-          <dd>{order.emergencyYn === "Y" ? "응급" : "일반"}</dd>
-          <dt className="text-slate-500">내원ID</dt>
+          <dt className="text-slate-500">Type</dt>
+          <dd>{order.emergencyYn === "Y" ? "Emergency" : "Routine"}</dd>
+          <dt className="text-slate-500">Visit ID</dt>
           <dd>{order.visitId ?? "-"}</dd>
         </dl>
       </Panel>
 
       <Alert variant="info">
-        배정은 확정하면 바꿀 수 없습니다. 잘못 배정하면 수술을 취소하고 다시
-        요청받아야 하니, 넘기기 전에 확인해 주세요.
+        An assignment cannot be changed once confirmed. Correcting a mistake means
+        cancelling the surgery and having it requested again, so please check before
+        you submit.
       </Alert>
 
       <FormField
-        label="수술실"
+        label="Room"
         required
         htmlFor="roomCode"
-        hint="점검중·폐쇄 수술실은 목록에 나오지 않습니다."
+        hint="Rooms under maintenance or closed are not listed."
       >
         <Select
           id="roomCode"
-          placeholder="수술실 선택"
+          placeholder="Select an operating room"
           options={roomOptions}
           value={roomCode}
           onChange={(e) => setRoomCode(e.target.value)}
@@ -244,13 +251,14 @@ export default function SurgeryAssignForm({
       </FormField>
 
       <FormField
-        label="확정 수술일"
+        label="Scheduled date"
         htmlFor="surgeryDt"
-        hint="비우면 희망일을 그대로 씁니다."
+        hint="Leave blank to keep the requested date."
       >
         <Input
           id="surgeryDt"
           type="date"
+          lang="en"
           value={surgeryDt}
           onChange={(e) => setSurgeryDt(e.target.value)}
           disabled={saving}
@@ -258,17 +266,17 @@ export default function SurgeryAssignForm({
       </FormField>
 
       <FormField
-        label="마취 여부"
+        label="Anesthesia"
         required
         htmlFor="anesthesiaYn"
-        hint="마취과가 붙지 않는 시술(단순 봉합 등)이면 '미시행'을 고릅니다."
+        hint="Choose None for procedures without an anesthesiologist, such as simple suturing."
       >
         <Select
           id="anesthesiaYn"
-          placeholder="선택"
+          placeholder="Select"
           options={[
-            { value: "Y", label: "시행 — 마취의 배정 필요" },
-            { value: "N", label: "미시행 — 무마취 시술" },
+            { value: "Y", label: "Used — anesthesiologist required" },
+            { value: "N", label: "None — procedure without anesthesia" },
           ]}
           value={anesthesiaYn}
           onChange={(e) => {
@@ -289,10 +297,10 @@ export default function SurgeryAssignForm({
 
       {/* 마취의는 시행(Y)일 때만 묻는다 — 무마취인데 칸이 남아 있으면 채워야 하나 헷갈린다 */}
       {anesthesiaYn === "Y" ? (
-        <FormField label="마취의" required htmlFor="anesthesiologistId">
+        <FormField label="Anesthesiologist" required htmlFor="anesthesiologistId">
           <Select
             id="anesthesiologistId"
-            placeholder="마취의 선택"
+            placeholder="Select an anesthesiologist"
             options={employeeOptions}
             value={anesthesiologistId}
             onChange={(e) => setAnesthesiologistId(e.target.value)}
@@ -307,14 +315,14 @@ export default function SurgeryAssignForm({
       ) : null}
 
       <FormField
-        label="간호사"
+        label="Nurse"
         required
         htmlFor="nurseId"
-        hint="무마취 시술이라도 기구·거즈 수량을 확인할 사람이 필요합니다."
+        hint="Even without anesthesia, someone must verify instrument and sponge counts."
       >
         <Select
           id="nurseId"
-          placeholder="간호사 선택"
+          placeholder="Select a nurse"
           options={employeeOptions}
           value={nurseId}
           onChange={(e) => setNurseId(e.target.value)}
@@ -335,10 +343,10 @@ export default function SurgeryAssignForm({
         onCancel={
           onCancel ?? (() => router.push("/surgery/schedule/requests"))
         }
-        cancelLabel={onCancel ? "선택 해제" : "대기 목록"}
-        submitLabel="배정 확정"
+        cancelLabel={onCancel ? "Clear selection" : "Pending orders"}
+        submitLabel="Confirm assignment"
         loading={saving}
-        loadingLabel="배정 중…"
+        loadingLabel="Assigning…"
       />
     </form>
   );

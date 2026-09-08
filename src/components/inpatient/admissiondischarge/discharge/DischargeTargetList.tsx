@@ -42,12 +42,12 @@ const DischargeTargetList = ({ embedded = false }: DischargeTargetListProps = {}
     <div className={embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}>
       {!embedded && (
         <div className="mb-6">
-          <h1 className="text-lg font-semibold text-slate-800">퇴원 대상 목록</h1>
-          <p className="mt-1 text-sm text-slate-500">현재 입원중인 퇴원 처리 대상 환자 목록입니다.</p>
+          <h1 className="text-lg font-semibold text-slate-800">Discharge Target List</h1>
+          <p className="mt-1 text-sm text-slate-500">List of currently admitted patients eligible for discharge processing.</p>
         </div>
       )}
 
-      {listStatus.loading && <p className="text-sm text-slate-500">로딩중...</p>}
+      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
       {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
 
       {!listStatus.loading && !listStatus.error && (
@@ -56,12 +56,12 @@ const DischargeTargetList = ({ embedded = false }: DischargeTargetListProps = {}
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                  <th className="whitespace-nowrap px-4 py-3">입원ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">환자명</th>
-                  <th className="whitespace-nowrap px-4 py-3">입원과ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">환자ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">입원날짜</th>
-                  <th className="whitespace-nowrap px-4 py-3">상태</th>
+                  <th className="whitespace-nowrap px-4 py-3">Admission ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
+                  <th className="whitespace-nowrap px-4 py-3">Admission Dept ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Patient ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Admission Date</th>
+                  <th className="whitespace-nowrap px-4 py-3">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -75,14 +75,14 @@ const DischargeTargetList = ({ embedded = false }: DischargeTargetListProps = {}
                   >
                     <td className="whitespace-nowrap px-4 py-3 font-medium text-sky-700">{admission.admissionId}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-800">
-                      {patientNameById.get(admission.patientId) ?? "조회중..."}
+                      {patientNameById.get(admission.patientId) ?? "Looking up..."}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDeptId}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.patientId}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDate}</td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <span className="inline-flex items-center whitespace-nowrap rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-200">
-                        입원중
+                        Admitted
                       </span>
                     </td>
                   </tr>
@@ -90,7 +90,7 @@ const DischargeTargetList = ({ embedded = false }: DischargeTargetListProps = {}
               </tbody>
             </table>
             {dischargeTargets.length === 0 && (
-              <p className="px-4 py-6 text-center text-sm text-slate-500">퇴원 대상 환자가 없습니다.</p>
+              <p className="px-4 py-6 text-center text-sm text-slate-500">No patients eligible for discharge.</p>
             )}
           </div>
 

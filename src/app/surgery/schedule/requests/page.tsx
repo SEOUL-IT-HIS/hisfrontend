@@ -18,17 +18,18 @@ export default function Page() {
     <div className="mx-auto flex h-full min-h-0 w-full max-w-[1800px] flex-col gap-4 p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-slate-800">배정 대기 목록</h1>
+          <h1 className="text-lg font-semibold text-slate-800">Pending orders</h1>
           <p className="mt-1 text-sm text-slate-500">
-            진료·응급실에서 올라온 수술 요청입니다. 수술실을 배정하면 예약으로
-            확정됩니다. 응급 건이 먼저 표시됩니다.
+            Surgery orders raised by outpatient and emergency. Assigning a room
+            confirms the order and creates the surgery. Emergency orders come
+            first.
           </p>
         </div>
         <Link
           href="/surgery/schedule"
           className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:border-sky-400 hover:text-sky-600"
         >
-          수술 배정 관리
+          Surgery assignment
         </Link>
       </div>
       <SurgeryRequestList />

@@ -46,8 +46,8 @@ export default function RoomRegisterForm() {
 
     // 백엔드도 @NotBlank 로 검증하지만(SUR038), 왕복 전에 화면에서 먼저 막는다
     const nextErrors: FieldErrors = {};
-    if (!roomCode.trim()) nextErrors.roomCode = "수술실 코드를 입력해주세요.";
-    if (!roomName.trim()) nextErrors.roomName = "수술실명을 입력해주세요.";
+    if (!roomCode.trim()) nextErrors.roomCode = "Please enter a room code.";
+    if (!roomName.trim()) nextErrors.roomName = "Please enter a room name.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -63,7 +63,7 @@ export default function RoomRegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <FormField label="수술실 코드" required htmlFor="roomCode">
+      <FormField label="Room code" required htmlFor="roomCode">
         <Input
           id="roomCode"
           value={roomCode}
@@ -75,7 +75,7 @@ export default function RoomRegisterForm() {
         ) : null}
       </FormField>
 
-      <FormField label="수술실명" required htmlFor="roomName">
+      <FormField label="Room name" required htmlFor="roomName">
         <Input
           id="roomName"
           value={roomName}
@@ -93,10 +93,10 @@ export default function RoomRegisterForm() {
       {/* 등록 화면이라 '취소'로 돌아갈 곳이 없어 초기화로 둔다 */}
       <FormActions
         onCancel={reset}
-        cancelLabel="초기화"
-        submitLabel="등록"
+        cancelLabel="Reset"
+        submitLabel="Register"
         loading={saving}
-        loadingLabel="등록 중…"
+        loadingLabel="Registering…"
       />
     </form>
   );

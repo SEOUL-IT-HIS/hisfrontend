@@ -45,24 +45,24 @@ const DischargeSettlementDetail = () => {
 
   return (
     <div>
-      {loading && <p>로딩중...</p>}
+      {loading && <p>Loading...</p>}
       {error && <p>{error}</p>}
       {!loading && billing && (
         <div>
-          <p>정산ID: {billing.billingId}</p>
-          <p>입원ID: {billing.admissionId}</p>
-          <p>항목명: {billing.itemName}</p>
-          <p>수량: {billing.quantity}</p>
-          <p>단가: {billing.unitPrice}</p>
-          <p>금액: {billing.amount}</p>
-          <p>정산상태: {billing.billingStatus}</p>
+          <p>Billing ID: {billing.billingId}</p>
+          <p>Admission ID: {billing.admissionId}</p>
+          <p>Item Name: {billing.itemName}</p>
+          <p>Quantity: {billing.quantity}</p>
+          <p>Unit Price: {billing.unitPrice}</p>
+          <p>Amount: {billing.amount}</p>
+          <p>Billing Status: {billing.billingStatus}</p>
 
           {billing.billingStatus === "READY" && (
             <button onClick={handleCloseBilling} disabled={closeLoading}>
-              {closeLoading ? "처리중..." : "정산 마감 처리"}
+              {closeLoading ? "Processing..." : "Close Billing"}
             </button>
           )}
-          {billing.billingStatus === "SUCCESS" && <p>정산 완료됨</p>}
+          {billing.billingStatus === "SUCCESS" && <p>Billing Closed</p>}
           {closeError && <p>{closeError}</p>}
         </div>
       )}
