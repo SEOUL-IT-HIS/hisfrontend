@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import PageHeader from "@/components/common/PageHeader";
 import SurgeryWorklist from "@/components/surgery/worklist/SurgeryWorklist";
 
@@ -23,7 +24,17 @@ export default function Page() {
         title="Surgery worklist"
         description="Pick a surgery to handle start / end / cancel, consents, checklist, anesthesia and operative records in one place."
       />
-      <SurgeryWorklist />
+      {/*
+        Suspense 로 감싸는 이유 — SurgeryWorklist 가 useSearchParams() 로
+        ?surgeryId= 를 읽는다(수술 홈에서 배정을 마치고 넘어오는 경로).
+        App Router 는 그 훅을 쓰는 트리를 Suspense 로 감싸지 않으면 프로덕션
+        빌드에서 막는다. 개발 서버에서는 경고 없이 넘어가 놓치기 쉽다.
+      */}
+      <Suspense
+        fallback={<p className="text-sm text-slate-500">Loading…</p>}
+      >
+        <SurgeryWorklist />
+      </Suspense>
     </div>
   );
 }

@@ -15,6 +15,7 @@ import watchCommonCodeItemSaga from "@/features/commonCode/saga/commonCodeItemSa
 import watchCommonCodeGroupSaga from "@/features/commonCode/saga/commonCodeGroupSaga";
 import watchAuthSaga from "@/features/auth/saga/authSaga";
 import watchEmpSaga from "@/features/emp/saga/empSaga";
+import watchRoleMenuSaga from "@/features/roleMenu/saga/roleMenuSaga";
 import watchMenuSaga from "@/features/system/saga/menuSaga";
 import watchPatientSaga from "@/features/patient/saga/patientSaga";
 import billingDetailSaga from "@/features/billing/searchBillingDetail/saga";
@@ -30,6 +31,7 @@ export default function* rootSaga() {
       fork(watchMenuSaga),
       fork(watchAuthSaga),
       fork(watchEmpSaga),
+      fork(watchRoleMenuSaga),
       fork(watchCommonCodeGroupSaga),
       fork(watchCommonCodeItemSaga),
       fork(labImagingSaga),

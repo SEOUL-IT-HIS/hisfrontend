@@ -27,12 +27,14 @@ import {
   type ImageWorklistStatusFilter,
 } from "@/features/labimaging/imagingorder/types";
 import { selectLastCreatedImageSchedule } from "@/features/labimaging/imagingschedule/slice";
-import { selectLastCreatedConsent } from "@/features/labimaging/imagingacquisition/slice";
+import { selectLastCreatedConsent } from "@/features/labimaging/imagingconsent/slice";
+import { selectLastUploadedImageFile } from "@/features/labimaging/imagingacquisition/slice";
 import ImageWorklistProgress from "@/components/labimaging/imagingorder/ImageWorklistProgress";
 import ImageWorklistReceptionHeader from "@/components/labimaging/imagingorder/ImageWorklistReceptionHeader";
 import ReceptionExcludeDialog from "@/components/labimaging/common/ReceptionExcludeDialog";
 import ImageScheduleRegisterForm from "@/components/labimaging/imagingschedule/ImageScheduleRegisterForm";
-import ConsentWorkPanel from "@/components/labimaging/imagingacquisition/ConsentWorkPanel";
+import ConsentWorkPanel from "@/components/labimaging/imagingconsent/ConsentWorkPanel";
+import ImageAcquisitionWorkPanel from "@/components/labimaging/imagingacquisition/ImageAcquisitionWorkPanel";
 
 /**
  * 영상 워크리스트 — 왼쪽 접수 목록 + 오른쪽 작업 폼 (마스터-디테일).
@@ -52,10 +54,10 @@ import ConsentWorkPanel from "@/components/labimaging/imagingacquisition/Consent
  * 3. 촬영(영상파일 등록)이 판독 앞에 있다. 판독할 대상이 있어야 판독 화면이 성립한다.
  *
  * ── 아직 없는 것
- * ⚠ 촬영·판독 탭은 비활성이다. IMAGE_FILE 은 테이블만 있고(ZP2-21),
- *   IMAGE_READING 은 테이블은 있으나 엔티티가 없다(ZP2-23).
- *   그래도 탭을 지우지 않는다. 동의까지 끝낸 접수가 목록에 남아 있는 이유를
- *   담당자가 알 수 있어야 한다. (검사 쪽 Result 탭이 그랬던 것과 같은 처리)
+ * ⚠ 판독 탭만 비활성이다. IMAGE_READING 은 테이블은 있으나 엔티티가 없다(ZP2-23).
+ *   촬영(Acquisition) 탭은 ZP2-21 로 활성화됐다 — IMAGE_FILE 등록/조회가 붙었다.
+ *   판독 탭을 지우지 않는 이유는, 촬영까지 끝낸 접수가 목록에 남아 있는 이유를
+ *   담당자가 알 수 있어야 하기 때문이다. (검사 쪽 Result 탭이 그랬던 것과 같은 처리)
  */
 
 type WorkTab = "schedule" | "consent" | "acquisition" | "reading";
@@ -63,8 +65,7 @@ type WorkTab = "schedule" | "consent" | "acquisition" | "reading";
 const WORK_TABS: ReadonlyArray<{ value: WorkTab; label: string; enabled: boolean }> = [
   { value: "schedule", label: "Schedule", enabled: true },
   { value: "consent", label: "Consent", enabled: true },
-  // ZP2-21 영상판독대기등록 — IMAGE_FILE 테이블만 있고 화면·API 는 아직 없다.
-  { value: "acquisition", label: "Acquisition", enabled: false },
+  { value: "acquisition", label: "Acquisition", enabled: true },
   // ZP2-23 영상판독처리 — IMAGE_READING 엔티티가 아직 없다.
   { value: "reading", label: "Reading", enabled: false },
 ];
@@ -99,10 +100,11 @@ export default function ImageWorklist() {
   const lastScheduleId =
     useSelector(selectLastCreatedImageSchedule)?.imageScheduleId ?? null;
   const lastConsentId = useSelector(selectLastCreatedConsent)?.consentId ?? null;
+  const lastImageFileId = useSelector(selectLastUploadedImageFile)?.imageFileId ?? null;
 
   useEffect(() => {
     dispatch(fetchImageWorklistRequest(filter));
-  }, [dispatch, filter, lastScheduleId, lastConsentId]);
+  }, [dispatch, filter, lastScheduleId, lastConsentId, lastImageFileId]);
 
   /*
    * 목록에 보이는 환자들의 이름을 한 번에 불러온다. (POST /api/patient/batch)
@@ -303,6 +305,9 @@ export default function ImageWorklist() {
             ) : tab === "consent" ? (
               // key 로 접수마다 새로 마운트해 이전 오더의 입력값·검증오류가 남지 않게 한다.
               <ConsentWorkPanel key={selected.imageReceptionId} reception={selected} />
+            ) : tab === "acquisition" ? (
+              // key 로 접수마다 새로 마운트해 이전 접수의 선택 항목·업로드 상태가 남지 않게 한다.
+              <ImageAcquisitionWorkPanel key={selected.imageReceptionId} reception={selected} />
               ) : (
                 <div className="text-sm text-slate-400">
                   This step is not implemented yet.
