@@ -143,6 +143,18 @@ export type SurgeryOrderState = {
    * 조건을 여기 담아 두고 그대로 다시 쓴다.</p>
    */
   lastParams?: SurgeryOrderSearchParams;
+  /**
+   * 방금 배정을 마친 수술의 ID.
+   *
+   * <p>배정이 성공하면 그 자리에서 만들어진 수술로 이어서 넘어가야 한다
+   * (수술 홈 → 배정 → 수술 업무). 화면이 그 ID 를 알 방법이 이것뿐이라 담아 둔다 —
+   * 오더 목록은 배정 직후 다시 읽히면서 그 건이 빠져나가고, 수술 목록에는
+   * 아직 반영 전이다.</p>
+   *
+   * <p>넘어간 뒤에는 화면이 {@code clearAssignedSurgery} 로 비운다. 안 비우면
+   * 다음에 이 화면에 들어올 때 예전 값을 보고 또 이동한다.</p>
+   */
+  assignedSurgeryId?: string | null;
   loading: boolean;
   saving: boolean;
   error: string;
