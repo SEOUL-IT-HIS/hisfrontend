@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAuthMeRequest } from "@/features/auth/slice/authSlice";
+import { setHasSession } from "@/lib/axios";
 import type { AppDispatch, RootState } from "@/store/store";
 
 type AppFrameProps = {
@@ -77,6 +78,11 @@ export default function AppFrame({ children }: AppFrameProps) {
   // authUser가 채워질 때마다(최초 로그인 성공이든, 활동으로 인한 재확인 성공이든)
   // "로그인된 적 있음" 표시 + 다음 활동 확인 기준 시각을 갱신한다
   useEffect(() => {
+    // axios 인터셉터에도 알려준다. 인터셉터는 React 바깥이라 Redux 를 못 읽는데,
+    // 로그인 전에 나가는 요청(외래 공통코드 saga 등)의 401 을 "세션 만료"로 오해하면
+    // 로그인한 적도 없는데 만료 안내가 뜬다. lib/axios 의 setHasSession 주석 참고.
+    setHasSession(Boolean(authUser));
+
     if (authUser) {
       hadSession.current = true;
       lastActivityCheckAt.current = Date.now();
