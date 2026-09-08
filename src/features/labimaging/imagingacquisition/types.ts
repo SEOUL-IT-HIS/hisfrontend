@@ -1,87 +1,71 @@
 /**
- * 조영제/침습검사 동의(imagingacquisition) 타입 — UC-IMG-05 (Jira ZP2-28)
+ * 촬영/영상파일(imagingacquisition) 타입 — UC-IMG-03 (Jira ZP2-21)
  *
  * 필드명은 백엔드 DTO 를 그대로 미러링한다.
- * - ConsentCreateRequestDto / ConsentSummaryDto
+ * - ImageFileUploadRequestDto / ImageFileSummaryDto
  *   (kr.co.seoulit.his.labimagingservice.imagingacquisition.dto)
  *
- * ⚠ 동의 철회는 1차 배포 범위 밖이다 (2026-08-24 결정, 4차 이월).
- *   응답에는 철회 관련 필드가 이미 내려오므로 표시만 하고, 철회 요청 타입은 두지 않았다.
+ * ⚠ 이 기능의 실제 범위는 "촬영 수행 + 영상파일 저장"이다. 판독(Reading) 자체는
+ *   별도 기능(ZP2-23, imaginginterpretation)이라 여기서 다루지 않는다.
  */
 
-/** 동의 등록 요청 — 백엔드 ConsentCreateRequestDto */
-export interface ConsentCreateRequest {
-  /** 대상 영상오더ID (UUID) */
-  imageOrderId: string;
-  /** 환자ID (patient-service 내부 식별자, 참조/검증용) */
-  patientId: string;
-  /** 동의서유형코드 (공통코드 CONSENT_TYPE_CD — 예: CONTRAST, INVASIVE) */
-  consentTypeCode: string;
-  /** 동의서양식ID (admin-service DOCUMENT_TEMPLATE 논리 참조) */
-  documentTemplateId: string;
-  /** 동의여부 */
-  consentYn: "Y" | "N";
-  /** 동의일자 (YYYY-MM-DD) */
-  consentDt: string;
-  /** 서명자명 (환자 또는 법정대리인) */
-  signedByName: string;
-  /** 확인자ID */
-  witnessId: string;
+/** 영상파일 — 백엔드 ImageFileSummaryDto */
+export interface ImageFileSummary {
+  imageFileId: string;
+  imageOrderItemId: string;
+  fileName: string;
+  /** 바이트. 브라우저의 File.size 와 같은 단위라 그대로 KB/MB 로 환산해 보여준다. */
+  fileSize?: number;
+  contentType: string;
+  uploadedAt: string;
+  uploadedById: string;
 }
-
-/** 동의 요약 (목록/단건 공용) — 백엔드 ConsentSummaryDto */
-export interface ConsentSummary {
-  consentId: string;
-  imageOrderId: string;
-  consentTypeCode: string;
-  consentYn: "Y" | "N";
-  consentDt: string;
-  signedByName: string;
-  witnessId: string;
-  withdrawnYn: "Y" | "N";
-  /** 철회 전이면 없음 */
-  withdrawnAt?: string;
-  /** 철회 전이면 없음 */
-  withdrawnReasonCode?: string;
-}
-
-/** 동의여부 표시용 옵션. 공통코드가 아니라 API 계약상 고정값이라 상수로 둔다. */
-export const CONSENT_YN_OPTIONS: ReadonlyArray<{ value: "Y" | "N"; label: string }> = [
-  { value: "Y", label: "Consented" },
-  { value: "N", label: "Declined" },
-];
 
 /**
- * 오더에 유효한 동의가 있는지 판단한다.
+ * 영상파일 업로드 요청 — 백엔드 ImageFileUploadRequestDto
  *
- * ⚠ "촬영을 진행해도 되는가"의 최종 판정은 아니다. 어떤 촬영항목이 동의를 필요로 하는지
- *   (IMAGE_ORDER_ITEM 기준)가 아직 정해지지 않았다. 지금은 "받아둔 유효한 동의가 있는가"만 본다.
- *   백엔드 ConsentService.getConsentsByImageOrderId 주석과 같은 기준이다.
+ * ⚠ 백엔드는 이 값들을 multipart/form-data 로 받는다(JSON 이 아니다). 이 인터페이스는
+ *   "무엇을 보내야 하는지"를 미러링한 것이고, 실제 전송은 api.ts 가 FormData 로 만든다.
+ *
+ * ⚠ imageReceptionId 를 함께 보낸다. 백엔드가 사전요건 중 "촬영 일정이 등록되어 있는지"를
+ *   확인하려면 접수+항목 조합이 필요한데(ImageScheduleService 와 같은 이유),
+ *   imageOrderItemId 만으로는 그 일정을 찾을 수 없다.
+ *   (ImageAcquisitionWorkPanel 의 prop 이 ImageWorklistItem 이라 imageReceptionId 는 이미 있다)
  */
-export function hasValidConsent(consents: ConsentSummary[]): boolean {
-  return consents.some((c) => c.consentYn === "Y" && c.withdrawnYn === "N");
+export interface ImageFileUploadRequest {
+  file: File;
+  imageReceptionId: string;
+  imageOrderItemId: string;
+  patientId: string;
+  uploadedById: string;
 }
 
-/** 동의(imagingacquisition) slice 상태 */
-export interface ConsentState {
-  /** 선택한 오더의 동의 이력 */
-  consents: ConsentSummary[];
-  consentsLoading: boolean;
-  consentsError: string;
+/**
+ * ⚠ 촬영항목을 고르는 목록은 이 파일에 따로 두지 않는다.
+ *   백엔드 워크리스트 응답(ImageWorklistItemDto)에는 항목 목록이 없다(접수 단위 요약이라
+ *   imageItemCount 개수만 있다). 대신 imagingschedule 기능이 이미 같은 목적으로 쓰고 있는
+ *   ImageScheduleItem({ imageOrderItemId, imageItemCode, schedule? })과
+ *   fetchImageScheduleItemsRequest(receptionNo)/selectImageScheduleItems 를 그대로 재사용한다.
+ *   (ImageScheduleRegisterForm 의 "2단 구조"와 같은 방식 — ImageAcquisitionWorkPanel 참고)
+ *   같은 목적의 목록 조회를 두 번 만들지 않기 위한 선택이고, 덤으로 각 항목에 일정이
+ *   있는지(schedule 유무)도 같이 보여 사전요건(촬영 일정 필요)을 화면에서 미리 안내할 수 있다.
+ */
 
+/** 촬영/영상파일(imagingacquisition) slice 상태 */
+export interface ImageFileState {
+  /** 선택한 촬영항목의 영상파일 목록 */
+  files: ImageFileSummary[];
+  filesLoading: boolean;
+  filesError: string;
   /**
-   * consents 가 어느 오더의 것인지.
-   *
-   * ⚠ 이 값이 없으면 다른 오더를 고른 직후 한 프레임 동안 이전 오더의 이력이 그대로 보인다.
-   *   효과(useEffect)는 렌더가 끝난 뒤에 돌아서 resetConsentState 가 첫 렌더를 못 막는다.
-   *   동의 화면에서 다른 환자의 "유효한 동의 있음"이 스치면 안 되므로,
-   *   화면이 대상 오더와 이 값을 대조해 일치할 때만 판정한다.
+   * files 가 어느 항목의 것인지.
+   * ⚠ 이 값이 없으면 다른 항목을 고른 직후 한 프레임 동안 이전 항목의 파일 목록이 그대로 보인다.
+   *   (ConsentState.loadedImageOrderId 와 같은 방어)
    */
-  loadedImageOrderId: string | null;
+  loadedImageOrderItemId: string | null;
 
-  /** 동의 등록 진행 상태 */
-  creating: boolean;
-  createError: string;
-  /** 마지막 등록 성공 결과 — 성공 안내에 쓴다 */
-  lastCreated: ConsentSummary | null;
+  uploading: boolean;
+  uploadError: string;
+  /** 마지막 업로드 성공 결과 — 성공 안내와 워크리스트 갱신 신호로 쓴다 */
+  lastUploaded: ImageFileSummary | null;
 }

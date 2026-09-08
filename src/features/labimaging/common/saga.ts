@@ -4,8 +4,9 @@ import imageOrderSaga from "@/features/labimaging/imagingorder/saga";
 import labScheduleSaga from "@/features/labimaging/labschedule/saga";
 import imageScheduleSaga from "@/features/labimaging/imagingschedule/saga";
 import labSpecimenSaga from "@/features/labimaging/labspecimen/saga";
-import consentSaga from "@/features/labimaging/imagingacquisition/saga";
+import consentSaga from "@/features/labimaging/imagingconsent/saga";
 import labResultSaga from "@/features/labimaging/labresult/saga";
+import imageFileSaga from "@/features/labimaging/imagingacquisition/saga";
 
 /**
  * labImaging 도메인 결합 saga
@@ -20,5 +21,6 @@ export default function* labImagingSaga() {
     fork(labSpecimenSaga),
     fork(consentSaga),
     fork(labResultSaga),
+    fork(imageFileSaga),
   ]);
 }
