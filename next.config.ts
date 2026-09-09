@@ -35,6 +35,17 @@ const pharmacyApiOrigin =
   process.env.PHARMACY_API_ORIGIN ?? "http://192.168.1.115:8088";
 
 const nextConfig: NextConfig = {
+  /*
+   * Docker 이미지용 빌드 결과물.
+   *
+   * "standalone" 을 켜면 next build 가 .next/standalone 에 "실행에 필요한 것만" 모아준다.
+   * 서버 파일 + 실제로 쓰이는 node_modules 만 담기기 때문에, 이미지에 node_modules 를
+   * 통째로 넣는 것보다 훨씬 작아진다.
+   *
+   * npm run dev 에는 영향이 없다. next build 의 출력 형태만 달라진다.
+   */
+  output: "standalone",
+
   // LAN IP로 접속할 때 /_next 정적 리소스 403 방지
   // (다른 PC에서 http://192.168.1.149:3000 접속 시 필요)
   allowedDevOrigins: [
