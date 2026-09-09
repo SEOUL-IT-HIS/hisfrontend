@@ -2,7 +2,7 @@
 
 /**
  * [로그인 폼]
- * dispatch(fetchAuthLoginRequest) → saga → POST /api/auth/login
+ * dispatch(fetchAuthLoginRequest) → saga → POST /api/admin/auth/login
  * 성공 시 /main(대문) 이동
  */
 import { useEffect, useRef, useState } from "react";
@@ -37,7 +37,7 @@ export default function LoginForm() {
 
   /**
    * 이번 화면에서 실제로 로그인을 시도한 적 있는지.
-   * 이게 없으면, 세션 만료로 리다이렉트됐을 때 배경에서 실패했던 /api/auth/me 의
+   * 이게 없으면, 세션 만료로 리다이렉트됐을 때 배경에서 실패했던 /api/admin/auth/me 의
    * leftover 에러("로그인이 필요합니다.")까지 같이 떠서 안내 문구랑 중복돼 보인다.
    * 실제로 로그인 버튼을 눌러본 뒤부터는(성공이든 실패든) 정상적으로 에러를 보여줘야 한다.
    */
