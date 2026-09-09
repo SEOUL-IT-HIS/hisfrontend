@@ -27,12 +27,14 @@ import {
   type ImageWorklistStatusFilter,
 } from "@/features/labimaging/imagingorder/types";
 import { selectLastCreatedImageSchedule } from "@/features/labimaging/imagingschedule/slice";
-import { selectLastCreatedConsent } from "@/features/labimaging/imagingacquisition/slice";
+import { selectLastCreatedConsent } from "@/features/labimaging/imagingconsent/slice";
+import { selectLastUploadedImageFile } from "@/features/labimaging/imagingacquisition/slice";
 import ImageWorklistProgress from "@/components/labimaging/imagingorder/ImageWorklistProgress";
 import ImageWorklistReceptionHeader from "@/components/labimaging/imagingorder/ImageWorklistReceptionHeader";
 import ReceptionExcludeDialog from "@/components/labimaging/common/ReceptionExcludeDialog";
 import ImageScheduleRegisterForm from "@/components/labimaging/imagingschedule/ImageScheduleRegisterForm";
-import ConsentWorkPanel from "@/components/labimaging/imagingacquisition/ConsentWorkPanel";
+import ConsentWorkPanel from "@/components/labimaging/imagingconsent/ConsentWorkPanel";
+import ImageAcquisitionWorkPanel from "@/components/labimaging/imagingacquisition/ImageAcquisitionWorkPanel";
 
 /**
  * 영상 워크리스트 — 왼쪽 접수 목록 + 오른쪽 작업 폼 (마스터-디테일).
@@ -52,10 +54,10 @@ import ConsentWorkPanel from "@/components/labimaging/imagingacquisition/Consent
  * 3. 촬영(영상파일 등록)이 판독 앞에 있다. 판독할 대상이 있어야 판독 화면이 성립한다.
  *
  * ── 아직 없는 것
- * ⚠ 촬영·판독 탭은 비활성이다. IMAGE_FILE 은 테이블만 있고(ZP2-21),
- *   IMAGE_READING 은 테이블은 있으나 엔티티가 없다(ZP2-23).
- *   그래도 탭을 지우지 않는다. 동의까지 끝낸 접수가 목록에 남아 있는 이유를
- *   담당자가 알 수 있어야 한다. (검사 쪽 Result 탭이 그랬던 것과 같은 처리)
+ * ⚠ 판독 탭만 비활성이다. IMAGE_READING 은 테이블은 있으나 엔티티가 없다(ZP2-23).
+ *   촬영(Acquisition) 탭은 ZP2-21 로 활성화됐다 — IMAGE_FILE 등록/조회가 붙었다.
+ *   판독 탭을 지우지 않는 이유는, 촬영까지 끝낸 접수가 목록에 남아 있는 이유를
+ *   담당자가 알 수 있어야 하기 때문이다. (검사 쪽 Result 탭이 그랬던 것과 같은 처리)
  */
 
 type WorkTab = "schedule" | "consent" | "acquisition" | "reading";
@@ -63,8 +65,7 @@ type WorkTab = "schedule" | "consent" | "acquisition" | "reading";
 const WORK_TABS: ReadonlyArray<{ value: WorkTab; label: string; enabled: boolean }> = [
   { value: "schedule", label: "Schedule", enabled: true },
   { value: "consent", label: "Consent", enabled: true },
-  // ZP2-21 영상판독대기등록 — IMAGE_FILE 테이블만 있고 화면·API 는 아직 없다.
-  { value: "acquisition", label: "Acquisition", enabled: false },
+  { value: "acquisition", label: "Acquisition", enabled: true },
   // ZP2-23 영상판독처리 — IMAGE_READING 엔티티가 아직 없다.
   { value: "reading", label: "Reading", enabled: false },
 ];
@@ -99,10 +100,11 @@ export default function ImageWorklist() {
   const lastScheduleId =
     useSelector(selectLastCreatedImageSchedule)?.imageScheduleId ?? null;
   const lastConsentId = useSelector(selectLastCreatedConsent)?.consentId ?? null;
+  const lastImageFileId = useSelector(selectLastUploadedImageFile)?.imageFileId ?? null;
 
   useEffect(() => {
     dispatch(fetchImageWorklistRequest(filter));
-  }, [dispatch, filter, lastScheduleId, lastConsentId]);
+  }, [dispatch, filter, lastScheduleId, lastConsentId, lastImageFileId]);
 
   /*
    * 목록에 보이는 환자들의 이름을 한 번에 불러온다. (POST /api/patient/batch)
@@ -272,28 +274,46 @@ export default function ImageWorklist() {
               ))}
             </div>
 
-            {tab === "schedule" ? (
+            {/*
+              ⚠ 작업 영역에만 스크롤을 준다.
+                오른쪽 Panel 은 고정 높이(min-h-0 flex-1)라, 내용이 넘치면 스크롤바도 없이 잘린다.
+                실제로 첫 판정 뒤 성공 Alert 가 한 줄 늘어나는 것만으로 아래쪽 입력 폼이
+                화면 밖으로 밀려 안 보였다. (2026-09-02)
+                머리말·탭은 고정해야 하므로 패널 각각이 아니라 탭 내용만 감싼다.
+            */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+              {tab === "schedule" ? (
               /*
                * key 로 접수마다 새로 마운트시킨다.
                * defaultMode 는 useState 초기값이라 첫 렌더에만 반영되는데,
                * 같은 탭에 머문 채 다른 접수를 고르면 이전 접수의 모드·입력값이 그대로 남는다.
                * 일정이 있는 접수에 "신규 등록"이 걸린 채로 저장하면 DB 제약(latest_yn UNIQUE)에 걸린다.
                */
+              /*
+               * ⚠ defaultMode 를 넘기지 않는다. 일정이 항목 단위가 되면서
+               *   신규/재등록은 접수가 아니라 "고른 항목에 일정이 있는가"로 정해진다. (2026-09-03)
+               *   접수 기준으로 모드를 미리 정하면, 3건 중 1건만 잡힌 접수에서 나머지 2건이
+               *   재등록 모드로 열려 LAB016(재등록할 일정 없음)이 난다.
+               */
               <ImageScheduleRegisterForm
                 key={selected.imageReceptionId}
                 imageReceptionId={selected.imageReceptionId}
-                defaultMode={selected.scheduledAt ? "reschedule" : "create"}
+                receptionNo={selected.receptionNo}
                 showReceptionSummary={false}
                 onCancel={() => dispatch(clearImageWorklistSelection())}
               />
             ) : tab === "consent" ? (
               // key 로 접수마다 새로 마운트해 이전 오더의 입력값·검증오류가 남지 않게 한다.
               <ConsentWorkPanel key={selected.imageReceptionId} reception={selected} />
-            ) : (
-              <div className="text-sm text-slate-400">
-                This step is not implemented yet.
-              </div>
-            )}
+            ) : tab === "acquisition" ? (
+              // key 로 접수마다 새로 마운트해 이전 접수의 선택 항목·업로드 상태가 남지 않게 한다.
+              <ImageAcquisitionWorkPanel key={selected.imageReceptionId} reception={selected} />
+              ) : (
+                <div className="text-sm text-slate-400">
+                  This step is not implemented yet.
+                </div>
+              )}
+            </div>
           </div>
         )}
       </Panel>

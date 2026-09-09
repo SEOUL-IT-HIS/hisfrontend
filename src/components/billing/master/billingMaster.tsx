@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { fetchBillingMasterRequest } from "@/features/billing/billingMaster/slice";
-import BillingMasterRow from "@/components/billing/billingMasterRow";
+import BillingMasterRow from "@/components/billing/master/billingMasterRow";
 import { Alert, Button, Panel } from "@/components/common";
 import type { AppDispatch, RootState } from "@/store/store";
 

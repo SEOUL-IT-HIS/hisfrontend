@@ -14,7 +14,7 @@ import {
   selectLabReceptionDetail,
   selectLabReceptionLoading,
   selectLabReceptionError,
-  selectLabReception,
+  selectWorklistReception,
 } from "@/features/labimaging/laborder/slice";
 import {
   ORDER_STATUS_LABELS,
@@ -112,11 +112,15 @@ export default function LabReceptionDetail() {
         >
           Worklist
         </Link>
+        {/*
+          ⚠ 단독 일정 페이지는 없앴다. (2026-09-03 — 워크리스트 Schedule 탭이 같은 일을 한다)
+            워크리스트로 보내면서 이 접수를 선택 상태로 만들어, 도착하자마자 일정 폼이 열리게 한다.
+            그냥 보내면 담당자가 목록에서 방금 보던 접수를 다시 찾아야 한다.
+        */}
         <Button
           onClick={() => {
-            // 일정 화면이 쓸 컨텍스트만 넘긴다. (LabReceptionContext)
-            dispatch(selectLabReception(reception));
-            router.push(`/labimaging/labschedule/register/${reception.labReceptionId}`);
+            dispatch(selectWorklistReception(reception.receptionNo));
+            router.push("/labimaging/laborder/worklist");
           }}
         >
           {reception.scheduledAt ? "Reschedule" : "Schedule"}

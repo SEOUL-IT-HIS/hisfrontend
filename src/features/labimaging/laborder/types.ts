@@ -97,6 +97,18 @@ export interface LabWorklistItem {
   judgedCount: number;
   /** 해소되지 않은 재채취 요청이 있는지 */
   recollectionRequestedYn: "Y" | "N";
+
+  /**
+   * ⚠ 결과도 검체처럼 개수로 받는다. 검사항목이 오더 1건에 여러 개 달리고 결과는 항목마다 1건이라
+   *   "2건 중 1건 등록" 같은 중간 상태가 실제로 생긴다. Y/N 으로는 표현할 수 없다.
+   * ⚠ 등록과 확정을 따로 센다. 전부 등록됐지만 아직 확정 전인 상태를 등록 수만으로는 구분 못 한다.
+   */
+  /** 검사항목 수 */
+  labItemCount: number;
+  /** 결과가 등록된 검사항목 수 */
+  resultCount: number;
+  /** 확정까지 끝난 결과 수 */
+  confirmedResultCount: number;
   nextStep: WorklistStep;
 
   /** ACCEPTED = 처리 대상, EXCLUDED = 제외됨 */

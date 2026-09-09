@@ -18,6 +18,10 @@ import {
   CHECKLIST_PHASE,
   type ChecklistPhase,
 } from "@/features/surgery/checklist/types";
+import {
+  fetchConsentsRequest,
+  selectConsents,
+} from "@/features/surgery/consent/slice";
 
 type Props = { surgeryId: string };
 
@@ -62,6 +66,21 @@ type Props = { surgeryId: string };
 const YES = "Y";
 const NO = "N";
 
+/**
+ * Sign In 의 '동의서 확인' 항목 문구.
+ *
+ * <p>이 항목만 <b>동의서 패널의 실제 상태를 따라간다</b> — 나머지 항목은 사용자가
+ * 눈으로 확인하고 누르는 것이지만, 동의서는 옆 탭에 이미 기록이 있다. 거기서
+ * 세 종류를 다 체크해 놓고 여기서 또 눌러야 하면 같은 확인을 두 번 하는 셈이다.</p>
+ *
+ * <p>문구를 상수로 뽑아 둔 이유 — 아래 PHASES 배열의 문자열과 정확히 같아야
+ * 연결이 성립한다. 한쪽만 고치면 조용히 끊어진다.</p>
+ */
+const CONSENT_CHECK = "Confirm consent";
+
+/** 수술이 다루는 동의서 종류. ConsentPanel 의 SURGERY_CONSENT_CODES 와 같아야 한다 */
+const CONSENT_CODES = ["01", "02", "03"];
+
 /** 단계별 안내 문구. 저장 대상이 아니라 화면 안내다. */
 const PHASES: {
   code: ChecklistPhase;
@@ -76,7 +95,7 @@ const PHASES: {
     checks: [
       "Confirm patient identity",
       "Confirm site and marking",
-      "Confirm consent",
+      CONSENT_CHECK,
       "Check anesthesia equipment and drugs",
       "Confirm known allergies",
     ],
@@ -114,9 +133,31 @@ export default function ChecklistPanel({ surgeryId }: Props) {
   const saving = useSelector(selectChecklistSaving);
   const error = useSelector(selectChecklistError);
 
+  /**
+   * 동의서 상태. '동의서 확인' 항목을 자동으로 채우기 위해서만 읽는다.
+   *
+   * <p>동의서 패널이 같은 워크리스트 화면 안에 있어 이미 조회돼 있는 경우가
+   * 많지만, 체크리스트 탭으로 바로 들어올 수도 있어 여기서도 한 번 부른다.
+   * 같은 액션이라 slice 가 덮어쓸 뿐 화면이 어긋나지는 않는다.</p>
+   */
+  const consents = useSelector(selectConsents);
+
   useEffect(() => {
     dispatch(fetchChecklistRequest(surgeryId));
+    dispatch(fetchConsentsRequest(surgeryId));
   }, [dispatch, surgeryId]);
+
+  /**
+   * 수술이 다루는 동의서 세 종류가 모두 수령됐는가.
+   *
+   * <p>세 건이 다 있어야 한다 — 수술 동의서만 보면 마취·비용견적을 안 받고도
+   * 체크리스트의 '동의서 확인'이 채워진다. 수술 시작을 막는 규칙(SL2-217)이
+   * 수술 동의서만 보는 것과는 별개다. 그쪽은 "시작해도 되는가"를 묻고
+   * 여기는 "확인이 끝났는가"를 묻는다.</p>
+   */
+  const consentsAllReceived = CONSENT_CODES.every((code) =>
+    consents.some((c) => c.consentTypeCd === code && c.signedYn === YES),
+  );
 
   const itemOf = (phase: ChecklistPhase) =>
     items.find((item) => item.phaseCd === phase);
@@ -134,6 +175,16 @@ export default function ChecklistPanel({ surgeryId }: Props) {
 
   const checkedOf = (phase: ChecklistPhase) => checked[phase] ?? new Set<string>();
 
+  /**
+   * 항목 하나가 체크된 상태인가.
+   *
+   * <p>'동의서 확인'만 화면 상태가 아니라 <b>동의서 기록</b>을 본다. 옆 탭에서
+   * 세 종류를 다 체크해 두면 여기도 자동으로 채워지고, 거기서 하나라도 풀면
+   * 여기서도 풀린다. 나머지 항목은 예전처럼 사용자가 직접 누른다.</p>
+   */
+  const isChecked = (phase: ChecklistPhase, item: string) =>
+    item === CONSENT_CHECK ? consentsAllReceived : checkedOf(phase).has(item);
+
   const toggleCheck = (phase: ChecklistPhase, item: string) =>
     setChecked((prev) => {
       const next = new Set(prev[phase] ?? []);
@@ -148,8 +199,7 @@ export default function ChecklistPanel({ surgeryId }: Props) {
   /** 그 단계의 확인 항목을 전부 체크했는가 */
   const allChecked = (phase: ChecklistPhase) => {
     const checks = PHASES.find((p) => p.code === phase)?.checks ?? [];
-    const set = checkedOf(phase);
-    return checks.length > 0 && checks.every((c) => set.has(c));
+    return checks.length > 0 && checks.every((c) => isChecked(phase, c));
   };
 
   /**
@@ -170,7 +220,11 @@ export default function ChecklistPanel({ surgeryId }: Props) {
     const turnOff = allChecked(phase);
     setChecked((prev) => ({
       ...prev,
-      [phase]: turnOff ? new Set<string>() : new Set(checks),
+      // 동의서 항목은 빼 둔다 — 이 화면 상태가 아니라 동의서 기록이 정하는 값이라,
+      // 여기 넣어 봐야 표시에 반영되지 않고 Set 만 어긋난다.
+      [phase]: turnOff
+        ? new Set<string>()
+        : new Set(checks.filter((c) => c !== CONSENT_CHECK)),
     }));
   };
 
@@ -286,24 +340,40 @@ export default function ChecklistPanel({ surgeryId }: Props) {
               */}
               {!item || completed || !unlocked ? null : (
                 <ul className="mt-3 flex flex-col gap-2 text-sm text-slate-700">
-                  {phase.checks.map((check) => (
-                    <li key={check}>
-                      <label className="flex cursor-pointer items-start gap-2">
-                        <input
-                          type="checkbox"
-                          className="mt-0.5"
-                          checked={checkedOf(phase.code).has(check)}
-                          disabled={saving}
-                          onChange={() => toggleCheck(phase.code, check)}
-                        />
-                        {check}
-                      </label>
-                    </li>
-                  ))}
+                  {phase.checks.map((check) => {
+                    // 동의서 항목은 동의서 탭이 정한다. 여기서 누르게 두면 실제
+                    // 기록과 어긋난 채로 완료 처리될 수 있어 잠근다.
+                    const fromConsent = check === CONSENT_CHECK;
+                    return (
+                      <li key={check}>
+                        <label
+                          className={`flex items-start gap-2 ${
+                            fromConsent ? "" : "cursor-pointer"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-0.5"
+                            checked={isChecked(phase.code, check)}
+                            disabled={saving || fromConsent}
+                            onChange={() => toggleCheck(phase.code, check)}
+                          />
+                          {check}
+                          {fromConsent ? (
+                            <span className="text-xs text-slate-400">
+                              {consentsAllReceived
+                                ? "— from the Consent tab"
+                                : "— tick all three on the Consent tab"}
+                            </span>
+                          ) : null}
+                        </label>
+                      </li>
+                    );
+                  })}
                   <li className="mt-1 text-xs text-slate-500">
                     {allChecked(phase.code)
                       ? "All items confirmed. You can mark this phase complete."
-                      : `${checkedOf(phase.code).size} / ${phase.checks.length} confirmed — all items are required to complete.`}
+                      : `${phase.checks.filter((c) => isChecked(phase.code, c)).length} / ${phase.checks.length} confirmed — all items are required to complete.`}
                   </li>
                 </ul>
               )}

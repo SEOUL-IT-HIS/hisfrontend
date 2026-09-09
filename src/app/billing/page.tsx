@@ -4,7 +4,7 @@ const billingpage = () => {
     return (
         <div>
             <Link href="/billing/statistics">수납정보</Link><br/>
-            <Link href="/billing/detail">진료비 상세</Link>
+            <Link href="/billing/payment">진료비 상세</Link>
         </div>
     );
 };

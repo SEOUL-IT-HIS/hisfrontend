@@ -28,6 +28,7 @@ const STATUS_LABEL: Record<string, string> = {
   DISCHARGED: "Discharged",
 };
 
+
 const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
 
 type AdmissionDetailProps = {

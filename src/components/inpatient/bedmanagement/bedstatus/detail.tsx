@@ -1,10 +1,11 @@
 "use client";
 
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { fetchBedDetailRequest, selectBedDetail, selectBedDetailStatus } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice";
 import type { AppDispatch, RootState } from "@/store/store";
 import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 const STATUS_BADGE: Record<string, string> = {
@@ -37,7 +38,9 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
     const bed = useSelector(selectBedDetail);
     const { loading, error } = useSelector(selectBedDetailStatus);
     const patientDetail = useSelector((state: RootState) => state.patient.patientDetail);
-
+    const { options: roomTypeOptions } = useCommonCodeOptions("ROOM_TYPE_CD");
+    const [roomTypeCode, setRoomTypeCode] = useState(bed?.roomTypeCode ?? "");
+    
     useEffect(() => {
         if (!bedId) return;
         dispatch(fetchBedDetailRequest(bedId));
@@ -48,6 +51,14 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
         dispatch(fetchPatientDetailRequest(bed.patientId));
     }, [bed?.patientId, dispatch]);
 
+    useEffect(() => {
+        setRoomTypeCode(bed?.roomTypeCode ?? "");
+    }, [bed?.roomTypeCode]);
+
+    const handleSaveRoomType = () => {
+        if (!bedId || !roomTypeCode) return;
+        dispatch({type: "bed/updateBedRoomTypeRequest", payload: { bedId, roomTypeCode }});
+    };
     return (
         <div className="w-full p-6">
             <div className="mb-6 flex items-center justify-between">
@@ -100,6 +111,19 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
                             <span className="text-slate-500">Bed No.</span>
                             <span className="text-slate-800">{bed.bedNo}</span>
                         </div>
+                        <div className={INFO_ROW}>
+                        <span className="text-slate-500">Room Type</span>
+                        <div className="flex items-center gap-2">
+                        <select value={roomTypeCode} onChange={(e) => setRoomTypeCode(e.target.value)} className="rounded border border-slate-300 px-2 py-1 text-sm">
+                        <option value="">Select</option>
+                        {roomTypeOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                        </select>
+                        <button onClick={handleSaveRoomType} className="rounded bg-sky-600 px-2 py-1 text-xs text-white">Save</button>
+                        </div>
+                        </div>
+
                     </div>
                 </div>
             )}

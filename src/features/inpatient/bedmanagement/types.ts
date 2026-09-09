@@ -14,6 +14,7 @@ export interface BedDTO {
   roomNo: string;
   bedNo: string;
   bedStatus: string;
+  roomTypeCode: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -73,6 +74,7 @@ export interface BedState {
   detail: BedDTO | null;
   listStatus: Status;
   detailStatus: Status;
+  updateRoomTypeStatus: Status;
 }
 
 // ----- 병상예약(bedreservation) 전용 -----

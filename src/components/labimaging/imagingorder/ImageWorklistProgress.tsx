@@ -19,10 +19,12 @@ import type { ImageWorklistItem } from "@/features/labimaging/imagingorder/types
  *   검체는 "3건 중 2건 판정" 이라는 중간 상태가 있어 개수가 필요하지만,
  *   동의는 유효한 게 하나라도 있으면 촬영 가능이라 그런 중간 상태가 없다.
  *
- * ⚠ 촬영·판독은 아직 회색이다. 서버가 값을 계산하지 않는다.
- *   촬영(IMAGE_FILE)은 등록 기능이 없어 항상 0 이고(ZP2-21),
- *   판독(IMAGE_READING)은 테이블만 있고 엔티티가 없다(ZP2-23).
- *   기능이 붙으면 imageFileCount 를 실제 값으로 쓰고 판독 칸도 살린다.
+ * ⚠ 판독은 아직 회색이다. IMAGE_READING 은 테이블만 있고 엔티티가 없다(ZP2-23).
+ *   기능이 붙으면 이 칸도 조건부로 바뀐다.
+ *
+ * ⚠ 촬영(Images)은 ZP2-21 로 실제 값이 붙었다. hasFiles 조건은 그 전부터 미리 준비해 둔
+ *   것이라 이 기능이 켜지는 순간 별도 수정 없이 그대로 동작했다 — 아래 hasFiles 계산과
+ *   StepChip 자체는 바뀌지 않았다.
  */
 
 type StepChipProps = {
@@ -53,24 +55,31 @@ export default function ImageWorklistProgress({
 }: {
   item: ImageWorklistItem;
 }) {
-  const scheduled = Boolean(item.scheduledAt);
+  const hasItems = item.imageItemCount > 0;
+  const allScheduled = hasItems && item.scheduledItemCount === item.imageItemCount;
   const consented = item.consentYn === "Y";
   const hasFiles = item.imageFileCount > 0;
 
   return (
     <div className="flex flex-wrap items-center gap-1">
+      {/*
+        ⚠ 일정도 개수로 보여준다. 촬영항목마다 일정이 1건이라 "3건 중 1건" 상태가 실제로 생긴다.
+          (2026-09-03 — 일정이 접수 단위에서 항목 단위로 바뀌면서)
+          CT 만 잡고 MRI·초음파를 안 잡았는데 완료로 보이면 안 잡힌 촬영이 그대로 묻힌다.
+      */}
       <StepChip
-        label={scheduled ? "Schedule" : "Schedule −"}
-        tone={scheduled ? "done" : "pending"}
+        label={
+          hasItems
+            ? `Schedule ${item.scheduledItemCount}/${item.imageItemCount}`
+            : "Schedule −"
+        }
+        tone={allScheduled ? "done" : "pending"}
       />
       <StepChip
         label={consented ? "Consent" : "Consent −"}
         tone={consented ? "done" : "pending"}
       />
-      {/*
-        촬영은 등록 기능이 생기기 전까지 항상 0 이라 회색으로만 뜬다.
-        조건을 미리 넣어 둔 이유는, ZP2-21 이 붙는 순간 이 칸이 저절로 살아나게 하기 위해서다.
-      */}
+      {/* ZP2-21 — imageFileCount 가 실제 값으로 오면서 이 칸이 조건대로 초록/회색을 오간다. */}
       <StepChip
         label={hasFiles ? `Images ${item.imageFileCount}` : "Images −"}
         tone={hasFiles ? "done" : "disabled"}
