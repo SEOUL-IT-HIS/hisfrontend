@@ -19,7 +19,7 @@ const ACTIVITY_CHECK_INTERVAL = 1000 * 60 * 5;
 /**
  * 공통 레이아웃 프레임
  * - /login : AppShell 없이 폼만
- * - 그 외 : 세션 확인(GET /api/auth/me) 후 인증되면 Sidebar+Header, 아니면 /login 이동
+ * - 그 외 : 세션 확인(GET /api/admin/auth/me) 후 인증되면 Sidebar+Header, 아니면 /login 이동
  *
  * 로그인 우회 수단은 두지 않는다. 예전에는 화면 확인용으로 특정 경로를 BARE_PATHS 에
  * 넣거나 NEXT_PUBLIC_SKIP_AUTH 로 가드를 통째로 끌 수 있었는데, 백엔드가 세션 없는
@@ -58,10 +58,10 @@ export default function AppFrame({ children }: AppFrameProps) {
   const hadSession = useRef(false);
 
 
-  /** 활동 감지로 마지막에 /api/auth/me 를 재확인한 시각(ms) */
+  /** 활동 감지로 마지막에 /api/admin/auth/me 를 재확인한 시각(ms) */
   const lastActivityCheckAt = useRef(0);
 
-  // ① 아직 로그인 여부를 모르면(authUser 없음) 서버에 물어본다 (GET /api/auth/me)
+  // ① 아직 로그인 여부를 모르면(authUser 없음) 서버에 물어본다 (GET /api/admin/auth/me)
   useEffect(() => {
     if (isBare) {
       meChecked.current = false;
@@ -90,7 +90,7 @@ export default function AppFrame({ children }: AppFrameProps) {
   }, [authUser]);
 
   // 로그인 상태일 때만 클릭/키입력을 감지해서, ACTIVITY_CHECK_INTERVAL 넘게 재확인 안 했으면
-  // /api/auth/me 를 다시 호출한다 (고정 간격 폴링이 아니라 "활동이 있을 때만" 확인).
+  // /api/admin/auth/me 를 다시 호출한다 (고정 간격 폴링이 아니라 "활동이 있을 때만" 확인).
   useEffect(() => {
     if (isBare) return;
     if (!authUser) return;

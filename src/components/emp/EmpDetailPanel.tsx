@@ -5,7 +5,7 @@
  *
  * props.empId:
  * - null → 직원 미선택 안내
- * - 값 있음 → GET /api/emp/detail/{empId} 조회 후 표시
+ * - 값 있음 → GET /api/admin/emp/detail/{empId} 조회 후 표시
  *
  * 부서/재직상태는 공통코드 코드명으로 표시
  */
