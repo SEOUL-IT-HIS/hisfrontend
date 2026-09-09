@@ -33,14 +33,14 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
     }, [dispatch]);
 
     // 백엔드가 조회 순서를 보장하지 않으므로(ORDER BY 없음), 접수번호 오름차순(먼저 접수한 환자 순)으로 직접 정렬한다.
-    const sortedItems = [...items].sort((a, b) => a.receptionNo.localeCompare(b.receptionNo));
+    const sortedItems = [...items].sort((a, b) => a.receptionId.localeCompare(b.receptionId));
     const filtered = sortedItems.filter((item) => item.patientName.includes(keyword));
     const totalPages = Math.max(Math.ceil(filtered.length / PAGE_SIZE), 1);
     const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
     const columns: DataTableColumn<ReceptionListItem>[] = [
         // 접수번호
-        { key: "receptionNo", header: "Reception No.", render: (r) => r.receptionNo },
+        { key: "receptionNo", header: "Reception No.", render: (r) => r.receptionId },
         // 접수시간
         { key: "receivedAt", header: "Received At", render: (r) => r.receivedAt },
         // 환자명
@@ -70,9 +70,9 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
                 <DataTable
                     columns={columns}
                     rows={paged}
-                    rowKey={(r) => r.receptionNo}
-                    onRowClick={(r) => onSelect(r.receptionNo)}
-                    isRowActive={(r) => r.receptionNo === activeReceptionNo}
+                    rowKey={(r) => r.receptionId}
+                    onRowClick={(r) => onSelect(r.receptionId)}
+                    isRowActive={(r) => r.receptionId === activeReceptionNo}
                     loading={loading}
                     // 오늘 접수된 응급 환자가 없습니다.
                     emptyMessage="No emergency patients received today."

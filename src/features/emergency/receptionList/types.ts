@@ -1,5 +1,5 @@
 export type ReceptionListItem = {
-    receptionNo: string;
+    receptionId: string;
     patientName: string;
     receivedAt: string;
     ktasLevelCode: string;
