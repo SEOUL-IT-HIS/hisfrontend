@@ -36,7 +36,7 @@ let redirectingToLogin = false;
  * 지금 로그인 상태인지. AppFrame 이 알려준다(setHasSession).
  *
  * 로그인 전에도 API 를 부르는 화면이 있다. 예를 들어 외래 공통코드 saga 는 앱이 뜨자마자
- * /api/commonCodeGroup/list 를 부르는데, 세션 가드가 붙은 뒤로는 이게 401 이 된다.
+ * /api/admin/commonCodeGroup/list 를 부르는데, 세션 가드가 붙은 뒤로는 이게 401 이 된다.
  * 그걸 "세션 만료"로 보고 로그인 화면으로 보내면, 로그인한 적도 없는데 만료 안내가 뜬다.
  * 만료는 "로그인해서 쓰고 있다가 끊긴 것"이므로 로그인 상태였을 때만 보낸다.
  *
@@ -62,9 +62,9 @@ apiClient.interceptors.response.use(
      *
      * 보내지 않는 경우가 넷 있다.
      * 1. 로그인 상태가 아닐 때 — 위 hasSession 주석 참고. 로그인 전 401 은 만료가 아니다.
-     * 2. /api/auth/ 요청 — 로그인 실패(비밀번호 틀림)도 401 이라, 여기서 가로채면
+     * 2. /api/admin/auth/ 요청 — 로그인 실패(비밀번호 틀림)도 401 이라, 여기서 가로채면
      *    로그인 화면이 "아이디 또는 비밀번호가 올바르지 않습니다" 를 못 보여준다.
-     *    세션 확인(/api/auth/me) 실패는 AppFrame 이 "첫 진입"인지 "쓰다가 만료"인지
+     *    세션 확인(/api/admin/auth/me) 실패는 AppFrame 이 "첫 진입"인지 "쓰다가 만료"인지
      *    구분해 안내 문구를 다르게 붙이므로 거기에 맡긴다.
      * 3. 이미 로그인 화면에 있을 때 — 같은 자리로 다시 보낼 이유가 없다.
      * 4. 이미 보내는 중일 때 — 위 redirectingToLogin 주석 참고.
@@ -76,7 +76,7 @@ apiClient.interceptors.response.use(
     if (
       status === 401 &&
       hasSession &&
-      !url.startsWith("/api/auth/") &&
+      !url.startsWith("/api/admin/auth/") &&
       typeof window !== "undefined" &&
       !window.location.pathname.startsWith("/login") &&
       !redirectingToLogin
