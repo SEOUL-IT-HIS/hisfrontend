@@ -2,9 +2,9 @@
  * [공통코드 항목 API]
  * admin-service REST 호출만 담당
  *
- * - 목록 GET  /api/commonCodeItem/list?groupId=
- * - 등록 POST /api/commonCodeItem/register
- * - 수정 PUT  /api/commonCodeItem/update/{codeId}
+ * - 목록 GET  /api/admin/commonCodeItem/list?groupId=
+ * - 등록 POST /api/admin/commonCodeItem/register
+ * - 수정 PUT  /api/admin/commonCodeItem/update/{codeId}
  */
 import apiClient from "@/lib/axios";
 import { fetchCommonCodeGroupApi } from "./commonCodeGroupApi";
@@ -19,7 +19,7 @@ import type {
 /** 그룹별 항목 목록 — groupId 필수 */
 export async function fetchCommonCodeItemApi(groupId: string): Promise<CommonCodeItem[]> {
   const response = await apiClient.get<CommonCodeItemApiResponse>(
-    "/api/commonCodeItem/list",
+    "/api/admin/commonCodeItem/list",
     { params: { groupId } },
   );
   return response.data.data ?? [];
@@ -46,7 +46,7 @@ export async function fetchCommonCodeItemRegisterApi(
   commonCodeItemData: CommonCodeItemRegisterRequest,
 ): Promise<CommonCodeItem> {
   const response = await apiClient.post<ApiResponse<CommonCodeItem>>(
-    "/api/commonCodeItem/register",
+    "/api/admin/commonCodeItem/register",
     commonCodeItemData,
   );
   return response.data.data;
@@ -62,7 +62,7 @@ export async function fetchCommonCodeItemUpdateApi(
 ): Promise<CommonCodeItem> {
   const { codeId, codeName, useYn } = commonCodeItemData;
   const response = await apiClient.put<ApiResponse<CommonCodeItem>>(
-    `/api/commonCodeItem/update/${codeId}`,
+    `/api/admin/commonCodeItem/update/${codeId}`,
     { codeName, useYn },
   );
   return response.data.data;

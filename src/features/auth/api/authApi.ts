@@ -2,9 +2,9 @@
  * [인증 API]
  * admin-service REST 호출만 담당 (UI/Redux 모름)
  *
- * - 로그인 POST /api/auth/login
- * - 세션  GET  /api/auth/me
- * - 로그아웃 POST /api/auth/logout
+ * - 로그인 POST /api/admin/auth/login
+ * - 세션  GET  /api/admin/auth/me
+ * - 로그아웃 POST /api/admin/auth/logout
  *
  * 세션 쿠키(JSESSIONID)는 apiClient withCredentials 로 전달
  */
@@ -29,7 +29,7 @@ export async function fetchAuthLoginApi(
   payload: AuthLoginRequest,
 ): Promise<AuthUser> {
   const response = await apiClient.post<ApiResponse<AuthUser>>(
-    "/api/auth/login",
+    "/api/admin/auth/login",
     payload,
   );
   if (response.data.code !== 200 || !response.data.data) {
@@ -40,7 +40,7 @@ export async function fetchAuthLoginApi(
 
 /** 세션 확인 */
 export async function fetchAuthMeApi(): Promise<AuthUser> {
-  const response = await apiClient.get<ApiResponse<AuthUser>>("/api/auth/me");
+  const response = await apiClient.get<ApiResponse<AuthUser>>("/api/admin/auth/me");
   if (response.data.code !== 200 || !response.data.data) {
     throw new Error(response.data.message || "로그인이 필요합니다.");
   }
@@ -49,7 +49,7 @@ export async function fetchAuthMeApi(): Promise<AuthUser> {
 
 /** 로그아웃 */
 export async function fetchAuthLogoutApi(): Promise<void> {
-  const response = await apiClient.post<ApiResponse<null>>("/api/auth/logout");
+  const response = await apiClient.post<ApiResponse<null>>("/api/admin/auth/logout");
   if (response.data.code !== 200) {
     throw new Error(response.data.message || "로그아웃에 실패했습니다.");
   }

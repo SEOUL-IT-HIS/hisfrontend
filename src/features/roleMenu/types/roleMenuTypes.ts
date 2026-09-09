@@ -11,7 +11,7 @@ export type ApiResponse<T> = {
 };
 
 /**
- * GET /api/role-menu/list/{roleId} 응답 한 줄
+ * GET /api/admin/role-menu/list/{roleId} 응답 한 줄
  *
  * 주의: ROLE_MENU 에 행이 있는 메뉴만 오는 게 아니라
  * 사용중인 메뉴 전부(43개)가 온다. 권한이 없으면 canRead 가 "N".
@@ -29,7 +29,7 @@ export type RoleMenu = {
 };
 
 /**
- * PUT /api/role-menu/save/{roleId} 요청
+ * PUT /api/admin/role-menu/save/{roleId} 요청
  *
  * menuIds 는 "추가할 것"이 아니라 "저장 후의 최종 상태"다.
  * 여기 없는 메뉴는 기존에 권한이 있었더라도 해제된다.

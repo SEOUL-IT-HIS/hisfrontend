@@ -2,8 +2,8 @@
  * [역할별 메뉴 권한 API]
  * admin-service REST 호출만 담당 (UI/Redux 모름)
  *
- * - 조회 GET /api/role-menu/list/{roleId}
- * - 저장 PUT /api/role-menu/save/{roleId}
+ * - 조회 GET /api/admin/role-menu/list/{roleId}
+ * - 저장 PUT /api/admin/role-menu/save/{roleId}
  *
  * 응답은 ApiResponse 래퍼 → data 필드만 반환
  */
@@ -17,7 +17,7 @@ import type {
 /** 역할 하나의 메뉴 권한 목록 (사용중인 메뉴 전부 + canRead) */
 export async function fetchRoleMenuApi(roleId: string): Promise<RoleMenu[]> {
   const response = await apiClient.get<ApiResponse<RoleMenu[]>>(
-    `/api/role-menu/list/${roleId}`,
+    `/api/admin/role-menu/list/${roleId}`,
   );
   return response.data.data ?? [];
 }
@@ -34,7 +34,7 @@ export async function fetchRoleMenuSaveApi(
 ): Promise<void> {
   const { roleId, menuIds } = roleMenuData;
   await apiClient.put<ApiResponse<null>>(
-    `/api/role-menu/save/${roleId}`,
+    `/api/admin/role-menu/save/${roleId}`,
     { menuIds },
   );
 }

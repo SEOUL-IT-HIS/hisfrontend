@@ -10,7 +10,7 @@ export type ApiResponse<T> = {
   data: T;
 };
 
-/** 로그인 요청 — POST /api/auth/login */
+/** 로그인 요청 — POST /api/admin/auth/login */
 export type AuthLoginRequest = {
   loginId: string;
   password: string;

@@ -2,10 +2,10 @@
  * [직원 API]
  * admin-service REST 호출만 담당 (UI/Redux 모름)
  *
- * - 목록 GET  /api/emp/list
- * - 상세 GET  /api/emp/detail/{empId}
- * - 등록 POST /api/emp/register
- * - 수정 PUT  /api/emp/update/{empId}
+ * - 목록 GET  /api/admin/emp/list
+ * - 상세 GET  /api/admin/emp/detail/{empId}
+ * - 등록 POST /api/admin/emp/register
+ * - 수정 PUT  /api/admin/emp/update/{empId}
  *
  * 응답은 ApiResponse 래퍼 → data 필드만 반환
  */
@@ -21,14 +21,14 @@ import type {
 
 /** 직원 전체 목록 조회 */
 export async function fetchEmpApi(): Promise<Emp[]> {
-  const response = await apiClient.get<EmpApiResponse>("/api/emp/list");
+  const response = await apiClient.get<EmpApiResponse>("/api/admin/emp/list");
   return response.data.data ?? [];
 }
 
 /** 직원 상세 조회 */
 export async function fetchEmpDetailApi(empId: string): Promise<Emp> {
   const response = await apiClient.get<ApiResponse<Emp>>(
-    `/api/emp/detail/${empId}`,
+    `/api/admin/emp/detail/${empId}`,
   );
   return response.data.data;
 }
@@ -36,7 +36,7 @@ export async function fetchEmpDetailApi(empId: string): Promise<Emp> {
 /** 주민등록번호 확인 — 중복 여부 + 생년월일만 돌아옴 (원본 번호는 응답에 없음) */
 export async function checkRrnApi(rrn: string): Promise<RrnCheckResult> {
   const response = await apiClient.post<ApiResponse<RrnCheckResult>>(
-    "/api/emp/check-rrn",
+    "/api/admin/emp/check-rrn",
     { rrn },
   );
   return response.data.data;
@@ -57,7 +57,7 @@ export async function fetchEmpRegisterApi(
   }
 
   const response = await apiClient.post<ApiResponse<Emp>>(
-      "/api/emp/register",
+      "/api/admin/emp/register",
       formData,
       { headers: { "Content-Type": undefined } },
   );
@@ -82,7 +82,7 @@ export async function fetchEmpUpdateApi(empData: EmpUpdateRequest): Promise<Emp>
   }
 
   const response = await apiClient.put<ApiResponse<Emp>>(
-      `/api/emp/update/${empId}`,
+      `/api/admin/emp/update/${empId}`,
       formData,
       { headers: { "Content-Type": undefined } },
   );

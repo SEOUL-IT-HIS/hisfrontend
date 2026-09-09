@@ -9,7 +9,7 @@ export type ApiResponse<T> = {
   data: T;
 };
 
-/** GET /api/menu flat row (백엔드 MenuEntity) */
+/** GET /api/admin/menu flat row (백엔드 MenuEntity) */
 export type MenuRow = {
   menuId: string;
   parentMenuId: string | null;
