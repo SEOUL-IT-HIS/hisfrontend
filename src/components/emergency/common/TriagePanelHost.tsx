@@ -7,6 +7,7 @@ import KtasPanel from "@/components/emergency/tirage/ktas/KtasPanel";
 import RiskScreeningPanel from "@/components/emergency/tirage/riskScreening/RiskScreeningPanel";
 import VitalsPanel from "@/components/emergency/tirage/vitals/VitalsPanel";
 import ReceptionListPanel from "@/components/emergency/receptionList/ReceptionListPanel";
+import ReceptionIntakeForm from "@/components/emergency/receptionList/ReceptionIntakeForm";
 import TriageSummaryBanner from "@/components/emergency/common/TriageSummaryBanner";
 import BedAssignmentPanel from "@/components/emergency/resource/BedAssignmentPanel";
 
@@ -35,7 +36,13 @@ export default function TriagePanelHost() {
 
   return (
     <div className="grid grid-cols-[minmax(320px,1fr)_2fr] gap-4">
-      <ReceptionListPanel onSelect={setActive} activeReceptionNo={active} />
+      {/* 왼쪽: 접수 등록(RCP 임시 대체) + 접수목록 */}
+      <div className="flex h-[calc(100vh-180px)] min-w-0 flex-col gap-3">
+        <ReceptionIntakeForm />
+        <div className="min-h-0 flex-1">
+          <ReceptionListPanel onSelect={setActive} activeReceptionNo={active} />
+        </div>
+      </div>
 
       {/* 오른쪽: 선택된 환자의 탭별 패널 (세로 스크롤) */}
       <div className="flex h-[calc(100vh-180px)] min-w-0 flex-col gap-3">

@@ -8,6 +8,7 @@ import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   assignBedRequest,
   fetchBedsRequest,
+  releaseBedRequest,
   resetCurrentAssignment,
   selectBeds,
   selectBedsError,
@@ -25,6 +26,7 @@ type BedAssignmentPanelProps = {
 };
 
 const initialForm = { bedId: "", assignedById: "" };
+const initialReleaseForm = { releasedById: "" };
 
 function zoneLabel(zoneCode: string): string {
   return BED_ZONE_OPTIONS.find((o) => o.value === zoneCode)?.label ?? zoneCode;
@@ -48,6 +50,7 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
   const submitError = useSelector(selectBedSubmitError);
 
   const [form, setForm] = useState(initialForm);
+  const [releaseForm, setReleaseForm] = useState(initialReleaseForm);
   const [lastReceptionNo, setLastReceptionNo] = useState(receptionNo);
 
   useEffect(() => {
@@ -63,6 +66,7 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
   if (receptionNo !== lastReceptionNo) {
     setLastReceptionNo(receptionNo);
     setForm(initialForm);
+    setReleaseForm(initialReleaseForm);
   }
 
   const emptyBedOptions = beds
@@ -85,6 +89,15 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
     );
   }
 
+  function handleReleaseChange(e: ChangeEvent<HTMLInputElement>) {
+    setReleaseForm({ releasedById: e.target.value });
+  }
+
+  function handleRelease() {
+    if (!currentAssignment || !releaseForm.releasedById) return;
+    dispatch(releaseBedRequest(currentAssignment.id, { releasedById: releaseForm.releasedById }));
+  }
+
   return (
     <section className={`rounded-xl border border-slate-200 bg-white p-4 ${className}`}>
       {/* 병상 배정 */}
@@ -98,11 +111,31 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
       ) : (
         <>
           {currentAssignment ? (
-            <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-              {/* 이 환자에게 배정된 병상: {bedNo} ({구역}) · {일시} */}
-              Assigned bed: {currentAssignment.bedNo} ({zoneLabel(currentAssignment.zoneCode)}) ·{" "}
-              {formatDateTime(currentAssignment.assignedAt)}
-            </p>
+            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              <span>
+                {/* 이 환자에게 배정된 병상: {bedNo} ({구역}) · {일시} */}
+                Assigned bed: {currentAssignment.bedNo} ({zoneLabel(currentAssignment.zoneCode)}) ·{" "}
+                {formatDateTime(currentAssignment.assignedAt)}
+              </span>
+              {/* 해제자ID */}
+              <Input
+                value={releaseForm.releasedById}
+                onChange={handleReleaseChange}
+                placeholder="Released By ID"
+                disabled={submitting}
+                maxLength={36}
+                className="w-[160px]"
+              />
+              {/* 해제 중... / 해제 */}
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleRelease}
+                disabled={submitting || !releaseForm.releasedById}
+              >
+                {submitting ? "Releasing..." : "Release"}
+              </Button>
+            </div>
           ) : null}
 
           {/* 전체 병상 현황 */}

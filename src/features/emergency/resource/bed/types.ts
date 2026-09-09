@@ -13,12 +13,15 @@ export interface Bed {
 /** 백엔드 BedAssignmentDto 미러링 */
 export interface BedAssignment {
   id: string;
-  receptionNo: string;
+  receptionId: string;
   bedId: string;
   bedNo: string;
   zoneCode: string;
   assignedById: string;
   assignedAt: string;
+  /** 해제 전엔 둘 다 null. 해제 API(UC-RES-02 해제)를 호출해야 채워진다. */
+  releasedById: string | null;
+  releasedAt: string | null;
 }
 
 /** 백엔드 BedAssignmentCreateRequestDto 미러링 */
@@ -26,6 +29,11 @@ export interface BedAssignmentCreateRequest {
   encounterId: string;
   bedId: string;
   assignedById?: string;
+}
+
+/** 백엔드 BedReleaseRequestDto 미러링 */
+export interface BedReleaseRequest {
+  releasedById: string;
 }
 
 export const BED_ZONE_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [

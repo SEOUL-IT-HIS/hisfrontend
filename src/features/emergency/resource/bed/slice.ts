@@ -3,6 +3,7 @@ import type {
   Bed,
   BedAssignment,
   BedAssignmentCreateRequest,
+  BedReleaseRequest,
   BedState,
 } from "@/features/emergency/resource/bed/types";
 
@@ -51,6 +52,25 @@ const bedSlice = createSlice({
       state.submitting = false;
       state.submitError = action.payload;
     },
+    releaseBedRequest: {
+      reducer(state) {
+        state.submitting = true;
+        state.submitError = "";
+      },
+      prepare(assignmentId: string, request: BedReleaseRequest) {
+        return { payload: { assignmentId, request } };
+      },
+    },
+    // 해제 성공하면 더 보여줄 게 없으니(병상 현황판이 이미 EMPTY로 갱신됨) 배정 표시를 지운다.
+    releaseBedSuccess(state) {
+      state.submitting = false;
+      state.submitError = "";
+      state.currentAssignment = null;
+    },
+    releaseBedFailure(state, action: PayloadAction<string>) {
+      state.submitting = false;
+      state.submitError = action.payload;
+    },
     // 환자를 바꾸면 이전 환자의 배정 표시를 지운다 (백엔드에 환자별 조회 API가 없어서 세션 메모리로만 관리)
     resetCurrentAssignment(state) {
       state.currentAssignment = null;
@@ -65,6 +85,9 @@ export const {
   assignBedRequest,
   assignBedSuccess,
   assignBedFailure,
+  releaseBedRequest,
+  releaseBedSuccess,
+  releaseBedFailure,
   resetCurrentAssignment,
 } = bedSlice.actions;
 

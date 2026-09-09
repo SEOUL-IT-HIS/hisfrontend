@@ -11,7 +11,12 @@ import {
     selectReceptionListLoading,
 } from "@/features/emergency/receptionList/slice";
 import type { ReceptionListItem } from "@/features/emergency/receptionList/types";
+import { BED_ZONE_OPTIONS } from "@/features/emergency/resource/bed/types";
 import type { AppDispatch } from "@/store/store";
+
+function zoneLabel(zoneCode: string): string {
+    return BED_ZONE_OPTIONS.find((o) => o.value === zoneCode)?.label ?? zoneCode;
+}
 
 const PAGE_SIZE = 10;
 
@@ -41,15 +46,19 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
     const columns: DataTableColumn<ReceptionListItem>[] = [
         // 접수번호
         { key: "receptionNo", header: "Reception No.", render: (r) => r.receptionId },
-        // 접수시간
-        { key: "receivedAt", header: "Received At", render: (r) => r.receivedAt },
+        // 병상/구역 — 외래 "진료과" 컬럼에 대응. 미배정이면 "-"
+        {
+            key: "bed",
+            header: "Bed / Zone",
+            render: (r) => (r.bedNo ? `${r.bedNo} (${zoneLabel(r.zoneCode ?? "")})` : "-"),
+        },
         // 환자명
         { key: "patientName", header: "Patient Name", render: (r) => r.patientName },
         { key: "ktas", header: "KTAS", render: (r) => <KtasLevelBadge level={r.ktasLevelCode} /> },
     ];
 
     return (
-        <div className="flex h-[calc(100vh-180px)] flex-col gap-3">
+        <div className="flex h-full flex-col gap-3">
             {/* 조회 / 초기화 — 공용 SearchBar 기본값(한글)을 이 화면에서만 영어로 덮어씀 */}
             <SearchBar
                 onSearch={() => setPage(1)}
