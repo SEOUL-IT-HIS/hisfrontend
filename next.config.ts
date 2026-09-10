@@ -20,8 +20,9 @@ const inpatientApiOrigin =
 const outpatientApiOrigin =
   process.env.OUTPATIENT_API_ORIGIN ?? "http://192.168.1.112:8080";
 // emergency-service 만 8080 이 아니라 8085 를 쓴다
+// emergency 담당자 PC. 2026-09-10 기준 .130 → .152 (2.4G 동글/가상화 환경으로 IP 바뀜)
 const emergencyApiOrigin =
-  process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.130:8085";
+  process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.152:8085";
 // surgery-service 만 8080 이 아니라 8383 을 쓴다
 const surgeryApiOrigin =
   process.env.SURGERY_API_ORIGIN ?? "http://192.168.1.120:8383";
@@ -57,7 +58,10 @@ const nextConfig: NextConfig = {
     "192.168.1.132",
     "192.168.1.140",
     "192.168.1.112",
+    // .130 은 emergency 담당자의 옛 주소. 지금 그 자리를 다른 PC 가 쓰고 있을 수 있어
+    // 지우지 않고 .152 를 추가만 한다.
     "192.168.1.130",
+    "192.168.1.152",
     "192.168.1.120",
     "192.168.1.105",
     "192.168.1.143",
