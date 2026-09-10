@@ -35,11 +35,16 @@ export interface KtasUpdateRequest {
  * 평소엔 features/emergency/commonCode 가 서버 기동 시 admin 에서 캐싱해온 값을 우선 쓴다.
  */
 export const KTAS_LEVEL_FALLBACK_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
-  { value: "1", label: "1단계 (소생)" },
-  { value: "2", label: "2단계 (긴급)" },
-  { value: "3", label: "3단계 (응급)" },
-  { value: "4", label: "4단계 (준응급)" },
-  { value: "5", label: "5단계 (비응급)" },
+  // 1단계 (소생)
+  { value: "1", label: "Level 1 (Resuscitation)" },
+  // 2단계 (긴급)
+  { value: "2", label: "Level 2 (Emergency)" },
+  // 3단계 (응급)
+  { value: "3", label: "Level 3 (Urgent)" },
+  // 4단계 (준응급)
+  { value: "4", label: "Level 4 (Less Urgent)" },
+  // 5단계 (비응급)
+  { value: "5", label: "Level 5 (Non-Urgent)" },
 ];
 
 export interface KtasState {

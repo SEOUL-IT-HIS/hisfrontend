@@ -20,7 +20,8 @@ function* fetchVitalsSaga(action: PayloadAction<string>) {
     const items: EwsRecord[] = yield call(getVitalAssessments, action.payload);
     yield put(fetchVitalsSuccess(items));
   } catch (err) {
-    yield put(fetchVitalsFailure(errorMessage(err, "활력징후 조회에 실패했습니다.")));
+    // 활력징후 조회에 실패했습니다.
+    yield put(fetchVitalsFailure(errorMessage(err, "Failed to load vital signs.")));
   }
 }
 
@@ -29,7 +30,8 @@ function* createVitalsSaga(action: PayloadAction<VitalAssessmentCreateRequest>) 
     const items: EwsRecord[] = yield call(createVitalAssessments, action.payload);
     yield put(createVitalsSuccess(items));
   } catch (err) {
-    yield put(createVitalsFailure(errorMessage(err, "활력징후 등록에 실패했습니다.")));
+    // 활력징후 등록에 실패했습니다.
+    yield put(createVitalsFailure(errorMessage(err, "Failed to register vital signs.")));
   }
 }
 

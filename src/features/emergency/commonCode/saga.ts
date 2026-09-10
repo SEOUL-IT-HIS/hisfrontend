@@ -12,7 +12,8 @@ function* fetchAllCommonCodesSaga() {
     const byGroupCode: CommonCodeByGroup = yield call(getAllCommonCodes);
     yield put(fetchAllCommonCodesSuccess(byGroupCode));
   } catch (err) {
-    const message = err instanceof Error ? err.message : "공통코드 조회에 실패했습니다.";
+    // 공통코드 조회에 실패했습니다.
+    const message = err instanceof Error ? err.message : "Failed to load common codes.";
     yield put(fetchAllCommonCodesFailure(message));
   }
 }

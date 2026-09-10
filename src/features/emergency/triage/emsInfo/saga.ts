@@ -14,7 +14,8 @@ function* fetchEmsInfoSaga(action: PayloadAction<string | undefined>) {
     const items: EmsReferral[] = yield call(getEmsInfo, action.payload);
     yield put(fetchEmsInfoSuccess(items));
   } catch (err) {
-    const message = err instanceof Error ? err.message : "EMS 정보 조회에 실패했습니다.";
+    // EMS 정보 조회에 실패했습니다.
+    const message = err instanceof Error ? err.message : "Failed to load EMS information.";
     yield put(fetchEmsInfoFailure(message));
   }
 }

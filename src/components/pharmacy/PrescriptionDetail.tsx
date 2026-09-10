@@ -8,11 +8,14 @@ import type { RootState } from "@/store/store";
 import { DataTable, PageHeader, Panel } from "@/components/common";
 import type { DataTableColumn } from "@/components/common";
 import type { PrescriptionItem } from "@/features/pharmacy/types";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
+import { useEmpNames } from "@/features/emp/hooks/useEmpNames";
+import { useDepartmentNames } from "@/features/commonCode/hooks/useDepartmentNames";
 
 const itemColumns: DataTableColumn<PrescriptionItem>[] = [
-  { key: "medicationId", header: "약품ID", render: (row) => row.medicationId },
-  { key: "dosageQty", header: "용량", render: (row) => row.dosageQty },
-  { key: "dosageFormCd", header: "제형코드", render: (row) => row.dosageFormCd },
+  { key: "medicationId", header: "Medication ID", render: (row) => row.medicationId },
+  { key: "dosageQty", header: "Dosage", render: (row) => row.dosageQty },
+  { key: "dosageFormCd", header: "Dosage Form Code", render: (row) => row.dosageFormCd },
 ];
 
 export default function PrescriptionDetail() {
@@ -31,11 +34,16 @@ export default function PrescriptionDetail() {
     dispatch(fetchPrescriptionDetailRequest(id));
   }, [id, dispatch]);
 
+  // 목록 화면과 동일하게, ID는 표시하지 않고 이름으로만 보여준다.
+  const { names: patientNames } = usePatientNames(detail ? [detail.patientId] : []);
+  const { names: empNames } = useEmpNames();
+  const { names: departmentNames } = useDepartmentNames();
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <PageHeader title="처방전 상세조회" description={`처방전링크ID: ${id}`} />
+      <PageHeader title="Prescription Details" description="Details of a prescription forwarded to pharmacy." />
 
-      {loading && <p className="text-sm text-slate-400">로딩 중...</p>}
+      {loading && <p className="text-sm text-slate-400">Loading...</p>}
       {error && <p className="text-sm text-rose-500">{error}</p>}
 
       {!loading && detail && (
@@ -43,23 +51,25 @@ export default function PrescriptionDetail() {
           <Panel className="p-5">
             <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
               <div>
-                <dt className="text-xs text-slate-400">처방전ID</dt>
-                <dd className="text-slate-700">{detail.prescriptionId}</dd>
+                <dt className="text-xs text-slate-400">Patient</dt>
+                <dd className="text-slate-700">
+                  {patientNames[detail.patientId] ?? detail.patientId}
+                </dd>
               </div>
               <div>
-                <dt className="text-xs text-slate-400">환자ID</dt>
-                <dd className="text-slate-700">{detail.patientId}</dd>
+                <dt className="text-xs text-slate-400">Doctor</dt>
+                <dd className="text-slate-700">
+                  {empNames[detail.physicianId] ?? detail.physicianId}
+                </dd>
               </div>
               <div>
-                <dt className="text-xs text-slate-400">의사ID</dt>
-                <dd className="text-slate-700">{detail.physicianId}</dd>
+                <dt className="text-xs text-slate-400">Department</dt>
+                <dd className="text-slate-700">
+                  {departmentNames[detail.departmentId] ?? detail.departmentId}
+                </dd>
               </div>
               <div>
-                <dt className="text-xs text-slate-400">진료과ID</dt>
-                <dd className="text-slate-700">{detail.departmentId}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-slate-400">등록일시</dt>
+                <dt className="text-xs text-slate-400">Created At</dt>
                 <dd className="text-slate-700">{detail.createdAt}</dd>
               </div>
             </dl>
@@ -70,7 +80,7 @@ export default function PrescriptionDetail() {
               columns={itemColumns}
               rows={detail.items}
               rowKey={(row) => row.prescriptionItemLinkId}
-              emptyMessage="처방 항목이 없습니다."
+              emptyMessage="No prescription items."
             />
           </Panel>
         </>

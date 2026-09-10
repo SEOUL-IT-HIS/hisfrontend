@@ -18,31 +18,31 @@ type QuickLinkGroup = {
  */
 const groups: QuickLinkGroup[] = [
   {
-    title: "약품 관리",
+    title: "Medication",
     links: [
-      { label: "약품 목록조회", href: "/pharmacy/list" },
-      { label: "약품 등록", href: "/pharmacy/medication/register" },
+      { label: "Medication List", href: "/pharmacy/list" },
+      { label: "Register Medication", href: "/pharmacy/medication/register" },
     ],
   },
   {
-    title: "입출고 관리",
+    title: "Receipt / Issuance",
     links: [
-      { label: "입고 등록", href: "/pharmacy/receipt" },
-      { label: "입고 조회", href: "/pharmacy/receipt/list" },
-      { label: "출고 등록", href: "/pharmacy/issuance" },
-      { label: "출고 조회", href: "/pharmacy/issuance/list" },
+      { label: "Register Receipt", href: "/pharmacy/receipt" },
+      { label: "Receipt History", href: "/pharmacy/receipt/list" },
+      { label: "Register Issuance", href: "/pharmacy/issuance" },
+      { label: "Issuance History", href: "/pharmacy/issuance/list" },
     ],
   },
   {
-    title: "재고 관리",
+    title: "Inventory",
     links: [
-      { label: "약품 재고 조회", href: "/pharmacy/stock" },
-      { label: "약품 폐기 등록", href: "/pharmacy/stock/disposal" },
+      { label: "Inventory", href: "/pharmacy/stock" },
+      { label: "Register Disposal", href: "/pharmacy/stock/disposal" },
     ],
   },
   {
-    title: "처방전",
-    links: [{ label: "처방전 목록조회", href: "/pharmacy/prescription" }],
+    title: "Prescription",
+    links: [{ label: "Prescription List", href: "/pharmacy/prescription" }],
   },
 ];
 
@@ -50,8 +50,8 @@ export default function PharmacyHome() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
       <PageHeader
-        title="약국(PHM)"
-        description="정식 사이드바 메뉴 등록 전 임시 내비게이션입니다. 테스트용으로만 사용합니다."
+        title="Pharmacy (PHM)"
+        description="Temporary navigation until the sidebar menu is registered. For testing only."
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {groups.map((group) => (

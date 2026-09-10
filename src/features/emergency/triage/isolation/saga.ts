@@ -21,7 +21,8 @@ function* fetchIsolationsSaga(action: PayloadAction<string>) {
     const items: IsolationAssessment[] = yield call(getIsolations, action.payload);
     yield put(fetchIsolationsSuccess(items));
   } catch (err) {
-    yield put(fetchIsolationsFailure(errorMessage(err, "격리 이력 조회에 실패했습니다.")));
+    // 격리 이력 조회에 실패했습니다.
+    yield put(fetchIsolationsFailure(errorMessage(err, "Failed to load isolation history.")));
   }
 }
 
@@ -30,7 +31,8 @@ function* createIsolationSaga(action: PayloadAction<IsolationCreateRequest>) {
     const item: IsolationAssessment = yield call(createIsolation, action.payload);
     yield put(isolationSubmitSuccess(item));
   } catch (err) {
-    yield put(isolationSubmitFailure(errorMessage(err, "격리 등록에 실패했습니다.")));
+    // 격리 등록에 실패했습니다.
+    yield put(isolationSubmitFailure(errorMessage(err, "Failed to register isolation.")));
   }
 }
 
@@ -39,7 +41,8 @@ function* releaseIsolationSaga(action: PayloadAction<string>) {
     const item: IsolationAssessment = yield call(releaseIsolation, action.payload);
     yield put(isolationSubmitSuccess(item));
   } catch (err) {
-    yield put(isolationSubmitFailure(errorMessage(err, "격리 해제에 실패했습니다.")));
+    // 격리 해제에 실패했습니다.
+    yield put(isolationSubmitFailure(errorMessage(err, "Failed to release isolation.")));
   }
 }
 

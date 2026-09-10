@@ -21,6 +21,9 @@ function toAuthUser(data: AuthUser): AuthUser {
     empNo: data.empNo ?? null,
     deptCode: data.deptCode ?? null,
     accountStatus: data.accountStatus ?? null,
+    // 사이드바에서 볼 수 있는 메뉴를 거를 때 쓴다. 쉼표로 이어진 문자열이다.
+    menuCodes: data.menuCodes ?? null,
+    roleCodes: data.roleCodes ?? null,
   };
 }
 

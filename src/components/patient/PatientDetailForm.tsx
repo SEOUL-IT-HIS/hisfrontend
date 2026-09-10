@@ -31,6 +31,7 @@ import {
 import { getGenderLabel } from "@/features/patient/util/genderCode";
 import type { AppDispatch, RootState } from "@/store/store";
 import PostcodeSearchButton from "./PostcodeSearchButton";
+import PatientSafetyPanel from "./PatientSafetyPanel";
 
 type PatientDetailFormProps = {
   patientId: string;
@@ -762,6 +763,10 @@ export default function PatientDetailForm({
               </div>
             ) : null}
           </form>
+
+          {patientDetail.patientId === patientId ? (
+            <PatientSafetyPanel key={patientId} patientId={patientId} patientName={patientDetail.patientName} />
+          ) : null}
 
           {conversionEditing && patientDetail.tempPatientYn === "Y" ? (
             <div className="border-t border-slate-200">

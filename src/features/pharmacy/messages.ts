@@ -1,10 +1,10 @@
 export const PHM_MESSAGES = {
-  PHM001: '잘못된 요청입니다.',
-  PHM002: '약품 정보를 찾을 수 없습니다.',
-  PHM003: '처방전 정보를 찾을 수 없습니다.',
-  PHM004: '공공API 서버 연결이 불안정합니다. 잠시 후 다시 시도해주세요.',
-  PHM005: '공공API 응답을 처리하는 중 오류가 발생했습니다.',
-  PHM006: '재고 정보를 찾을 수 없습니다.',
-  PHM007: '이미 등록된 입고 항목입니다.',
-  PHM008: '재고가 부족합니다.',
+  PHM001: 'Invalid request.',
+  PHM002: 'Medication not found.',
+  PHM003: 'Prescription not found.',
+  PHM004: 'The public API server connection is unstable. Please try again shortly.',
+  PHM005: 'An error occurred while processing the public API response.',
+  PHM006: 'Inventory not found.',
+  PHM007: 'This receipt item is already registered.',
+  PHM008: 'Insufficient stock.',
 } as const;

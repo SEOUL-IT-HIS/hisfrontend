@@ -22,7 +22,8 @@ function* fetchKtasHistorySaga(action: PayloadAction<string>) {
     const items: TriageAssessment[] = yield call(getKtasHistory, action.payload);
     yield put(fetchKtasHistorySuccess(items));
   } catch (err) {
-    yield put(fetchKtasHistoryFailure(errorMessage(err, "KTAS 이력 조회에 실패했습니다.")));
+    // KTAS 이력 조회에 실패했습니다.
+    yield put(fetchKtasHistoryFailure(errorMessage(err, "Failed to load KTAS history.")));
   }
 }
 
@@ -33,7 +34,8 @@ function* createKtasSaga(action: PayloadAction<KtasCreateRequest>) {
     // 왼쪽 접수목록의 KTAS 배지가 최신 등급을 반영하도록 목록을 다시 불러온다.
     yield put(fetchReceptionListRequest());
   } catch (err) {
-    yield put(ktasSubmitFailure(errorMessage(err, "KTAS 등급 분류 등록에 실패했습니다.")));
+    // KTAS 등급 분류 등록에 실패했습니다.
+    yield put(ktasSubmitFailure(errorMessage(err, "Failed to register KTAS level.")));
   }
 }
 
@@ -43,7 +45,8 @@ function* reassessKtasSaga(action: PayloadAction<{ id: string; request: KtasUpda
     yield put(ktasSubmitSuccess(item));
     yield put(fetchReceptionListRequest());
   } catch (err) {
-    yield put(ktasSubmitFailure(errorMessage(err, "KTAS 재평가에 실패했습니다.")));
+    // KTAS 재평가에 실패했습니다.
+    yield put(ktasSubmitFailure(errorMessage(err, "Failed to reassess KTAS level.")));
   }
 }
 

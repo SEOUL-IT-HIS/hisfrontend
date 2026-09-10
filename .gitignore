@@ -42,6 +42,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Local analysis docs only (가이드/브랜치 규칙은 추적)
+# 로컬 문서는 추적하지 않는다.
+#
+# 개발표준가이드는 검사/영상 담당이 카카오톡으로 배포한다. 출처가 git 이 아니라서
+# 레포에 넣으면 사본이 되고, 사본은 반드시 어긋난다.
+# 실제로 2026-09-09 에 hisfrontend 루트·hisfrontend/docs·admin-service/docs 세 곳에
+# 3.8 과 3.9 가 섞여 있었다. 받은 파일을 각자 로컬에 두고 쓴다.
 /docs/코드분석-*.md
 /docs/* (1).md
+/docs/개발표준가이드.md
+/개발표준가이드.md

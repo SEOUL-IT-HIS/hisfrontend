@@ -111,10 +111,12 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
 
   return (
     <section className={`rounded-xl border border-slate-200 bg-white p-4 ${className}`}>
-      <h3 className="mb-3 text-sm font-semibold text-slate-800">KTAS 등급 분류/재평가</h3>
+      {/* KTAS 등급 분류/재평가 */}
+      <h3 className="mb-3 text-sm font-semibold text-slate-800">KTAS Level Classification / Reassessment</h3>
 
       {loading ? (
-        <p className="py-4 text-center text-sm text-slate-400">KTAS 이력을 불러오는 중입니다...</p>
+        // KTAS 이력을 불러오는 중입니다...
+        <p className="py-4 text-center text-sm text-slate-400">Loading KTAS history...</p>
       ) : error ? (
         <Alert variant="error">{resolveEmergencyMessage(error)}</Alert>
       ) : (
@@ -123,18 +125,22 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
             <div className="mb-4 flex items-center gap-3 rounded-lg bg-slate-50 p-3">
               {previous ? (
                 <>
-                  <span className="text-sm text-slate-400 line-through">{previous.ktasLevelCode}단계</span>
+                  {/* {previous}단계 */}
+                  <span className="text-sm text-slate-400 line-through">Level {previous.ktasLevelCode}</span>
                   <span className="text-slate-400">→</span>
                 </>
               ) : null}
-              <span className="text-lg font-semibold text-sky-600">{latest.ktasLevelCode}단계</span>
+              {/* {latest}단계 */}
+              <span className="text-lg font-semibold text-sky-600">Level {latest.ktasLevelCode}</span>
               <span className="text-xs text-slate-500">
-                ({latest.assessmentTypeCode === "INITIAL" ? "최초 분류" : "재평가"} · {formatDateTime(latest.assessedAt)})
+                {/* (최초 분류 | 재평가 · 일시) */}
+                ({latest.assessmentTypeCode === "INITIAL" ? "Initial" : "Reassessment"} · {formatDateTime(latest.assessedAt)})
               </span>
             </div>
           ) : (
             <p className="mb-4 rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-400">
-              아직 KTAS 분류가 등록되지 않았습니다.
+              {/* 아직 KTAS 분류가 등록되지 않았습니다. */}
+              No KTAS level has been registered yet.
             </p>
           )}
 
@@ -143,9 +149,11 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
               {items.map((item) => (
                 <li key={item.id} className="flex gap-2">
                   <span className="w-16 shrink-0 font-medium text-slate-600">
-                    {item.assessmentTypeCode === "INITIAL" ? "최초분류" : "재평가"}
+                    {/* 최초분류 / 재평가 */}
+                    {item.assessmentTypeCode === "INITIAL" ? "Initial" : "Reassessment"}
                   </span>
-                  <span className="w-10 shrink-0">{item.ktasLevelCode}단계</span>
+                  {/* {level}단계 */}
+                  <span className="w-10 shrink-0">Level {item.ktasLevelCode}</span>
                   <span className="shrink-0">{formatDateTime(item.assessedAt)}</span>
                   <span className="truncate text-slate-400">{item.reason}</span>
                 </li>
@@ -156,20 +164,24 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <FormField label={hasInitial ? "변경 등급" : "최초 등급"} required>
+            {/* 변경 등급 / 최초 등급 */}
+            <FormField label={hasInitial ? "New Level" : "Initial Level"} required>
               <Select
                 name="ktasScore"
                 value={form.ktasScore}
                 onChange={handleChange}
                 options={levelOptions}
-                placeholder="선택"
+                // 선택
+                placeholder="Select"
                 disabled={submitting}
               />
             </FormField>
-            <FormField label="사유">
+            {/* 사유 */}
+            <FormField label="Reason">
               <Input name="reason" value={form.reason} onChange={handleChange} disabled={submitting} maxLength={200} />
             </FormField>
-            <FormField label="분류자ID">
+            {/* 분류자ID */}
+            <FormField label="Classified By ID">
               <Input
                 name="assessedById"
                 value={form.assessedById}
@@ -181,7 +193,8 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
           </div>
           <div className="mt-3 flex justify-end">
             <Button type="button" onClick={handleSubmit} disabled={submitting || !form.ktasScore}>
-              {submitting ? "저장 중..." : hasInitial ? "재평가 저장" : "최초 분류 등록"}
+              {/* 저장 중... / 재평가 저장 / 최초 분류 등록 */}
+              {submitting ? "Saving..." : hasInitial ? "Save Reassessment" : "Register Initial Level"}
             </Button>
           </div>
         </>

@@ -1,0 +1,45 @@
+# 이미지 빌드할 때 Docker 로 보내지 않을 것들.
+#
+# node_modules 를 안 빼면 수만 개 파일이 Docker 로 전송돼서 빌드가 크게 느려진다.
+# 어차피 컨테이너 안에서 npm ci 로 새로 설치한다.
+
+# 의존성 — 컨테이너 안에서 새로 설치한다
+node_modules/
+
+# 빌드 결과물 — 컨테이너 안에서 새로 만든다
+.next/
+out/
+build/
+tsconfig.tsbuildinfo
+
+# 형상관리
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.idea/
+.vscode/
+
+# 환경 설정 — 내 PC 전용 값이라 이미지에 들어가면 안 된다.
+# 주소는 docker run 의 -e 로 넣는다.
+.env*
+env.local.sample
+
+# 로컬 문서·작업 파일
+docs/
+.ai/
+.claude/
+.superpowers/
+AGENTS.md
+README.md
+*.sql
+개발표준가이드.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 로그
+*.log
+npm-debug.log*

@@ -12,19 +12,19 @@ import type { DataTableColumn } from "@/components/common";
 import type { MedicationDto } from "@/features/pharmacy/types";
 
 const columns: DataTableColumn<MedicationDto>[] = [
-  { key: "medicationId", header: "약품ID", render: (row) => row.medicationId },
-  { key: "medicationName", header: "제품명", render: (row) => row.medicationName },
-  { key: "itemSeq", header: "품목기준코드", render: (row) => row.itemSeq ?? "-" },
-  { key: "itemEngName", header: "제품영문명", render: (row) => row.itemEngName ?? "-" },
-  { key: "entpName", header: "업체명", render: (row) => row.entpName ?? "-" },
-  { key: "etcOtcName", header: "전문/일반", render: (row) => row.etcOtcName ?? "-" },
-  { key: "classNo", header: "분류번호", render: (row) => row.classNo ?? "-" },
-  { key: "className", header: "분류명", render: (row) => row.className ?? "-" },
-  { key: "formCodeName", header: "제형", render: (row) => row.formCodeName ?? "-" },
-  { key: "chart", header: "성상", render: (row) => row.chart ?? "-" },
-  { key: "itemPermitDate", header: "허가일자", render: (row) => row.itemPermitDate ?? "-" },
-  { key: "ediCode", header: "EDI코드", render: (row) => row.ediCode ?? "-" },
-  { key: "stdCd", header: "표준코드", render: (row) => row.stdCd ?? "-" },
+  { key: "medicationId", header: "Medication ID", render: (row) => row.medicationId },
+  { key: "medicationName", header: "Product Name", render: (row) => row.medicationName },
+  { key: "itemSeq", header: "Item Seq", render: (row) => row.itemSeq ?? "-" },
+  { key: "itemEngName", header: "Product Eng. Name", render: (row) => row.itemEngName ?? "-" },
+  { key: "entpName", header: "Company", render: (row) => row.entpName ?? "-" },
+  { key: "etcOtcName", header: "Rx/OTC", render: (row) => row.etcOtcName ?? "-" },
+  { key: "classNo", header: "Class No.", render: (row) => row.classNo ?? "-" },
+  { key: "className", header: "Class Name", render: (row) => row.className ?? "-" },
+  { key: "formCodeName", header: "Form", render: (row) => row.formCodeName ?? "-" },
+  { key: "chart", header: "Appearance", render: (row) => row.chart ?? "-" },
+  { key: "itemPermitDate", header: "Permit Date", render: (row) => row.itemPermitDate ?? "-" },
+  { key: "ediCode", header: "EDI Code", render: (row) => row.ediCode ?? "-" },
+  { key: "stdCd", header: "Standard Code", render: (row) => row.stdCd ?? "-" },
 ];
 
 export default function MedicationList() {
@@ -55,16 +55,16 @@ export default function MedicationList() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <PageHeader title="약품 리스트 조회" description="등록된 약품 마스터 목록입니다." />
+      <PageHeader title="Medication List" description="Registered medication master list." />
 
       <Panel className="flex flex-col gap-2 p-4">
         <div className="flex items-center gap-3">
           <Button type="button" onClick={handleImport} disabled={importLoading}>
-            {importLoading ? "가져오는 중..." : "공공API에서 가져오기"}
+            {importLoading ? "Importing..." : "Import from Public API"}
           </Button>
           {importCount !== null && !importError && (
             <span className="text-sm text-emerald-600">
-              {importCount}건 저장했습니다.
+              Saved {importCount} record(s).
             </span>
           )}
           {importError && (
@@ -79,7 +79,8 @@ export default function MedicationList() {
           rows={medicationList}
           rowKey={(row) => row.medicationId}
           loading={loading}
-          emptyMessage={error ?? "등록된 약품이 없습니다."}
+          loadingMessage="Loading..."
+          emptyMessage={error ?? "No medications registered."}
         />
       </Panel>
     </div>

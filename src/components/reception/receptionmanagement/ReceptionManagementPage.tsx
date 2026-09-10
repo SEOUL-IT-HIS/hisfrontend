@@ -37,8 +37,8 @@ export default function ReceptionManagementPage() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-3">
       <PageHeader
-        title="접수관리"
-        description="환자를 검색하여 접수를 등록하고 접수 현황을 조회합니다."
+        title="Reception Management"
+        description="Search for a patient to register a reception and view the reception status."
       />
 
       <div className="flex min-h-0 flex-1 gap-3">

@@ -26,9 +26,12 @@ type RiskScreeningPanelProps = {
 const initialForm = { screenType: "" as "" | "SEPSIS" | "STROKE", score: "", resultCode: "", screenedById: "" };
 
 const FAST_CHECK_ITEMS = [
-  { key: "face", label: "안면마비" },
-  { key: "arm", label: "팔처짐" },
-  { key: "speech", label: "발음이상" },
+  // 안면마비
+  { key: "face", label: "Facial droop" },
+  // 팔처짐
+  { key: "arm", label: "Arm drift" },
+  // 발음이상
+  { key: "speech", label: "Speech difficulty" },
 ] as const;
 type FastCheckKey = (typeof FAST_CHECK_ITEMS)[number]["key"];
 const initialFastChecks: Record<FastCheckKey, boolean> = { face: false, arm: false, speech: false };
@@ -40,8 +43,10 @@ const resultBadgeClass: Record<string, string> = {
 };
 
 const SCREEN_TOOL_GUIDE: Record<string, string> = {
-  SEPSIS: "qSOFA — 빈호흡(호흡수≥22) · 의식저하(GCS<15) · 저혈압(수축기혈압≤100) 중 2개 이상이면 고위험(POSITIVE)",
-  STROKE: "FAST — 안면마비 · 팔처짐 · 발음이상 중 하나라도 있으면 양성(POSITIVE)",
+  // qSOFA — 빈호흡(호흡수≥22) · 의식저하(GCS<15) · 저혈압(수축기혈압≤100) 중 2개 이상이면 고위험(POSITIVE)
+  SEPSIS: "qSOFA — High risk (POSITIVE) if 2 or more of: Tachypnea (RR≥22) · Altered consciousness (GCS<15) · Hypotension (SBP≤100)",
+  // FAST — 안면마비 · 팔처짐 · 발음이상 중 하나라도 있으면 양성(POSITIVE)
+  STROKE: "FAST — Positive (POSITIVE) if any of: Facial droop · Arm drift · Speech difficulty",
 };
 
 /**
@@ -90,18 +95,21 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
             {
               met:
                 latestVitals.respRate !== null && latestVitals.respRate !== undefined && latestVitals.respRate >= 22,
-              label: `호흡수 ${latestVitals.respRate ?? "-"}회/분 (빈호흡 기준 ≥22)`,
+              // 호흡수 X회/분 (빈호흡 기준 ≥22)
+              label: `Resp rate ${latestVitals.respRate ?? "-"}/min (tachypnea threshold ≥22)`,
             },
             {
               met: latestVitals.gcs !== null && latestVitals.gcs !== undefined && latestVitals.gcs < 15,
-              label: `GCS ${latestVitals.gcs ?? "-"} (의식저하 기준 <15)`,
+              // GCS X (의식저하 기준 <15)
+              label: `GCS ${latestVitals.gcs ?? "-"} (altered consciousness threshold <15)`,
             },
             {
               met:
                 latestVitals.systolicBp !== null &&
                 latestVitals.systolicBp !== undefined &&
                 latestVitals.systolicBp <= 100,
-              label: `수축기혈압 ${latestVitals.systolicBp ?? "-"}mmHg (저혈압 기준 ≤100)`,
+              // 수축기혈압 XmmHg (저혈압 기준 ≤100)
+              label: `Systolic BP ${latestVitals.systolicBp ?? "-"}mmHg (hypotension threshold ≤100)`,
             },
           ];
           const metCount = criteria.filter((c) => c.met).length;
@@ -155,7 +163,8 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
     if (form.score.trim()) {
       const scoreNum = Number(form.score);
       if (Number.isNaN(scoreNum) || scoreNum < 0 || scoreNum > 3) {
-        setLocalError("점수는 0~3 사이여야 합니다.");
+        // 점수는 0~3 사이여야 합니다.
+        setLocalError("Score must be between 0 and 3.");
         return;
       }
     }
@@ -172,10 +181,12 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
 
   return (
     <section className={`rounded-xl border border-slate-200 bg-white p-4 ${className}`}>
-      <h3 className="mb-3 text-sm font-semibold text-slate-800">패혈증-뇌졸중 위험도 스크리닝</h3>
+      {/* 패혈증-뇌졸중 위험도 스크리닝 */}
+      <h3 className="mb-3 text-sm font-semibold text-slate-800">Sepsis-Stroke Risk Screening</h3>
 
       {loading ? (
-        <p className="py-4 text-center text-sm text-slate-400">스크리닝 이력을 불러오는 중입니다...</p>
+        // 스크리닝 이력을 불러오는 중입니다...
+        <p className="py-4 text-center text-sm text-slate-400">Loading screening history...</p>
       ) : error ? (
         <Alert variant="error">{resolveEmergencyMessage(error)}</Alert>
       ) : (
@@ -199,14 +210,16 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
                         {SCREEN_RESULT_OPTIONS.find((o) => o.value === item.resultCode)?.label ?? item.resultCode}
                       </span>
                     ) : null}
-                    {item.score !== null ? <span className="text-xs text-slate-500">점수 {item.score}</span> : null}
+                    {/* 점수 X */}
+                    {item.score !== null ? <span className="text-xs text-slate-500">Score {item.score}</span> : null}
                     <span className="ml-auto text-xs text-slate-400">{formatDateTime(item.screenedAt)}</span>
                   </li>
                 ))}
             </ul>
           ) : (
             <p className="mb-4 rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-400">
-              아직 스크리닝 결과가 없습니다.
+              {/* 아직 스크리닝 결과가 없습니다. */}
+              No screening results yet.
             </p>
           )}
 
@@ -214,30 +227,36 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
           {localError ? <Alert variant="error">{localError}</Alert> : null}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-            <FormField label="스크리닝 유형" required>
+            {/* 스크리닝 유형 */}
+            <FormField label="Screening Type" required>
               <Select
                 name="screenType"
                 value={form.screenType}
                 onChange={handleChange}
                 options={[...SCREEN_TYPE_OPTIONS]}
-                placeholder="선택"
+                // 선택
+                placeholder="Select"
                 disabled={submitting}
               />
             </FormField>
-            <FormField label={form.screenType ? "점수 (0~3)" : "점수"}>
+            {/* 점수 (0~3) / 점수 */}
+            <FormField label={form.screenType ? "Score (0-3)" : "Score"}>
               <Input type="number" name="score" min={0} max={3} value={form.score} onChange={handleChange} disabled={submitting} />
             </FormField>
-            <FormField label="판정 결과">
+            {/* 판정 결과 */}
+            <FormField label="Result">
               <Select
                 name="resultCode"
                 value={form.resultCode}
                 onChange={handleChange}
                 options={[...SCREEN_RESULT_OPTIONS]}
-                placeholder="선택"
+                // 선택
+                placeholder="Select"
                 disabled={submitting}
               />
             </FormField>
-            <FormField label="시행자ID">
+            {/* 시행자ID */}
+            <FormField label="Screened By ID">
               <Input name="screenedById" value={form.screenedById} onChange={handleChange} disabled={submitting} maxLength={36} />
             </FormField>
           </div>
@@ -266,7 +285,8 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
 
           {!qsofaSuggestion && form.screenType === "SEPSIS" ? (
             <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-400">
-              활력징후가 아직 없어 자동계산할 수 없습니다.
+              {/* 활력징후가 아직 없어 자동계산할 수 없습니다. */}
+              Cannot auto-calculate yet — no vital signs recorded.
             </p>
           ) : null}
 
@@ -274,15 +294,17 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
             <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
               <div className="flex items-center gap-2">
                 <span className="font-medium">
-                  자동계산: {(qsofaSuggestion ?? fastSuggestion)!.score}점 (
-                  {(qsofaSuggestion ?? fastSuggestion)!.resultCode === "POSITIVE" ? "양성 권장" : "음성 권장"})
+                  {/* 자동계산: X점 (양성 권장 / 음성 권장) */}
+                  Auto-calc: {(qsofaSuggestion ?? fastSuggestion)!.score} pt (
+                  {(qsofaSuggestion ?? fastSuggestion)!.resultCode === "POSITIVE" ? "Positive suggested" : "Negative suggested"})
                 </span>
                 <button
                   type="button"
                   onClick={qsofaSuggestion ? applyQsofaSuggestion : applyFastSuggestion}
                   className="shrink-0 rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white"
                 >
-                  적용
+                  {/* 적용 */}
+                  Apply
                 </button>
               </div>
               <ul className="mt-1.5 space-y-0.5">
@@ -297,7 +319,8 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
 
           <div className="mt-3 flex justify-end">
             <Button type="button" onClick={handleSubmit} disabled={submitting || !form.screenType}>
-              {submitting ? "저장 중..." : "스크리닝 결과 등록"}
+              {/* 저장 중... / 스크리닝 결과 등록 */}
+              {submitting ? "Saving..." : "Register Screening Result"}
             </Button>
           </div>
         </>

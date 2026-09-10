@@ -23,14 +23,14 @@ const CANCELLED_STATUS = "CANCELLED";
 const STATUS_FILTER_ALL = "ALL";
 
 const RECEPTION_TYPE_LABEL: Record<string, string> = {
-  INITIAL: "초진",
-  REVISIT: "재진",
+  INITIAL: "Initial Visit",
+  REVISIT: "Follow-up Visit",
 };
 
 const STATUS_FILTER_OPTIONS = [
-  { value: STATUS_FILTER_ALL, label: "전체" },
-  { value: "RECEPTION", label: "대기중" },
-  { value: CANCELLED_STATUS, label: "취소됨" },
+  { value: STATUS_FILTER_ALL, label: "All" },
+  { value: "RECEPTION", label: "Waiting" },
+  { value: CANCELLED_STATUS, label: "Cancelled" },
 ];
 
 function formatDateTime(value?: string) {
@@ -74,18 +74,18 @@ export default function ReceptionListSection({
   const columns: DataTableColumn<ReceptionListItem>[] = [
     {
       key: "receptionDate",
-      header: "접수일시",
+      header: "Reception Date",
       render: (r) => formatDateTime(r.receptionDate),
     },
-    { key: "patientName", header: "환자명", render: (r) => r.patientName },
-    { key: "deptName", header: "진료과", render: (r) => r.deptName },
-    { key: "doctorName", header: "담당의", render: (r) => r.doctorName },
+    { key: "patientName", header: "Patient Name", render: (r) => r.patientName },
+    { key: "deptName", header: "Department", render: (r) => r.deptName },
+    { key: "doctorName", header: "Doctor", render: (r) => r.doctorName },
     {
       key: "receptionType",
-      header: "구분",
+      header: "Type",
       render: (r) => RECEPTION_TYPE_LABEL[r.receptionType] ?? r.receptionType,
     },
-    { key: "status", header: "상태", render: (r) => r.status },
+    { key: "status", header: "Status", render: (r) => r.status },
     {
       key: "action",
       header: "",
@@ -95,14 +95,14 @@ export default function ReceptionListSection({
             variant="secondary"
             onClick={() => onSelectReception(r.receptionId)}
           >
-            상세
+            Details
           </Button>
           <Button
             variant="danger"
             disabled={r.status === CANCELLED_STATUS}
             onClick={() => setCancelReceptionId(r.receptionId)}
           >
-            취소
+            Cancel
           </Button>
         </div>
       ),
@@ -111,7 +111,7 @@ export default function ReceptionListSection({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <PageHeader title="접수 목록" description="접수된 환자 목록입니다." />
+      <PageHeader title="Reception List" description="List of registered receptions." />
 
       <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         <div className="flex gap-1">
@@ -135,8 +135,8 @@ export default function ReceptionListSection({
         rows={filteredList}
         rowKey={(r) => r.receptionId}
         loading={listLoading}
-        loadingMessage="접수 목록을 불러오는 중입니다..."
-        emptyMessage="접수된 내역이 없습니다."
+        loadingMessage="Loading reception list..."
+        emptyMessage="No receptions found."
       />
 
       <ReceptionCancelModal

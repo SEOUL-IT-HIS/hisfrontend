@@ -20,7 +20,8 @@ function* fetchRiskScreeningsSaga(action: PayloadAction<string>) {
     const items: RiskScreening[] = yield call(getRiskScreenings, action.payload);
     yield put(fetchRiskScreeningsSuccess(items));
   } catch (err) {
-    yield put(fetchRiskScreeningsFailure(errorMessage(err, "위험 스크리닝 조회에 실패했습니다.")));
+    // 위험 스크리닝 조회에 실패했습니다.
+    yield put(fetchRiskScreeningsFailure(errorMessage(err, "Failed to load risk screening results.")));
   }
 }
 
@@ -29,7 +30,8 @@ function* createRiskScreeningSaga(action: PayloadAction<RiskScreeningCreateReque
     const item: RiskScreening = yield call(createRiskScreening, action.payload);
     yield put(riskScreeningSubmitSuccess(item));
   } catch (err) {
-    yield put(riskScreeningSubmitFailure(errorMessage(err, "위험 스크리닝 등록에 실패했습니다.")));
+    // 위험 스크리닝 등록에 실패했습니다.
+    yield put(riskScreeningSubmitFailure(errorMessage(err, "Failed to register risk screening result.")));
   }
 }
 
