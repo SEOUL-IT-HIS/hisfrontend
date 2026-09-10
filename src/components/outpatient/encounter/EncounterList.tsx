@@ -160,7 +160,7 @@ const EncounterList = () => {
                                                 className={`cursor-pointer transition hover:bg-blue-50 ${isSelected ? 'bg-blue-100 font-medium' : ''}`}
                                             >
                                                 <td className="p-3">{enc.patientName}</td>
-                                                <td className="p-3">{enc.departmentCode}</td>
+                                                <td className="p-3">{enc.departmentName ?? enc.departmentCode}</td>
                                                 <td className="p-3">
                                                     <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600 border border-slate-200">
                                                         {getStatusText(enc.status)}
@@ -225,14 +225,22 @@ const EncounterList = () => {
 
                     {/* 환자 정보 헤더 (환자가 선택되었고, "오늘 진료 작성" 탭일 때만 노출) */}
                     {selectedEncounter && activeTab === 'FORM' && (
-                        <div className="flex items-center justify-between rounded-lg bg-slate-50 p-3 border border-slate-200 mb-4">
-                            <div>
-                                <span className="text-base font-bold text-slate-800">{selectedEncounter.patientName}</span>
-                                <span className="ml-2 text-xs text-slate-500">({selectedEncounter.patientId})</span>
+                        <div className="rounded-lg bg-slate-50 p-3 border border-slate-200 mb-4 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <span className="text-base font-bold text-slate-800">{selectedEncounter.patientName}</span>
+                                    <span className="ml-2 text-xs text-slate-500">({selectedEncounter.patientId})</span>
+                                </div>
+                                <div className="text-xs text-slate-600">
+                                    {/* 내원일: ... | 진료과: ... */}
+                                    Visit Date: {selectedEncounter.visitDate} | Department: {selectedEncounter.departmentName ?? selectedEncounter.departmentCode}
+                                </div>
                             </div>
-                            <div className="text-xs text-slate-600">
-                                {/* 내원일: ... | 진료과: ... */}
-                                Visit Date: {selectedEncounter.visitDate} | Department: {selectedEncounter.departmentCode}
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-slate-200 pt-2 text-xs text-slate-500">
+                                <span>Doctor: {selectedEncounter.doctorId}</span>
+                                <span>Reception ID: {selectedEncounter.receptionId}</span>
+                                <span>Registered: {selectedEncounter.createdAt}</span>
+                                {selectedEncounter.visitReason && <span>Reason: {selectedEncounter.visitReason}</span>}
                             </div>
                         </div>
                     )}
