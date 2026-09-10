@@ -5,6 +5,9 @@ import bedReservationReducer from "./bedmanagement/bedreservation/slice";
 import admissionReducer from "./admissiondischarge/slice";
 import vitalSignReducer from "./nursingrecord/vitalsign/slice";
 import riskAssessmentReducer from "./nursingrecord/riskassessment/slice";
+import restraintReducer from "./nursingrecord/restraint/slice";
+import nursingAssessmentReducer from "./nursingrecord/nursingassessment/slice";
+import iandorecordReducer from "./nursingrecord/iandorecord/slice";
 /**
  * inpatient(입원) 서비스 reducer
  * - 기능(Story) 단위 하위 slice 를 combine 한다.
@@ -17,6 +20,9 @@ const inpatientReducer = combineReducers({
   admissiondischarge: admissionReducer,
   vitalsign: vitalSignReducer,
   riskassessment: riskAssessmentReducer,
+  restraint: restraintReducer,
+  nursingassessment: nursingAssessmentReducer,
+  iandorecord: iandorecordReducer,
 });
 
 export default inpatientReducer;

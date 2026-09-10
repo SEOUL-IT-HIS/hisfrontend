@@ -77,7 +77,8 @@ const iandorecordSlice = createSlice({
     },
 });
 
-export const { fetchIandORecordDetailRequest, fetchIandORecordDetailSuccess, fetchIandORecordDetailFailure,
+export const { fetchIandORecordsRequest, fetchIandORecordsSuccess, fetchIandORecordsFailure,
+    fetchIandORecordDetailRequest, fetchIandORecordDetailSuccess, fetchIandORecordDetailFailure,
     createIandORecordRequest, createIandORecordSuccess, createIandORecordFailure,
     updateIandORecordRequest, updateIandORecordSuccess, updateIandORecordFailure,
     deleteIandORecordRequest, deleteIandORecordSuccess, deleteIandORecordFailure,
