@@ -9,15 +9,15 @@ import type { DataTableColumn } from "@/components/common";
 import type { ReceiptDto } from "@/features/pharmacy/types";
 
 const columns: DataTableColumn<ReceiptDto>[] = [
-  { key: "medicationId", header: "약품ID", render: (row) => row.medicationId },
-  { key: "medicationName", header: "약품명", render: (row) => row.medicationName ?? "-" },
-  { key: "lotNo", header: "로트번호", render: (row) => row.lotNo },
-  { key: "quantity", header: "입고수량", render: (row) => row.quantity },
-  { key: "unitPrice", header: "단가", render: (row) => row.unitPrice ?? "-" },
-  { key: "receiptDt", header: "입고일자", render: (row) => row.receiptDt },
-  { key: "expirationDt", header: "유효기간", render: (row) => row.expirationDt ?? "-" },
-  { key: "storageLocationId", header: "보관위치", render: (row) => row.storageLocationId },
-  { key: "supplierId", header: "공급업체", render: (row) => row.supplierId },
+  { key: "medicationId", header: "Medication ID", render: (row) => row.medicationId },
+  { key: "medicationName", header: "Medication Name", render: (row) => row.medicationName ?? "-" },
+  { key: "lotNo", header: "Lot No.", render: (row) => row.lotNo },
+  { key: "quantity", header: "Receipt Qty", render: (row) => row.quantity },
+  { key: "unitPrice", header: "Unit Price", render: (row) => row.unitPrice ?? "-" },
+  { key: "receiptDt", header: "Receipt Date", render: (row) => row.receiptDt },
+  { key: "expirationDt", header: "Expiration Date", render: (row) => row.expirationDt ?? "-" },
+  { key: "storageLocationId", header: "Storage Location", render: (row) => row.storageLocationId },
+  { key: "supplierId", header: "Supplier", render: (row) => row.supplierId },
 ];
 
 export default function ReceiptList() {
@@ -32,14 +32,15 @@ export default function ReceiptList() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <PageHeader title="약품 입고 조회" description="약품 입고 이력을 조회합니다." />
+      <PageHeader title="Receipt History" description="Medication receipt history." />
       <Panel className="min-h-0 flex-1 p-4">
         <DataTable
           columns={columns}
           rows={receiptList}
           rowKey={(row) => `${row.medicationId}-${row.lotNo}-${row.receiptDt}-${row.quantity}`}
           loading={loading}
-          emptyMessage={error ?? "등록된 입고 내역이 없습니다."}
+          loadingMessage="Loading..."
+          emptyMessage={error ?? "No receipt records."}
         />
       </Panel>
     </div>

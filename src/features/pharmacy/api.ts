@@ -14,115 +14,115 @@ import type {
   ReceiptRegisterRequest,
 } from "./types";
 
-// pharmacy-service. 담당자 PC 로컬 기본값 (다른 PC에서 접근해야 하면 .env.local 에서
-// NEXT_PUBLIC_PHARMACY_API_BASE_URL 을 본인 LAN IP로 덮어쓰면 됨)
-const PHARMACY_API_BASE =
-  process.env.NEXT_PUBLIC_PHARMACY_API_BASE_URL ?? "http://192.168.1.115:8088";
+// 상대경로만 사용. next.config.ts의 /api/pharmacy rewrite가 실제 서버로 전달.
+// (PHARMACY_API_ORIGIN 덮어쓰기는 .env.local에서, next.config.ts 쪽에서 함)
 
+/** 약품 목록 */
 export async function getMedicationList(): Promise<
   ApiResponse<MedicationDto[]>
 > {
   const response = await apiClient.get<ApiResponse<MedicationDto[]>>(
-    `${PHARMACY_API_BASE}/admin/medications/list`
+    "/api/pharmacy/admin/medications/list"
   );
   return response.data;
 }
 
+/** 약품 등록 */
 export async function createMedication(
   request: MedicationRegisterRequest
 ): Promise<ApiResponse<void>> {
   const response = await apiClient.post<ApiResponse<void>>(
-    `${PHARMACY_API_BASE}/admin/medications/register`,
+    "/api/pharmacy/admin/medications/register",
     request
   );
   return response.data;
 }
 
-/** 공공API(의약품 낱알식별정보)에서 약품 정보를 가져와 저장/갱신 */
+/** 공공API 가져오기 */
 export async function importMedicationsFromPublicApi(): Promise<
   ApiResponse<number>
 > {
   const response = await apiClient.post<ApiResponse<number>>(
-    `${PHARMACY_API_BASE}/admin/medications/import`
+    "/api/pharmacy/admin/medications/import"
   );
   return response.data;
 }
 
-/** 약품 재고 조회 (HL2-5) */
+/** 재고 목록 (HL2-5) */
 export async function getInventoryList(): Promise<
   ApiResponse<PageResponse<InventoryDto>>
 > {
   const response = await apiClient.get<ApiResponse<PageResponse<InventoryDto>>>(
-    `${PHARMACY_API_BASE}/api/pharmacy/inventories`
+    "/api/pharmacy/inventories"
   );
   return response.data;
 }
 
-/** 약품 입고 조회 (HL2-7) */
+/** 입고 목록 (HL2-7) */
 export async function getReceiptList(): Promise<ApiResponse<ReceiptDto[]>> {
   const response = await apiClient.get<ApiResponse<ReceiptDto[]>>(
-    `${PHARMACY_API_BASE}/api/pharmacy/receipts`
+    "/api/pharmacy/receipts"
   );
   return response.data;
 }
 
-/** 약품 입고 등록 */
+/** 입고 등록 */
 export async function createReceipt(
   request: ReceiptRegisterRequest
 ): Promise<ApiResponse<void>> {
   const response = await apiClient.post<ApiResponse<void>>(
-    `${PHARMACY_API_BASE}/api/pharmacy/receipts`,
+    "/api/pharmacy/receipts",
     request
   );
   return response.data;
 }
 
-/** 약품 출고 조회 (HL2-9) */
+/** 출고 목록 (HL2-9) */
 export async function getIssuanceList(): Promise<ApiResponse<IssuanceDto[]>> {
   const response = await apiClient.get<ApiResponse<IssuanceDto[]>>(
-    `${PHARMACY_API_BASE}/api/pharmacy/issuances`
+    "/api/pharmacy/issuances"
   );
   return response.data;
 }
 
-/** 약품 출고 등록 (HL2-8) */
+/** 출고 등록 (HL2-8) */
 export async function createIssuance(
   request: IssuanceRegisterRequest
 ): Promise<ApiResponse<void>> {
   const response = await apiClient.post<ApiResponse<void>>(
-    `${PHARMACY_API_BASE}/api/pharmacy/issuances`,
+    "/api/pharmacy/issuances",
     request
   );
   return response.data;
 }
 
-/** 약품 폐기 관리 (HL2-10) */
+/** 폐기 등록 (HL2-10) */
 export async function createDisposal(
   request: DisposalRegisterRequest
 ): Promise<ApiResponse<void>> {
   const response = await apiClient.post<ApiResponse<void>>(
-    `${PHARMACY_API_BASE}/api/pharmacy/disposals`,
+    "/api/pharmacy/disposals",
     request
   );
   return response.data;
 }
 
-/** 처방전 목록조회 (HL2-17) */
+/** 처방전 목록 (HL2-17) */
 export async function getPrescriptionList(): Promise<
   ApiResponse<PageResponse<PrescriptionListItem>>
 > {
   const response = await apiClient.get<
     ApiResponse<PageResponse<PrescriptionListItem>>
-  >(`${PHARMACY_API_BASE}/api/pharmacy/prescriptions`);
+  >("/api/pharmacy/prescriptions");
   return response.data;
 }
 
-/** 처방전 상세조회 (HL2-17) */
+/** 처방전 상세 (HL2-17) */
 export async function getPrescriptionDetail(
   prescriptionLinkId: string
 ): Promise<ApiResponse<PrescriptionDetail>> {
   const response = await apiClient.get<ApiResponse<PrescriptionDetail>>(
-    `${PHARMACY_API_BASE}/api/pharmacy/prescriptions/${prescriptionLinkId}`
+    `/api/pharmacy/prescriptions/${prescriptionLinkId}`
   );
   return response.data;
 }

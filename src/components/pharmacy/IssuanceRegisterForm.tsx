@@ -27,27 +27,27 @@ export default function IssuanceRegisterForm() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <PageHeader title="약품 출고 등록" description="약품ID와 수량을 입력해 출고를 등록합니다." />
+      <PageHeader title="Register Issuance" description="Enter a medication ID and quantity to register an issuance." />
       <Panel className="max-w-md p-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <FormField label="약품ID" required>
+          <FormField label="Medication ID" required>
             <Input
               type="text"
-              placeholder="약품ID"
+              placeholder="Medication ID"
               value={medicationId}
               onChange={(e) => setMedicationId(e.target.value)}
             />
           </FormField>
-          <FormField label="출고수량" required>
+          <FormField label="Issue Qty" required>
             <Input
               type="text"
-              placeholder="출고수량"
+              placeholder="Issue Qty"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
             />
           </FormField>
           <div className="flex justify-end">
-            <Button type="submit">출고</Button>
+            <Button type="submit">Register</Button>
           </div>
         </form>
       </Panel>
