@@ -3,22 +3,28 @@
 import { useState } from "react";
 import RiskAssessmentList from "@/components/inpatient/nursingrecord/riskassessment/list";
 import VitalSignList from "@/components/inpatient/nursingrecord/vitalsign/list";
+import RestraintList from "@/components/inpatient/nursingrecord/restraint/list";
+import NursingAssessmentList from "@/components/inpatient/nursingrecord/nursingassessment/list";
+import IandORecordList from "@/components/inpatient/nursingrecord/iandorecord/list";
 
 const TABS = [
+  { key: "vitalsign", label: "Vital Sign" },
   { key: "riskassessment", label: "Risk Assessment" },
-  { key: "vitalsign", label: "Nursing Record" },
+  { key: "restraint", label: "Restraint" },
+  { key: "nursingassessment", label: "Nursing Assessment" },
+  { key: "iandorecord", label: "I&O Record" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
 
 const NursingRecordHome = () => {
-  const [activeTab, setActiveTab] = useState<TabKey>("riskassessment");
+  const [activeTab, setActiveTab] = useState<TabKey>("vitalsign");
 
   return (
     <div className="mx-auto w-full max-w-[1800px] p-6">
       <div className="mb-6">
         <h1 className="text-lg font-semibold text-slate-800">Nursing Record Management</h1>
-        <p className="mt-1 text-sm text-slate-500">View risk assessments and vital sign records in one place.</p>
+        <p className="mt-1 text-sm text-slate-500">View vital signs, risk assessments, restraints, nursing assessments, and I&O records in one place.</p>
       </div>
 
       <div className="mb-6 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">
@@ -38,8 +44,11 @@ const NursingRecordHome = () => {
         ))}
       </div>
 
-      {activeTab === "riskassessment" && <RiskAssessmentList embedded />}
       {activeTab === "vitalsign" && <VitalSignList embedded />}
+      {activeTab === "riskassessment" && <RiskAssessmentList embedded />}
+      {activeTab === "restraint" && <RestraintList embedded />}
+      {activeTab === "nursingassessment" && <NursingAssessmentList embedded />}
+      {activeTab === "iandorecord" && <IandORecordList embedded />}
     </div>
   );
 };

@@ -77,7 +77,8 @@ const nursingassessmentSlice = createSlice({
     },
 });
 
-export const { fetchNursingAssessmentDetailRequest, fetchNursingAssessmentDetailSuccess, fetchNursingAssessmentDetailFailure,
+export const { fetchNursingAssessmentsRequest, fetchNursingAssessmentsSuccess, fetchNursingAssessmentsFailure,
+    fetchNursingAssessmentDetailRequest, fetchNursingAssessmentDetailSuccess, fetchNursingAssessmentDetailFailure,
     createNursingAssessmentRequest, createNursingAssessmentSuccess, createNursingAssessmentFailure,
     updateNursingAssessmentRequest, updateNursingAssessmentSuccess, updateNursingAssessmentFailure,
     deleteNursingAssessmentRequest, deleteNursingAssessmentSuccess, deleteNursingAssessmentFailure,

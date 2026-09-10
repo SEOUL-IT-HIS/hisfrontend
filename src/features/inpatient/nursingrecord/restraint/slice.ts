@@ -77,7 +77,8 @@ const restraintSlice = createSlice({
     },
 });
 
-export const { fetchRestraintDetailRequest, fetchRestraintDetailSuccess, fetchRestraintDetailFailure,
+export const { fetchRestraintsRequest, fetchRestraintsSuccess, fetchRestraintsFailure,
+    fetchRestraintDetailRequest, fetchRestraintDetailSuccess, fetchRestraintDetailFailure,
     createRestraintRequest, createRestraintSuccess, createRestraintFailure,
     updateRestraintRequest, updateRestraintSuccess, updateRestraintFailure,
     deleteRestraintRequest, deleteRestraintSuccess, deleteRestraintFailure,
