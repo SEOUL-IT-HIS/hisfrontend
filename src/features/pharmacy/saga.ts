@@ -61,7 +61,7 @@ function resolveErrorMessage(error: unknown): string {
   const code = error instanceof Error ? error.message : "";
   return (
     (PHM_MESSAGES as Record<string, string>)[code] ??
-    "약품 처리 중 오류가 발생했습니다."
+    "An error occurred while processing the request."
   );
 }
 

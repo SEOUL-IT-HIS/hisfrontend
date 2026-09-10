@@ -83,103 +83,104 @@ export default function ReceiptRegisterForm() {
 
   return (
     <div className="flex flex-col gap-4 pb-8">
-      <PageHeader title="약품 입고 등록" description="입고 정보와 약품 항목을 입력해 입고를 등록합니다." />
+      <PageHeader title="Register Receipt" description="Enter receipt details and a medication item to register a receipt." />
       {error && (
         <p className="text-sm text-rose-500">{error}</p>
       )}
       <Panel className="max-w-xl p-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <p className="text-xs font-semibold text-slate-400">입고 정보</p>
-          <FormField label="공급업체ID" required>
+          <p className="text-xs font-semibold text-slate-400">Receipt Info</p>
+          <FormField label="Supplier ID" required>
             <Input
               type="text"
-              placeholder="공급업체ID"
+              placeholder="Supplier ID"
               value={form.supplierId}
               onChange={handleFieldChange("supplierId")}
             />
           </FormField>
-          <FormField label="보관위치ID" required>
+          <FormField label="Storage Location ID" required>
             <Input
               type="text"
-              placeholder="보관위치ID"
+              placeholder="Storage Location ID"
               value={form.storageLocationId}
               onChange={handleFieldChange("storageLocationId")}
             />
           </FormField>
-          <FormField label="입고일자" required>
+          <FormField label="Receipt Date" required>
             <Input
               type="date"
               value={form.receiptDt}
               onChange={handleFieldChange("receiptDt")}
             />
           </FormField>
-          <FormField label="담당자ID" required>
+          <FormField label="Handler ID" required>
             <Input
               type="text"
-              placeholder="담당자ID"
+              placeholder="Handler ID"
               value={form.receivedById}
               onChange={handleFieldChange("receivedById")}
             />
           </FormField>
 
-          <p className="mt-2 text-xs font-semibold text-slate-400">약품 항목</p>
-          <FormField label="약품ID" required>
+          <p className="mt-2 text-xs font-semibold text-slate-400">Medication Item</p>
+          <FormField label="Medication ID" required>
             <Input
               type="text"
-              placeholder="약품ID"
+              placeholder="Medication ID"
               value={item.medicationId}
               onChange={handleItemChange("medicationId")}
             />
           </FormField>
-          <FormField label="로트번호" required>
+          <FormField label="Lot No." required>
             <Input
               type="text"
-              placeholder="로트번호"
+              placeholder="Lot No."
               value={item.lotNo}
               onChange={handleItemChange("lotNo")}
             />
           </FormField>
-          <FormField label="유효기간" required>
+          <FormField label="Expiration Date" required>
             <Input
               type="date"
               value={item.expirationDt}
               onChange={handleItemChange("expirationDt")}
             />
           </FormField>
-          <FormField label="제조일자">
+          <FormField label="Manufacture Date">
             <Input
               type="date"
               value={item.manufactureDt}
               onChange={handleItemChange("manufactureDt")}
             />
           </FormField>
-          <FormField label="단위코드" required>
+          <FormField label="Unit Code" required>
             <Input
               type="text"
-              placeholder="예: EA"
+              placeholder="e.g. EA"
               value={item.unitCd}
               onChange={handleItemChange("unitCd")}
             />
           </FormField>
-          <FormField label="입고수량" required>
+          <FormField label="Receipt Qty" required>
             <Input
               type="number"
-              placeholder="입고수량"
+              placeholder="Receipt Qty"
               value={item.receiptQty}
               onChange={handleItemChange("receiptQty")}
             />
           </FormField>
-          <FormField label="단가">
+          <FormField label="Unit Price">
             <Input
               type="number"
-              placeholder="단가"
+              placeholder="Unit Price"
               value={item.unitPrice}
               onChange={handleItemChange("unitPrice")}
             />
           </FormField>
 
           <FormActions
-            submitLabel="입고"
+            submitLabel="Register"
+            cancelLabel="Cancel"
             onCancel={() => router.push("/pharmacy/receipt/list")}
           />
         </form>

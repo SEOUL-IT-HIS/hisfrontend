@@ -102,10 +102,12 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
 
   return (
     <section className={`rounded-xl border border-slate-200 bg-white p-4 ${className}`}>
-      <h3 className="mb-3 text-sm font-semibold text-slate-800">초기 환자상태 평가 (활력징후)</h3>
+      {/* 초기 환자상태 평가 (활력징후) */}
+      <h3 className="mb-3 text-sm font-semibold text-slate-800">Initial Patient Assessment (Vital Signs)</h3>
 
       {loading ? (
-        <p className="py-4 text-center text-sm text-slate-400">활력징후를 불러오는 중입니다...</p>
+        // 활력징후를 불러오는 중입니다...
+        <p className="py-4 text-center text-sm text-slate-400">Loading vital signs...</p>
       ) : error ? (
         <Alert variant="error">{resolveEmergencyMessage(error)}</Alert>
       ) : (
@@ -116,16 +118,18 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
                 <dt className="text-xs text-slate-500">&nbsp;</dt>
                 <dd className="text-slate-400">{formatDateTime(latest.measuredAt)}</dd>
               </div>
-              <div><dt className="text-xs text-slate-500">수축기혈압</dt><dd>{formatVitalDisplay("systolicBp", latest.systolicBp)}</dd></div>
-              <div><dt className="text-xs text-slate-500">맥박</dt><dd>{formatVitalDisplay("heartRate", latest.heartRate)}</dd></div>
-              <div><dt className="text-xs text-slate-500">호흡수</dt><dd>{formatVitalDisplay("respRate", latest.respRate)}</dd></div>
-              <div><dt className="text-xs text-slate-500">체온</dt><dd>{formatVitalDisplay("temperature", latest.temperature, "℃")}</dd></div>
+              {/* 수축기혈압 / 맥박 / 호흡수 / 체온 / SpO2 / GCS */}
+              <div><dt className="text-xs text-slate-500">Systolic BP</dt><dd>{formatVitalDisplay("systolicBp", latest.systolicBp)}</dd></div>
+              <div><dt className="text-xs text-slate-500">Heart Rate</dt><dd>{formatVitalDisplay("heartRate", latest.heartRate)}</dd></div>
+              <div><dt className="text-xs text-slate-500">Resp Rate</dt><dd>{formatVitalDisplay("respRate", latest.respRate)}</dd></div>
+              <div><dt className="text-xs text-slate-500">Temp</dt><dd>{formatVitalDisplay("temperature", latest.temperature, "℃")}</dd></div>
               <div><dt className="text-xs text-slate-500">SpO2</dt><dd>{formatVitalDisplay("spo2", latest.spo2, "%")}</dd></div>
               <div><dt className="text-xs text-slate-500">GCS</dt><dd>{formatVitalDisplay("gcs", latest.gcs)}</dd></div>
             </dl>
           ) : (
             <p className="mb-4 rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-400">
-              아직 측정된 활력징후가 없습니다.
+              {/* 아직 측정된 활력징후가 없습니다. */}
+              No vital signs recorded yet.
             </p>
           )}
 
@@ -143,16 +147,20 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <FormField label="수축기혈압">
+            {/* 수축기혈압 */}
+            <FormField label="Systolic BP">
               <Input type="number" name="systolicBp" value={form.systolicBp} onChange={handleChange} disabled={submitting} />
             </FormField>
-            <FormField label="맥박">
+            {/* 맥박 */}
+            <FormField label="Heart Rate">
               <Input type="number" name="heartRate" value={form.heartRate} onChange={handleChange} disabled={submitting} />
             </FormField>
-            <FormField label="호흡수">
+            {/* 호흡수 */}
+            <FormField label="Resp Rate">
               <Input type="number" name="respRate" value={form.respRate} onChange={handleChange} disabled={submitting} />
             </FormField>
-            <FormField label="체온">
+            {/* 체온 */}
+            <FormField label="Temp">
               <Input type="number" step="0.1" name="temperature" value={form.temperature} onChange={handleChange} disabled={submitting} />
             </FormField>
             <FormField label="SpO2">
@@ -161,13 +169,15 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
             <FormField label="GCS">
               <Input type="number" name="gcs" value={form.gcs} onChange={handleChange} disabled={submitting} />
             </FormField>
-            <FormField label="측정자ID" className="sm:col-span-3">
+            {/* 측정자ID */}
+            <FormField label="Measured By ID" className="sm:col-span-3">
               <Input name="measuredById" value={form.measuredById} onChange={handleChange} disabled={submitting} maxLength={36} />
             </FormField>
           </div>
           <div className="mt-3 flex justify-end">
             <Button type="button" onClick={handleSubmit} disabled={submitting || !hasAnyValue}>
-              {submitting ? "저장 중..." : "활력징후 등록"}
+              {/* 저장 중... / 활력징후 등록 */}
+              {submitting ? "Saving..." : "Register Vital Signs"}
             </Button>
           </div>
         </>
