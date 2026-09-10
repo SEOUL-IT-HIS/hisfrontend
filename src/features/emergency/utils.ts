@@ -17,28 +17,38 @@ type CriticalRule = {min? : number;  max?:number;  label: string};
 
 const VITAL_CRITICAL_RULES : Record<string, CriticalRule[]> = {
   temperature : [
-    {max: 35.5, label : "저체온"},
-    {min: 38.5, label : "고열"},
+    // 저체온
+    {max: 35.5, label : "Hypothermia"},
+    // 고열
+    {min: 38.5, label : "Fever"},
   ],
 
-  spo2: [{max:90, label: "저산소증"}],
+  // 저산소증
+  spo2: [{max:90, label: "Hypoxia"}],
 
   systolicBp: [
-    {max: 90, label: "저혈압"},
-    {min: 180, label: "고혈압"},
+    // 저혈압
+    {max: 90, label: "Hypotension"},
+    // 고혈압
+    {min: 180, label: "Hypertension"},
   ],
 
   heartRate: [
-    {max:50, label: "서맥"},
-    {min: 120, label: "빈맥"},
+    // 서맥
+    {max:50, label: "Bradycardia"},
+    // 빈맥
+    {min: 120, label: "Tachycardia"},
   ],
 
   respRate: [
-    {max: 10, label: "서호흡"},
-    {min: 24, label: "빈호흡"},
+    // 서호흡
+    {max: 10, label: "Bradypnea"},
+    // 빈호흡
+    {min: 24, label: "Tachypnea"},
   ],
 
-  gcs: [{max: 8,  label: "중증 의식 저하"}],
+  // 중증 의식 저하
+  gcs: [{max: 8,  label: "Severe Consciousness Impairment"}],
 };
 
 

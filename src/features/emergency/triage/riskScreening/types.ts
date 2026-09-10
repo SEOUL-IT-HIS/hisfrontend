@@ -22,14 +22,19 @@ export interface RiskScreeningCreateRequest {
 }
 
 export const SCREEN_TYPE_OPTIONS: ReadonlyArray<{ value: "SEPSIS" | "STROKE"; label: string }> = [
-  { value: "SEPSIS", label: "패혈증" },
-  { value: "STROKE", label: "뇌졸중" },
+  // 패혈증
+  { value: "SEPSIS", label: "Sepsis" },
+  // 뇌졸중
+  { value: "STROKE", label: "Stroke" },
 ];
 
 export const SCREEN_RESULT_OPTIONS: ReadonlyArray<{ value: "NEGATIVE" | "POSITIVE" | "INCONCLUSIVE"; label: string }> = [
-  { value: "NEGATIVE", label: "음성" },
-  { value: "POSITIVE", label: "양성" },
-  { value: "INCONCLUSIVE", label: "판정보류" },
+  // 음성
+  { value: "NEGATIVE", label: "Negative" },
+  // 양성
+  { value: "POSITIVE", label: "Positive" },
+  // 판정보류
+  { value: "INCONCLUSIVE", label: "Inconclusive" },
 ];
 
 export interface RiskScreeningState {

@@ -6,10 +6,14 @@
  * 백엔드 응답 message 가 코드로 내려오면 이 사전으로 문구 변환 후 노출한다.
  */
 export const EMERGENCY_MESSAGES = {
-  EMG_BAD_REQUEST: "요청 값이 올바르지 않습니다.",
-  EMG_NOT_FOUND: "조회하려는 대상을 찾을 수 없습니다.",
-  EMG_CONFLICT: "현재 상태와 충돌하는 요청입니다.",
-  EMG_INTERNAL_ERROR: "서버 내부 오류가 발생했습니다.",
+  // 요청 값이 올바르지 않습니다.
+  EMG_BAD_REQUEST: "The request value is invalid.",
+  // 조회하려는 대상을 찾을 수 없습니다.
+  EMG_NOT_FOUND: "The requested item could not be found.",
+  // 현재 상태와 충돌하는 요청입니다.
+  EMG_CONFLICT: "This request conflicts with the current state.",
+  // 서버 내부 오류가 발생했습니다.
+  EMG_INTERNAL_ERROR: "An internal server error occurred.",
 } as const;
 
 export type EmergencyMessageCode = keyof typeof EMERGENCY_MESSAGES;

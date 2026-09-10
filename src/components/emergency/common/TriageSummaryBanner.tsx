@@ -35,11 +35,13 @@ export default function TriageSummaryBanner({ receptionNo: _receptionNo }: Triag
 
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-      <span className="text-xs font-semibold text-slate-500">요약</span>
+      {/* 요약 */}
+      <span className="text-xs font-semibold text-slate-500">Summary</span>
 
       {activeIsolation ? (
           <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
-          격리중
+          {/* 격리중 */}
+          Isolated
         </span>
       ) : null}
 
@@ -50,20 +52,23 @@ export default function TriageSummaryBanner({ receptionNo: _receptionNo }: Triag
           </span>
           ))
       ) : latestVitals ? (
-          <span className="text-xs text-slate-400">활력징후 정상범위</span>
+          // 활력징후 정상범위
+          <span className="text-xs text-slate-400">Vitals within normal range</span>
       ) : null}
 
 
       {latestKtas ? (
         <KtasLevelBadge level={latestKtas.ktasLevelCode} />
       ) : (
-        <span className="text-xs text-slate-400">KTAS 미분류</span>
+        // KTAS 미분류
+        <span className="text-xs text-slate-400">KTAS Unclassified</span>
       )}
 
-      
+
       {latestRisk?.resultCode === "POSITIVE" ? (
         <span className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-600">
-          {latestRisk.screeningTypeCode === "SEPSIS" ? "패혈증 고위험" : "뇌졸중 의심"}
+          {/* 패혈증 고위험 / 뇌졸중 의심 */}
+          {latestRisk.screeningTypeCode === "SEPSIS" ? "High Sepsis Risk" : "Stroke Suspected"}
         </span>
       ) : null}
     </div>

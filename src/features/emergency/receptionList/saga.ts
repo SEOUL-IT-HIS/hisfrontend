@@ -12,7 +12,8 @@ function* fetchReceptionListSaga() {
         const items: ReceptionListItem[] = yield call(getReceptionList);
         yield put(fetchReceptionListSuccess(items));
     } catch (err) {
-        const message = err instanceof Error ? err.message : "접수 목록 조회에 실패했습니다.";
+        // 접수 목록 조회에 실패했습니다.
+        const message = err instanceof Error ? err.message : "Failed to load the reception list.";
         yield put(fetchReceptionListFailure(message));
     }
 }
