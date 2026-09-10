@@ -20,8 +20,9 @@ const inpatientApiOrigin =
 const outpatientApiOrigin =
   process.env.OUTPATIENT_API_ORIGIN ?? "http://192.168.1.112:8080";
 // emergency-service 만 8080 이 아니라 8085 를 쓴다
+// emergency 담당자 PC. 2026-09-10 기준 .130 → .152 (2.4G 동글/가상화 환경으로 IP 바뀜)
 const emergencyApiOrigin =
-  process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.130:8085";
+  process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.152:8085";
 // surgery-service 만 8080 이 아니라 8383 을 쓴다
 const surgeryApiOrigin =
   process.env.SURGERY_API_ORIGIN ?? "http://192.168.1.120:8383";
@@ -35,6 +36,17 @@ const pharmacyApiOrigin =
   process.env.PHARMACY_API_ORIGIN ?? "http://192.168.1.115:8088";
 
 const nextConfig: NextConfig = {
+  /*
+   * Docker 이미지용 빌드 결과물.
+   *
+   * "standalone" 을 켜면 next build 가 .next/standalone 에 "실행에 필요한 것만" 모아준다.
+   * 서버 파일 + 실제로 쓰이는 node_modules 만 담기기 때문에, 이미지에 node_modules 를
+   * 통째로 넣는 것보다 훨씬 작아진다.
+   *
+   * npm run dev 에는 영향이 없다. next build 의 출력 형태만 달라진다.
+   */
+  output: "standalone",
+
   // LAN IP로 접속할 때 /_next 정적 리소스 403 방지
   // (다른 PC에서 http://192.168.1.149:3000 접속 시 필요)
   allowedDevOrigins: [
@@ -46,7 +58,10 @@ const nextConfig: NextConfig = {
     "192.168.1.132",
     "192.168.1.140",
     "192.168.1.112",
+    // .130 은 emergency 담당자의 옛 주소. 지금 그 자리를 다른 PC 가 쓰고 있을 수 있어
+    // 지우지 않고 .152 를 추가만 한다.
     "192.168.1.130",
+    "192.168.1.152",
     "192.168.1.120",
     "192.168.1.105",
     "192.168.1.143",

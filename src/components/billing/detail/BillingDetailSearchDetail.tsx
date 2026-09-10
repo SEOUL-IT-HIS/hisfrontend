@@ -34,7 +34,7 @@ function formatAmount(value: number): string {
 
 function formatAmountText(value: string): string {
   const amount = Number(value);
-  return Number.isNaN(amounts) ? value : `₩${amount.toLocaleString()}`;
+  return Number.isNaN(amount) ? value : `₩${amount.toLocaleString()}`;
 }
 
 const ITEM_COLUMNS: DataTableColumn<BillingDetailItem>[] = [

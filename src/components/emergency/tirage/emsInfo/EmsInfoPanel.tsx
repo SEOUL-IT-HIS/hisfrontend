@@ -46,45 +46,54 @@ export default function EmsInfoPanel({ receptionNo, className = "" }: EmsInfoPan
   return (
     <section
       className={`rounded-xl border border-slate-200 bg-white p-4 ${className}`}
-      aria-label="EMS 사전정보"
+      // EMS 사전정보
+      aria-label="EMS Pre-arrival Information"
     >
-      <h3 className="mb-3 text-sm font-semibold text-slate-800">EMS(119) 사전정보</h3>
+      {/* EMS(119) 사전정보 */}
+      <h3 className="mb-3 text-sm font-semibold text-slate-800">EMS (119) Pre-arrival Information</h3>
 
       {loading ? (
-        <p className="py-6 text-center text-sm text-slate-400">EMS 사전정보를 불러오는 중입니다...</p>
+        // EMS 사전정보를 불러오는 중입니다...
+        <p className="py-6 text-center text-sm text-slate-400">Loading EMS pre-arrival information...</p>
       ) : error ? (
         <div className="space-y-2">
           <Alert variant="error">{resolveEmergencyMessage(error)}</Alert>
           <div className="flex justify-end">
+            {/* 재시도 */}
             <Button type="button" variant="secondary" onClick={handleRetry}>
-              재시도
+              Retry
             </Button>
           </div>
         </div>
       ) : !searched || items.length === 0 ? (
         <p className="rounded-lg bg-slate-50 px-3 py-6 text-center text-sm text-slate-400">
-          EMS 사전정보가 없습니다.
+          {/* EMS 사전정보가 없습니다. / 도보/직접 내원 등 119 이송이 아닌 접수 건일 수 있습니다. */}
+          No EMS pre-arrival information available.
           <br />
-          도보/직접 내원 등 119 이송이 아닌 접수 건일 수 있습니다.
+          This may be a walk-in case not transported by 119 EMS.
         </p>
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
             <dl key={item.id} className="grid grid-cols-1 gap-x-4 gap-y-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-2">
               <div>
-                <dt className="text-xs text-slate-500">이송기관</dt>
+                {/* 이송기관 */}
+                <dt className="text-xs text-slate-500">Transporting Agency</dt>
                 <dd className="text-sm text-slate-800">{item.emsAgencyName || "-"}</dd>
               </div>
               <div>
-                <dt className="text-xs text-slate-500">전송일시</dt>
+                {/* 전송일시 */}
+                <dt className="text-xs text-slate-500">Transmitted At</dt>
                 <dd className="text-sm text-slate-800">{formatDateTime(item.transmittedAt)}</dd>
               </div>
               <div className="sm:col-span-2">
-                <dt className="text-xs text-slate-500">현장 활력징후</dt>
+                {/* 현장 활력징후 */}
+                <dt className="text-xs text-slate-500">On-scene Vital Signs</dt>
                 <dd className="text-sm text-slate-800">{item.vitalsOnScene || "-"}</dd>
               </div>
               <div className="sm:col-span-2">
-                <dt className="text-xs text-slate-500">병원 전 처치내용</dt>
+                {/* 병원 전 처치내용 */}
+                <dt className="text-xs text-slate-500">Pre-hospital Treatment</dt>
                 <dd className="text-sm text-slate-800">{item.prehospitalTreatment || "-"}</dd>
               </div>
             </dl>
