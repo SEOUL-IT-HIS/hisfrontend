@@ -1,4 +1,16 @@
 import { call, put, takeLatest } from "redux-saga/effects";
+import { fetchPatientPageApi } from "../api/patientApi";
+import { fetchPatientPageRequest, fetchPatientPageSuccess, fetchPatientPageFailure } from "../slice/patientSlice";
+import type { PatientPage } from "../type/patientType";
+
+function* fetchPatientPageSaga(action: ReturnType<typeof fetchPatientPageRequest>) {
+  try {
+    const page: PatientPage = yield call(fetchPatientPageApi, action.payload);
+    yield put(fetchPatientPageSuccess(page));
+  } catch (error) {
+    yield put(fetchPatientPageFailure(getPatientErrorMessage(error, "Failed to load the patient list.")));
+  }
+}
 import { isAxiosError } from "axios";
 import {
   checkPatientDuplicateApi,
@@ -291,6 +303,7 @@ function* checkPatientDuplicateSaga(
 
 export default function* patientSaga() {
   yield takeLatest(fetchPatientListRequest.type, fetchPatientListSaga);
+  yield takeLatest(fetchPatientPageRequest.type, fetchPatientPageSaga);
 
   yield takeLatest(fetchPatientDetailRequest.type, fetchPatientDetailSaga);
 
