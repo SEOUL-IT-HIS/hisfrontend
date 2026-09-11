@@ -28,7 +28,7 @@ const emergencyApiOrigin =
 const surgeryApiOrigin =
   process.env.SURGERY_API_ORIGIN ?? "http://192.168.1.120:8383";
 const receptionApiOrigin =
-  process.env.RECEPTION_API_ORIGIN ?? "http://192.168.1.105:8080";
+  process.env.RECEPTION_API_ORIGIN ?? "http://192.168.1.105:8090";
 const billingApiOrigin =
   process.env.BILLING_API_ORIGIN ?? "http://192.168.1.143:8989";
 // pharmacy-service. 담당자 PC 로컬 기본값 (다른 PC에서 접근해야 하면 .env.local 에서
