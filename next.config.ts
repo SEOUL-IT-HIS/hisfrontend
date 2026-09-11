@@ -8,7 +8,7 @@ import type { NextConfig } from "next";
  *
  * 개인 로컬: .env.local 에서 ORIGIN 수정 (.env.local 은 git 제외)
  */
-// admin-service 는 192.168.1.126 서버의 도커 컨테이너로 돌린다. 포트는 18080
+// admin-service 는 도커 컨테이너로 돌린다. 8080 이 아니라 18080 을 쓴다
 const adminApiOrigin =
   process.env.ADMIN_API_ORIGIN ?? "http://192.168.1.126:18080";
 const patientApiOrigin =
