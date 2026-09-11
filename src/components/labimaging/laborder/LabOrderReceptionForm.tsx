@@ -221,7 +221,13 @@ export default function LabOrderReceptionForm() {
           */}
           {typedPatientName ? (
             <span className="text-xs text-emerald-600">Patient: {typedPatientName}</span>
-          ) : form.patientId.trim().length === 36 ? (
+          ) : form.patientId.trim().length === 36 
+          
+          
+          ? 
+          
+          
+          (
             <span className="text-xs text-amber-600">
               Patient not found. Check the patient ID.
             </span>
