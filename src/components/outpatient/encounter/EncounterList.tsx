@@ -225,22 +225,29 @@ const EncounterList = () => {
 
                     {/* 환자 정보 헤더 (환자가 선택되었고, "오늘 진료 작성" 탭일 때만 노출) */}
                     {selectedEncounter && activeTab === 'FORM' && (
-                        <div className="rounded-lg bg-slate-50 p-3 border border-slate-200 mb-4 space-y-2">
-                            <div className="flex items-center justify-between">
+                        <div className="mb-4 shrink-0 rounded-2xl border border-slate-200/80 bg-[var(--background)] p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                            <h3 className="text-lg font-semibold tracking-tight text-slate-900">
+                                {selectedEncounter.patientName}
+                            </h3>
+                            <div className="mt-3 grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
                                 <div>
-                                    <span className="text-base font-bold text-slate-800">{selectedEncounter.patientName}</span>
-                                    <span className="ml-2 text-xs text-slate-500">({selectedEncounter.patientId})</span>
+                                    <div className="text-xs text-slate-500">Visit Date</div>
+                                    <div className="mt-0.5 text-slate-800">{selectedEncounter.visitDate}</div>
                                 </div>
-                                <div className="text-xs text-slate-600">
-                                    {/* 내원일: ... | 진료과: ... */}
-                                    Visit Date: {selectedEncounter.visitDate} | Department: {selectedEncounter.departmentName ?? selectedEncounter.departmentCode}
+                                <div>
+                                    <div className="text-xs text-slate-500">Doctor</div>
+                                    <div className="mt-0.5 text-slate-800">{selectedEncounter.doctorId}</div>
                                 </div>
-                            </div>
-                            <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-slate-200 pt-2 text-xs text-slate-500">
-                                <span>Doctor: {selectedEncounter.doctorId}</span>
-                                <span>Reception ID: {selectedEncounter.receptionId}</span>
-                                <span>Registered: {selectedEncounter.createdAt}</span>
-                                {selectedEncounter.visitReason && <span>Reason: {selectedEncounter.visitReason}</span>}
+                                <div>
+                                    <div className="text-xs text-slate-500">Reception ID</div>
+                                    <div className="mt-0.5 truncate text-slate-800">{selectedEncounter.receptionId}</div>
+                                </div>
+                                {selectedEncounter.visitReason && (
+                                    <div>
+                                        <div className="text-xs text-slate-500">Visit Reason</div>
+                                        <div className="mt-0.5 text-slate-800">{selectedEncounter.visitReason}</div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
