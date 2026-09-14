@@ -18,6 +18,7 @@ import roleMenuReducer from "@/features/roleMenu/slice/roleMenuSlice";
 import systemReducer from "@/features/system/slice/menuSlice";
 import patientReducer from "@/features/patient/slice/patientSlice";
 import patientSafetyReducer from "@/features/patient/slice/patientSafetySlice";
+import patientContactReducer from "@/features/patient/slice/patientContactSlice";
 import billingDetailReducer from "@/features/billing/searchBillingDetail/slice";
 import billingMasterReducer from "@/features/billing/billingMaster/slice";
 import billingPaymentReducer from "@/features/billing/payment/slice";
@@ -46,6 +47,7 @@ const rootReducer = combineReducers({
   // 환자 (PAT)
   patient: patientReducer,
   patientSafety: patientSafetyReducer,
+  patientContact: patientContactReducer,
 
   // 접수 (RCP)
   reception: receptionReducer,

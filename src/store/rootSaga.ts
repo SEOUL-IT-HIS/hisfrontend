@@ -18,6 +18,7 @@ import watchRoleMenuSaga from "@/features/roleMenu/saga/roleMenuSaga";
 import watchMenuSaga from "@/features/system/saga/menuSaga";
 import watchPatientSaga from "@/features/patient/saga/patientSaga";
 import watchPatientSafetySaga from "@/features/patient/saga/patientSafetySaga";
+import watchPatientContactSaga from "@/features/patient/saga/patientContactSaga";
 import billingDetailSaga from "@/features/billing/searchBillingDetail/saga";
 import billingMasterSaga from "@/features/billing/billingMaster/saga";
 import billingPaymentSaga from "@/features/billing/payment/saga";
@@ -38,6 +39,7 @@ export default function* rootSaga() {
     // fork(adminSaga),
     fork(watchPatientSaga),
     fork(watchPatientSafetySaga),
+    fork(watchPatientContactSaga),
     fork(receptionSaga),
     fork(billingDetailSaga),
     fork(billingMasterSaga),
