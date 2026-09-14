@@ -10,19 +10,8 @@ export type SearchPatientResult = {
 
   patientName: string;
   address: string;
-  addressDetail: string;
   phoneNo: string;
   birthDate: string;
-
-  billingType: string;
-
-  paymentId: string;
-  paymentAmount: number;
-  paymentMethod: string;
-  paymentAt: string;
-  receiptNo: string;
-
-  billingStatus: string;
 }
 
 // 환자별 수납이력 한 건 (BillingHistoryDTO)
