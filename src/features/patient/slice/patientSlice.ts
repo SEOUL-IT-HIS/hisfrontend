@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { PatientPage, PatientPageRequest } from "../type/patientType";
 import type {
   Patient,
   PatientDetail,
@@ -14,6 +15,9 @@ import type {
 } from "../type/patientType";
 
 type PatientState = {
+  patientPage: PatientPage;
+  pageLoading: boolean;
+  pageError: string | null;
   patients: PatientListItem[];
   patientDetail: PatientDetail | null;
   registeredPatient: Patient | null;
@@ -49,6 +53,9 @@ type PatientState = {
 };
 
 const initialState: PatientState = {
+  patientPage: { items: [], page: 1, size: 15, totalElements: 0, totalPages: 0 },
+  pageLoading: false,
+  pageError: null,
   patients: [],
   patientDetail: null,
   registeredPatient: null,
@@ -86,6 +93,18 @@ const patientSlice = createSlice({
   name: "patient",
   initialState,
   reducers: {
+    fetchPatientPageRequest(state, _action: PayloadAction<PatientPageRequest>) {
+      state.pageLoading = true;
+      state.pageError = null;
+    },
+    fetchPatientPageSuccess(state, action: PayloadAction<PatientPage>) {
+      state.patientPage = action.payload;
+      state.pageLoading = false;
+    },
+    fetchPatientPageFailure(state, action: PayloadAction<string>) {
+      state.pageLoading = false;
+      state.pageError = action.payload;
+    },
     fetchPatientListRequest(
       state,
       _action: PayloadAction<PatientSearchCondition>,
@@ -340,6 +359,9 @@ const patientSlice = createSlice({
 });
 
 export const {
+  fetchPatientPageRequest,
+  fetchPatientPageSuccess,
+  fetchPatientPageFailure,
   fetchPatientListRequest,
   fetchPatientListSuccess,
   fetchPatientListFailure,

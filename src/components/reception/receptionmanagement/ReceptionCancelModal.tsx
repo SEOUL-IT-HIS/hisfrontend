@@ -11,10 +11,10 @@ import {
 import type { AppDispatch, RootState } from "@/store/store";
 
 const CANCEL_REASON_OPTIONS = [
-  { value: "PATIENT_REQUEST", label: "환자 요청" },
-  { value: "DUPLICATE", label: "중복 접수" },
-  { value: "MISTAKE", label: "오접수" },
-  { value: "ETC", label: "기타" },
+  { value: "PATIENT_REQUEST", label: "Patient Request" },
+  { value: "DUPLICATE", label: "Duplicate Reception" },
+  { value: "MISTAKE", label: "Registration Error" },
+  { value: "ETC", label: "Other" },
 ];
 
 type ReceptionCancelModalProps = {
@@ -75,7 +75,7 @@ export default function ReceptionCancelModal({
   return (
     <Modal
       open={receptionId !== null}
-      title="접수 취소"
+      title="Cancel Reception"
       closeDisabled={cancelLoading}
       onClose={handleClose}
       maxWidthClassName="max-w-md"
@@ -87,7 +87,7 @@ export default function ReceptionCancelModal({
       ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormField label="취소 사유" required htmlFor="cancelReasonCode">
+        <FormField label="Cancellation Reason" required htmlFor="cancelReasonCode">
           <Select
             id="cancelReasonCode"
             value={cancelReasonCode}
@@ -96,18 +96,20 @@ export default function ReceptionCancelModal({
           />
         </FormField>
 
-        <FormField label="상세 사유" htmlFor="cancelReasonDetail">
+        <FormField label="Detailed Reason" htmlFor="cancelReasonDetail">
           <Input
             id="cancelReasonDetail"
             value={cancelReasonDetail}
-            placeholder="상세 사유를 입력하세요 (선택)"
+            placeholder="Enter a detailed reason (optional)"
             onChange={(e) => setCancelReasonDetail(e.target.value)}
           />
         </FormField>
 
         <FormActions
           onCancel={handleClose}
-          submitLabel="접수 취소"
+          cancelLabel="Cancel"
+          submitLabel="Cancel Reception"
+          loadingLabel="Cancelling…"
           loading={cancelLoading}
         />
       </form>

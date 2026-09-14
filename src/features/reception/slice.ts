@@ -1,6 +1,7 @@
 import { combineReducers } from "@reduxjs/toolkit";
 import receptionManagementReducer from "@/features/reception/receptionmanagement/slice";
 import patientManagementReducer from "@/features/reception/patientmanagement/slice";
+import emergencyReceptionReducer from "@/features/reception/emergencyreception/slice";
 
 /**
  * reception 도메인 결합 reducer
@@ -11,6 +12,7 @@ import patientManagementReducer from "@/features/reception/patientmanagement/sli
 const receptionReducer = combineReducers({
   receptionmanagement: receptionManagementReducer,
   patientmanagement: patientManagementReducer,
+  emergencyreception: emergencyReceptionReducer,
 });
 
 export default receptionReducer;

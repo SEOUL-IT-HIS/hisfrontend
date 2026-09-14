@@ -26,8 +26,8 @@ import type { PatientSearchItem } from "@/features/reception/patientmanagement/t
 import type { AppDispatch } from "@/store/store";
 
 const RECEPTION_TYPE_OPTIONS = [
-  { value: "INITIAL", label: "초진" },
-  { value: "REVISIT", label: "재진" },
+  { value: "INITIAL", label: "Initial Visit" },
+  { value: "REVISIT", label: "Follow-up Visit" },
 ];
 
 type FieldErrors = {
@@ -104,8 +104,8 @@ function ReceptionRegisterFormFields({
     e.preventDefault();
 
     const nextErrors: FieldErrors = {};
-    if (!selectedPatient) nextErrors.patient = "환자를 검색하여 선택해주세요.";
-    if (!deptId) nextErrors.deptId = "진료과를 선택해주세요.";
+    if (!selectedPatient) nextErrors.patient = "Please search for and select a patient.";
+    if (!deptId) nextErrors.deptId = "Please select a department.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0 || !selectedPatient) return;
 
@@ -125,7 +125,7 @@ function ReceptionRegisterFormFields({
       {registerError ? <Alert variant="error">{registerError}</Alert> : null}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormField label="환자" required>
+        <FormField label="Patient" required>
           <div className="flex gap-2">
             <Input
               readOnly
@@ -134,21 +134,21 @@ function ReceptionRegisterFormFields({
                   ? `${selectedPatient.patientName} (${selectedPatient.patientId})`
                   : ""
               }
-              placeholder="환자검색 버튼으로 환자를 선택하세요"
+              placeholder="Select a patient using the Search Patient button"
             />
             <Button
               type="button"
               variant="secondary"
               onClick={onOpenPatientSearch}
             >
-              환자검색
+              Search Patient
             </Button>
             <Button
               type="button"
               variant="secondary"
               onClick={onOpenPatientRegister}
             >
-              환자등록
+              Register Patient
             </Button>
           </div>
           {errors.patient && (
@@ -156,11 +156,11 @@ function ReceptionRegisterFormFields({
           )}
         </FormField>
 
-        <FormField label="진료과" required htmlFor="deptId">
+        <FormField label="Department" required htmlFor="deptId">
           <Select
             id="deptId"
             value={deptId}
-            placeholder="선택"
+            placeholder="Select"
             onChange={(e) => setDeptId(e.target.value)}
             options={departments.map((d: DepartmentOption) => ({
               value: d.deptId,
@@ -173,16 +173,16 @@ function ReceptionRegisterFormFields({
         </FormField>
 
         {/* admin-service에 의사 role이 아직 없어 목록 조회가 안 되는 동안은 직접 입력 */}
-        <FormField label="의사" htmlFor="doctorId">
+        <FormField label="Doctor" htmlFor="doctorId">
           <Input
             id="doctorId"
             value={doctorId}
-            placeholder="의사 ID를 입력하세요"
+            placeholder="Enter doctor ID"
             onChange={(e) => setDoctorId(e.target.value)}
           />
         </FormField>
 
-        <FormField label="접수구분" required htmlFor="receptionType">
+        <FormField label="Reception Type" required htmlFor="receptionType">
           <Select
             id="receptionType"
             value={receptionType}
@@ -193,19 +193,20 @@ function ReceptionRegisterFormFields({
           />
         </FormField>
 
-        <FormField label="메모" htmlFor="memo">
+        <FormField label="Memo" htmlFor="memo">
           <Input
             id="memo"
             value={memo}
-            placeholder="메모를 입력하세요"
+            placeholder="Enter a memo"
             onChange={(e) => setMemo(e.target.value)}
           />
         </FormField>
 
         <FormActions
           onCancel={handleReset}
-          cancelLabel="초기화"
-          submitLabel="접수등록"
+          cancelLabel="Reset"
+          submitLabel="Register Reception"
+          loadingLabel="Registering…"
           loading={registerLoading}
         />
       </form>
