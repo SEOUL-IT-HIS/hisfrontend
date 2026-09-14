@@ -7,6 +7,7 @@ import labSpecimenSaga from "@/features/labimaging/labspecimen/saga";
 import consentSaga from "@/features/labimaging/imagingconsent/saga";
 import labResultSaga from "@/features/labimaging/labresult/saga";
 import imageFileSaga from "@/features/labimaging/imagingacquisition/saga";
+import imageReadingSaga from "@/features/labimaging/imaginginterpretation/saga";
 
 /**
  * labImaging 도메인 결합 saga
@@ -22,5 +23,6 @@ export default function* labImagingSaga() {
     fork(consentSaga),
     fork(labResultSaga),
     fork(imageFileSaga),
+    fork(imageReadingSaga),
   ]);
 }

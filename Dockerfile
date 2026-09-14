@@ -8,7 +8,7 @@
 
 
 # ══════════════ 1단계: 의존성 설치 ══════════════
-FROM node:22-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 
 # package.json 과 lockfile 만 먼저 복사한다.
@@ -25,7 +25,7 @@ RUN npm ci
 
 
 # ══════════════ 2단계: 빌드 ══════════════
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -38,7 +38,7 @@ RUN npm run build
 
 
 # ══════════════ 3단계: 실행 ══════════════
-FROM node:22-alpine AS runtime
+FROM node:24-alpine AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
