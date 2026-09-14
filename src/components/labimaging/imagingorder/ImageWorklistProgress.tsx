@@ -19,8 +19,10 @@ import type { ImageWorklistItem } from "@/features/labimaging/imagingorder/types
  *   검체는 "3건 중 2건 판정" 이라는 중간 상태가 있어 개수가 필요하지만,
  *   동의는 유효한 게 하나라도 있으면 촬영 가능이라 그런 중간 상태가 없다.
  *
- * ⚠ 판독은 아직 회색이다. IMAGE_READING 은 테이블만 있고 엔티티가 없다(ZP2-23).
- *   기능이 붙으면 이 칸도 조건부로 바뀐다.
+ * ⚠ 판독(Reading)은 ZP2-23 으로 실제 값이 붙었다. readingCompletedCount/imageFileCount 로
+ *   "n/m" 을 보여준다 — Result 칩(WorklistProgress.tsx)과 같은 패턴이다.
+ *   초록으로 바뀌는 기준은 "촬영된 만큼 판독까지 다 끝났는가"다. 아직 촬영된 파일이 없으면
+ *   판독 대상 자체가 없다는 뜻이라 회색(disabled)으로 둔다.
  *
  * ⚠ 촬영(Images)은 ZP2-21 로 실제 값이 붙었다. hasFiles 조건은 그 전부터 미리 준비해 둔
  *   것이라 이 기능이 켜지는 순간 별도 수정 없이 그대로 동작했다 — 아래 hasFiles 계산과
@@ -59,6 +61,7 @@ export default function ImageWorklistProgress({
   const allScheduled = hasItems && item.scheduledItemCount === item.imageItemCount;
   const consented = item.consentYn === "Y";
   const hasFiles = item.imageFileCount > 0;
+  const allRead = hasFiles && item.readingCompletedCount === item.imageFileCount;
 
   return (
     <div className="flex flex-wrap items-center gap-1">
@@ -84,7 +87,16 @@ export default function ImageWorklistProgress({
         label={hasFiles ? `Images ${item.imageFileCount}` : "Images −"}
         tone={hasFiles ? "done" : "disabled"}
       />
-      <StepChip label="Reading" tone="disabled" />
+      {/*
+        ⚠ 분모를 imageItemCount 가 아니라 imageFileCount 로 둔다. 판독 대상은 "촬영이 끝난 파일"이지
+          "오더의 모든 촬영항목"이 아니다 — ImageWorklistService.decideNextStep 의 같은 결정을 그대로
+          따른다. readingCompletedCount 는 항목 수 기준이라 단위가 완전히 같지는 않지만, 담당자가
+          보는 건 "촬영된 만큼 판독이 다 끝났는가" 하나뿐이라 이 조합으로 충분하다.
+      */}
+      <StepChip
+        label={hasFiles ? `Reading ${item.readingCompletedCount}/${item.imageFileCount}` : "Reading −"}
+        tone={allRead ? "done" : hasFiles ? "pending" : "disabled"}
+      />
     </div>
   );
 }

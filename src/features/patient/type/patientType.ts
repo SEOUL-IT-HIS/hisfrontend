@@ -17,6 +17,15 @@ export type PatientSearchCondition = {
   statusCd?: PatientStatus;
 };
 
+export type PatientPageRequest = PatientSearchCondition & { page: number };
+export type PatientPage = {
+  items: PatientListItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
 /** POST /api/patient/register 요청 */
 export type PatientRegisterRequest = {
   patientName: string;

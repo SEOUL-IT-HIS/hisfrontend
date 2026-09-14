@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
@@ -10,22 +10,21 @@ import {
   type DataTableColumn,
 } from "@/components/common";
 import {
-  fetchReceptionListRequest,
-  selectReceptionList,
-  selectReceptionListLoading,
-  selectReceptionListError,
+  selectCancelLoading,
+  selectCancelError,
 } from "@/features/reception/receptionmanagement/slice";
-import type { ReceptionListItem } from "@/features/reception/receptionmanagement/types";
+import {
+  fetchEmergencyReceptionListRequest,
+  selectEmergencyReceptionList,
+  selectEmergencyReceptionListLoading,
+  selectEmergencyReceptionListError,
+} from "@/features/reception/emergencyreception/slice";
+import type { EmergencyReceptionListItem } from "@/features/reception/emergencyreception/types";
 import type { AppDispatch } from "@/store/store";
-import ReceptionCancelModal from "./ReceptionCancelModal";
+import ReceptionCancelModal from "@/components/reception/receptionmanagement/ReceptionCancelModal";
 
 const CANCELLED_STATUS = "CANCELLED";
 const STATUS_FILTER_ALL = "ALL";
-
-const RECEPTION_TYPE_LABEL: Record<string, string> = {
-  INITIAL: "Initial Visit",
-  REVISIT: "Follow-up Visit",
-};
 
 const STATUS_FILTER_OPTIONS = [
   { value: STATUS_FILTER_ALL, label: "All" },
@@ -38,29 +37,43 @@ function formatDateTime(value?: string) {
   return value.replace("T", " ").slice(0, 16);
 }
 
-type ReceptionListSectionProps = {
+type EmergencyReceptionListSectionProps = {
   onSelectReception: (receptionId: string) => void;
 };
 
 /**
- * 접수 목록 조회
- * - 접수 등록 성공 시 saga 에서 자동으로 재조회한다.
+ * 응급 접수 목록 (응급접수홈 전용)
+ * - reception 홈 목록(GET /api/reception)과 분리된 GET /api/reception/emergency 를 사용한다.
+ *   백엔드가 당일·응급·취소제외로 이미 걸러주고 진료과명/의사명/환자명도 채워서 내려준다.
+ * - 응급 접수 등록 성공 시 saga 에서 목록을 자동 재조회하고, 여기서도 취소 완료 후 재조회한다.
  */
-export default function ReceptionListSection({
+export default function EmergencyReceptionListSection({
   onSelectReception,
-}: ReceptionListSectionProps) {
+}: EmergencyReceptionListSectionProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const list = useSelector(selectReceptionList);
-  const listLoading = useSelector(selectReceptionListLoading);
-  const listError = useSelector(selectReceptionListError);
+  const list = useSelector(selectEmergencyReceptionList);
+  const listLoading = useSelector(selectEmergencyReceptionListLoading);
+  const listError = useSelector(selectEmergencyReceptionListError);
+  const cancelLoading = useSelector(selectCancelLoading);
+  const cancelError = useSelector(selectCancelError);
   const [statusFilter, setStatusFilter] = useState(STATUS_FILTER_ALL);
   const [cancelReceptionId, setCancelReceptionId] = useState<string | null>(
     null,
   );
 
+  const prevCancelLoading = useRef(cancelLoading);
+
   useEffect(() => {
-    dispatch(fetchReceptionListRequest());
+    dispatch(fetchEmergencyReceptionListRequest());
   }, [dispatch]);
+
+  // 취소 요청이 끝나면(true → false) 에러가 없을 때 목록을 재조회한다.
+  useEffect(() => {
+    if (prevCancelLoading.current && !cancelLoading && !cancelError) {
+      dispatch(fetchEmergencyReceptionListRequest());
+    }
+    prevCancelLoading.current = cancelLoading;
+  }, [cancelLoading, cancelError, dispatch]);
 
   const filteredList = useMemo(() => {
     return list.filter((r) => {
@@ -71,20 +84,16 @@ export default function ReceptionListSection({
     });
   }, [list, statusFilter]);
 
-  const columns: DataTableColumn<ReceptionListItem>[] = [
+  const columns: DataTableColumn<EmergencyReceptionListItem>[] = [
     {
-      key: "receptionDate",
+      key: "receivedAt",
       header: "Reception Date",
-      render: (r) => formatDateTime(r.receptionDate),
+      render: (r) => formatDateTime(r.receivedAt),
     },
     { key: "patientName", header: "Patient Name", render: (r) => r.patientName },
+    { key: "ktasLevel", header: "KTAS", render: (r) => r.ktasLevel ?? "-" },
     { key: "deptName", header: "Department", render: (r) => r.deptName },
     { key: "doctorName", header: "Doctor", render: (r) => r.doctorName },
-    {
-      key: "receptionType",
-      header: "Type",
-      render: (r) => RECEPTION_TYPE_LABEL[r.receptionType] ?? r.receptionType,
-    },
     { key: "status", header: "Status", render: (r) => r.status },
     {
       key: "action",
@@ -111,7 +120,10 @@ export default function ReceptionListSection({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <PageHeader title="Reception List" description="List of registered receptions." />
+      <PageHeader
+        title="Emergency Reception List"
+        description="List of registered emergency receptions."
+      />
 
       <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         <div className="flex gap-1">
@@ -136,7 +148,7 @@ export default function ReceptionListSection({
         rowKey={(r) => r.receptionId}
         loading={listLoading}
         loadingMessage="Loading reception list..."
-        emptyMessage="No receptions found."
+        emptyMessage="No emergency receptions found."
       />
 
       <ReceptionCancelModal

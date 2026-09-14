@@ -190,6 +190,14 @@ export interface ImageWorklistItem {
   consentYn: "Y" | "N";
   /** 등록된 영상파일 수. ⚠ 촬영 등록 기능(ZP2-21) 전까지 항상 0 이다. */
   imageFileCount: number;
+  /**
+   * 촬영된 항목 중 판독까지 끝난(확정) 항목 수. (ZP2-23)
+   *
+   * ⚠ nextStep 은 판독이 끝나도 READING 에서 계속 머문다 — 검사 쪽 WorklistStep 이 결과 확정
+   *   후에도 RESULT 에 머무는 것과 같은 원칙이다. "판독 완료 후 목록에서 빼는" 문제는 이 값을
+   *   진행도 칩으로 보여주는 방식으로 해결했다(ImageWorklistProgress 참고) — 목록에서 빼지 않는다.
+   */
+  readingCompletedCount: number;
   nextStep: ImageWorklistStep;
 
   /** ACCEPTED = 처리 대상, EXCLUDED = 제외됨 */

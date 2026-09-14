@@ -10,11 +10,12 @@ import {
   DataTable,
   Input,
   PageHeader,
+  Pagination,
   SearchBar,
   Select,
   type DataTableColumn,
 } from "@/components/common";
-import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
+import { fetchPatientPageRequest } from "@/features/patient/slice/patientSlice";
 import { getGenderLabel } from "@/features/patient/util/genderCode";
 import type {
   PatientListItem,
@@ -105,21 +106,27 @@ export default function PatientListForm() {
   const dispatch = useDispatch<AppDispatch>();
   const [searchCondition, setSearchCondition] =
     useState<PatientSearchCondition>(initialSearchCondition);
-  const { patients, listLoading, listError } = useSelector(
+  const [appliedCondition, setAppliedCondition] = useState<PatientSearchCondition>(initialSearchCondition);
+  const [requestedPage, setRequestedPage] = useState(1);
+  const { patientPage, pageLoading: listLoading, pageError: listError } = useSelector(
     (state: RootState) => state.patient,
   );
 
   useEffect(() => {
-    dispatch(fetchPatientListRequest({}));
+    dispatch(fetchPatientPageRequest({ page: 1 }));
   }, [dispatch]);
 
   const handleSearch = () => {
-    dispatch(fetchPatientListRequest(searchCondition));
+    setAppliedCondition(searchCondition);
+    setRequestedPage(1);
+    dispatch(fetchPatientPageRequest({ ...searchCondition, page: 1 }));
   };
 
   const handleReset = () => {
     setSearchCondition(initialSearchCondition);
-    dispatch(fetchPatientListRequest({}));
+    setAppliedCondition(initialSearchCondition);
+    setRequestedPage(1);
+    dispatch(fetchPatientPageRequest({ page: 1 }));
   };
 
   return (
@@ -204,17 +211,26 @@ export default function PatientListForm() {
         </Alert>
       ) : null}
 
-      {listError ? <Alert variant="error">{listError}</Alert> : null}
+      {listError ? <div className="space-y-2"><Alert variant="error">{listError}</Alert><Button variant="secondary" onClick={() => dispatch(fetchPatientPageRequest({ ...appliedCondition, page: requestedPage }))}>Retry</Button></div> : null}
 
       <DataTable
         columns={columns}
-        rows={patients}
+        rows={listError ? [] : patientPage.items}
         rowKey={(patient) => patient.patientId}
         loading={listLoading}
         loadingMessage="Loading patients..."
         emptyMessage="No patients found."
         equalColumns
       />
+      {!listLoading && !listError ? (
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-slate-500" aria-live="polite">
+            {patientPage.totalElements === 0 ? "0 patients" : `${(patientPage.page - 1) * 15 + 1}–${(patientPage.page - 1) * 15 + patientPage.items.length} of ${patientPage.totalElements} patients`} · 15 per page
+          </p>
+          <Pagination page={patientPage.page} totalPages={patientPage.totalPages} prevLabel="Previous" nextLabel="Next"
+            onPageChange={(page) => { setRequestedPage(page); dispatch(fetchPatientPageRequest({ ...appliedCondition, page })); }} />
+        </div>
+      ) : null}
     </div>
   );
 }

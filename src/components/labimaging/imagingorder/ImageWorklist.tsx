@@ -35,6 +35,7 @@ import ReceptionExcludeDialog from "@/components/labimaging/common/ReceptionExcl
 import ImageScheduleRegisterForm from "@/components/labimaging/imagingschedule/ImageScheduleRegisterForm";
 import ConsentWorkPanel from "@/components/labimaging/imagingconsent/ConsentWorkPanel";
 import ImageAcquisitionWorkPanel from "@/components/labimaging/imagingacquisition/ImageAcquisitionWorkPanel";
+import ImageReadingWorkPanel from "@/components/labimaging/imaginginterpretation/ImageReadingWorkPanel";
 
 /**
  * 영상 워크리스트 — 왼쪽 접수 목록 + 오른쪽 작업 폼 (마스터-디테일).
@@ -53,11 +54,10 @@ import ImageAcquisitionWorkPanel from "@/components/labimaging/imagingacquisitio
  *    신규 테이블에 IMAGE_READING 은 있고 IMAGE_RESULT 는 없다.
  * 3. 촬영(영상파일 등록)이 판독 앞에 있다. 판독할 대상이 있어야 판독 화면이 성립한다.
  *
- * ── 아직 없는 것
- * ⚠ 판독 탭만 비활성이다. IMAGE_READING 은 테이블은 있으나 엔티티가 없다(ZP2-23).
- *   촬영(Acquisition) 탭은 ZP2-21 로 활성화됐다 — IMAGE_FILE 등록/조회가 붙었다.
- *   판독 탭을 지우지 않는 이유는, 촬영까지 끝낸 접수가 목록에 남아 있는 이유를
- *   담당자가 알 수 있어야 하기 때문이다. (검사 쪽 Result 탭이 그랬던 것과 같은 처리)
+ * ── 판독(Reading) 탭
+ * ⚠ ZP2-23 으로 활성화됐다. IMAGE_READING 은 촬영 시점이 아니라 이 탭을 처음 열 때(또는
+ *   워크리스트 조회 시점)에 findOrCreate 로 그 자리에서 만들어진다 — ImageReadingService 참고.
+ *   촬영(Acquisition) 탭은 ZP2-21 로 먼저 활성화됐다 — IMAGE_FILE 등록/조회가 붙었다.
  */
 
 type WorkTab = "schedule" | "consent" | "acquisition" | "reading";
@@ -66,8 +66,7 @@ const WORK_TABS: ReadonlyArray<{ value: WorkTab; label: string; enabled: boolean
   { value: "schedule", label: "Schedule", enabled: true },
   { value: "consent", label: "Consent", enabled: true },
   { value: "acquisition", label: "Acquisition", enabled: true },
-  // ZP2-23 영상판독처리 — IMAGE_READING 엔티티가 아직 없다.
-  { value: "reading", label: "Reading", enabled: false },
+  { value: "reading", label: "Reading", enabled: true },
 ];
 
 /** 백엔드가 ISO 문자열로 준다. 초 단위는 화면에서 의미가 없어 분까지만 보여준다. */
@@ -308,11 +307,10 @@ export default function ImageWorklist() {
             ) : tab === "acquisition" ? (
               // key 로 접수마다 새로 마운트해 이전 접수의 선택 항목·업로드 상태가 남지 않게 한다.
               <ImageAcquisitionWorkPanel key={selected.imageReceptionId} reception={selected} />
-              ) : (
-                <div className="text-sm text-slate-400">
-                  This step is not implemented yet.
-                </div>
-              )}
+            ) : (
+              // key 로 접수마다 새로 마운트해 이전 접수의 선택 항목·펼친 상세가 남지 않게 한다.
+              <ImageReadingWorkPanel key={selected.imageReceptionId} reception={selected} />
+            )}
             </div>
           </div>
         )}

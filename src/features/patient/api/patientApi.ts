@@ -1,4 +1,13 @@
 import apiClient from "@/lib/axios";
+import type { ApiResponse, PatientPage, PatientPageRequest } from "../type/patientType";
+
+export async function fetchPatientPageApi(request: PatientPageRequest): Promise<PatientPage> {
+  const response = await apiClient.get<ApiResponse<PatientPage>>("/api/patient/list/page", {
+    params: { page: request.page, patientName: request.patientName?.trim() || undefined,
+      birthDate: request.birthDate || undefined, statusCd: request.statusCd || undefined },
+  });
+  return response.data.data;
+}
 import type {
   Patient,
   PatientDetail,

@@ -13,8 +13,8 @@ import {
 import type { AppDispatch } from "@/store/store";
 
 const RECEPTION_TYPE_LABEL: Record<string, string> = {
-  INITIAL: "초진",
-  REVISIT: "재진",
+  INITIAL: "Initial Visit",
+  REVISIT: "Follow-up Visit",
 };
 
 type ReceptionDetailModalProps = {
@@ -49,42 +49,42 @@ export default function ReceptionDetailModal({
   return (
     <Modal
       open={receptionId !== null}
-      title="접수 상세"
+      title="Reception Details"
       onClose={handleClose}
       maxWidthClassName="max-w-lg"
     >
       {detailLoading ? (
         <p className="py-8 text-center text-sm text-slate-400">
-          불러오는 중입니다...
+          Loading...
         </p>
       ) : detailError ? (
         <Alert variant="error">{detailError}</Alert>
       ) : detail ? (
         <dl className="grid grid-cols-3 gap-y-3 text-sm">
-          <dt className="text-slate-400">환자명</dt>
+          <dt className="text-slate-400">Patient Name</dt>
           <dd className="col-span-2 text-slate-800">{detail.patientName}</dd>
 
-          <dt className="text-slate-400">진료과</dt>
+          <dt className="text-slate-400">Department</dt>
           <dd className="col-span-2 text-slate-800">{detail.deptName}</dd>
 
-          <dt className="text-slate-400">담당의</dt>
+          <dt className="text-slate-400">Doctor</dt>
           <dd className="col-span-2 text-slate-800">{detail.doctorName}</dd>
 
-          <dt className="text-slate-400">접수구분</dt>
+          <dt className="text-slate-400">Reception Type</dt>
           <dd className="col-span-2 text-slate-800">
             {RECEPTION_TYPE_LABEL[detail.receptionType] ??
               detail.receptionType}
           </dd>
 
-          <dt className="text-slate-400">접수일시</dt>
+          <dt className="text-slate-400">Reception Date</dt>
           <dd className="col-span-2 text-slate-800">
             {detail.receptionDate}
           </dd>
 
-          <dt className="text-slate-400">상태</dt>
+          <dt className="text-slate-400">Status</dt>
           <dd className="col-span-2 text-slate-800">{detail.status}</dd>
 
-          <dt className="text-slate-400">메모</dt>
+          <dt className="text-slate-400">Memo</dt>
           <dd className="col-span-2 whitespace-pre-wrap text-slate-800">
             {detail.memo || "-"}
           </dd>
