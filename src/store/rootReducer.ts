@@ -18,9 +18,11 @@ import roleMenuReducer from "@/features/roleMenu/slice/roleMenuSlice";
 import systemReducer from "@/features/system/slice/menuSlice";
 import patientReducer from "@/features/patient/slice/patientSlice";
 import patientSafetyReducer from "@/features/patient/slice/patientSafetySlice";
+import patientContactReducer from "@/features/patient/slice/patientContactSlice";
 import billingDetailReducer from "@/features/billing/searchBillingDetail/slice";
 import billingMasterReducer from "@/features/billing/billingMaster/slice";
 import billingPaymentReducer from "@/features/billing/payment/slice";
+import billingHistoryReducer from "@/features/billing/history/slice";
 
 /**
  * RootReducer (프론트 리더 관리 영역)
@@ -46,6 +48,7 @@ const rootReducer = combineReducers({
   // 환자 (PAT)
   patient: patientReducer,
   patientSafety: patientSafetyReducer,
+  patientContact: patientContactReducer,
 
   // 접수 (RCP)
   reception: receptionReducer,
@@ -54,6 +57,7 @@ const rootReducer = combineReducers({
   billingDetail: billingDetailReducer,
   billingMaster: billingMasterReducer,
   billingPayment: billingPaymentReducer,
+  billingHistory: billingHistoryReducer,
 
   // 외래 (OPD)
   outpatient: outpatientReducer,

@@ -32,6 +32,7 @@ import { getGenderLabel } from "@/features/patient/util/genderCode";
 import type { AppDispatch, RootState } from "@/store/store";
 import PostcodeSearchButton from "./PostcodeSearchButton";
 import PatientSafetyPanel from "./PatientSafetyPanel";
+import PatientContactPanel from "./PatientContactPanel";
 
 type PatientDetailFormProps = {
   patientId: string;
@@ -763,6 +764,14 @@ export default function PatientDetailForm({
               </div>
             ) : null}
           </form>
+
+          {patientDetail.patientId === patientId ? (
+            <PatientContactPanel
+              key={patientId}
+              patientId={patientId}
+              patientName={patientDetail.patientName}
+            />
+          ) : null}
 
           {patientDetail.patientId === patientId ? (
             <PatientSafetyPanel key={patientId} patientId={patientId} patientName={patientDetail.patientName} />
