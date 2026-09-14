@@ -18,7 +18,7 @@ const KakaoPayReturn = () => {
   const searchParams = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { loading, error, success } = useSelector((state: RootState) => state.billingPayment);
+  const { loading, error, success } = useSelector((state: RootState) => state.billing.payment);
 
   const billingId = searchParams.get("billingId");
   const pgToken = searchParams.get("pg_token");

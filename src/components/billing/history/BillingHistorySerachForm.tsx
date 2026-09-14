@@ -16,7 +16,7 @@ export default function BillingHistorySearchForm({
     const dispatch = useDispatch<AppDispatch>();
     const [patientName, setPatientName] = useState("");
     const { searchList, searchStatus } = useSelector(
-        (state: RootState) => state.billingHistory,
+        (state: RootState) => state.billing.history,
     );
     const { loading, error } = searchStatus;
 

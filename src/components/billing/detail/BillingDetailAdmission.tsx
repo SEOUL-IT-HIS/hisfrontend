@@ -10,9 +10,9 @@ const billingDetailAdmission = () => {
     const dispatch = useDispatch<AppDispatch>();
 
     const { loading, error, detail } = useSelector((state: RootState) => ({
-        loading: state.billingDetail.admissionDetailStatus.loading,
-        error: state.billingDetail.admissionDetailStatus.error,
-        detail: state.billingDetail.admissionDetail
+        loading: state.billing.detail.admissionDetailStatus.loading,
+        error: state.billing.detail.admissionDetailStatus.error,
+        detail: state.billing.detail.admissionDetail
     }), shallowEqual);
     
     useEffect(() => {

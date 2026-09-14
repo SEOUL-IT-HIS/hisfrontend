@@ -19,7 +19,7 @@ export default function BillingDetailSearchForm({
     const dispatch = useDispatch<AppDispatch>();
     const [patientName, setPatientName] = useState("");
     const { searchPatient, loading, error } = useSelector(
-        (state: RootState) => state.billingDetail,
+        (state: RootState) => state.billing.detail,
     );
 
     const onSearch = () => {

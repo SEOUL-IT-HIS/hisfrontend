@@ -20,9 +20,9 @@ const BillingMasterDetail = () => {
 
   const { loading, error, detail } = useSelector(
     (state: RootState) => ({
-      loading: state.billingMaster.detailStatus.loading,
-      error: state.billingMaster.detailStatus.error,
-      detail: state.billingMaster.detail,
+      loading: state.billing.master.detailStatus.loading,
+      error: state.billing.master.detailStatus.error,
+      detail: state.billing.master.detail,
     }),
     shallowEqual,
   );

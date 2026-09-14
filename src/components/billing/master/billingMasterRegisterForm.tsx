@@ -36,7 +36,7 @@ const initialForm: BillingMasterFormState = {
 const BillingMasterRegisterForm = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.billingMaster.createStatus);
+  const { loading, error } = useSelector((state: RootState) => state.billing.master.createStatus);
   const createSuccess = useSelector(selectBillingMasterCreateSuccess);
 
   const [form, setForm] = useState<BillingMasterFormState>(initialForm);
