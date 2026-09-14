@@ -29,6 +29,7 @@ import {
 import { selectLastCreatedImageSchedule } from "@/features/labimaging/imagingschedule/slice";
 import { selectLastCreatedConsent } from "@/features/labimaging/imagingconsent/slice";
 import { selectLastUploadedImageFile } from "@/features/labimaging/imagingacquisition/slice";
+import { selectLastSubmittedReading } from "@/features/labimaging/imaginginterpretation/slice";
 import ImageWorklistProgress from "@/components/labimaging/imagingorder/ImageWorklistProgress";
 import ImageWorklistReceptionHeader from "@/components/labimaging/imagingorder/ImageWorklistReceptionHeader";
 import ReceptionExcludeDialog from "@/components/labimaging/common/ReceptionExcludeDialog";
@@ -92,18 +93,31 @@ export default function ImageWorklist() {
   /*
    * 목록을 다시 부르는 지점은 이 효과 하나로 모은다.
    *   - 필터를 바꿨을 때
-   *   - 일정·동의가 저장돼 진행 상태가 달라졌을 때
+   *   - 일정·동의·촬영·판독이 저장돼 진행 상태가 달라졌을 때
    * 효과를 나눠 두면 필터를 바꿀 때 양쪽이 같이 돌아 같은 요청이 두 번 나간다.
    * (제외·복구 뒤 갱신은 saga 가 직접 하므로 여기 넣지 않는다 — 넣으면 두 번 나간다)
+   *
+   * ⚠ lastSubmittedReadingId 가 없으면 Reading 탭에서 배정/소견저장/확정을 해도
+   *   이 접수 목록의 진행도 칩(readingCompletedCount)이 그대로다 — 다른 탭을 갔다 오거나
+   *   새로고침해야만 반영됐다. 판독도 다른 세 하위 작업과 똑같이 여기서 구독한다.
    */
   const lastScheduleId =
     useSelector(selectLastCreatedImageSchedule)?.imageScheduleId ?? null;
   const lastConsentId = useSelector(selectLastCreatedConsent)?.consentId ?? null;
   const lastImageFileId = useSelector(selectLastUploadedImageFile)?.imageFileId ?? null;
+  const lastSubmittedReadingId =
+    useSelector(selectLastSubmittedReading)?.imageReadingId ?? null;
 
   useEffect(() => {
     dispatch(fetchImageWorklistRequest(filter));
-  }, [dispatch, filter, lastScheduleId, lastConsentId, lastImageFileId]);
+  }, [
+    dispatch,
+    filter,
+    lastScheduleId,
+    lastConsentId,
+    lastImageFileId,
+    lastSubmittedReadingId,
+  ]);
 
   /*
    * 목록에 보이는 환자들의 이름을 한 번에 불러온다. (POST /api/patient/batch)
