@@ -59,8 +59,8 @@ export default function LoginForm() {
     const loginId = form.loginId.trim();
     const password = form.password.trim();
     const nextFieldErrors: { loginId?: string; password?: string } = {};
-    if (!loginId) nextFieldErrors.loginId = "아이디를 입력하세요.";
-    if (!password) nextFieldErrors.password = "비밀번호를 입력하세요.";
+    if (!loginId) nextFieldErrors.loginId = "Enter your user ID.";
+    if (!password) nextFieldErrors.password = "Enter your password.";
 
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
@@ -99,16 +99,16 @@ export default function LoginForm() {
           HIS
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-          로그인
+          Sign In
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          아이디와 비밀번호를 입력하세요.
+          Enter your user ID and password.
         </p>
       </div>
 
       {isExpired ? (
         <div className="mb-4">
-          <Alert variant="info">세션이 만료되어 다시 로그인해주세요.</Alert>
+          <Alert variant="info">Your session has expired. Please sign in again.</Alert>
         </div>
       ) : null}
 
@@ -119,11 +119,11 @@ export default function LoginForm() {
       ) : null}
 
       <form onSubmit={onSubmit} className="space-y-4">
-        <FormField label="아이디" required htmlFor="loginId">
+        <FormField label="User ID" required htmlFor="loginId">
           <Input
             id="loginId"
             value={form.loginId}
-            placeholder="로그인 아이디"
+            placeholder="User ID"
             autoComplete="username"
             disabled={loading}
             onChange={(e) => {
@@ -136,12 +136,12 @@ export default function LoginForm() {
           ) : null}
         </FormField>
 
-        <FormField label="비밀번호" required htmlFor="password">
+        <FormField label="Password" required htmlFor="password">
           <Input
             id="password"
             type="password"
             value={form.password}
-            placeholder="비밀번호"
+            placeholder="Password"
             autoComplete="current-password"
             disabled={loading}
             onChange={(e) => {
@@ -161,7 +161,7 @@ export default function LoginForm() {
             className="w-full"
             disabled={loading}
           >
-            {loading ? "로그인 중..." : "로그인"}
+            {loading ? "Signing in..." : "Sign In"}
           </Button>
         </div>
       </form>
