@@ -39,8 +39,9 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
     const { loading, error } = useSelector(selectBedDetailStatus);
     const patientDetail = useSelector((state: RootState) => state.patient.patientDetail);
     const { options: roomTypeOptions } = useCommonCodeOptions("ROOM_TYPE_CD");
+    const { options: wardOptions } = useCommonCodeOptions("WARD_CD");
     const [roomTypeCode, setRoomTypeCode] = useState(bed?.roomTypeCode ?? "");
-    
+    const [wardCd, setWardCd] = useState(bed?.wardCd ?? "");
     useEffect(() => {
         if (!bedId) return;
         dispatch(fetchBedDetailRequest(bedId));
@@ -55,6 +56,14 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
         setRoomTypeCode(bed?.roomTypeCode ?? "");
     }, [bed?.roomTypeCode]);
 
+    useEffect(() => {
+        setWardCd(bed?.wardCd ?? "");
+    }, [bed?.wardCd]);
+
+    const handleSaveWard = () => {
+        if (!bedId || !wardCd) return;
+        dispatch({type: "bed/updateBedWardRequest", payload: { bedId, wardCd }});
+    }
     const handleSaveRoomType = () => {
         if (!bedId || !roomTypeCode) return;
         dispatch({type: "bed/updateBedRoomTypeRequest", payload: { bedId, roomTypeCode }});
@@ -121,6 +130,18 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
                         ))}
                         </select>
                         <button onClick={handleSaveRoomType} className="rounded bg-sky-600 px-2 py-1 text-xs text-white">Save</button>
+                        </div>
+                        </div>
+                        <div className={INFO_ROW}>
+                        <span className="text-slate-500">Ward</span>
+                        <div className="flex items-center gap-2">
+                        <select value={wardCd} onChange={(e) => setWardCd(e.target.value)} className="rounded border border-slate-300 px-2 py-1 text-sm">
+                        <option value="">Select</option>
+                        {wardOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                        </select>
+                        <button onClick={handleSaveWard} className="rounded bg-sky-600 px-2 py-1 text-xs text-white">Save</button>
                         </div>
                         </div>
 

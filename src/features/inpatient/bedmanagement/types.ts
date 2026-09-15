@@ -76,6 +76,7 @@ export interface BedState {
   listStatus: Status;
   detailStatus: Status;
   updateRoomTypeStatus: Status;
+  updateWardStatus: Status;
 }
 
 // ----- 병상예약(bedreservation) 전용 -----
