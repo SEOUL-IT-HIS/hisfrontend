@@ -24,9 +24,8 @@ const outpatientApiOrigin =
 // emergency 담당자 PC. 2026-09-10 기준 .130 → .152 (2.4G 동글/가상화 환경으로 IP 바뀜)
 const emergencyApiOrigin =
   process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.152:8085";
-// surgery-service 만 8080 이 아니라 8383 을 쓴다
 const surgeryApiOrigin =
-  process.env.SURGERY_API_ORIGIN ?? "http://192.168.1.120:8383";
+  process.env.SURGERY_API_ORIGIN ?? "http://192.168.1.120:8084";
 const receptionApiOrigin =
   process.env.RECEPTION_API_ORIGIN ?? "http://192.168.1.105:8090";
 const billingApiOrigin =
