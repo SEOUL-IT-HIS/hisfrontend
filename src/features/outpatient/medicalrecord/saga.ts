@@ -52,13 +52,7 @@ function* updateRecordSaga(action: ReturnType<typeof updateRecordRequest>) {
             action.payload.params
         )) as MedicalRecordDto;
 
-        // 수정 시에도 fileNames 유지 처리
-        const mockUpdatedWithFiles: MedicalRecordDto = {
-            ...updated,
-            fileNames: action.payload.params.fileNames || []
-        };
-
-        yield put(updateRecordSuccess(mockUpdatedWithFiles));
+        yield put(updateRecordSuccess(updated));
     } catch (error) {
         const message = error instanceof Error ? error.message : "Medical record update failed";
         yield put(updateRecordFailure(message));

@@ -116,8 +116,6 @@ const PrescriptionList = () => {
                         <tr>
                             {/* 환자명 / 진료구분 / 우선순위 / 상태 / 처방일시 / 관리 */}
                             <th className="w-[120px] p-3 font-semibold">Patient</th>
-                            <th className="w-[120px] p-3 font-semibold">Service Type</th>
-                            <th className="w-[120px] p-3 font-semibold">Priority</th>
                             <th className="w-[120px] p-3 font-semibold">Status</th>
                             <th className="w-[120px] p-3 font-semibold">Prescribed At</th>
                             <th className="w-[120px] p-3 font-semibold">Actions</th>
@@ -128,8 +126,6 @@ const PrescriptionList = () => {
                             list.map((prescription) => (
                                 <tr key={prescription.prescriptionId} className="hover:bg-slate-50 transition">
                                     <td className="p-3">{prescription.patientName ?? prescription.patientId}</td>
-                                    <td className="p-3">{prescription.serviceType ?? "-"}</td>
-                                    <td className="p-3">{prescription.priorityCode ?? "-"}</td>
                                     <td className="p-3">{getStatusText(prescription.status)}</td>
                                     <td className="p-3">{formatDateTime(prescription.prescribedAt)}</td>
                                     <td className="p-3">
@@ -145,7 +141,7 @@ const PrescriptionList = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={6} className="p-6 text-center text-slate-500">
+                                <td colSpan={4} className="p-6 text-center text-slate-500">
                                     {/* 조회된 처방 내역이 없습니다. */}
                                     No prescriptions found.
                                 </td>

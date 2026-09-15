@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Input, Select } from "@/components/common";
 import { useOutpatientCommonCodeOptions } from "@/features/outpatient/commonCode/useOutpatientCommonCodeOptions";
-import type { PrescriptionItemInput } from "@/features/outpatient/prescription/types";
+import { searchMedication } from "@/features/outpatient/prescription/api";
+import type { MedicationDto, PrescriptionItemInput } from "@/features/outpatient/prescription/types";
 
 // 주의: 이 값들은 화면 표시용이 아니라 실제 prescriptionType 데이터 값이다.
 // 백엔드 PrescriptionServiceImpl.dispatchLabOrders()/dispatchPharmacyOrders()가
@@ -30,19 +31,52 @@ export default function PrescriptionForm({ items, onChange }: PrescriptionOrderP
         useOutpatientCommonCodeOptions("TEST_TYPE_CD");
     const [selectedLabCode, setSelectedLabCode] = useState("");
 
-    // 약품 항목 코드 / 제형 코드 옵션
-    // 참고: ADM 공통코드 그룹명이 실제로 다르면(DRUG_CD/DOSAGE_FORM_CD) 이 groupCode 값만 바꾸면 됨
-    const { options: drugOptions, loading: drugOptionsLoading } =
-        useOutpatientCommonCodeOptions("DRUG_CD");
+    // 제형 코드 옵션 (약품 자체 검색은 약제서비스 실시간 검색으로 대체, 투약 형태만 공통코드 유지)
     const { options: dosageFormOptions, loading: dosageFormOptionsLoading } =
         useOutpatientCommonCodeOptions("DOSAGE_FORM_CD");
 
-    const [selectedDrugCode, setSelectedDrugCode] = useState("");
+    // 약품 실시간 검색 (약제서비스 연동)
+    const [drugSearchTerm, setDrugSearchTerm] = useState("");
+    const [drugSearchResults, setDrugSearchResults] = useState<MedicationDto[]>([]);
+    const [drugSearchLoading, setDrugSearchLoading] = useState(false);
+    const [showDrugResults, setShowDrugResults] = useState(false);
+    const [selectedMedication, setSelectedMedication] = useState<MedicationDto | null>(null);
+
     const [dosageQty, setDosageQty] = useState("");
     const [selectedDosageFormCd, setSelectedDosageFormCd] = useState("");
     const [frequency, setFrequency] = useState("");
     const [durationDays, setDurationDays] = useState("");
     const [detailInfo, setDetailInfo] = useState("");
+
+    // 검색어 입력 후 300ms 디바운스로 약제서비스 검색
+    useEffect(() => {
+        const term = drugSearchTerm.trim();
+        if (term.length < 2) {
+            return;
+        }
+        const timer = setTimeout(() => {
+            setDrugSearchLoading(true);
+            searchMedication(term)
+                .then((results) => {
+                    setDrugSearchResults(results);
+                    setShowDrugResults(true);
+                })
+                .catch(() => setDrugSearchResults([]))
+                .finally(() => setDrugSearchLoading(false));
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [drugSearchTerm]);
+
+    function handleDrugSearchChange(value: string) {
+        setDrugSearchTerm(value);
+        setSelectedMedication(null);
+    }
+
+    function handleSelectMedication(medication: MedicationDto) {
+        setSelectedMedication(medication);
+        setDrugSearchTerm(medication.medicationName);
+        setShowDrugResults(false);
+    }
 
     function handleAddLabItem() {
         const option = labOptions.find((o) => o.value === selectedLabCode);
@@ -56,15 +90,14 @@ export default function PrescriptionForm({ items, onChange }: PrescriptionOrderP
 
     // 약품 항목 추가 - 검사랑 다르게 용량/횟수/일수 등 추가 정보를 같이 받음
     function handleAddMedicationItem() {
-        const option = drugOptions.find((o) => o.value === selectedDrugCode);
-        if (!option || !dosageQty) return;
+        if (!selectedMedication || !dosageQty) return;
 
         onChange([
             ...items,
             {
                 prescriptionType: "약품",
-                itemCode: option.value,
-                itemName: option.label,
+                itemCode: selectedMedication.ediCode,
+                itemName: selectedMedication.medicationName,
                 dosage: Number(dosageQty),
                 dosageFormCd: selectedDosageFormCd || undefined,
                 frequency: frequency || undefined,
@@ -72,7 +105,9 @@ export default function PrescriptionForm({ items, onChange }: PrescriptionOrderP
                 detailInfo: detailInfo || undefined,
             },
         ]);
-        setSelectedDrugCode("");
+        setSelectedMedication(null);
+        setDrugSearchTerm("");
+        setDrugSearchResults([]);
         setDosageQty("");
         setSelectedDosageFormCd("");
         setFrequency("");
@@ -112,12 +147,44 @@ export default function PrescriptionForm({ items, onChange }: PrescriptionOrderP
                 {activeOrderTab === "약품" ? (
                     <>
                         <div className="grid grid-cols-2 gap-2 mb-3 sm:grid-cols-3">
-                            <Select
-                                options={drugOptions}
-                                placeholder={drugOptionsLoading ? "Loading..." : "Select a drug"}
-                                value={selectedDrugCode}
-                                onChange={(e) => setSelectedDrugCode(e.target.value)}
-                            />
+                            <div className="relative">
+                                <Input
+                                    placeholder="Search drug by name"
+                                    value={drugSearchTerm}
+                                    onChange={(e) => handleDrugSearchChange(e.target.value)}
+                                    onFocus={() => {
+                                        if (drugSearchResults.length > 0) setShowDrugResults(true);
+                                    }}
+                                    onBlur={() => {
+                                        // 결과 클릭(onMouseDown)이 먼저 처리되도록 살짝 지연 후 닫기
+                                        setTimeout(() => setShowDrugResults(false), 150);
+                                    }}
+                                />
+                                {showDrugResults && drugSearchTerm.trim().length >= 2 && drugSearchResults.length > 0 && (
+                                    <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
+                                        {drugSearchResults.map((med) => (
+                                            <li
+                                                key={med.medicationId}
+                                                className="cursor-pointer px-3 py-2 text-sm hover:bg-slate-50"
+                                                onMouseDown={() => handleSelectMedication(med)}
+                                            >
+                                                <div className="font-medium text-slate-800">{med.medicationName}</div>
+                                                <div className="text-xs text-slate-400">
+                                                    {med.entpName ?? "-"} · {med.formCodeName ?? "-"}
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {showDrugResults &&
+                                    !drugSearchLoading &&
+                                    drugSearchTerm.trim().length >= 2 &&
+                                    drugSearchResults.length === 0 && (
+                                        <div className="absolute z-10 mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-400 shadow-lg">
+                                            No results found.
+                                        </div>
+                                    )}
+                            </div>
                             <Input
                                 type="number"
                                 min="0"
@@ -152,7 +219,7 @@ export default function PrescriptionForm({ items, onChange }: PrescriptionOrderP
                             <Button
                                 variant="primary"
                                 onClick={handleAddMedicationItem}
-                                disabled={!selectedDrugCode || !dosageQty}
+                                disabled={!selectedMedication || !dosageQty}
                             >
                                 Add
                             </Button>
