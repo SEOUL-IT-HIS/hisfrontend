@@ -11,6 +11,7 @@ export interface BedAssignmentDTO {
 export interface BedDTO {
   patientId: string | null;
   bedId: string;
+  wardCd: string | null;
   roomNo: string;
   bedNo: string;
   bedStatus: string;

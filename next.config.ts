@@ -8,9 +8,11 @@ import type { NextConfig } from "next";
  *
  * 개인 로컬: .env.local 에서 ORIGIN 수정 (.env.local 은 git 제외)
  */
-// admin-service 는 도커 컨테이너로 돌린다. 8080 이 아니라 18080 을 쓴다
+// admin-service 는 내 PC(IntelliJ)에서 띄운 것을 기본으로 부른다.
+// 원격 서버가 꺼져 있어도 로컬 작업이 되게 하려고 원격 주소를 기본값으로 두지 않는다.
+// 원격 서버 admin 을 쓰고 싶으면 .env.local 에 ADMIN_API_ORIGIN=http://192.168.1.126:18080 을 적는다.
 const adminApiOrigin =
-  process.env.ADMIN_API_ORIGIN ?? "http://192.168.1.126:18080";
+  process.env.ADMIN_API_ORIGIN ?? "http://localhost:8080";
 const patientApiOrigin =
   process.env.PATIENT_API_ORIGIN ?? "http://192.168.1.149:8087";
 // lab-imaging 담당자 PC. 2026-08-24 기준 .104 → .132 (DHCP 로 주소가 바뀌었음)
@@ -24,13 +26,12 @@ const outpatientApiOrigin =
 // emergency 담당자 PC. 2026-09-10 기준 .130 → .152 (2.4G 동글/가상화 환경으로 IP 바뀜)
 const emergencyApiOrigin =
   process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.152:8085";
-// surgery-service 만 8080 이 아니라 8383 을 쓴다
 const surgeryApiOrigin =
-  process.env.SURGERY_API_ORIGIN ?? "http://192.168.1.120:8383";
+  process.env.SURGERY_API_ORIGIN ?? "http://192.168.1.120:8084";
 const receptionApiOrigin =
   process.env.RECEPTION_API_ORIGIN ?? "http://192.168.1.105:8090";
 const billingApiOrigin =
-  process.env.BILLING_API_ORIGIN ?? "http://192.168.1.143:8989";
+  process.env.BILLING_API_ORIGIN ?? "http://192.168.1.143:8081";
 // pharmacy-service. 담당자 PC 로컬 기본값 (다른 PC에서 접근해야 하면 .env.local 에서
 // PHARMACY_API_ORIGIN 을 본인 LAN IP로 덮어쓰면 됨)
 const pharmacyApiOrigin =
