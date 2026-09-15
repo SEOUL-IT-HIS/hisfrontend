@@ -12,9 +12,9 @@ const BillingHistorySearchDetail = ({ patientId }: BillingHistorySearchDetailPro
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error, detail } = useSelector(
         (state: RootState) => ({
-            loading: state.billingHistory.detailStatus.loading,
-            error: state.billingHistory.detailStatus.error,
-            detail: state.billingHistory.detail,
+            loading: state.billing.billingHistory.detailStatus.loading,
+            error: state.billing.billingHistory.detailStatus.error,
+            detail: state.billing.billingHistory.detail,
         }),
         shallowEqual,
     ); // 진료비 상세조회 Redux State
