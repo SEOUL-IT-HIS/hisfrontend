@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { RootState } from "@/store/store";
 import type {
   KakaoPayApprovePayload,
   KakaoPayReadyPayload,
@@ -102,10 +103,8 @@ export default billingPaymentSlice.reducer;
 
 // ----- Selector (가이드 10.4: 컴포넌트에서 state.xxx.yyy 깊게 파지 않기) -----
 
-type BillingPaymentRoot = { billingPayment: PaymentState };
-
-export const selectBillingPaymentLoading = (state: BillingPaymentRoot) =>
-  state.billingPayment.loading;
-export const selectBillingPaymentError = (state: BillingPaymentRoot) => state.billingPayment.error;
-export const selectBillingPaymentSuccess = (state: BillingPaymentRoot) =>
-  state.billingPayment.success;
+export const selectBillingPaymentLoading = (state: RootState) =>
+  state.billing.billingPayment.loading;
+export const selectBillingPaymentError = (state: RootState) => state.billing.billingPayment.error;
+export const selectBillingPaymentSuccess = (state: RootState) =>
+  state.billing.billingPayment.success;
