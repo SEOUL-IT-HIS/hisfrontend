@@ -17,7 +17,7 @@ const patientApiOrigin =
   process.env.PATIENT_API_ORIGIN ?? "http://192.168.1.149:8087";
 // lab-imaging 담당자 PC. 2026-08-24 기준 .104 → .132 (DHCP 로 주소가 바뀌었음)
 const labImagingApiOrigin =
-  process.env.LABIMAGING_API_ORIGIN ?? "http://192.168.1.132:8080";
+  process.env.LABIMAGING_API_ORIGIN ?? "http://192.168.1.132:8085";
 const inpatientApiOrigin =
   process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.140:8080";
 const outpatientApiOrigin =
