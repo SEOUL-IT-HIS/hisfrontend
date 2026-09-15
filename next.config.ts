@@ -30,7 +30,7 @@ const surgeryApiOrigin =
 const receptionApiOrigin =
   process.env.RECEPTION_API_ORIGIN ?? "http://192.168.1.105:8090";
 const billingApiOrigin =
-  process.env.BILLING_API_ORIGIN ?? "http://192.168.1.143:8989";
+  process.env.BILLING_API_ORIGIN ?? "http://192.168.1.143:8081";
 // pharmacy-service. 담당자 PC 로컬 기본값 (다른 PC에서 접근해야 하면 .env.local 에서
 // PHARMACY_API_ORIGIN 을 본인 LAN IP로 덮어쓰면 됨)
 const pharmacyApiOrigin =
