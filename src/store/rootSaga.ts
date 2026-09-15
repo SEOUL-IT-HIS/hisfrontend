@@ -2,7 +2,7 @@ import { all, fork } from "redux-saga/effects";
 
 // ----- 서비스별 saga (담당자 saga 준비되면 import 후 fork 등록) -----
 import receptionSaga from "@/features/reception/saga";
-// import billingSaga from "@/features/billing/saga";
+import billingSaga from "@/features/billing/saga";
 import outpatientSaga from "@/features/outpatient/common/saga";
 import emergencySaga from "@/features/emergency/common/saga";
 import inpatientSaga from "@/features/inpatient/saga";
@@ -18,10 +18,7 @@ import watchRoleMenuSaga from "@/features/roleMenu/saga/roleMenuSaga";
 import watchMenuSaga from "@/features/system/saga/menuSaga";
 import watchPatientSaga from "@/features/patient/saga/patientSaga";
 import watchPatientSafetySaga from "@/features/patient/saga/patientSafetySaga";
-import billingDetailSaga from "@/features/billing/searchBillingDetail/saga";
-import billingMasterSaga from "@/features/billing/billingMaster/saga";
-import billingPaymentSaga from "@/features/billing/payment/saga";
-
+import watchPatientContactSaga from "@/features/patient/saga/patientContactSaga";
 /**
  * RootSaga (프론트 리더 관리 영역)
  * - 담당 영역(auth/admin/commonCode/system) 초기화 — 재구현 후 fork 등록
@@ -38,10 +35,9 @@ export default function* rootSaga() {
     // fork(adminSaga),
     fork(watchPatientSaga),
     fork(watchPatientSafetySaga),
+    fork(watchPatientContactSaga),
     fork(receptionSaga),
-    fork(billingDetailSaga),
-    fork(billingMasterSaga),
-    fork(billingPaymentSaga),
+    fork(billingSaga),
     fork(outpatientSaga),
     fork(emergencySaga),
     fork(inpatientSaga),

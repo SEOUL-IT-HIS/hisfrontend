@@ -2,7 +2,7 @@ import { combineReducers } from "@reduxjs/toolkit";
 
 // ----- 서비스별 reducer (담당자 slice 준비되면 import 후 아래에 등록) -----
 import receptionReducer from "@/features/reception/slice";
-// import billingReducer from "@/features/billing/slice";
+import billingReducer from "@/features/billing/slice";
 import outpatientReducer from "@/features/outpatient/common/slice";
 import emergencyReducer from "@/features/emergency/common/slice";
 import inpatientReducer from "@/features/inpatient/slice";
@@ -18,10 +18,7 @@ import roleMenuReducer from "@/features/roleMenu/slice/roleMenuSlice";
 import systemReducer from "@/features/system/slice/menuSlice";
 import patientReducer from "@/features/patient/slice/patientSlice";
 import patientSafetyReducer from "@/features/patient/slice/patientSafetySlice";
-import billingDetailReducer from "@/features/billing/searchBillingDetail/slice";
-import billingMasterReducer from "@/features/billing/billingMaster/slice";
-import billingPaymentReducer from "@/features/billing/payment/slice";
-
+import patientContactReducer from "@/features/patient/slice/patientContactSlice";
 /**
  * RootReducer (프론트 리더 관리 영역)
  * - 담당 영역(auth/admin/commonCode/system) 초기화 — 재구현 후 등록
@@ -46,14 +43,13 @@ const rootReducer = combineReducers({
   // 환자 (PAT)
   patient: patientReducer,
   patientSafety: patientSafetyReducer,
+  patientContact: patientContactReducer,
 
   // 접수 (RCP)
   reception: receptionReducer,
 
   // 수납/청구 (BIL)
-  billingDetail: billingDetailReducer,
-  billingMaster: billingMasterReducer,
-  billingPayment: billingPaymentReducer,
+  billing: billingReducer,
 
   // 외래 (OPD)
   outpatient: outpatientReducer,

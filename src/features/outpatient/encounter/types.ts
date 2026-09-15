@@ -4,9 +4,11 @@ export interface EncounterDto {
     patientName: string | null;
     receptionId: string;
     departmentCode: string;
+    departmentName: string | null;
     doctorId: string;
     status: string;
     visitDate: string;
+    visitReason: string | null;
     createdAt: string;
 }
 

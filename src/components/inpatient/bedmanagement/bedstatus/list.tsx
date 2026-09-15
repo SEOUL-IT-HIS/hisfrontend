@@ -5,8 +5,10 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import Link from "next/link";
 import { fetchBedRequest, selectBed, selectBedListStatus } from "@/features/inpatient/bedmanagement/bedstatus/slice";
+import { fetchWardCodesApi } from "@/features/inpatient/bedmanagement/bedstatus/api";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import BedStatusDetail from "@/components/inpatient/bedmanagement/bedstatus/detail";
+import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemTypes";
 
 // 병상 상태 코드(bedStatus) → 배지 색상
 const STATUS_BADGE: Record<string, string> = {
@@ -54,19 +56,21 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
 
 
   const [searchStatus, setSearchStatus] = React.useState<string>('');
+  // 병동(WARD_CD) 필터 — 빈 문자열이면 전체 병동
+  const [searchWard, setSearchWard] = React.useState<string>('');
+  const [wardCodes, setWardCodes] = React.useState<CommonCodeItem[]>([]);
   // 목록에서 클릭한 병상ID — 값이 있으면 오른쪽에 상세 패널을 띄움(마스터-디테일)
   const [selectedBedId, setSelectedBedId] = useState<string | null>(null);
   // list(테이블 한 줄씩) / room(병실별로 묶어서) 두 가지 보기 모드
   const [viewMode, setViewMode] = useState<"list" | "room">("list");
-  // useMemo를 쓰면 searchStatus가 바뀔 때만 필터링이 다시 계산됨. 아니면 매 렌더링마다 filter가 실행되어 성능 저하 가능
+  // useMemo를 쓰면 searchStatus/searchWard가 바뀔 때만 필터링이 다시 계산됨. 아니면 매 렌더링마다 filter가 실행되어 성능 저하 가능
   const filteredBeds = useMemo(() => {
-  // searchStatus가 빈 문자열이면 bedAssignments 그대로 return
-  if (!searchStatus) {
-    return bedAssignments;
-  }
-  // 아니면 bedAssignments.filter(...)로 bedStatus 일치하는 것만 return
-  return bedAssignments.filter(bed => bed.bedStatus === searchStatus);
-}, [bedAssignments, searchStatus]);
+  return bedAssignments.filter((bed) => {
+    if (searchStatus && bed.bedStatus !== searchStatus) return false;
+    if (searchWard && bed.wardCd !== searchWard) return false;
+    return true;
+  });
+}, [bedAssignments, searchStatus, searchWard]);
 
   // 병실번호(roomNo) 기준으로 병상들을 묶음 — 병실별 보기 모드에서 사용
   const bedsByRoom = useMemo(() => {
@@ -84,6 +88,12 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
     dispatch(fetchPatientListRequest({}));
   }, [dispatch]);
 
+  useEffect(() => {
+    fetchWardCodesApi()
+      .then((codes) => setWardCodes(codes ?? []))
+      .catch(() => setWardCodes([]));
+  }, []);
+
   return (
     <div className={embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}>
       <div className="mb-6 flex items-center justify-between">
@@ -97,6 +107,18 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
           </div>
         )}
         <div className="flex items-center gap-2">
+          <select
+            value={searchWard}
+            onChange={(e) => setSearchWard(e.target.value)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          >
+            <option value="">All Wards</option>
+            {wardCodes.map((ward) => (
+              <option key={ward.codeId} value={ward.codeValue}>
+                {ward.codeName}
+              </option>
+            ))}
+          </select>
           <select
             value={searchStatus}
             onChange={(e) => setSearchStatus(e.target.value)}

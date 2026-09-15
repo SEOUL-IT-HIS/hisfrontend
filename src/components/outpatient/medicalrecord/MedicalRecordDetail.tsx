@@ -50,10 +50,6 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
     const [editPlanNote, setEditPlanNote] = useState("");
     const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
 
-    // 첨부파일 상태 관리 (파일명 목록)
-    const [editFileNames, setEditFileNames] = useState<string[]>([]);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
     // 다른 기록을 열거나 모달을 닫을 때는 항상 조회 모드로 돌아간다
     const [prevRecordId, setPrevRecordId] = useState(recordId);
     if (recordId !== prevRecordId) {
@@ -94,27 +90,11 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
         setEditExaminationNote(record.examinationNote ?? "");
         setEditAssessmentNote(record.assessmentNote ?? "");
         setEditPlanNote(record.planNote ?? "");
-
-        // 기존에 저장된 파일 이름이 있다면 불러옴
-        setEditFileNames(record.fileNames ?? []);
         setIsEditing(true);
     }
 
     function handleCancelEdit() {
         setIsEditing(false);
-    }
-
-    // 파일 선택 시 리스트에 추가
-    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-        if (e.target.files && e.target.files.length > 0) {
-            const newFiles = Array.from(e.target.files).map((file) => file.name);
-            setEditFileNames((prev) => [...prev, ...newFiles]);
-        }
-    }
-
-    // 첨부파일 삭제 버튼
-    function handleRemoveFile(indexToRemove: number) {
-        setEditFileNames((prev) => prev.filter((_, index) => index !== indexToRemove));
     }
 
     function handleSaveEdit() {
@@ -127,7 +107,6 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                     examinationNote: editExaminationNote,
                     assessmentNote: editAssessmentNote,
                     planNote: editPlanNote,
-                    fileNames: editFileNames, // 수정할 때 파일 이름 목록 함께 전송
                 },
             })
         );
@@ -218,47 +197,6 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                                     className="w-full min-h-[80px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                                 />
                                 </FormField>
-
-                                {/* 수정 모드일 때 파일 업로드 및 목록 UI */}
-                                <FormField label="Attachments">
-                                    <div className="space-y-2">
-                                        <input
-                                            type="file"
-                                            ref={fileInputRef}
-                                            onChange={handleFileChange}
-                                            className="hidden"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            onClick={() => fileInputRef.current?.click()}
-                                        >
-                                            {/* 파일 선택 */}
-                                            Choose File
-                                        </Button>
-                                        <ul className="text-xs text-slate-600 space-y-1 mt-1">
-                                            {editFileNames.map((name, idx) => (
-                                                <li key={idx} className="flex items-center justify-between bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                                                    <span>📄 {name}</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveFile(idx)}
-                                                        className="text-red-500 hover:text-red-700 font-bold ml-2"
-                                                    >
-                                                        {/* 삭제 */}
-                                                        Delete
-                                                    </button>
-                                                </li>
-                                            ))}
-                                            {editFileNames.length === 0 && (
-                                                <li className="text-slate-400">
-                                                    {/* 첨부된 파일이 없습니다. */}
-                                                    No files attached.
-                                                </li>
-                                            )}
-                                        </ul>
-                                    </div>
-                                </FormField>
                             </div>
                         ) : (
                             <div className="space-y-3">
@@ -269,26 +207,6 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                                         </div>
                                     </FormField>
                                 ))}
-
-                                {/* 상세 조회 모드일 때 첨부파일 목록 표시 */}
-                                <FormField label="Attached Files">
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
-                                        {record.fileNames && record.fileNames.length > 0 ? (
-                                            <ul className="list-disc list-inside space-y-1">
-                                                {record.fileNames.map((name, idx) => (
-                                                    <li key={idx} className="text-sky-600 font-medium">
-                                                        {name}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        ) : (
-                                            <span className="text-slate-400">
-                                                {/* 첨부파일이 없습니다. */}
-                                                No attachments.
-                                            </span>
-                                        )}
-                                    </div>
-                                </FormField>
                             </div>
                         )}
 

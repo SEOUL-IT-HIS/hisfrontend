@@ -25,7 +25,7 @@ const PAYMENT_METHODS: { code: PaymentMethodCode; label: string }[] = [
 
 const PaymentRequest = ({ billingId, paymentAmount, open, onClose }: PaymentRequestProps) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error, success } = useSelector((state: RootState) => state.billingPayment);
+  const { loading, error, success } = useSelector((state: RootState) => state.billing.billingPayment);
 
   // 라디오 버튼으로 선택한 결제수단. 아직 아무것도 안 골랐을 수 있어서 ""도 허용
   const [paymentMethodCode, setPaymentMethodCode] = useState<PaymentMethodCode | "">("");

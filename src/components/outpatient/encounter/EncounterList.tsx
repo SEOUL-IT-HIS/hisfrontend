@@ -108,7 +108,7 @@ const EncounterList = () => {
                 prescription: {
                     serviceType: "OP",
                     orderMethod: "EMR",
-                    priorityCode: "ROUTINE",
+                    priorityCode: "03", // ADM 공통코드 ORDER_PRIORITY_CD 의 Routine
                     timingCode: "ONCE",
                     items: prescriptionItems,
                 },
@@ -160,7 +160,7 @@ const EncounterList = () => {
                                                 className={`cursor-pointer transition hover:bg-blue-50 ${isSelected ? 'bg-blue-100 font-medium' : ''}`}
                                             >
                                                 <td className="p-3">{enc.patientName}</td>
-                                                <td className="p-3">{enc.departmentCode}</td>
+                                                <td className="p-3">{enc.departmentName ?? enc.departmentCode}</td>
                                                 <td className="p-3">
                                                     <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600 border border-slate-200">
                                                         {getStatusText(enc.status)}
@@ -225,14 +225,22 @@ const EncounterList = () => {
 
                     {/* 환자 정보 헤더 (환자가 선택되었고, "오늘 진료 작성" 탭일 때만 노출) */}
                     {selectedEncounter && activeTab === 'FORM' && (
-                        <div className="flex items-center justify-between rounded-lg bg-slate-50 p-3 border border-slate-200 mb-4">
-                            <div>
-                                <span className="text-base font-bold text-slate-800">{selectedEncounter.patientName}</span>
-                                <span className="ml-2 text-xs text-slate-500">({selectedEncounter.patientId})</span>
+                        <div className="mb-4 shrink-0 rounded-2xl border border-slate-200/80 bg-[var(--background)] p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                            <div className="flex items-baseline justify-between">
+                                <h3 className="text-lg font-semibold tracking-tight text-slate-900">
+                                    {selectedEncounter.patientName}
+                                </h3>
+                                <span className="text-xs text-slate-500">Visit Date: {selectedEncounter.visitDate}</span>
                             </div>
-                            <div className="text-xs text-slate-600">
-                                {/* 내원일: ... | 진료과: ... */}
-                                Visit Date: {selectedEncounter.visitDate} | Department: {selectedEncounter.departmentCode}
+                            <div className="mt-3 grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                                <div>
+                                    <div className="text-xs text-slate-500">Doctor</div>
+                                    <div className="mt-0.5 text-slate-800">{selectedEncounter.doctorId}</div>
+                                </div>
+                                <div>
+                                    <div className="text-xs text-slate-500">Visit Reason</div>
+                                    <div className="mt-0.5 text-slate-800">{selectedEncounter.visitReason ?? "-"}</div>
+                                </div>
                             </div>
                         </div>
                     )}
