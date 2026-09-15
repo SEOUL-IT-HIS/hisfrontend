@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { RootState } from "@/store/store";
 import type { SearchPatient, SearchPatientResult, BillingHistoryItem } from "./types";
 
 /**
@@ -80,13 +81,11 @@ export default billingHistorySlice.reducer;
 
 // ----- Selector (가이드 10.4: 컴포넌트에서 state.xxx.yyy 깊게 파지 않기) -----
 
-type BillingHistoryRoot = { billingHistory: BillingHistoryState };
-
-export const selectBillingHistorySearchList = (state: BillingHistoryRoot) =>
-  state.billingHistory.searchList;
-export const selectBillingHistorySearchStatus = (state: BillingHistoryRoot) =>
-  state.billingHistory.searchStatus;
-export const selectBillingHistoryDetail = (state: BillingHistoryRoot) =>
-  state.billingHistory.detail;
-export const selectBillingHistoryDetailStatus = (state: BillingHistoryRoot) =>
-  state.billingHistory.detailStatus;
+export const selectBillingHistorySearchList = (state: RootState) =>
+  state.billing.billingHistory.searchList;
+export const selectBillingHistorySearchStatus = (state: RootState) =>
+  state.billing.billingHistory.searchStatus;
+export const selectBillingHistoryDetail = (state: RootState) =>
+  state.billing.billingHistory.detail;
+export const selectBillingHistoryDetailStatus = (state: RootState) =>
+  state.billing.billingHistory.detailStatus;
