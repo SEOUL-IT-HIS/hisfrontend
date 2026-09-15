@@ -83,9 +83,9 @@ const BillingDetailSearchDetail = ({ billingId }: BillingDetailSearchDetailProps
 
   const { loading, error, detail } = useSelector(
     (state: RootState) => ({
-      loading: state.billingDetail.detailStatus.loading,
-      error: state.billingDetail.detailStatus.error,
-      detail: state.billingDetail.detail,
+      loading: state.billing.billingDetail.detailStatus.loading,
+      error: state.billing.billingDetail.detailStatus.error,
+      detail: state.billing.billingDetail.detail,
     }),
     shallowEqual,
   ); // 진료비 상세조회 Redux State

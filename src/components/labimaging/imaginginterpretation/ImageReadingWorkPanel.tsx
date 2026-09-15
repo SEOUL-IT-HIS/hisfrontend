@@ -9,6 +9,7 @@ import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCode
 import { resolveImageReadingMessage } from "@/features/labimaging/imaginginterpretation/messages";
 import {
   fetchReadingWorklistRequest,
+  selectLastSubmittedReading,
   selectReadingWorklist,
   selectReadingWorklistError,
   selectReadingWorklistLoading,
@@ -65,9 +66,22 @@ export default function ImageReadingWorkPanel({
 
   const [selectedItemId, setSelectedItemId] = useState<string>("");
 
+  /*
+   * ⚠ 아래 목록의 상태 배지(대기/판독중/확정, 담당자)는 이 useEffect 로 딱 한 번 불러온
+   *   worklist 스냅샷이다. 오른쪽에서 펼쳐지는 ImageReadingDetail 은 배정·소견저장·확정을
+   *   자기 slice(detail)만 다시 불러오고, 이 worklist 는 별개의 상태라 건드리지 않는다.
+   *   그래서 방금 확정한 항목도 이 목록에서는 계속 "판독중"으로 보이다가, 탭을 벗어났다
+   *   돌아오거나 페이지를 새로고침해야(=이 컴포넌트가 다시 마운트돼야) 비로소 갱신됐다.
+   *
+   *   lastSubmittedId 를 의존성에 추가해 배정/소견저장/확정이 성공할 때마다(imageReadingId
+   *   가 바뀔 때마다) 목록을 다시 불러온다. (ImageWorklist.tsx 가 lastScheduleId/
+   *   lastConsentId/lastImageFileId 로 접수 목록을 갱신하는 것과 같은 패턴)
+   */
+  const lastSubmittedId = useSelector(selectLastSubmittedReading)?.imageReadingId ?? null;
+
   useEffect(() => {
     dispatch(fetchReadingWorklistRequest());
-  }, [dispatch, reception.imageOrderId]);
+  }, [dispatch, reception.imageOrderId, lastSubmittedId]);
 
   const items = worklist.filter((r) => r.imageOrderId === reception.imageOrderId);
 
