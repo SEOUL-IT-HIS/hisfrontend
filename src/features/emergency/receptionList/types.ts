@@ -1,9 +1,14 @@
 export type ReceptionListItem = {
     receptionId: string;
-    patientName: string;
-    /** ReceptionIntake가 등록된 접수 건만 실제값, 그 외엔 null(목록은 여전히 KTAS 기준으로 만들어짐). */
+    /**
+     * 접수서비스(RCP)는 patientId만 보내고 patientName은 안 보낸다(설계상 그렇게 하기로 함).
+     * 이름은 patientId로 환자서비스(patient-service)에 배치조회해서 채우기로 돼있는데,
+     * 그 연동이 아직 안 붙어서 지금은 null로 온다 — 버그 아니라 예상된 중간 상태.
+     */
+    patientName: string | null;
     receivedAt: string | null;
-    ktasLevelCode: string;
+    /** KTAS 아직 안 매겨진 접수 건은 null(정상 — "미분류"로 표시). */
+    ktasLevelCode: string | null;
     bedNo: string | null;
     zoneCode: string | null;
 };

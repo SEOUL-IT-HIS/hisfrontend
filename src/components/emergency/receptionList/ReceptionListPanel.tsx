@@ -25,6 +25,8 @@ type ReceptionListPanelProps = {
     activeReceptionNo?: string;
 };
 
+
+
 export default function ReceptionListPanel({ onSelect, activeReceptionNo }: ReceptionListPanelProps) {
     const dispatch = useDispatch<AppDispatch>();
     const items = useSelector(selectReceptionListItems);
@@ -39,26 +41,34 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
 
     // 백엔드가 조회 순서를 보장하지 않으므로(ORDER BY 없음), 접수번호 오름차순(먼저 접수한 환자 순)으로 직접 정렬한다.
     const sortedItems = [...items].sort((a, b) => a.receptionId.localeCompare(b.receptionId));
-    const filtered = sortedItems.filter((item) => item.patientName.includes(keyword));
+    // patientName은 환자서비스 배치조회 붙기 전까지 null일 수 있다(정상).
+    // 검색어가 비어있으면(기본 상태) 이름 유무와 상관없이 전부 통과시켜야 한다 —
+    // null?.includes("") 는 undefined 라 그냥 두면 검색 안 한 상태에서도 이름 없는 건이
+    // 전부 걸러져버리는 버그가 났었다(실제로 겪음).
+    const filtered = sortedItems.filter(
+        (item) => keyword === "" || (item.patientName?.includes(keyword) ?? false),
+    );
     const totalPages = Math.max(Math.ceil(filtered.length / PAGE_SIZE), 1);
     const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
     const columns: DataTableColumn<ReceptionListItem>[] = [
-        // 접수번호
-        { key: "receptionNo", header: "Reception No.", render: (r) => r.receptionId },
+        { key: "ktas", header: "KTAS", render: (r) => <KtasLevelBadge level={r.ktasLevelCode} /> },
+
+        // 환자명 — 환자서비스 배치조회 붙기 전까지는 null일 수 있음(정상)
+        { key: "patientName", header: "Patient Name", render: (r) => r.patientName ?? "-" },
+
         // 병상/구역 — 외래 "진료과" 컬럼에 대응. 미배정이면 "-"
         {
             key: "bed",
             header: "Bed / Zone",
             render: (r) => (r.bedNo ? `${r.bedNo} (${zoneLabel(r.zoneCode ?? "")})` : "-"),
         },
-        // 환자명
-        { key: "patientName", header: "Patient Name", render: (r) => r.patientName },
-        { key: "ktas", header: "KTAS", render: (r) => <KtasLevelBadge level={r.ktasLevelCode} /> },
+
+
     ];
 
     return (
-        <div className="flex h-full flex-col gap-3">
+        <div className="flex h-[calc(100vh-180px)] flex-col gap-3">
             {/* 조회 / 초기화 — 공용 SearchBar 기본값(한글)을 이 화면에서만 영어로 덮어씀 */}
             <SearchBar
                 onSearch={() => setPage(1)}

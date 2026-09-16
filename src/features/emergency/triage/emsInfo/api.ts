@@ -7,12 +7,12 @@ const EMS_INFO_PATH = "/api/emergency/triage/ems-info";
 
 /**
  * 119 이송정보를 조회한다.
- * - receptionNo 를 넘기면 해당 접수건만, 생략하면 전체 목록을 반환한다. (백엔드 findByReceptionNo/findAll)
+ * - receptionId 를 넘기면 해당 접수건만, 생략하면 전체 목록을 반환한다. (백엔드 findByReceptionId/findAll)
  * - 실패(HTTP 4xx/5xx)는 공통 axios interceptor 가 reject → saga 에서 처리.
  */
-export async function getEmsInfo(receptionNo?: string): Promise<EmsReferral[]> {
+export async function getEmsInfo(receptionId?: string): Promise<EmsReferral[]> {
   const { data } = await apiClient.get<ApiResponse<EmsReferral[]>>(EMS_INFO_PATH, {
-    params: receptionNo ? { receptionNo } : undefined,
+    params: receptionId ? { receptionId } : undefined,
   });
   return data.data;
 }
