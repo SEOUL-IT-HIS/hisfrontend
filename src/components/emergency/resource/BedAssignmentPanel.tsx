@@ -181,7 +181,7 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
             </FormField>
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleAssign} disabled={submitting || !form.bedId}>
+            <Button type="button" onClick={handleAssign} disabled={submitting || !form.bedId || !receptionNo}>
               {/* 배정 중... / 병상 배정 */}
               {submitting ? "Assigning..." : "Assign Bed"}
             </Button>
