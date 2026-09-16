@@ -15,8 +15,8 @@ type Tab = "triage" | "care" | "resource";
 
 const TABS: ReadonlyArray<{ key: Tab; label: string }> = [
   { key: "triage", label: "Triage" },
-  { key: "care", label: "Care" },
   { key: "resource", label: "Resource Management" },
+  { key: "care", label: "Care" },
 ];
 
 /**
@@ -74,11 +74,11 @@ export default function TriagePanelHost() {
             <KtasPanel receptionNo={active} />
             <RiskScreeningPanel receptionNo={active} />
           </div>
-          <div className={`flex flex-col gap-4 ${activeTab === "care" ? "" : "hidden"}`}>
-            <ClinicalNotePanel receptionNo={active} />
-          </div>
           <div className={`flex flex-col gap-4 ${activeTab === "resource" ? "" : "hidden"}`}>
             <BedAssignmentPanel receptionNo={active} />
+          </div>
+          <div className={`flex flex-col gap-4 ${activeTab === "care" ? "" : "hidden"}`}>
+            <ClinicalNotePanel receptionNo={active} />
           </div>
         </div>
       </div>
