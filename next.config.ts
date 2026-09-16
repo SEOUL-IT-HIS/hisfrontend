@@ -12,7 +12,7 @@ import type { NextConfig } from "next";
 // 원격 서버가 꺼져 있어도 로컬 작업이 되게 하려고 원격 주소를 기본값으로 두지 않는다.
 // 원격 서버 admin 을 쓰고 싶으면 .env.local 에 ADMIN_API_ORIGIN=http://192.168.1.126:18080 을 적는다.
 const adminApiOrigin =
-  process.env.ADMIN_API_ORIGIN ?? "http://localhost:8080";
+  process.env.ADMIN_API_ORIGIN ?? "http://192.168.1.128:8080";
 const patientApiOrigin =
   process.env.PATIENT_API_ORIGIN ?? "http://192.168.1.149:8087";
 // lab-imaging 담당자 PC. 2026-08-24 기준 .104 → .132 (DHCP 로 주소가 바뀌었음)
