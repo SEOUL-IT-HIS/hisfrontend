@@ -244,10 +244,6 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
                                             {/* 비활성화 */}
                                             Deactivate
                                         </Button>
-                                        <Button variant="secondary" onClick={onClose}>
-                                            {/* 닫기 */}
-                                            Close
-                                        </Button>
                                         <Button variant="primary" onClick={handleStartEdit}>
                                             {/* 수정 */}
                                             Edit
