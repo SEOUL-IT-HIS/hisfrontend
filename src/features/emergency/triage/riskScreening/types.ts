@@ -4,7 +4,7 @@
  */
 export interface RiskScreening {
   id: string;
-  receptionNo: string;
+  receptionId: string;
   screeningTypeCode: string;
   score: number | null;
   resultCode: string | null;

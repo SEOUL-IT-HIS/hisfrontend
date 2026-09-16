@@ -4,7 +4,7 @@
  */
 export interface TriageAssessment {
   id: string;
-  receptionNo: string;
+  receptionId: string;
   ktasLevelCode: string;
   /** "INITIAL" | "REASSESS" */
   assessmentTypeCode: string;

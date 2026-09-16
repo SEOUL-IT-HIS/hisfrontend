@@ -27,3 +27,11 @@ export const updateBedRoomTypeApi = async (bedId: string, roomTypeCode: string) 
   );
   return data.data;
 };
+
+export const updateBedWardApi = async (bedId: string, wardCd: string) => {
+  const { data } = await apiClient.patch<ApiResponse<BedDTO>>(
+    `/api/inpatient/bed/${bedId}/ward`,
+    { wardCd },
+  );
+  return data.data;
+}

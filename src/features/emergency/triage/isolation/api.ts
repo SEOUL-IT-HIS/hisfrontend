@@ -5,9 +5,9 @@ import type { IsolationAssessment, IsolationCreateRequest } from "@/features/eme
 const ISOLATION_PATH = "/api/emergency/triage/infection-isolations";
 
 /** 접수건의 격리 등록/해제 이력을 조회한다. UC-TRI-05 / Jira UD2-11 */
-export async function getIsolations(receptionNo: string): Promise<IsolationAssessment[]> {
+export async function getIsolations(receptionId: string): Promise<IsolationAssessment[]> {
   const { data } = await apiClient.get<ApiResponse<IsolationAssessment[]>>(ISOLATION_PATH, {
-    params: { receptionNo },
+    params: { receptionId },
   });
   return data.data;
 }

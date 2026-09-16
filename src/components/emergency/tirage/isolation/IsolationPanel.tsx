@@ -170,7 +170,7 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
             </FormField>
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleRegister} disabled={submitting || !form.isolationTypeCode}>
+            <Button type="button" onClick={handleRegister} disabled={submitting || !form.isolationTypeCode || !receptionNo}>
               {/* 저장 중... / 격리 등록 */}
               {submitting ? "Saving..." : "Register Isolation"}
             </Button>

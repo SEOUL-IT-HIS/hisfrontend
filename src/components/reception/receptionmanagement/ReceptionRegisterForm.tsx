@@ -11,18 +11,14 @@ import {
   Select,
 } from "@/components/common";
 import {
-  fetchDepartmentsRequest,
   registerReceptionRequest,
-  selectDepartments,
   selectRegisterLoading,
   selectRegisterError,
   selectRegisterSuccessCount,
 } from "@/features/reception/receptionmanagement/slice";
-import type {
-  ReceptionType,
-  DepartmentOption,
-} from "@/features/reception/receptionmanagement/types";
+import type { ReceptionType } from "@/features/reception/receptionmanagement/types";
 import type { PatientSearchItem } from "@/features/reception/patientmanagement/types";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { AppDispatch } from "@/store/store";
 
 const RECEPTION_TYPE_OPTIONS = [
@@ -76,7 +72,10 @@ function ReceptionRegisterFormFields({
   onClearPatient,
 }: ReceptionRegisterFormProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const departments = useSelector(selectDepartments);
+  // ER 접수폼과 동일한 방식: reception-service를 거치지 않고 admin-service 공통코드를 직접 조회한다.
+  // (reception-service의 CommonCodeCache는 기동 시 한 번만 채워져, admin-service가 그 순간
+  //  불통이면 재시작 전까지 비어있을 수 있다 — 이 방식은 그 영향을 받지 않는다)
+  const departments = useCommonCodeOptions("DEPT_CD");
   const registerLoading = useSelector(selectRegisterLoading);
   const registerError = useSelector(selectRegisterError);
 
@@ -86,10 +85,6 @@ function ReceptionRegisterFormFields({
     useState<ReceptionType>("INITIAL");
   const [memo, setMemo] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
-
-  useEffect(() => {
-    dispatch(fetchDepartmentsRequest());
-  }, [dispatch]);
 
   function handleReset() {
     setDeptId("");
@@ -160,13 +155,14 @@ function ReceptionRegisterFormFields({
           <Select
             id="deptId"
             value={deptId}
-            placeholder="Select"
+            placeholder={departments.loading ? "Loading..." : "Select"}
             onChange={(e) => setDeptId(e.target.value)}
-            options={departments.map((d: DepartmentOption) => ({
-              value: d.deptId,
-              label: d.deptName,
-            }))}
+            options={departments.options}
+            disabled={departments.loading}
           />
+          {departments.error ? (
+            <span className="text-xs text-rose-500">{departments.error}</span>
+          ) : null}
           {errors.deptId && (
             <p className="text-xs text-rose-600">{errors.deptId}</p>
           )}

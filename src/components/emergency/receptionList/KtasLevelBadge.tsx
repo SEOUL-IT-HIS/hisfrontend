@@ -8,7 +8,7 @@ const KTAS_STYLE: Record<string, string> = {
     "5": "bg-slate-100 text-slate-600 ring-slate-500/10",
 };
 
-export default function KtasLevelBadge({ level }: { level?: string }) {
+export default function KtasLevelBadge({ level }: { level?: string | null }) {
     if (!level) {
         // 미분류
         return <span className="text-xs text-slate-400">Unclassified</span>;
