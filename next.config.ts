@@ -19,13 +19,14 @@ const patientApiOrigin =
 const labImagingApiOrigin =
   process.env.LABIMAGING_API_ORIGIN ?? "http://192.168.1.132:8085";
 const inpatientApiOrigin =
-  process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.140:8080";
+  process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.140:8086";
 const outpatientApiOrigin =
   process.env.OUTPATIENT_API_ORIGIN ?? "http://192.168.1.112:8088";
 // emergency-service 만 8080 이 아니라 8085 를 쓴다
 // emergency 담당자 PC. 2026-09-10 기준 .130 → .152 (2.4G 동글/가상화 환경으로 IP 바뀜)
 const emergencyApiOrigin =
-  process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.152:8085";
+  process.env.EMERGENCY_API_ORIGIN ?? "http://192.168.1.152:8089";
+// surgery-service 만 8080 이 아니라 8383 을 쓴다
 const surgeryApiOrigin =
   process.env.SURGERY_API_ORIGIN ?? "http://192.168.1.120:8084";
 const receptionApiOrigin =
@@ -35,7 +36,7 @@ const billingApiOrigin =
 // pharmacy-service. 담당자 PC 로컬 기본값 (다른 PC에서 접근해야 하면 .env.local 에서
 // PHARMACY_API_ORIGIN 을 본인 LAN IP로 덮어쓰면 됨)
 const pharmacyApiOrigin =
-  process.env.PHARMACY_API_ORIGIN ?? "http://192.168.1.115:8088";
+  process.env.PHARMACY_API_ORIGIN ?? "http://192.168.1.115:8082";
 
 const nextConfig: NextConfig = {
   /*

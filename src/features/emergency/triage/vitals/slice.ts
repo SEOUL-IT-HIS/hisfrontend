@@ -20,8 +20,8 @@ const vitalsSlice = createSlice({
         state.loading = true;
         state.error = "";
       },
-      prepare(receptionNo: string) {
-        return { payload: receptionNo };
+      prepare(receptionId: string) {
+        return { payload: receptionId };
       },
     },
     fetchVitalsSuccess(state, action: PayloadAction<EwsRecord[]>) {

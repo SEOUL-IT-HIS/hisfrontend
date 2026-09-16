@@ -5,9 +5,9 @@ import type { KtasCreateRequest, KtasUpdateRequest, TriageAssessment } from "@/f
 const KTAS_PATH = "/api/emergency/triage/ktas";
 
 /** 접수건의 KTAS 분류/재평가 이력을 조회한다. UC-TRI-02/03 / Jira UD2-9, UD2-43 */
-export async function getKtasHistory(receptionNo: string): Promise<TriageAssessment[]> {
+export async function getKtasHistory(receptionId: string): Promise<TriageAssessment[]> {
   const { data } = await apiClient.get<ApiResponse<TriageAssessment[]>>(KTAS_PATH, {
-    params: { receptionNo },
+    params: { receptionId },
   });
   return data.data;
 }
