@@ -5,9 +5,9 @@ import type { RiskScreening, RiskScreeningCreateRequest } from "@/features/emerg
 const RISK_SCREENING_PATH = "/api/emergency/triage/risk-screenings";
 
 /** 접수건의 패혈증/뇌졸중 스크리닝 이력을 조회한다. UC-TRI-06 / Jira UD2-12 */
-export async function getRiskScreenings(receptionNo: string): Promise<RiskScreening[]> {
+export async function getRiskScreenings(receptionId: string): Promise<RiskScreening[]> {
   const { data } = await apiClient.get<ApiResponse<RiskScreening[]>>(RISK_SCREENING_PATH, {
-    params: { receptionNo },
+    params: { receptionId },
   });
   return data.data;
 }

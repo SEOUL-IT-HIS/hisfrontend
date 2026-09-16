@@ -25,8 +25,8 @@ const ktasSlice = createSlice({
         state.loading = true;
         state.error = "";
       },
-      prepare(receptionNo: string) {
-        return { payload: receptionNo };
+      prepare(receptionId: string) {
+        return { payload: receptionId };
       },
     },
     fetchKtasHistorySuccess(state, action: PayloadAction<TriageAssessment[]>) {

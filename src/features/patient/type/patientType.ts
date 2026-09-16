@@ -34,10 +34,6 @@ export type PatientRegisterRequest = {
   genderCd: GenderCd;
   tempPatientYn: Yn;
   tempRegisterReason?: string;
-  zipCode?: string;
-  address?: string;
-  addressDetail?: string;
-  phoneNo?: string;
 };
 
 /** POST /api/patient/register 응답 데이터 */
@@ -48,10 +44,6 @@ export type Patient = {
   genderCd: GenderCd;
   statusCd: PatientStatus;
   tempPatientYn: Yn;
-  zipCode: string | null;
-  address: string | null;
-  addressDetail: string | null;
-  phoneNo: string | null;
   createdAt: string;
 };
 
@@ -82,10 +74,6 @@ export type PatientDetail = {
   tempRegisterReason: string | null;
   deathYn: Yn;
   deathDtm: string | null;
-  zipCode: string | null;
-  address: string | null;
-  addressDetail: string | null;
-  phoneNo: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -100,10 +88,6 @@ export type PatientDuplicateCheckRequest = {
 export type PatientUpdateRequest = {
   patientId: string;
   patientName: string;
-  zipCode: string;
-  address: string;
-  addressDetail: string;
-  phoneNo: string;
 };
 
 export type PatientTemporaryConversionRequest = {

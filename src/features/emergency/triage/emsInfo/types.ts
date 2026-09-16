@@ -5,7 +5,7 @@
  */
 export interface EmsReferral {
   id: string;
-  receptionNo: string;
+  receptionId: string;
   emsAgencyName: string;
   vitalsOnScene: string;
   prehospitalTreatment: string;

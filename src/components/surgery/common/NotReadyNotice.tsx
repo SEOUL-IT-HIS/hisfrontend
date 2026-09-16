@@ -54,7 +54,7 @@ export default function NotReadyNotice({ title, jira, apis, reason }: Props) {
         </ul>
         <p className="mt-3 text-xs text-slate-500">
           <a
-            href="http://localhost:8383/swagger-ui/index.html"
+            href="http://localhost:8084/swagger-ui/index.html"
             target="_blank"
             rel="noreferrer"
             className="text-sky-600 underline"

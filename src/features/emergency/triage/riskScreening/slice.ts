@@ -24,8 +24,8 @@ const riskScreeningSlice = createSlice({
         state.loading = true;
         state.error = "";
       },
-      prepare(receptionNo: string) {
-        return { payload: receptionNo };
+      prepare(receptionId: string) {
+        return { payload: receptionId };
       },
     },
     fetchRiskScreeningsSuccess(state, action: PayloadAction<RiskScreening[]>) {

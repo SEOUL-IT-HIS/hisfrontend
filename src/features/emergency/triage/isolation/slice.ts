@@ -20,8 +20,8 @@ const isolationSlice = createSlice({
         state.loading = true;
         state.error = "";
       },
-      prepare(receptionNo: string) {
-        return { payload: receptionNo };
+      prepare(receptionId: string) {
+        return { payload: receptionId };
       },
     },
     fetchIsolationsSuccess(state, action: PayloadAction<IsolationAssessment[]>) {
