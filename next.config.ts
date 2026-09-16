@@ -9,10 +9,10 @@ import type { NextConfig } from "next";
  * 개인 로컬: .env.local 에서 ORIGIN 수정 (.env.local 은 git 제외)
  */
 // MSA 를 전부 원격 서버 한 대에서 같이 띄운다. 그래서 기본값이 전부 localhost 다.
-// 포트만 서비스마다 다르다. admin 만 9090 이고 나머지는 808x 다.
+// 포트만 서비스마다 다르다. admin 만 9191 이고 나머지는 808x 다.
 // 내 PC 에서 다른 사람 백엔드를 부르려면 .env.local 에 그 주소를 적는다. (.env.local 은 git 제외)
 const adminApiOrigin =
-  process.env.ADMIN_API_ORIGIN ?? "http://localhost:9090";
+  process.env.ADMIN_API_ORIGIN ?? "http://localhost:9191";
 const patientApiOrigin =
   process.env.PATIENT_API_ORIGIN ?? "http://localhost:8087";
 const labImagingApiOrigin =
