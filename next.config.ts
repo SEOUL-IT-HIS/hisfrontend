@@ -19,7 +19,7 @@ const patientApiOrigin =
 const labImagingApiOrigin =
   process.env.LABIMAGING_API_ORIGIN ?? "http://192.168.1.132:8085";
 const inpatientApiOrigin =
-  process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.140:8080";
+  process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.140:8086";
 const outpatientApiOrigin =
   process.env.OUTPATIENT_API_ORIGIN ?? "http://192.168.1.112:8088";
 // emergency-service 만 8080 이 아니라 8085 를 쓴다
