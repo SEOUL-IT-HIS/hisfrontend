@@ -38,3 +38,19 @@ export type RoleMenuSaveRequest = {
   roleId: string;
   menuIds: string[];
 };
+
+/**
+ * GET /api/admin/account/list 응답 한 줄 (Permissions > Accounts 탭, IH2-113)
+ * 백엔드 AuthDto 중 화면에서 쓰는 값만 적었다. 비밀번호는 서버가 비워서 보낸다.
+ */
+export type AccountRow = {
+  empId: string;
+  loginId: string;
+  empName: string | null;
+  /** 쉼표로 이어진 역할 코드 (예: "03" 또는 "01,02"). 없으면 "" */
+  roleCodes: string | null;
+  /** 연속으로 비밀번호를 틀린 횟수. 5가 되면 잠긴다 */
+  failCount: number | null;
+  /** 잠긴 시각. null 이면 잠기지 않은 계정 (UTC 문자열, 예: "2026-09-28T05:49:02.179Z") */
+  lockedAt: string | null;
+};

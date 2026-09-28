@@ -15,10 +15,15 @@
  *
  * 권한 배정의 두 축 중 이 화면은 "역할 → 메뉴" 축을 담당한다.
  * "직원 → 역할" 축은 직원관리(EmpUpdateForm)에서 배정한다.
+ *
+ * 위쪽 탭 (IH2-113):
+ * - Role Permissions : 위 설명의 원래 화면
+ * - Accounts         : 계정 잠금 현황·해제 (AccountLockPanel)
  */
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { Panel } from "@/components/common";
+import AccountLockPanel from "@/components/roleMenu/AccountLockPanel";
 import RoleMenuPanel from "@/components/roleMenu/RoleMenuPanel";
 import { fetchRoleListApi } from "@/features/emp/api/roleApi";
 import type { RoleType } from "@/features/emp/types/roleType";
@@ -31,6 +36,12 @@ export default function RoleMenuList() {
   const [roles, setRoles] = useState<RoleType[]>([]);
   /** 왼쪽에서 선택한 역할 PK — 오른쪽 패널에 전달 */
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+  /**
+   * 화면 위쪽 탭
+   * - "role"    : 역할별 메뉴 권한 (원래 화면)
+   * - "account" : 계정 잠금 현황·해제 (IH2-113, AccountLockPanel)
+   */
+  const [activeTab, setActiveTab] = useState<"role" | "account">("role");
 
   // 화면 진입 시 역할 목록 조회
   useEffect(() => {
@@ -61,11 +72,42 @@ export default function RoleMenuList() {
             Permissions
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Select a role to set which menus it can access.
+            {activeTab === "role"
+              ? "Select a role to set which menus it can access."
+              : "Check locked accounts and unlock them."}
           </p>
         </div>
       </header>
 
+      {/* ========== 탭 ========== */}
+      <div className="flex gap-1 border-b border-slate-200">
+        <button
+          type="button"
+          onClick={() => setActiveTab("role")}
+          className={
+            activeTab === "role"
+              ? "-mb-px border-b-2 border-sky-600 px-4 py-2 text-sm font-semibold text-sky-700"
+              : "-mb-px border-b-2 border-transparent px-4 py-2 text-sm text-slate-500 hover:text-slate-700"
+          }
+        >
+          Role Permissions
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("account")}
+          className={
+            activeTab === "account"
+              ? "-mb-px border-b-2 border-sky-600 px-4 py-2 text-sm font-semibold text-sky-700"
+              : "-mb-px border-b-2 border-transparent px-4 py-2 text-sm text-slate-500 hover:text-slate-700"
+          }
+        >
+          Accounts
+        </button>
+      </div>
+
+      {activeTab === "account" ? (
+        <AccountLockPanel roles={roles} />
+      ) : (
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,0.6fr)_minmax(0,1.4fr)]">
         {/* ========== 왼쪽: 역할 목록 ========== */}
         <Panel>
@@ -121,6 +163,7 @@ export default function RoleMenuList() {
         {/* 패널은 로컬 state 가 없고 전부 Redux 를 보므로 key 가 필요 없다 */}
         <RoleMenuPanel role={selectedRole} />
       </div>
+      )}
     </div>
   );
 }
