@@ -10,13 +10,23 @@
  * 보는 사람: 관리자(01)·개인정보보호 책임자(02). 그 외 역할은 서버가 403 을 준다.
  * Unlock 버튼: 관리자(01)에게만 보인다. (서버도 01 만 허용하므로 버튼 숨김은 편의용)
  *
+ * 비밀번호 초기화 (IH2-116)
+ * - 비밀번호를 잊은 직원을 초기 비밀번호(1111)로 되돌린다. 잠금도 같이 풀린다.
+ * - PUT /api/admin/account/reset-password/{empId}
+ * - Reset password 버튼: 관리자(01)에게만, 그리고 관리자 계정이 아닌 행에만 보인다.
+ *   (팀원 공용 관리자 계정이 초기화되면 전원 로그인이 막히므로 서버도 거절한다)
+ *
  * 이 탭에서만 쓰는 데이터라 Redux 에 넣지 않고 화면이 들고 있는다 (RoleMenuList 의 roles 와 같은 방식).
  */
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Alert, Button, Input, Panel } from "@/components/common";
 import type { RoleType } from "@/features/emp/types/roleType";
-import { fetchAccountListApi, unlockAccountApi } from "@/features/roleMenu/api/roleMenuApi";
+import {
+  fetchAccountListApi,
+  resetPasswordApi,
+  unlockAccountApi,
+} from "@/features/roleMenu/api/roleMenuApi";
 import type { AccountRow } from "@/features/roleMenu/types/roleMenuTypes";
 import type { RootState } from "@/store/store";
 
@@ -68,6 +78,10 @@ export default function AccountLockPanel({ roles }: AccountLockPanelProps) {
   const [lockedOnly, setLockedOnly] = useState(false);
   /** 지금 해제 요청 중인 직원 ID — 그 행의 버튼만 "Unlocking..." 으로 바꾼다 */
   const [unlockingEmpId, setUnlockingEmpId] = useState<string | null>(null);
+  /** 지금 비밀번호 초기화 요청 중인 직원 ID — 그 행의 버튼만 "Resetting..." 으로 바꾼다 */
+  const [resettingEmpId, setResettingEmpId] = useState<string | null>(null);
+  /** 해제·초기화 중 하나라도 진행 중이면 모든 버튼을 잠깐 막는다 */
+  const busy = unlockingEmpId != null || resettingEmpId != null;
 
   // roleCodes 는 "01" 또는 "01,03" 같은 쉼표 문자열이다
   const isAdmin = (authUser?.roleCodes ?? "").split(",").includes(ROLE_CODE_ADMIN);
@@ -99,6 +113,37 @@ export default function AccountLockPanel({ roles }: AccountLockPanelProps) {
     } finally {
       setUnlockingEmpId(null);
     }
+  }
+
+  /** Reset password 버튼 — 초기 비밀번호로 되돌린 뒤 목록을 다시 불러온다 (잠금도 풀려서 보인다) */
+  async function handleResetPassword(account: AccountRow) {
+    const name = account.empName ?? account.loginId;
+    if (
+      !window.confirm(
+        `Reset the password of ${name} (${account.loginId}) to the initial password (1111)?\n` +
+          "The account will also be unlocked. Tell the employee to change it after signing in.",
+      )
+    ) {
+      return;
+    }
+
+    setResettingEmpId(account.empId);
+    setError(null);
+    setMessage(null);
+    try {
+      await resetPasswordApi(account.empId);
+      setAccounts(await fetchAccountListApi());
+      setMessage(`The password of ${name} (${account.loginId}) has been reset to 1111.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to reset the password.");
+    } finally {
+      setResettingEmpId(null);
+    }
+  }
+
+  /** 이 행이 관리자(01) 계정인가 — 관리자 계정은 초기화 버튼을 보여주지 않는다 */
+  function isAdminAccount(account: AccountRow): boolean {
+    return (account.roleCodes ?? "").split(",").includes(ROLE_CODE_ADMIN);
   }
 
   const lockedCount = accounts.filter((a) => a.lockedAt != null).length;
@@ -217,16 +262,27 @@ export default function AccountLockPanel({ roles }: AccountLockPanelProps) {
                     <td className="px-5 py-3.5 text-slate-600">
                       {formatLockedAt(account.lockedAt)}
                     </td>
-                    <td className="px-5 py-3.5 text-right">
-                      {locked && isAdmin ? (
-                        <Button
-                          variant="danger"
-                          onClick={() => handleUnlock(account)}
-                          disabled={unlockingEmpId != null}
-                        >
-                          {unlockingEmpId === account.empId ? "Unlocking..." : "Unlock"}
-                        </Button>
-                      ) : null}
+                    <td className="px-5 py-3.5">
+                      <div className="flex justify-end gap-2">
+                        {locked && isAdmin ? (
+                          <Button
+                            variant="danger"
+                            onClick={() => handleUnlock(account)}
+                            disabled={busy}
+                          >
+                            {unlockingEmpId === account.empId ? "Unlocking..." : "Unlock"}
+                          </Button>
+                        ) : null}
+                        {isAdmin && !isAdminAccount(account) ? (
+                          <Button
+                            variant="secondary"
+                            onClick={() => handleResetPassword(account)}
+                            disabled={busy}
+                          >
+                            {resettingEmpId === account.empId ? "Resetting..." : "Reset password"}
+                          </Button>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 );

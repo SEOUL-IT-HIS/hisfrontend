@@ -8,6 +8,7 @@
  * 같은 Permissions 화면의 Accounts 탭 (IH2-113)
  * - 계정 목록 GET /api/admin/account/list          (관리자 01·개인정보보호 책임자 02)
  * - 잠금 해제 PUT /api/admin/account/unlock/{empId} (관리자 01 만)
+ * - 비밀번호 초기화 PUT /api/admin/account/reset-password/{empId} (관리자 01 만, IH2-116)
  *
  * 응답은 ApiResponse 래퍼 → data 필드만 반환
  */
@@ -55,4 +56,12 @@ export async function fetchAccountListApi(): Promise<AccountRow[]> {
 /** 계정 잠금 해제 — 관리자(01)가 아니면 서버가 403 으로 거절한다 */
 export async function unlockAccountApi(empId: string): Promise<void> {
   await apiClient.put<ApiResponse<null>>(`/api/admin/account/unlock/${empId}`);
+}
+
+/**
+ * 비밀번호 초기화 — 초기값으로 되돌리고 잠금도 푼다.
+ * 요청자가 관리자(01)가 아니거나, 대상이 관리자 계정이면 서버가 403 으로 거절한다.
+ */
+export async function resetPasswordApi(empId: string): Promise<void> {
+  await apiClient.put<ApiResponse<null>>(`/api/admin/account/reset-password/${empId}`);
 }
