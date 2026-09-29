@@ -39,11 +39,21 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
   const bedAssignments = useSelector(selectBed);
   const listStatus = useSelector(selectBedListStatus);
   const patients = useSelector((state: RootState) => state.patient.patients);
+  const patientListLoading = useSelector((state: RootState) => state.patient.listLoading);
   // patientId → patientName 변환용 Map (환자 목록을 매번 배열 순회로 찾지 않도록 캐싱)
   const patientNameById = useMemo(
     () => new Map(patients.map((patient) => [patient.patientId, patient.patientName])),
     [patients],
   );
+  // 병상의 환자 이름 표시 — "Loading..."은 환자 목록을 실제로 불러오는 중일 때만 보여줌.
+  // 목록을 다 불러왔는데도 없으면 patient-service에 없는 환자(삭제됐거나 잘못 들어간 patientId)라서
+  // 계속 "Loading..."으로 남지 않도록 "Unknown"으로 구분해서 표시
+  const patientLabel = (patientId: string | null) => {
+    if (!patientId) return "None";
+    const name = patientNameById.get(patientId);
+    if (name) return name;
+    return patientListLoading ? "Loading..." : "Unknown";
+  };
   // 여기서 Map을 쓰는 이유: 병상 목록에서 환자 이름을 표시할 때, 병상마다 patientId를 이용해 환자 이름을 찾는데, 배열 순회로 찾으면 O(n^2) 복잡도가 되므로 Map으로 캐싱하여 O(n)으로 줄임
 
   // 상태 필터 드롭다운에 들어갈 선택지(코드값 + 한글 설명)
@@ -61,6 +71,12 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
   const [wardCodes, setWardCodes] = React.useState<CommonCodeItem[]>([]);
   // 목록에서 클릭한 병상ID — 값이 있으면 오른쪽에 상세 패널을 띄움(마스터-디테일)
   const [selectedBedId, setSelectedBedId] = useState<string | null>(null);
+  // wardCd → 병동명 (필터 드롭다운용으로 불러온 wardCodes 재사용). 공통코드를 못 불러오면 코드값 그대로 표시
+  const wardNameByCd = useMemo(
+    () => new Map(wardCodes.map((ward) => [ward.codeValue, ward.codeName])),
+    [wardCodes],
+  );
+  const wardLabel = (wardCd: string | null) => (wardCd ? wardNameByCd.get(wardCd) ?? wardCd : "-");
   // list(테이블 한 줄씩) / room(병실별로 묶어서) 두 가지 보기 모드
   const [viewMode, setViewMode] = useState<"list" | "room">("list");
   // useMemo를 쓰면 searchStatus/searchWard가 바뀔 때만 필터링이 다시 계산됨. 아니면 매 렌더링마다 filter가 실행되어 성능 저하 가능
@@ -72,15 +88,22 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
   });
 }, [bedAssignments, searchStatus, searchWard]);
 
-  // 병실번호(roomNo) 기준으로 병상들을 묶음 — 병실별 보기 모드에서 사용
+  // 병동(wardCd) + 병실번호(roomNo) 기준으로 병상들을 묶음 — 병실별 보기 모드에서 사용
+  // roomNo만으로 묶으면 다른 병동의 같은 호실(예: 내과 101호, 외과 101호)이 한 카드로 합쳐지므로 병동까지 키에 포함
   const bedsByRoom = useMemo(() => {
-    const map = new Map<string, typeof filteredBeds>();
+    const map = new Map<string, { wardCd: string | null; roomNo: string; beds: typeof filteredBeds }>();
     filteredBeds.forEach((bed) => {
-      const roomBeds = map.get(bed.roomNo) ?? [];
-      roomBeds.push(bed);
-      map.set(bed.roomNo, roomBeds);
+      const key = `${bed.wardCd ?? ""}|${bed.roomNo}`;
+      const room = map.get(key) ?? { wardCd: bed.wardCd, roomNo: bed.roomNo, beds: [] };
+      room.beds.push(bed);
+      map.set(key, room);
     });
-    return map;
+    // 병동코드 → 병실번호 순으로 정렬 (API가 준 순서가 아니라 화면에서 찾기 쉬운 순서로)
+    return Array.from(map.values()).sort(
+      (a, b) =>
+        (a.wardCd ?? "").localeCompare(b.wardCd ?? "") ||
+        a.roomNo.localeCompare(b.roomNo, undefined, { numeric: true }),
+    );
   }, [filteredBeds]);
 
   useEffect(() => {
@@ -161,6 +184,7 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
                   <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
                     <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
                     <th className="whitespace-nowrap px-4 py-3">Patient ID</th>
+                    <th className="whitespace-nowrap px-4 py-3">Ward</th>
                     <th className="whitespace-nowrap px-4 py-3">Bed ID</th>
                     <th className="whitespace-nowrap px-4 py-3">Room No.</th>
                     <th className="whitespace-nowrap px-4 py-3">Bed No.</th>
@@ -175,10 +199,11 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
                       className={`cursor-pointer hover:bg-slate-50 ${selectedBedId === bed.bedId ? "bg-sky-50" : ""}`}
                     >
                       <td className="whitespace-nowrap px-4 py-3 text-slate-800">
-                        {/* patientId가 없으면(빈 병상) "없음", 있으면 Map에서 이름 조회(아직 patients 로딩 전이면 "조회중...") */}
-                        {bed.patientId ? (patientNameById.get(bed.patientId) ?? 'Loading...') : 'None'}
+                        {/* patientId가 없으면(빈 병상) "None", 있으면 Map에서 이름 조회 (patientLabel 참고) */}
+                        {patientLabel(bed.patientId)}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bed.patientId ?? 'None'}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{wardLabel(bed.wardCd)}</td>
                       <td className="whitespace-nowrap px-4 py-3 font-medium text-sky-700">{bed.bedId}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bed.roomNo}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bed.bedNo}</td>
@@ -202,10 +227,13 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
             </div>
           ) : (
             <div className="min-w-0 flex-1 space-y-4">
-              {/* 병실번호 순으로 카드 하나씩, 카드 안에 그 병실 소속 병상들을 나열 */}
-              {Array.from(bedsByRoom.entries()).map(([roomNo, beds]) => (
-                <div key={roomNo} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <p className="mb-3 text-sm font-medium text-slate-800">Room {roomNo}</p>
+              {/* 병동 → 병실번호 순으로 카드 하나씩, 카드 안에 그 병실 소속 병상들을 나열 */}
+              {bedsByRoom.map(({ wardCd, roomNo, beds }) => (
+                <div key={`${wardCd ?? ""}|${roomNo}`} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <p className="mb-3 text-sm font-medium text-slate-800">
+                    Room {roomNo}
+                    <span className="ml-2 text-xs font-normal text-slate-500">{wardLabel(wardCd)}</span>
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {beds.map((bed) => (
                       <button
@@ -219,14 +247,14 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
                         <span className="font-medium">Bed {bed.bedNo}</span>
                         <span>{STATUS_LABEL[bed.bedStatus] ?? bed.bedStatus}</span>
                         {bed.patientId && (
-                          <span className="truncate">{patientNameById.get(bed.patientId) ?? "Loading..."}</span>
+                          <span className="truncate">{patientLabel(bed.patientId)}</span>
                         )}
                       </button>
                     ))}
                   </div>
                 </div>
               ))}
-              {bedsByRoom.size === 0 && (
+              {bedsByRoom.length === 0 && (
                 <p className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500 shadow-sm">
                   No bed data available.
                 </p>

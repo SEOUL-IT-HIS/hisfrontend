@@ -4,14 +4,18 @@ import axios from "axios";
  * 공통 axios instance
  *
  * baseURL:
- * - 기본 "" → 같은 출처(/api/...) → next.config rewrite → BE
- * - NEXT_PUBLIC_ADMIN_API_BASE_URL 을 쓰면 BE 직접 호출 (크로스 오리진 시 쿠키 주의)
+ * - 항상 "" → 같은 출처(/api/...) → next.config rewrite → 각 서비스 BE 로 라우팅
+ * - 모든 MSA 서비스(admin 포함)가 next.config.ts rewrite 를 거치므로, 여기서 baseURL 을
+ *   env 로 덮어써서 특정 BE 로 직접 보내면 이 인스턴스를 공유하는 다른 서비스 호출까지
+ *   전부 그 주소로 고정돼버린다 (billing 요청이 admin 포트로 나가는 식의 장애 원인이 됐었음).
+ *   특정 BE 를 직접 호출해야 하는 경우가 생기면 이 공유 인스턴스를 바꾸지 말고 별도 axios
+ *   인스턴스를 새로 만들 것.
  *
  * withCredentials: true
  * - 요청/응답에 쿠키(JSESSIONID)를 포함
  */
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL ?? "",
+  baseURL: "",
   headers: {
     "Content-Type": "application/json",
   },

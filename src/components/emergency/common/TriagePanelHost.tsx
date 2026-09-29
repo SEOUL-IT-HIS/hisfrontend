@@ -8,14 +8,15 @@ import RiskScreeningPanel from "@/components/emergency/tirage/riskScreening/Risk
 import VitalsPanel from "@/components/emergency/tirage/vitals/VitalsPanel";
 import ReceptionListPanel from "@/components/emergency/receptionList/ReceptionListPanel";
 import TriageSummaryBanner from "@/components/emergency/common/TriageSummaryBanner";
-import BedAssignmentPanel from "@/components/emergency/resource/BedAssignmentPanel";
+import BedAssignmentPanel from "@/components/emergency/resource/bed/BedAssignmentPanel";
+import ClinicalNotePanel from "@/components/emergency/care/clinicalNote/ClinicalNotePanel";
 
-type Tab = "triage" | "resource";
+type Tab = "triage" | "care" | "resource";
 
-// 초기환자(Triage) / 자원관리(Resource Management) — 응급진료(Care)는 UD2-3 착수 시 여기에 탭 추가
 const TABS: ReadonlyArray<{ key: Tab; label: string }> = [
   { key: "triage", label: "Triage" },
   { key: "resource", label: "Resource Management" },
+  { key: "care", label: "Care" },
 ];
 
 /**
@@ -75,6 +76,9 @@ export default function TriagePanelHost() {
           </div>
           <div className={`flex flex-col gap-4 ${activeTab === "resource" ? "" : "hidden"}`}>
             <BedAssignmentPanel receptionNo={active} />
+          </div>
+          <div className={`flex flex-col gap-4 ${activeTab === "care" ? "" : "hidden"}`}>
+            <ClinicalNotePanel receptionNo={active} />
           </div>
         </div>
       </div>
