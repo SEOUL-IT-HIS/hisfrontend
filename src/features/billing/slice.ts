@@ -5,10 +5,10 @@ import billingPaymentReducer from "@/features/billing/payment/slice";
 import billingHistoryReducer from "@/features/billing/history/slice";
 
 const billingReducer = combineReducers({
-  detail: billingDetailReducer,
-  master: billingMasterReducer,
-  payment: billingPaymentReducer,
-  history: billingHistoryReducer,
+  billingDetail: billingDetailReducer,
+  billingMaster: billingMasterReducer,
+  billingPayment: billingPaymentReducer,
+  billingHistory: billingHistoryReducer,
 });
 
 export default billingReducer;

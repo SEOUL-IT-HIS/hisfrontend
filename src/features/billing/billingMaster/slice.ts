@@ -98,15 +98,15 @@ export default billingMasterSlice.reducer;
 
 // ----- Selector (가이드 10.4: 컴포넌트에서 state.xxx.yyy 깊게 파지 않기) -----
 
-type BillingMasterRoot = { billing: { master: BillingMasterState } };
+type BillingMasterRoot = { billing: { billingMaster: BillingMasterState } };
 
-export const selectBillingMasterList = (state: BillingMasterRoot) => state.billing.master.list;
+export const selectBillingMasterList = (state: BillingMasterRoot) => state.billing.billingMaster.list;
 export const selectBillingMasterListStatus = (state: BillingMasterRoot) =>
-  state.billing.master.listStatus;
-export const selectBillingMasterDetail = (state: BillingMasterRoot) => state.billing.master.detail;
+  state.billing.billingMaster.listStatus;
+export const selectBillingMasterDetail = (state: BillingMasterRoot) => state.billing.billingMaster.detail;
 export const selectBillingMasterDetailStatus = (state: BillingMasterRoot) =>
-  state.billing.master.detailStatus;
+  state.billing.billingMaster.detailStatus;
 export const selectBillingMasterCreateStatus = (state: BillingMasterRoot) =>
-  state.billing.master.createStatus;
+  state.billing.billingMaster.createStatus;
 export const selectBillingMasterCreateSuccess = (state: BillingMasterRoot) =>
-  state.billing.master.createSuccess;
+  state.billing.billingMaster.createSuccess;

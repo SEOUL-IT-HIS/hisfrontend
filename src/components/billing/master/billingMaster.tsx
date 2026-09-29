@@ -13,9 +13,9 @@ const BillingMaster = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error, list } = useSelector(
     (state: RootState) => ({
-      loading: state.billing.master.listStatus.loading,
-      error: state.billing.master.listStatus.error,
-      list: state.billing.master.list,
+      loading: state.billing.billingMaster.listStatus.loading,
+      error: state.billing.billingMaster.listStatus.error,
+      list: state.billing.billingMaster.list,
     }),
     shallowEqual,
   );

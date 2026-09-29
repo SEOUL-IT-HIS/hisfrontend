@@ -80,13 +80,13 @@ export default billingHistorySlice.reducer;
 
 // ----- Selector (가이드 10.4: 컴포넌트에서 state.xxx.yyy 깊게 파지 않기) -----
 
-type BillingHistoryRoot = { billing: { history: BillingHistoryState } };
+type BillingHistoryRoot = { billing: { billingHistory: BillingHistoryState } };
 
 export const selectBillingHistorySearchList = (state: BillingHistoryRoot) =>
-  state.billing.history.searchList;
+  state.billing.billingHistory.searchList;
 export const selectBillingHistorySearchStatus = (state: BillingHistoryRoot) =>
-  state.billing.history.searchStatus;
+  state.billing.billingHistory.searchStatus;
 export const selectBillingHistoryDetail = (state: BillingHistoryRoot) =>
-  state.billing.history.detail;
+  state.billing.billingHistory.detail;
 export const selectBillingHistoryDetailStatus = (state: BillingHistoryRoot) =>
-  state.billing.history.detailStatus;
+  state.billing.billingHistory.detailStatus;
