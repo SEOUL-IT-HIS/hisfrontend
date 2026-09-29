@@ -318,7 +318,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
           ) : null}
 
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.screenType}>
+            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.screenType || !receptionNo}>
               {/* 저장 중... / 스크리닝 결과 등록 */}
               {submitting ? "Saving..." : "Register Screening Result"}
             </Button>

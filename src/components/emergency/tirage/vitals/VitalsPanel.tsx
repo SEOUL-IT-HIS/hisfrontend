@@ -175,7 +175,7 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
             </FormField>
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleSubmit} disabled={submitting || !hasAnyValue}>
+            <Button type="button" onClick={handleSubmit} disabled={submitting || !hasAnyValue || !receptionNo}>
               {/* 저장 중... / 활력징후 등록 */}
               {submitting ? "Saving..." : "Register Vital Signs"}
             </Button>

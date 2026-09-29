@@ -103,8 +103,10 @@ export default billingPaymentSlice.reducer;
 
 // ----- Selector (가이드 10.4: 컴포넌트에서 state.xxx.yyy 깊게 파지 않기) -----
 
-export const selectBillingPaymentLoading = (state: RootState) =>
+type BillingPaymentRoot = { billing: { billingPayment: PaymentState } };
+
+export const selectBillingPaymentLoading = (state: BillingPaymentRoot) =>
   state.billing.billingPayment.loading;
-export const selectBillingPaymentError = (state: RootState) => state.billing.billingPayment.error;
-export const selectBillingPaymentSuccess = (state: RootState) =>
+export const selectBillingPaymentError = (state: BillingPaymentRoot) => state.billing.billingPayment.error;
+export const selectBillingPaymentSuccess = (state: BillingPaymentRoot) =>
   state.billing.billingPayment.success;
