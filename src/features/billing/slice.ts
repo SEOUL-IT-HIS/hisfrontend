@@ -1,4 +1,12 @@
 import { combineReducers } from "@reduxjs/toolkit";
+import billingDetailReducer from "@/features/billing/searchBillingDetail/slice";
+import billingMasterReducer from "@/features/billing/billingMaster/slice";
+import billingPaymentReducer from "@/features/billing/payment/slice";
+import billingHistoryReducer from "@/features/billing/history/slice";
+
+const billingReducer = combineReducers({
+  billingDetail: billingDetailReducer,
+  billingMaster: billingMasterReducer,
 import billingMasterReducer from "@/features/billing/billingMaster/slice";
 import billingDetailReducer from "@/features/billing/searchBillingDetail/slice";
 import billingPaymentReducer from "@/features/billing/payment/slice";

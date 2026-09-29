@@ -1,5 +1,5 @@
-import BillingDetailWorkspace from "@/components/billing/detail/BillingDetailWorkspace";
+import BillingHistoryWorkspace from "@/components/billing/history/BillingHistoryWorkspace";
 
 export default function BillingHistoryPage() {
-  return <BillingDetailWorkspace />;
+  return <BillingHistoryWorkspace />;
 }
