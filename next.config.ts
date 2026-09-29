@@ -18,7 +18,7 @@ const patientApiOrigin =
 const labImagingApiOrigin =
   process.env.LABIMAGING_API_ORIGIN ?? "http://localhost:8085";
 const inpatientApiOrigin =
-  process.env.INPATIENT_API_ORIGIN ?? "http://localhost:8086";
+  process.env.INPATIENT_API_ORIGIN ?? "http://192.168.1.140:8086";
 const outpatientApiOrigin =
   process.env.OUTPATIENT_API_ORIGIN ?? "http://localhost:8088";
 const emergencyApiOrigin =
