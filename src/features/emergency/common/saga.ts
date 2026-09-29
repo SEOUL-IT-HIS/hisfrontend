@@ -7,7 +7,7 @@ import riskScreeningSaga from "@/features/emergency/triage/riskScreening/saga";
 import commonCodeSaga from "@/features/emergency/commonCode/saga";
 import receptionListSaga from "@/features/emergency/receptionList/saga";
 import bedSaga from "@/features/emergency/resource/bed/saga";
-import receptionIntakeSaga from "@/features/emergency/receptionIntake/saga";
+import clinicalNoteSaga from "@/features/emergency/care/clinicalNote/saga";
 
 /**
  * emergency 도메인 결합 saga
@@ -23,6 +23,6 @@ export default function* emergencySaga() {
     fork(commonCodeSaga),
     fork(receptionListSaga),
     fork(bedSaga),
-    fork(receptionIntakeSaga),
+    fork(clinicalNoteSaga),
   ]);
 }

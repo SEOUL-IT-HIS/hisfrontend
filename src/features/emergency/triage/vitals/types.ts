@@ -4,7 +4,7 @@
  */
 export interface EwsRecord {
   id: string;
-  receptionNo: string;
+  receptionId: string;
   systolicBp: number | null;
   heartRate: number | null;
   respRate: number | null;

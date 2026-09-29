@@ -36,7 +36,7 @@ export async function fetchAuthLoginApi(
     payload,
   );
   if (response.data.code !== 200 || !response.data.data) {
-    throw new Error(response.data.message || "로그인에 실패했습니다.");
+    throw new Error(response.data.message || "Sign-in failed.");
   }
   return toAuthUser(response.data.data);
 }
@@ -45,7 +45,7 @@ export async function fetchAuthLoginApi(
 export async function fetchAuthMeApi(): Promise<AuthUser> {
   const response = await apiClient.get<ApiResponse<AuthUser>>("/api/admin/auth/me");
   if (response.data.code !== 200 || !response.data.data) {
-    throw new Error(response.data.message || "로그인이 필요합니다.");
+    throw new Error(response.data.message || "Please sign in.");
   }
   return toAuthUser(response.data.data);
 }
@@ -54,6 +54,6 @@ export async function fetchAuthMeApi(): Promise<AuthUser> {
 export async function fetchAuthLogoutApi(): Promise<void> {
   const response = await apiClient.post<ApiResponse<null>>("/api/admin/auth/logout");
   if (response.data.code !== 200) {
-    throw new Error(response.data.message || "로그아웃에 실패했습니다.");
+    throw new Error(response.data.message || "Sign-out failed.");
   }
 }

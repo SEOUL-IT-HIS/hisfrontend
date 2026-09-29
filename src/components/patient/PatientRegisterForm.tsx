@@ -26,7 +26,7 @@ import PostcodeSearchButton from "./PostcodeSearchButton";
 
 type PatientRegisterFormState = Omit<
   PatientRegisterRequest,
-  "genderCd" | "zipCode" | "address" | "addressDetail" | "phoneNo"
+  "genderCd"
 > & {
   genderCd: GenderCd | "";
   zipCode: string;
@@ -363,10 +363,6 @@ export default function PatientRegisterForm() {
         tempRegisterReason: isTemporaryPatient
           ? form.tempRegisterReason?.trim()
           : undefined,
-        zipCode: form.zipCode.trim(),
-        address: form.address.trim(),
-        addressDetail: form.addressDetail.trim(),
-        phoneNo: normalizedPhoneNo,
       }),
     );
   };

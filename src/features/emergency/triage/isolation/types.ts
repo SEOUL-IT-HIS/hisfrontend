@@ -4,7 +4,7 @@
  */
 export interface IsolationAssessment {
   id: string;
-  receptionNo: string;
+  receptionId: string;
   isolationTypeCode: string;
   requiredYn: string;
   decidedById: string;

@@ -133,7 +133,7 @@ export default function PatientContactPanel({
         if (busy || item.primaryYn === "Y") return;
 
         const confirmed = window.confirm(
-            "이 주소·연락처를 비활성화할까요?\n비활성 항목 보기에서 다시 확인할 수 있습니다.",
+            "Deactivate this address and contact information?\nIt will remain available under Include inactive.",
         );
 
         if (!confirmed) return;
@@ -160,12 +160,12 @@ export default function PatientContactPanel({
                         id="patient-contact-heading"
                         className="text-base font-semibold text-slate-800"
                     >
-                        주소·연락처 관리
+                        Address and Contact Information
                     </h2>
 
                     {!loading && !state.listError ? (
                         <span className="rounded-md bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700">
-                            활성 {items.filter((item) => item.activeYn === "Y").length}건
+                            Active: {items.filter((item) => item.activeYn === "Y").length}
                         </span>
                     ) : null}
                 </div>
@@ -187,14 +187,14 @@ export default function PatientContactPanel({
                                 );
                             }}
                         />
-                        비활성 항목 보기
+                        Include inactive
                     </label>
 
                     <Button
                         disabled={!current || busy}
                         onClick={() => openEditor({ mode: "create" })}
                     >
-                        + 주소·연락처 추가
+                        + Add Address and Contact Information
                     </Button>
                 </div>
             </div>
@@ -202,7 +202,7 @@ export default function PatientContactPanel({
             <div aria-live="polite" className="space-y-3 px-5 pb-4">
                 {current && state.mutationSuccess ? (
                     <Alert variant="success">
-                        주소·연락처 정보가 저장되었습니다.
+                        Address and contact information saved successfully.
                     </Alert>
                 ) : null}
 
@@ -226,22 +226,22 @@ export default function PatientContactPanel({
                                 )
                             }
                         >
-                            목록 다시 조회
+                            Retry
                         </Button>
                     </div>
                 ) : null}
 
                 {loading ? (
                     <p className="text-sm text-slate-500">
-                        주소·연락처를 불러오는 중입니다...
+                        Loading address and contact information...
                     </p>
                 ) : null}
 
                 {!loading && !state.listError && items.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-slate-200 px-4 py-7 text-center text-sm text-slate-500">
                         {state.includeInactive
-                            ? "등록된 주소·연락처가 없습니다."
-                            : "활성 주소·연락처가 없습니다."}
+                            ? "No address or contact information has been registered."
+                            : "No active address or contact information."}
                     </p>
                 ) : null}
             </div>
@@ -264,26 +264,26 @@ export default function PatientContactPanel({
                                                 : "bg-slate-200 text-slate-600"
                                             }`}
                                     >
-                                        {item.activeYn === "Y" ? "활성" : "비활성"}
+                                        {item.activeYn === "Y" ? "Active" : "Inactive"}
                                     </span>
 
                                     {item.primaryYn === "Y" ? (
                                         <span className="rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">
-                                            ★ 대표
+                                            ★ Primary
                                         </span>
                                     ) : null}
                                 </div>
 
-                                <dl className="mt-3 grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[90px_1fr]">
-                                    <dt className="text-slate-500">우편번호</dt>
+                                <dl className="mt-3 grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[120px_1fr]">
+                                    <dt className="text-slate-500">Postal Code</dt>
                                     <dd className="text-slate-800">{item.zipCode ?? "-"}</dd>
 
-                                    <dt className="text-slate-500">주소</dt>
+                                    <dt className="text-slate-500">Address</dt>
                                     <dd className="break-words text-slate-800">
                                         {address || "-"}
                                     </dd>
 
-                                    <dt className="text-slate-500">연락처</dt>
+                                    <dt className="text-slate-500">Phone Number</dt>
                                     <dd className="text-slate-800">
                                         {formatPhoneNo(item.phoneNo)}
                                     </dd>
@@ -291,8 +291,8 @@ export default function PatientContactPanel({
 
                                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                                     <div className="text-xs text-slate-500">
-                                        <p>등록: {formatTime(item.createdAt)}</p>
-                                        <p>수정: {formatTime(item.updatedAt)}</p>
+                                        <p>Created: {formatTime(item.createdAt)}</p>
+                                        <p>Updated: {formatTime(item.updatedAt)}</p>
                                     </div>
 
                                     {item.activeYn === "Y" ? (
@@ -303,7 +303,7 @@ export default function PatientContactPanel({
                                                     disabled={busy}
                                                     onClick={() => setPrimary(item)}
                                                 >
-                                                    대표로 설정
+                                                    Set as Primary
                                                 </Button>
                                             ) : null}
 
@@ -317,7 +317,7 @@ export default function PatientContactPanel({
                                                     })
                                                 }
                                             >
-                                                수정
+                                                Edit
                                             </Button>
 
                                             {item.primaryYn === "N" ? (
@@ -326,11 +326,11 @@ export default function PatientContactPanel({
                                                     disabled={busy}
                                                     onClick={() => deactivate(item)}
                                                 >
-                                                    비활성화
+                                                    Deactivate
                                                 </Button>
                                             ) : (
                                                 <span className="self-center text-xs text-slate-500">
-                                                    대표 항목은 비활성화할 수 없습니다.
+                                                    The primary entry cannot be deactivated.
                                                 </span>
                                             )}
                                         </div>
@@ -345,7 +345,7 @@ export default function PatientContactPanel({
             {!loading && !state.listError && items.length > 0 ? (
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3">
                     <p className="text-xs text-slate-500" aria-live="polite">
-                        {Math.min(visibleCount, items.length)}건 / 전체 {items.length}건
+                        {Math.min(visibleCount, items.length)} of {items.length}
                     </p>
 
                     <div className="flex flex-wrap gap-2">
@@ -355,7 +355,7 @@ export default function PatientContactPanel({
                                 disabled={busy}
                                 onClick={() => setVisibleCount((count) => count + 2)}
                             >
-                                {Math.min(2, items.length - visibleCount)}건 더 보기
+                                Show {Math.min(2, items.length - visibleCount)} more
                             </Button>
                         ) : null}
 
@@ -365,7 +365,7 @@ export default function PatientContactPanel({
                                 disabled={busy}
                                 onClick={() => setVisibleCount(2)}
                             >
-                                접기
+                                Show less
                             </Button>
                         ) : null}
                     </div>

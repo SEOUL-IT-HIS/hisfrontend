@@ -93,22 +93,22 @@ export default function PatientContactFormModal({
         event.preventDefault();
 
         if (!hasContactValue) {
-            setValidationError("주소 또는 연락처를 하나 이상 입력해 주세요.");
+            setValidationError("Enter at least one address or phone number field.");
             return;
         }
 
         if (!zipCodeValid) {
-            setValidationError("우편번호는 숫자 5자리여야 합니다.");
+            setValidationError("Postal code must contain exactly 5 digits.");
             return;
         }
 
         if (!phoneNoValid) {
-            setValidationError("연락처는 숫자 9~11자리여야 합니다.");
+            setValidationError("Phone number must contain 9 to 11 digits.");
             return;
         }
 
         if (address.trim().length > 300 || addressDetail.trim().length > 300) {
-            setValidationError("주소와 상세 주소는 각각 300자 이하여야 합니다.");
+            setValidationError("Address and address details must each be 300 characters or fewer.");
             return;
         }
 
@@ -138,13 +138,13 @@ export default function PatientContactFormModal({
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                 <h2 id={titleId} className="text-base font-semibold">
                     {mode === "create"
-                        ? "주소·연락처 추가"
-                        : "주소·연락처 수정"}
+                        ? "Add Address and Contact Information"
+                        : "Edit Address and Contact Information"}
                 </h2>
 
                 <Button
                     variant="ghost"
-                    aria-label="주소·연락처 모달 닫기"
+                    aria-label="Close address and contact information dialog"
                     disabled={submitting}
                     onClick={onClose}
                 >
@@ -156,15 +156,15 @@ export default function PatientContactFormModal({
                 <div className="mb-5 rounded-xl bg-slate-50 px-3 py-2">
                     <p className="font-semibold">{patientName}</p>
                     <p className="break-all text-xs text-slate-500">
-                        환자 ID: {patientId}
+                        Patient ID: {patientId}
                     </p>
                 </div>
 
                 <div className="space-y-4">
                     <FormField
-                        label="우편번호"
+                        label="Postal Code"
                         htmlFor={zipCodeId}
-                        hint="주소 검색을 이용하면 자동으로 입력됩니다."
+                        hint="Filled automatically when you use address search."
                     >
                         <div className="flex gap-2">
                             <Input
@@ -190,32 +190,32 @@ export default function PatientContactFormModal({
                         </div>
                     </FormField>
 
-                    <FormField label="기본 주소" htmlFor={addressId}>
+                    <FormField label="Address" htmlFor={addressId}>
                         <Input
                             id={addressId}
                             value={address}
                             onChange={(event) => setAddress(event.target.value)}
                             disabled={submitting}
                             maxLength={300}
-                            placeholder="주소 검색 후 자동 입력됩니다."
+                            placeholder="Filled automatically after address search."
                         />
                     </FormField>
 
-                    <FormField label="상세 주소" htmlFor={addressDetailId}>
+                    <FormField label="Address Details" htmlFor={addressDetailId}>
                         <Input
                             id={addressDetailId}
                             value={addressDetail}
                             onChange={(event) => setAddressDetail(event.target.value)}
                             disabled={submitting}
                             maxLength={300}
-                            placeholder="동·호수 등 상세 주소"
+                            placeholder="Enter address details (e.g., building or unit number)"
                         />
                     </FormField>
 
                     <FormField
-                        label="연락처"
+                        label="Phone Number"
                         htmlFor={phoneNoId}
-                        hint="하이픈 없이 숫자 9~11자리로 저장됩니다."
+                        hint="Saved as 9 to 11 digits without hyphens."
                     >
                         <Input
                             id={phoneNoId}
@@ -244,7 +244,7 @@ export default function PatientContactFormModal({
                         disabled={submitting}
                         onClick={onClose}
                     >
-                        취소
+                        Cancel
                     </Button>
 
                     <Button
@@ -253,10 +253,10 @@ export default function PatientContactFormModal({
                         disabled={submitting || !valid}
                     >
                         {submitting
-                            ? "저장 중..."
+                            ? "Saving..."
                             : mode === "create"
-                                ? "추가"
-                                : "저장"}
+                                ? "Add"
+                                : "Save"}
                     </Button>
                 </div>
             </form>

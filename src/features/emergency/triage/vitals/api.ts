@@ -5,9 +5,9 @@ import type { EwsRecord, VitalAssessmentCreateRequest } from "@/features/emergen
 const VITALS_PATH = "/api/emergency/triage/vital-assessments";
 
 /** 접수건의 활력징후(EWS) 이력을 조회한다. UC-TRI-04 / Jira UD2-10 */
-export async function getVitalAssessments(receptionNo: string): Promise<EwsRecord[]> {
+export async function getVitalAssessments(receptionId: string): Promise<EwsRecord[]> {
   const { data } = await apiClient.get<ApiResponse<EwsRecord[]>>(VITALS_PATH, {
-    params: { receptionNo },
+    params: { receptionId },
   });
   return data.data;
 }

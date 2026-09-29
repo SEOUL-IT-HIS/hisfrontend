@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { RootState } from "@/store/store";
 import type { SearchPatient, SearchPatientResult, BillingHistoryItem } from "./types";
 
 /**

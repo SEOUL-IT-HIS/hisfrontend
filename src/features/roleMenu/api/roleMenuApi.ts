@@ -5,10 +5,15 @@
  * - 조회 GET /api/admin/role-menu/list/{roleId}
  * - 저장 PUT /api/admin/role-menu/save/{roleId}
  *
+ * 같은 Permissions 화면의 Accounts 탭 (IH2-113)
+ * - 계정 목록 GET /api/admin/account/list          (관리자 01·개인정보보호 책임자 02)
+ * - 잠금 해제 PUT /api/admin/account/unlock/{empId} (관리자 01 만)
+ *
  * 응답은 ApiResponse 래퍼 → data 필드만 반환
  */
 import apiClient from "@/lib/axios";
 import type {
+  AccountRow,
   ApiResponse,
   RoleMenu,
   RoleMenuSaveRequest,
@@ -37,4 +42,17 @@ export async function fetchRoleMenuSaveApi(
     `/api/admin/role-menu/save/${roleId}`,
     { menuIds },
   );
+}
+
+/** 전체 계정 목록 — 잠긴 계정이 먼저 온다 */
+export async function fetchAccountListApi(): Promise<AccountRow[]> {
+  const response = await apiClient.get<ApiResponse<AccountRow[]>>(
+    "/api/admin/account/list",
+  );
+  return response.data.data ?? [];
+}
+
+/** 계정 잠금 해제 — 관리자(01)가 아니면 서버가 403 으로 거절한다 */
+export async function unlockAccountApi(empId: string): Promise<void> {
+  await apiClient.put<ApiResponse<null>>(`/api/admin/account/unlock/${empId}`);
 }

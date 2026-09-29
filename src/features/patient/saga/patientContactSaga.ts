@@ -31,23 +31,23 @@ import type { PatientContact } from "../type/patientContactType";
 function getErrorMessage(error: unknown): string {
     if (isAxiosError(error)) {
         if (!error.response) {
-            return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.";
+            return "Unable to connect to the server. Please try again later.";
         }
 
         if (error.response.status === 404) {
-            return "환자 또는 주소·연락처 정보를 찾을 수 없습니다.";
+            return "Patient or address and contact information was not found.";
         }
 
         if (error.response.status === 409) {
-            return "대표 주소·연락처 또는 활성 상태를 확인해 주세요.";
+            return "Check the primary address and contact information or active status.";
         }
 
         if (error.response.status === 400) {
-            return "입력한 주소·연락처 정보를 확인해 주세요.";
+            return "Check the address and contact information you entered.";
         }
     }
 
-    return "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    return "Unable to complete the request. Please try again later.";
 }
 
 function* fetchPatientContactListSaga(

@@ -9,6 +9,9 @@ interface PrescriptionState {
     // 상세 조회 상태
     detailStatus: { loading: boolean; error: string | null };
     selectedPrescription: PrescriptionDto | null;
+
+    // 비활성화 상태
+    deactivateStatus: { loading: boolean; error: string | null };
 }
 
 const initialState: PrescriptionState = {
@@ -16,6 +19,7 @@ const initialState: PrescriptionState = {
     list: [],
     detailStatus: { loading: false, error: null },
     selectedPrescription: null,
+    deactivateStatus: { loading: false, error: null },
 };
 
 const prescriptionSlice = createSlice({
@@ -55,6 +59,27 @@ const prescriptionSlice = createSlice({
             state.selectedPrescription = null;
             state.detailStatus = { loading: false, error: null };
         },
+
+        // 처방 비활성화
+        deactivatePrescriptionRequest: (state, _action: PayloadAction<{ prescriptionId: string; cancelReason: string; userId: string }>) => {
+            state.deactivateStatus.loading = true;
+            state.deactivateStatus.error = null;
+        },
+        deactivatePrescriptionSuccess: (state, action: PayloadAction<{ prescriptionId: string; cancelReason: string }>) => {
+            state.deactivateStatus.loading = false;
+            const patch = (p: PrescriptionDto) =>
+                p.prescriptionId === action.payload.prescriptionId
+                    ? { ...p, status: "CANCELLED", cancelReason: action.payload.cancelReason }
+                    : p;
+            state.list = state.list.map(patch);
+            if (state.selectedPrescription?.prescriptionId === action.payload.prescriptionId) {
+                state.selectedPrescription = patch(state.selectedPrescription);
+            }
+        },
+        deactivatePrescriptionFailure: (state, action: PayloadAction<string>) => {
+            state.deactivateStatus.loading = false;
+            state.deactivateStatus.error = action.payload;
+        },
     }
 });
 
@@ -66,6 +91,9 @@ export const {
     fetchPrescriptionDetailSuccess,
     fetchPrescriptionDetailFailure,
     clearSelectedPrescription,
+    deactivatePrescriptionRequest,
+    deactivatePrescriptionSuccess,
+    deactivatePrescriptionFailure,
 } = prescriptionSlice.actions;
 
 export default prescriptionSlice.reducer;

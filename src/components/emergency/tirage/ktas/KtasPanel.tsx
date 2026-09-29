@@ -192,7 +192,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
             </FormField>
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.ktasScore}>
+            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.ktasScore || !receptionNo}>
               {/* 저장 중... / 재평가 저장 / 최초 분류 등록 */}
               {submitting ? "Saving..." : hasInitial ? "Save Reassessment" : "Register Initial Level"}
             </Button>

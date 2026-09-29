@@ -27,7 +27,8 @@ export interface PrescriptionDto {
     orderMethod?: string | null;       // 처방유형
     admissionId?: string | null;       // 입원ID
 
-    priorityCode?: string | null;      // 우선순위코드 (ROUTINE/URGENT/STAT)
+    priorityCode?: string | null;      // 우선순위코드 (ADM 공통코드 ORDER_PRIORITY_CD 의 codeValue)
+    priorityName?: string | null;      // 우선순위명 (ADM 공통코드 ORDER_PRIORITY_CD 연동)
     timingCode?: string | null;        // 처방패턴코드 (SCHEDULED/PRN/ONCE)
     verbalYn?: string | null;          // 구두처방여부 (Y/N)
     verbalConfirmedAt?: string | null; // 구두처방확정일시
@@ -59,4 +60,21 @@ export interface PrescriptionItemInput {
     frequency?: string;
     durationDays?: string;
     detailInfo?: string;
+}
+
+//약 검색 결과
+export interface MedicationDto {
+    medicationId: number;
+    medicationName: string;
+    itemSeq: string;
+    itemEngName?: string | null;
+    entpName?: string | null;
+    etcOtcName?: string | null;
+    classNo?: string | null;
+    className?: string | null;
+    formCodeName?: string | null;
+    chart?: string | null;
+    itemPermitDate?: string | null;
+    ediCode: string;
+    stdCd?: string | null;
 }

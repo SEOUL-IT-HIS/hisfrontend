@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Alert, Button, FormField, Modal } from "@/components/common";
 import {
     clearSelectedPrescription,
+    deactivatePrescriptionRequest,
     fetchPrescriptionDetailRequest,
 } from "@/features/outpatient/prescription/slice";
 import type { AppDispatch, RootState } from "@/store/store";
@@ -45,6 +46,10 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
     const { loading, error } = useSelector(
         (state: RootState) => state.outpatient.prescription.detailStatus
     );
+    const deactivateLoading = useSelector(
+        (state: RootState) => state.outpatient.prescription.deactivateStatus.loading
+    );
+    const currentUserId = useSelector((state: RootState) => state.auth.user?.loginId ?? "UNKNOWN");
 
     useEffect(() => {
         if (prescriptionId) {
@@ -54,6 +59,14 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
             dispatch(clearSelectedPrescription());
         };
     }, [dispatch, prescriptionId]);
+
+    // 처방 비활성화 (취소 사유는 간단하게 prompt로 받음)
+    function handleDeactivate() {
+        if (!prescriptionId) return;
+        const cancelReason = window.prompt("Enter cancellation reason:");
+        if (!cancelReason?.trim()) return;
+        dispatch(deactivatePrescriptionRequest({ prescriptionId, cancelReason, userId: currentUserId }));
+    }
 
     return (
         <Modal
@@ -75,9 +88,6 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
                         <h3 className="text-lg font-bold text-slate-800">
                             {prescription.patientName ?? "Unknown"}
                         </h3>
-                        <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-600 border border-slate-200">
-                            {prescription.patientId}
-                        </span>
                         <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-600 border border-slate-200">
                             {/* 진료ID: */}
                             Encounter ID: {prescription.encounterId}
@@ -105,19 +115,9 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
                                 {prescription.serviceType ?? "-"}
                             </div>
                         </FormField>
-                        <FormField label="Order Method">
-                            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
-                                {prescription.orderMethod ?? "-"}
-                            </div>
-                        </FormField>
                         <FormField label="Priority">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
-                                {prescription.priorityCode ?? "-"}
-                            </div>
-                        </FormField>
-                        <FormField label="Timing">
-                            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
-                                {prescription.timingCode ?? "-"}
+                                {prescription.priorityName ?? prescription.priorityCode ?? "-"}
                             </div>
                         </FormField>
                     </div>
@@ -185,9 +185,13 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
 
                     {/* 하단 버튼 영역 */}
                     <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
-                        <Button variant="secondary" onClick={onClose}>
-                            {/* 닫기 */}
-                            Close
+                        <Button
+                            variant="danger"
+                            onClick={handleDeactivate}
+                            disabled={deactivateLoading}
+                            className="mr-auto"
+                        >
+                            {deactivateLoading ? "Deactivating..." : "Deactivate"}
                         </Button>
                     </div>
                 </div>

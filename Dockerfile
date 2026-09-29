@@ -40,21 +40,24 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # 그래서 실행할 때(docker run -e ...) 넣으면 이미 굳은 뒤라 아무 효과가 없다. 여기 빌드 단계에서 넣는다.
 #
 # ARG 로 적은 값은 바로 아래 RUN npm run build 안에서 환경변수로 보인다.
-# 기본값은 원격 서버(192.168.1.126) 도커에 떠 있는 각 서비스의 바깥 포트다.
+# 기본값은 원격 서버 compose 안에서의 컨테이너 주소다 (http://서비스이름:808번호).
+# 프론트 컨테이너가 같은 compose 안의 서비스들을 부르기 때문에, 바깥 포트(1808번호)가 아니라 이 주소를 쓴다.
+#   포트 규칙: admin 00 · billing 01 · pharmacy 02 · reception 03 · surgery 04
+#              labimaging 05 · inpatient 06 · patient 07 · outpatient 08 · emergency 09  →  808번호
 # 기본값을 넣어두는 이유: 값이 비면 next.config.ts 가 빈 주소로 rewrite 를 만들어 전부 깨진다.
 #
 # 다른 주소로 만들고 싶으면 빌드할 때 덮어쓴다.
-#   docker build --build-arg PATIENT_API_ORIGIN=http://192.168.1.149:8080 -t kwonsugeun/hisfrontend:latest .
-ARG ADMIN_API_ORIGIN=http://192.168.1.126:18080
-ARG BILLING_API_ORIGIN=http://192.168.1.126:18081
-ARG PHARMACY_API_ORIGIN=http://192.168.1.126:18082
-ARG RECEPTION_API_ORIGIN=http://192.168.1.126:18083
-ARG SURGERY_API_ORIGIN=http://192.168.1.126:18084
-ARG LABIMAGING_API_ORIGIN=http://192.168.1.126:18085
-ARG INPATIENT_API_ORIGIN=http://192.168.1.126:18087
-ARG PATIENT_API_ORIGIN=http://192.168.1.126:18088
-ARG OUTPATIENT_API_ORIGIN=http://192.168.1.126:18089
-ARG EMERGENCY_API_ORIGIN=http://192.168.1.126:18090
+#   docker build --build-arg PATIENT_API_ORIGIN=http://192.168.1.149:8087 -t kwonsugeun/hisfrontend:v2.1 .
+ARG ADMIN_API_ORIGIN=http://admin:8080
+ARG BILLING_API_ORIGIN=http://billing:8081
+ARG PHARMACY_API_ORIGIN=http://pharmacy:8082
+ARG RECEPTION_API_ORIGIN=http://reception:8083
+ARG SURGERY_API_ORIGIN=http://surgery:8084
+ARG LABIMAGING_API_ORIGIN=http://labimaging:8085
+ARG INPATIENT_API_ORIGIN=http://inpatient:8086
+ARG PATIENT_API_ORIGIN=http://patient:8087
+ARG OUTPATIENT_API_ORIGIN=http://outpatient:8088
+ARG EMERGENCY_API_ORIGIN=http://emergency:8089
 
 RUN npm run build
 
@@ -89,32 +92,26 @@ CMD ["node", "server.js"]
 
 # ══════════════ 사용법 ══════════════
 #
-# 이미지 만들기 (내 PC, 이 파일이 있는 폴더에서)
-#   docker build -t kwonsugeun/hisfrontend:latest .
-#   서비스 주소는 2단계의 ARG 기본값(원격 서버 포트)으로 들어간다.
+# 이미지 만들기 (이 파일이 있는 폴더에서)
+#   docker build -t kwonsugeun/hisfrontend:v2.1 .
+#   서비스 주소는 2단계의 ARG 기본값(compose 컨테이너 주소)으로 들어간다.
+#   태그는 배포 버전 하나만 붙인다 (v2.0, v2.1 …). latest 는 쓰지 않는다.
 #
-# 올리기 (내 PC, Docker Hub. 처음 한 번 docker login 필요)
-#   docker push kwonsugeun/hisfrontend:latest
+# 서버로 옮기기 (Docker Hub 계정이 없으면 tar 로)
+#   docker save -o hisfrontend-v2.1.tar kwonsugeun/hisfrontend:v2.1
+#   서버에서: docker load -i hisfrontend-v2.1.tar
 #
-# 실행하기 (원격 서버)
-#   docker pull kwonsugeun/hisfrontend:latest
-#   docker run -d --name hisfrontend --restart unless-stopped -p 28080:3000 kwonsugeun/hisfrontend:latest
+# 실행하기 (원격 서버) — 원격 서버 docker-compose.yml 의 hisfront 서비스로 띄운다
+#   docker compose up -d hisfront
 #   브라우저: http://192.168.1.126:28080
 #
-#   ※ 실행할 때 -e 로 서비스 주소를 넣어도 반영되지 않는다. rewrite 주소는 빌드할 때 굳는다.
+#   ※ 실행할 때 -e / compose environment 로 서비스 주소를 넣어도 반영되지 않는다. rewrite 주소는 빌드할 때 굳는다.
 #     주소를 바꾸려면 --build-arg 로 다시 빌드해야 한다.
 #   ※ 바깥 포트 28080 을 바꾸면 admin-service 의 CORS 허용 목록(AppConfig)도 같이 바꿔야 한다.
 #     브라우저가 보내는 Origin 이 이 주소라서, 목록에 없으면 로그인부터 403 이 난다.
 #
 # 로그 보기 (원격 서버)
-#   docker logs -f hisfrontend
+#   docker compose logs -f hisfront
 #
-# 재배포 (코드 고친 뒤)
-#   내 PC  : docker build -t kwonsugeun/hisfrontend:latest .
-#            docker push kwonsugeun/hisfrontend:latest
-#   서버   : docker pull kwonsugeun/hisfrontend:latest
-#            docker rm -f hisfrontend
-#            docker run ... (위와 동일)
-#
-#   ※ 공용 서버에서 docker-compose down 처럼 전체를 내리는 명령을 쓰지 말 것.
+#   ※ 공용 서버에서 docker compose down 처럼 전체를 내리는 명령을 쓰지 말 것.
 #     다른 팀 서비스까지 같이 멈춘다. 항상 서비스 이름을 지정한다.
