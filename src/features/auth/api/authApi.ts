@@ -5,6 +5,7 @@
  * - 로그인 POST /api/admin/auth/login
  * - 세션  GET  /api/admin/auth/me
  * - 로그아웃 POST /api/admin/auth/logout
+ * - 비밀번호 변경 PUT /api/admin/auth/password (IH2-115, 본인만·관리자 01 은 서버가 403)
  *
  * 세션 쿠키(JSESSIONID)는 apiClient withCredentials 로 전달
  */
@@ -55,5 +56,23 @@ export async function fetchAuthLogoutApi(): Promise<void> {
   const response = await apiClient.post<ApiResponse<null>>("/api/admin/auth/logout");
   if (response.data.code !== 200) {
     throw new Error(response.data.message || "Sign-out failed.");
+  }
+}
+
+/**
+ * 비밀번호 변경 (본인)
+ * 누구의 비밀번호인지는 보내지 않는다. 서버가 세션의 로그인 사용자로 정한다.
+ * 현재 비밀번호가 틀리면 서버가 400 을 준다(401 이 아니라 로그아웃되지 않는다).
+ */
+export async function changePasswordApi(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const response = await apiClient.put<ApiResponse<null>>("/api/admin/auth/password", {
+    currentPassword,
+    newPassword,
+  });
+  if (response.data.code !== 200) {
+    throw new Error(response.data.message || "Failed to change the password.");
   }
 }
