@@ -1,5 +1,4 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/store/store";
 import type {
   BillingDetail,
   BillingDetailAdmission,
@@ -157,12 +156,3 @@ export const selectAdmissionDetailError = (state: BillingDetailRoot) => state.bi
 export const selectVisitDetail = (state: BillingDetailRoot) => state.billing.billingDetail.visitDetail;
 export const selectVisitDetailLoading = (state: BillingDetailRoot) => state.billing.billingDetail.visitDetailStatus.loading;
 export const selectVisitDetailError = (state: BillingDetailRoot) => state.billing.billingDetail.visitDetailStatus.error;
-export const selectBillingDetails = (state: RootState) => state.billing.billingDetail.searchPatient;
-export const selectBillingDetailLoading = (state: RootState) => state.billing.billingDetail.loading;
-export const selectBillingDetailError = (state: RootState) => state.billing.billingDetail.error;
-export const selectAdmissionDetail = (state: RootState) => state.billing.billingDetail.admissionDetail;
-export const selectAdmissionDetailLoading = (state: RootState) => state.billing.billingDetail.admissionDetailStatus.loading;
-export const selectAdmissionDetailError = (state: RootState) => state.billing.billingDetail.admissionDetailStatus.error;
-export const selectVisitDetail = (state: RootState) => state.billing.billingDetail.visitDetail;
-export const selectVisitDetailLoading = (state: RootState) => state.billing.billingDetail.visitDetailStatus.loading;
-export const selectVisitDetailError = (state: RootState) => state.billing.billingDetail.visitDetailStatus.error;
