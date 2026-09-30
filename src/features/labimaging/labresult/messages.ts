@@ -15,6 +15,7 @@ export const LAB_RESULT_MESSAGES = {
   LAB039: "Test result has been confirmed.",
   LAB040: "A confirmed result cannot be modified.",
   LAB041: "This result has already been confirmed.",
+  LAB066: "Specimen acceptance is not complete. Results cannot be registered yet.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;

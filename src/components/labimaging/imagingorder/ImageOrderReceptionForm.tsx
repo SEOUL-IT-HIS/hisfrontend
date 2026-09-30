@@ -4,6 +4,8 @@ import { useEffect, useState, type ChangeEvent, type SubmitEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveImageOrderMessage } from "@/features/labimaging/imagingorder/messages";
 import {
@@ -43,6 +45,9 @@ type FieldErrors = Partial<Record<keyof FormState | "orderItems", string>>;
  */
 export default function ImageOrderReceptionForm() {
   const dispatch = useDispatch<AppDispatch>();
+
+  /** 담당자는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
   const creating = useSelector(selectImageOrderCreating);
   const createError = useSelector(selectImageOrderCreateError);
   const lastCreated = useSelector(selectLastCreatedImageOrder);
@@ -98,7 +103,7 @@ export default function ImageOrderReceptionForm() {
     if (!form.systemCode.trim()) next.systemCode = "System code is required.";
     if (!form.patientId.trim()) next.patientId = "Patient ID is required.";
     if (!form.treatTypeCode) next.treatTypeCode = "Select a treatment type.";
-    if (!form.receivedById.trim()) next.receivedById = "Receptionist ID is required.";
+    if (!signedIn) next.receivedById = "Sign in to record this action.";
     if (items.every((item) => !item.imageItemCode.trim())) {
       next.orderItems = "Enter at least one imaging item.";
     }
@@ -121,7 +126,7 @@ export default function ImageOrderReceptionForm() {
       physicianId: form.physicianId.trim() || undefined,
       treatTypeCode: form.treatTypeCode,
       urgencyYn: form.urgencyYn,
-      receivedById: form.receivedById.trim(),
+      receivedById: actorId,
       orderItems: items
         .filter((item) => item.imageItemCode.trim())
         .map((item) => ({ imageItemCode: item.imageItemCode.trim() })),
@@ -236,15 +241,8 @@ export default function ImageOrderReceptionForm() {
           />
         </FormField>
 
-        <FormField label="Receptionist ID" required className="sm:col-span-2">
-          <Input
-            name="receivedById"
-            value={form.receivedById}
-            onChange={handleChange}
-            maxLength={20}
-            disabled={creating}
-            placeholder="e.g. staff-uuid-001"
-          />
+        <FormField label="Received By" required className="sm:col-span-2">
+          <LoginActorInput name="receivedById" actorName={actorName} signedIn={signedIn} />
           {errors.receivedById ? (
             <span className="text-xs text-rose-500">{errors.receivedById}</span>
           ) : null}

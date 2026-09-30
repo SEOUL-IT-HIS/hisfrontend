@@ -64,8 +64,15 @@ export interface LabResultItem {
   labOrderItemId: string;
   /** 검사항목코드 (공통코드 TEST_TYPE_CD) */
   labItemCode: string;
+  /**
+   * 결과 유형 (5차 D1). 화면이 입력 패널을 고르는 기준이다.
+   * GENERAL 만 이 목록의 result 로 등록하고, MICROBIOLOGY/PATHOLOGY 는 각자의 패널·API 를 쓴다.
+   */
+  resultType?: LabResultType;
   result?: LabResultSummary;
 }
+
+export type LabResultType = "GENERAL" | "MICROBIOLOGY" | "PATHOLOGY";
 
 /**
  * 결과 등록 요청 — 백엔드 LabResultCreateRequestDto

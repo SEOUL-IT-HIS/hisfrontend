@@ -11,6 +11,8 @@ import {
   Input,
   Select,
 } from "@/components/common";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import type { DataTableColumn } from "@/components/common";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
@@ -66,6 +68,9 @@ function formatDateTime(value?: string) {
 export default function SpecimenWorkPanel({ reception }: { reception: LabWorklistItem }) {
   const dispatch = useDispatch<AppDispatch>();
 
+  /** 담당자는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
+
   const specimens = useSelector(selectSpecimens);
   const listLoading = useSelector(selectSpecimensLoading);
   const listError = useSelector(selectSpecimensError);
@@ -100,7 +105,7 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
     const next: FieldErrors = {};
     if (!form.specimenContainerCode) next.specimenContainerCode = "Specimen container is required.";
     if (!form.collectedAt) next.collectedAt = "Collection date and time is required.";
-    if (!form.collectedById.trim()) next.collectedById = "Collecting staff ID is required.";
+    if (!signedIn) next.collectedById = "Sign in to record this action.";
     return next;
   }
 
@@ -120,7 +125,7 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
           specimenType: form.specimenType,
           patientId: reception.patientId,
           collectedAt: form.collectedAt,
-          collectedById: form.collectedById.trim(),
+          collectedById: actorId,
         },
         reception.receptionNo,
       ),
@@ -236,15 +241,8 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
             ) : null}
           </FormField>
 
-          <FormField label="Collecting Staff ID" required>
-            <Input
-              name="collectedById"
-              value={form.collectedById}
-              onChange={handleChange}
-              maxLength={20}
-              disabled={creating}
-              placeholder="e.g. STF00021"
-            />
+          <FormField label="Collected By" required>
+            <LoginActorInput name="collectedById" actorName={actorName} signedIn={signedIn} />
             {errors.collectedById ? (
               <span className="text-xs text-rose-500">{errors.collectedById}</span>
             ) : null}

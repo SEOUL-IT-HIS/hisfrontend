@@ -8,6 +8,9 @@ import consentReducer from "@/features/labimaging/imagingconsent/slice";
 import labResultReducer from "@/features/labimaging/labresult/slice";
 import imageFileReducer from "@/features/labimaging/imagingacquisition/slice";
 import imageReadingReducer from "@/features/labimaging/imaginginterpretation/slice";
+import microbiologyResultReducer from "@/features/labimaging/microbiologyresult/slice";
+import pathologyResultReducer from "@/features/labimaging/pathologyresult/slice";
+import interfaceSendLogReducer from "@/features/labimaging/interfacelog/slice";
 /**
  * labImaging 도메인 결합 reducer
  * - 하위 기능 slice 들을 하나로 묶어 rootReducer 에 labImaging 키로 등록한다.
@@ -24,6 +27,9 @@ const labImagingReducer = combineReducers({
   labresult: labResultReducer,
   imagingacquisition: imageFileReducer,
   imaginginterpretation: imageReadingReducer,
+  microbiologyresult: microbiologyResultReducer,
+  pathologyresult: pathologyResultReducer,
+  interfacelog: interfaceSendLogReducer,
 });
 
 export default labImagingReducer;
