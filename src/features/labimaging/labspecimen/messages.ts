@@ -12,6 +12,7 @@ export const LAB_SPECIMEN_MESSAGES = {
   LAB021: "Specimen acceptance and fitness assessment have been registered.",
   LAB022: "This specimen has already been accepted and assessed.",
   LAB051: "Patient information does not match.",
+  LAB098: "This specimen and container combination is not allowed for this test.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;
