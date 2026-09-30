@@ -29,7 +29,7 @@ export function useEmpNames() {
         setNames(Object.fromEntries(emps.map((emp) => [emp.empId, emp.empName])));
         setError("");
       } catch (e) {
-        setError(e instanceof Error ? e.message : "직원 목록을 불러오지 못했습니다.");
+        setError(e instanceof Error ? e.message : "Failed to load employees.");
       } finally {
         setLoading(false);
       }
