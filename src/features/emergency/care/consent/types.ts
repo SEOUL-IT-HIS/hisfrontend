@@ -29,7 +29,7 @@ export interface ConsentRecordCreateRequest {
 
 /** 공통코드 그룹 (admin 반영 전에는 아래 폴백 사용) */
 export const CONSENT_TYPE_GROUP_CODE = "CONSENT_TYPE_CD";
-export const CONSENT_STATUS_GROUP_CODE = "CONSENT_STATUS_CD";
+export const CONSENT_STATUS_GROUP_CODE = "ER_CONSENT_STATUS_CD";
 export const CONSENT_BY_GROUP_CODE = "CONSENT_BY_CD";
 
 type Option = { value: string; label: string };

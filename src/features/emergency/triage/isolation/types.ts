@@ -21,7 +21,7 @@ export interface IsolationCreateRequest {
   decidedById?: string;
 }
 
-/** 격리 유형 옵션(공통코드 ISOLATION_TYPE_CD 와 같은 값, 숫자 2자리) */
+/** 격리 유형 옵션(공통코드 ER_ISOLATION_TYPE_CD 와 같은 값, 숫자 2자리) */
 export const ISOLATION_TYPE_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   // 접촉주의
   { value: "01", label: "Contact Precautions" },

@@ -6,7 +6,7 @@ export interface TriageAssessment {
   id: string;
   receptionId: string;
   ktasLevelCode: string;
-  /** "01"(최초) | "02"(재평가) — 공통코드 ASSESSMENT_TYPE_CD */
+  /** "01"(최초) | "02"(재평가) — 공통코드 ER_ASSESSMENT_TYPE_CD */
   assessmentTypeCode: string;
   assessedById: string;
   assessedAt: string;

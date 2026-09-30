@@ -15,7 +15,7 @@ export interface ClinicalNoteCreateRequest {
   recordedById: string;
 }
 
-/** 진료기록 종류 폴백 — 공통코드 NOTE_TYPE_CD 와 같은 값(숫자 2자리) */
+/** 진료기록 종류 폴백 — 공통코드 ER_NOTE_TYPE_CD 와 같은 값(숫자 2자리) */
 export const NOTE_TYPE_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   // 초진
   { value: "01", label: "Initial Note" },

@@ -30,7 +30,7 @@ const initialForm = { orderId: "", treatmentCode: "", description: "", performed
 /**
  * 응급 처치 기록 패널 (UC-CARE-03, Jira UD2-18)
  * - 처치는 GR2 처방(orderId)을 참조해서 기록한다(처방 원장은 GR2 소유, 응급은 참조만).
- * - 처치 종류는 admin 공통코드 TREATMENT_TYPE_CD(없으면 폴백).
+ * - 처치 종류는 admin 공통코드 ER_TREATMENT_TYPE_CD(없으면 폴백).
  */
 export default function TreatmentPanel({ receptionNo, className = "" }: TreatmentPanelProps) {
   const dispatch = useDispatch<AppDispatch>();

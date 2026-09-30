@@ -36,8 +36,8 @@ export interface BedReleaseRequest {
   releasedById: string;
 }
 
-/** 공통코드 그룹 ZONE_CD. admin 에 그룹이 없을 때 이 목록을 라벨 폴백으로 쓴다(값은 숫자 2자리). */
-export const ZONE_GROUP_CODE = "ZONE_CD";
+/** 공통코드 그룹 ER_ZONE_CD. admin 에 그룹이 없을 때 이 목록을 라벨 폴백으로 쓴다(값은 숫자 2자리). */
+export const ZONE_GROUP_CODE = "ER_ZONE_CD";
 
 export const BED_ZONE_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   // 소생

@@ -17,8 +17,8 @@ export interface DispositionCreateRequest {
   decidedById?: string;
 }
 
-/** 공통코드 그룹 DISPOSITION_TYPE_CD. admin 에 그룹이 없을 때 폴백(값은 숫자 2자리). */
-export const DISPOSITION_TYPE_GROUP_CODE = "DISPOSITION_TYPE_CD";
+/** 공통코드 그룹 ER_DISPOSITION_TYPE_CD. admin 에 그룹이 없을 때 폴백(값은 숫자 2자리). */
+export const DISPOSITION_TYPE_GROUP_CODE = "ER_DISPOSITION_TYPE_CD";
 
 export const DISPOSITION_TYPE_FALLBACK_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   // 귀가

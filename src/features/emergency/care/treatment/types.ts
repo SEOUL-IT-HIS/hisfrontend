@@ -21,7 +21,7 @@ export interface TreatmentCreateRequest {
   performedById: string;
 }
 
-/** 처치 종류 폴백 — 공통코드 TREATMENT_TYPE_CD 와 같은 값(숫자 2자리) */
+/** 처치 종류 폴백 — 공통코드 ER_TREATMENT_TYPE_CD 와 같은 값(숫자 2자리) */
 export const TREATMENT_TYPE_FALLBACK_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   { value: "01", label: "Airway" },
   { value: "02", label: "IV Access" },
