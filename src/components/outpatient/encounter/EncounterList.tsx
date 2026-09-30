@@ -12,7 +12,7 @@ import MedicalRecordList from "../medicalrecord/MedicalRecordList";
 import PrescriptionList from "../prescription/PrescriptionList";
 import PrescriptionForm from "./PrescriptionForm";
 
-//진료상태를 한글로 변경
+//진료상태를 깔끔한 텍스트로 변경
 const getStatusText = (status: string) => {
     switch (status) {
         case 'WAITING':
