@@ -10,6 +10,7 @@ import ReceptionListPanel from "@/components/emergency/receptionList/ReceptionLi
 import TriageSummaryBanner from "@/components/emergency/common/TriageSummaryBanner";
 import BedAssignmentPanel from "@/components/emergency/resource/bed/BedAssignmentPanel";
 import ClinicalNotePanel from "@/components/emergency/care/clinicalNote/ClinicalNotePanel";
+import ConsentPanel from "@/components/emergency/care/consent/ConsentPanel";
 import DispositionPanel from "@/components/emergency/disposition/DispositionPanel";
 import CongestionPanel from "@/components/emergency/resource/congestion/CongestionPanel";
 
@@ -29,7 +30,8 @@ const TABS: ReadonlyArray<{ key: Tab; label: string }> = [
  * 탭으로 전환한다 (환자를 다시 고를 필요 없이 탭만 이동).
  * - 초기환자(Triage, UC-TRI-01~06 / Jira UD2-8,9,10,11,12,43):
  *   EMS 사전정보 · 격리 · 활력징후 · KTAS 분류/재평가 · 위험 스크리닝
- * - 자원관리(Resource, UC-RES-01/02 / Jira UD2-13,14): 구역별 혼잡도 + 병상 배정 (장비는 추후)
+ * - 자원관리(Resource, UC-RES-01 / Jira UD2-13,14): 구역별 혼잡도 + 병상 배정
+ * - 진료(Care, Jira UD2-17,25): 진료기록 + 동의 기록
  * - 퇴실(Disposition, UC-DISP-01 / Jira UD2-39): 퇴실 결정 등록
  * 실제로는 접수/환자 선택 화면에서 receptionNo 를 넘겨받아 진입하지만,
  * 그 상위 화면이 아직 없어 이 화면 자체에 조회용 입력을 둔다.
@@ -84,6 +86,7 @@ export default function TriagePanelHost() {
           </div>
           <div className={`flex flex-col gap-4 ${activeTab === "care" ? "" : "hidden"}`}>
             <ClinicalNotePanel receptionNo={active} />
+            <ConsentPanel receptionNo={active} />
           </div>
           <div className={`flex flex-col gap-4 ${activeTab === "disposition" ? "" : "hidden"}`}>
             <DispositionPanel receptionNo={active} />

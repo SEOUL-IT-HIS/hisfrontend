@@ -8,6 +8,7 @@ import commonCodeSaga from "@/features/emergency/commonCode/saga";
 import receptionListSaga from "@/features/emergency/receptionList/saga";
 import bedSaga from "@/features/emergency/resource/bed/saga";
 import clinicalNoteSaga from "@/features/emergency/care/clinicalNote/saga";
+import consentSaga from "@/features/emergency/care/consent/saga";
 import dispositionSaga from "@/features/emergency/disposition/saga";
 import congestionSaga from "@/features/emergency/resource/congestion/saga";
 import dashboardSaga from "@/features/emergency/monitor/saga";
@@ -27,6 +28,7 @@ export default function* emergencySaga() {
     fork(receptionListSaga),
     fork(bedSaga),
     fork(clinicalNoteSaga),
+    fork(consentSaga),
     fork(dispositionSaga),
     fork(congestionSaga),
     fork(dashboardSaga),
