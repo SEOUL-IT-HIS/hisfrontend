@@ -21,16 +21,16 @@ export interface IsolationCreateRequest {
   decidedById?: string;
 }
 
-/** 격리 유형 옵션. TODO: ADM commonCodes 연동 전까지 임시 상수 (요구사항 명시된 4종) */
+/** 격리 유형 옵션(공통코드 ER_ISOLATION_TYPE_CD 와 같은 값, 숫자 2자리) */
 export const ISOLATION_TYPE_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   // 접촉주의
-  { value: "CONTACT", label: "Contact Precautions" },
+  { value: "01", label: "Contact Precautions" },
   // 비말주의
-  { value: "DROPLET", label: "Droplet Precautions" },
+  { value: "02", label: "Droplet Precautions" },
   // 공기주의
-  { value: "AIRBORNE", label: "Airborne Precautions" },
+  { value: "03", label: "Airborne Precautions" },
   // 역격리(보호격리)
-  { value: "PROTECTIVE", label: "Protective Isolation" },
+  { value: "04", label: "Protective Isolation" },
 ];
 
 export interface IsolationState {

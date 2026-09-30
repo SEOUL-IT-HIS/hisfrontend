@@ -11,9 +11,14 @@ const receptionListSlice = createSlice({
     name: "emergency/receptionList",
     initialState,
     reducers: {
-        fetchReceptionListRequest(state) {
-            state.loading = true;
-            state.error = "";
+        fetchReceptionListRequest: {
+            reducer(state) {
+                state.loading = true;
+                state.error = "";
+            },
+            prepare(status?: string) {
+                return { payload: status };
+            },
         },
         fetchReceptionListSuccess(state, action: PayloadAction<ReceptionListItem[]>) {
             state.loading = false;
