@@ -73,6 +73,10 @@ const nursingassessmentSlice = createSlice({
         clearNursingAssessmentState(state) {
             state.deleteStatus = { ...initialStatus };
         },
+        // 등록 성공 처리 후 createStatus를 초기화 — 안 하면 success=true가 남아서 등록 화면을 다시 열자마자 바로 이동해버림
+        resetNursingAssessmentCreateStatus(state) {
+            state.createStatus = { ...initialStatus };
+        },
         
     },
 });
@@ -82,7 +86,7 @@ export const { fetchNursingAssessmentsRequest, fetchNursingAssessmentsSuccess, f
     createNursingAssessmentRequest, createNursingAssessmentSuccess, createNursingAssessmentFailure,
     updateNursingAssessmentRequest, updateNursingAssessmentSuccess, updateNursingAssessmentFailure,
     deleteNursingAssessmentRequest, deleteNursingAssessmentSuccess, deleteNursingAssessmentFailure,
-    clearNursingAssessmentState } = nursingassessmentSlice.actions;
+    clearNursingAssessmentState, resetNursingAssessmentCreateStatus } = nursingassessmentSlice.actions;
 export default nursingassessmentSlice.reducer;
 
 // ----- Selector -----

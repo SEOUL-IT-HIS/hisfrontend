@@ -16,12 +16,14 @@ const STATUS_BADGE: Record<string, string> = {
   REQUESTED: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
   RESERVED: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
   RELEASED: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
+  ASSIGNED: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
 };
 
 const STATUS_LABEL: Record<string, string> = {
   REQUESTED: "Pending",
   RESERVED: "Reserved",
   RELEASED: "Released",
+  ASSIGNED: "Assigned",
 };
 
 type BedReservationListProps = {

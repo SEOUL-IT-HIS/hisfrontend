@@ -10,38 +10,30 @@ import {
   selectAdmissions,
 } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
-import RiskAssessmentList from "@/components/inpatient/nursingrecord/riskassessment/list";
-import VitalSignList from "@/components/inpatient/nursingrecord/vitalsign/list";
-import RestraintList from "@/components/inpatient/nursingrecord/restraint/list";
-import NursingAssessmentList from "@/components/inpatient/nursingrecord/nursingassessment/list";
-import IandORecordList from "@/components/inpatient/nursingrecord/iandorecord/list";
+import PrescriptionList from "@/components/inpatient/medicationmanagement/prescription/list";
+import PrescriptionDetail from "@/components/inpatient/medicationmanagement/prescription/detail";
+import PrescriptionRegisterForm from "@/components/inpatient/medicationmanagement/prescription/registerForm";
 
-const TABS = [
-  { key: "vitalsign", label: "Vital Sign" },
-  { key: "riskassessment", label: "Risk Assessment" },
-  { key: "restraint", label: "Restraint" },
-  { key: "nursingassessment", label: "Nursing Assessment" },
-  { key: "iandorecord", label: "I&O Record" },
-] as const;
-
-type TabKey = (typeof TABS)[number]["key"];
-
-// 간호기록은 퇴원신청 후에도 병동에 있는 동안 계속 작성하므로 DISCHARGE_REQUESTED도 포함 (처방요청과 기준이 다름)
-const RECORDABLE_STATUSES = ["ADMITTED", "DISCHARGE_REQUESTED"];
+// 처방 요청은 입원 중(ADMITTED)인 환자에게만 보낼 수 있음 (입원 대기/퇴원신청/퇴원완료 건은 목록에서 제외)
+// 퇴원신청(DISCHARGE_REQUESTED) 이후는 수납 청구가 이미 시작돼서 새 처방이 정산과 어긋날 수 있으므로 제외
+// (간호기록은 퇴원신청 환자도 포함 — 기준이 다름)
+const REQUESTABLE_STATUSES = ["ADMITTED"];
 
 const STATUS_LABEL: Record<string, string> = {
   ADMITTED: "Admitted",
   DISCHARGE_REQUESTED: "Discharge Requested",
 };
 
+// 오른쪽 패널에 무엇을 보여줄지 — 처방 상세 or 새 요청 폼 (없으면 목록만)
+type Panel = { type: "detail"; prescriptionId: string } | { type: "register" } | null;
+
 /**
- * 간호기록관리 홈
+ * 처방 요청 화면 (병동 → 외래 처방코어로 처방을 "요청"하는 화면, 처방을 직접 내리는 화면이 아님)
  * - 왼쪽: 입원 중인 환자 목록에서 입원 건 선택
- * - 오른쪽: 탭별 간호기록 — 선택한 입원 건의 기록만 표시
- * - ?admissionId= 로 들어오면 해당 입원 건이 미리 선택되고, ?tab= 으로 탭도 지정 가능
- *   (입원 상세의 "Nursing Records" 링크, 등록 후 돌아오는 경로에서 사용)
+ * - 오른쪽: 선택한 입원 건의 처방 요청 목록 + 상세 / 새 요청 폼
+ * - 입원 상세의 "Request Prescription" 링크로 들어오면 ?admissionId= 로 해당 입원 건이 미리 선택됨
  */
-const NursingRecordHome = () => {
+const PrescriptionRequestHome = () => {
   const dispatch = useDispatch<AppDispatch>();
   const searchParams = useSearchParams();
   const admissions = useSelector(selectAdmissions);
@@ -49,11 +41,8 @@ const NursingRecordHome = () => {
   const patients = useSelector((state: RootState) => state.patient.patients);
   const patientListLoading = useSelector((state: RootState) => state.patient.listLoading);
 
-  const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState<TabKey>(
-    TABS.some((tab) => tab.key === tabParam) ? (tabParam as TabKey) : "vitalsign",
-  );
   const [selectedAdmissionId, setSelectedAdmissionId] = useState<string | null>(searchParams.get("admissionId"));
+  const [panel, setPanel] = useState<Panel>(null);
 
   useEffect(() => {
     dispatch(fetchAdmissionsRequest());
@@ -67,17 +56,24 @@ const NursingRecordHome = () => {
   const patientLabel = (patientId: string) =>
     patientNameById.get(patientId) ?? (patientListLoading ? "Loading..." : "Unknown");
 
-  const recordableAdmissions = useMemo(
-    () => admissions.filter((a) => RECORDABLE_STATUSES.includes(a.status)),
+  const requestableAdmissions = useMemo(
+    () => admissions.filter((a) => REQUESTABLE_STATUSES.includes(a.status)),
     [admissions],
   );
   const selectedAdmission = admissions.find((a) => a.admissionId === selectedAdmissionId) ?? null;
 
+  const selectAdmission = (admissionId: string) => {
+    setSelectedAdmissionId(admissionId);
+    setPanel(null); // 다른 환자를 고르면 이전 환자의 상세/폼은 닫음
+  };
+
   return (
     <div className="mx-auto w-full max-w-[1800px] p-6">
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-slate-800">Nursing Record Management</h1>
-        <p className="mt-1 text-sm text-slate-500">Select an admitted patient to view vital signs, risk assessments, restraints, nursing assessments, and I&O records.</p>
+        <h1 className="text-lg font-semibold text-slate-800">Prescription Requests</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Select an admitted patient to view and send prescription requests to the outpatient prescription core.
+        </p>
       </div>
 
       <div className="flex items-start gap-4">
@@ -90,11 +86,11 @@ const NursingRecordHome = () => {
           {admissionListStatus.error && <p className="px-4 py-6 text-sm text-red-600">{admissionListStatus.error}</p>}
           {!admissionListStatus.loading && !admissionListStatus.error && (
             <ul className="divide-y divide-slate-100">
-              {recordableAdmissions.map((admission) => (
+              {requestableAdmissions.map((admission) => (
                 <li key={admission.admissionId}>
                   <button
                     type="button"
-                    onClick={() => setSelectedAdmissionId(admission.admissionId)}
+                    onClick={() => selectAdmission(admission.admissionId)}
                     className={`flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left text-sm hover:bg-slate-50 ${
                       selectedAdmissionId === admission.admissionId ? "bg-sky-50" : ""
                     }`}
@@ -106,23 +102,23 @@ const NursingRecordHome = () => {
                   </button>
                 </li>
               ))}
-              {recordableAdmissions.length === 0 && (
+              {requestableAdmissions.length === 0 && (
                 <li className="px-4 py-6 text-center text-sm text-slate-500">No admitted patients.</li>
               )}
             </ul>
           )}
         </div>
 
-        {/* 오른쪽: 선택한 입원 건의 간호기록 탭 */}
+        {/* 오른쪽: 선택한 입원 건의 처방 요청 */}
         <div className="min-w-0 flex-1">
           {!selectedAdmissionId ? (
             <p className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-500">
-              Select a patient on the left to see nursing records.
+              Select a patient on the left to see prescription requests.
             </p>
           ) : (
-            <>
+            <div className="space-y-4">
               {selectedAdmission && (
-                <p className="mb-4 text-sm text-slate-600">
+                <p className="text-sm text-slate-600">
                   <span className="font-medium text-slate-800">{patientLabel(selectedAdmission.patientId)}</span>
                   <span className="ml-2 text-slate-500">
                     {selectedAdmission.admissionId} · Patient ID {selectedAdmission.patientId}
@@ -130,30 +126,44 @@ const NursingRecordHome = () => {
                 </p>
               )}
 
-              <div className="mb-6 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">
-                {TABS.map((tab) => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                      activeTab === tab.key
-                        ? "bg-sky-600 text-white"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+              <div className="flex items-start gap-4">
+                <div className="min-w-0 flex-1">
+                  <PrescriptionList
+                    admissionId={selectedAdmissionId}
+                    selectedPrescriptionId={panel?.type === "detail" ? panel.prescriptionId : null}
+                    onSelectPrescription={(prescriptionId) => setPanel({ type: "detail", prescriptionId })}
+                    onRegisterClick={() => setPanel({ type: "register" })}
+                  />
+                </div>
 
-              {/* 모든 탭 목록에 선택한 입원 건을 넘겨서 그 환자 기록만 표시 */}
-              {activeTab === "vitalsign" && <VitalSignList embedded admissionId={selectedAdmissionId} />}
-              {activeTab === "riskassessment" && <RiskAssessmentList embedded admissionId={selectedAdmissionId} />}
-              {activeTab === "restraint" && <RestraintList embedded admissionId={selectedAdmissionId} />}
-              {activeTab === "nursingassessment" && <NursingAssessmentList embedded admissionId={selectedAdmissionId} />}
-              {activeTab === "iandorecord" && <IandORecordList embedded admissionId={selectedAdmissionId} />}
-            </>
+                {panel?.type === "detail" && (
+                  <div className="w-[480px] shrink-0">
+                    <div className="mb-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setPanel(null)}
+                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+                      >
+                        Deselect
+                      </button>
+                    </div>
+                    <PrescriptionDetail prescriptionId={panel.prescriptionId} />
+                  </div>
+                )}
+
+                {panel?.type === "register" && (
+                  <div className="w-[560px] shrink-0">
+                    {/* key: 환자를 바꾸면 폼 입력값도 새로 시작 */}
+                    <PrescriptionRegisterForm
+                      key={selectedAdmissionId}
+                      admissionId={selectedAdmissionId}
+                      onSuccess={() => setPanel(null)}
+                      onCancel={() => setPanel(null)}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -161,4 +171,4 @@ const NursingRecordHome = () => {
   );
 };
 
-export default NursingRecordHome;
+export default PrescriptionRequestHome;
