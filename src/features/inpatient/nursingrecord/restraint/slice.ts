@@ -73,6 +73,10 @@ const restraintSlice = createSlice({
         clearRestraintState(state) {
             state.deleteStatus = { ...initialStatus };
         },
+        // 등록 성공 처리 후 createStatus를 초기화 — 안 하면 success=true가 남아서 등록 화면을 다시 열자마자 바로 이동해버림
+        resetRestraintCreateStatus(state) {
+            state.createStatus = { ...initialStatus };
+        },
         
     },
 });
@@ -82,7 +86,7 @@ export const { fetchRestraintsRequest, fetchRestraintsSuccess, fetchRestraintsFa
     createRestraintRequest, createRestraintSuccess, createRestraintFailure,
     updateRestraintRequest, updateRestraintSuccess, updateRestraintFailure,
     deleteRestraintRequest, deleteRestraintSuccess, deleteRestraintFailure,
-    clearRestraintState } = restraintSlice.actions;
+    clearRestraintState, resetRestraintCreateStatus } = restraintSlice.actions;
 export default restraintSlice.reducer;
 
 // ----- Selector -----
