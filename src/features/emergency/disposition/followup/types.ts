@@ -16,6 +16,8 @@ export interface AdmissionCreateRequest {
   targetDeptCode?: string;
   /** 희망 병동(공통코드 WARD_CD 값) */
   wardPrefer?: string;
+  /** 병동에 전달하는 요청 메모(선택, 500자 이내) */
+  note?: string;
 }
 
 export interface TransferNote {

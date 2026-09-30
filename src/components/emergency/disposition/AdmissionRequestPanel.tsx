@@ -43,7 +43,7 @@ export default function AdmissionRequestPanel({ dispositionId, className = "" }:
   const wardCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.WARD));
   const statusCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.ADMISSION_STATUS));
 
-  const [form, setForm] = useState({ targetDeptCode: "", wardPrefer: "" });
+  const [form, setForm] = useState({ targetDeptCode: "", wardPrefer: "", note: "" });
 
   useEffect(() => {
     if (dispositionId) dispatch(fetchAdmissionsRequest(dispositionId));
@@ -70,6 +70,7 @@ export default function AdmissionRequestPanel({ dispositionId, className = "" }:
       createAdmissionRequestAction(dispositionId, {
         targetDeptCode: form.targetDeptCode || undefined,
         wardPrefer: form.wardPrefer || undefined,
+        note: form.note.trim() || undefined,
       }),
     );
   }
@@ -145,6 +146,10 @@ export default function AdmissionRequestPanel({ dispositionId, className = "" }:
               )}
             </FormField>
           </div>
+          {/* 요청 메모 (선택, 병동에 전달) */}
+          <FormField label="Note" hint="Optional memo for the ward." className="mt-3">
+            <Input name="note" value={form.note} onChange={handleChange} disabled={submitting} maxLength={500} />
+          </FormField>
           <div className="mt-3 flex justify-end">
             <Button type="button" onClick={handleSubmit} disabled={submitting}>
               {/* 전송 중... / 입원 요청 보내기 */}
