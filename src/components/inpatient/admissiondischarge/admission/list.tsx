@@ -174,7 +174,15 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
                       {patientNameById.get(admission.patientId) ?? "Looking up..."}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDeptId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionRoute}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                      {admission.admissionRoute}
+                      {/* 응급 요청 중 격리가 필요한 건은 목록에서도 바로 보이게 표시 (배정 전 확인용) */}
+                      {admission.isolationYn === "Y" && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-200">
+                          Isolation
+                        </span>
+                      )}
+                    </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDate}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.patientId}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.doctorId}</td>
