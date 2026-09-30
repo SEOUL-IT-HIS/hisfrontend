@@ -11,7 +11,11 @@ import TriageSummaryBanner from "@/components/emergency/common/TriageSummaryBann
 import BedAssignmentPanel from "@/components/emergency/resource/bed/BedAssignmentPanel";
 import ClinicalNotePanel from "@/components/emergency/care/clinicalNote/ClinicalNotePanel";
 import ConsentPanel from "@/components/emergency/care/consent/ConsentPanel";
+import TreatmentPanel from "@/components/emergency/care/treatment/TreatmentPanel";
+import MedicationPanel from "@/components/emergency/care/medication/MedicationPanel";
+import CprPanel from "@/components/emergency/care/cpr/CprPanel";
 import DispositionPanel from "@/components/emergency/disposition/DispositionPanel";
+import DispositionFollowUp from "@/components/emergency/disposition/DispositionFollowUp";
 import CongestionPanel from "@/components/emergency/resource/congestion/CongestionPanel";
 
 type Tab = "triage" | "care" | "resource" | "disposition";
@@ -31,8 +35,8 @@ const TABS: ReadonlyArray<{ key: Tab; label: string }> = [
  * - 초기환자(Triage, UC-TRI-01~06 / Jira UD2-8,9,10,11,12,43):
  *   EMS 사전정보 · 격리 · 활력징후 · KTAS 분류/재평가 · 위험 스크리닝
  * - 자원관리(Resource, UC-RES-01 / Jira UD2-13,14): 구역별 혼잡도 + 병상 배정
- * - 진료(Care, Jira UD2-17,25): 진료기록 + 동의 기록
- * - 퇴실(Disposition, UC-DISP-01 / Jira UD2-39): 퇴실 결정 등록
+ * - 진료(Care, Jira UD2-17,18,19,23,25): 진료기록 · 처치 · 약물 투여(MAR) · CPR · 동의 기록
+ * - 퇴실(Disposition, UC-DISP-01~03 / Jira UD2-39,40,41): 퇴실 결정 등록 + 입원 요청(입원) · 전원 소견서(전원)
  * 실제로는 접수/환자 선택 화면에서 receptionNo 를 넘겨받아 진입하지만,
  * 그 상위 화면이 아직 없어 이 화면 자체에 조회용 입력을 둔다.
  */
@@ -86,10 +90,14 @@ export default function TriagePanelHost() {
           </div>
           <div className={`flex flex-col gap-4 ${activeTab === "care" ? "" : "hidden"}`}>
             <ClinicalNotePanel receptionNo={active} />
+            <TreatmentPanel receptionNo={active} />
+            <MedicationPanel receptionNo={active} />
+            <CprPanel receptionNo={active} />
             <ConsentPanel receptionNo={active} />
           </div>
           <div className={`flex flex-col gap-4 ${activeTab === "disposition" ? "" : "hidden"}`}>
             <DispositionPanel receptionNo={active} />
+            <DispositionFollowUp receptionNo={active} />
           </div>
         </div>
       </div>
