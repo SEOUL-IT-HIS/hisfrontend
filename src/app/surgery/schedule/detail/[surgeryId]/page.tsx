@@ -27,7 +27,7 @@ export default async function Page({ params }: Props) {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-6">
       <PageHeader
         title="Assignment detail"
-        description="Room, surgeon, anesthesiologist and nurse for this surgery. Read-only — the assignment is fixed when the order is approved."
+        description="Review surgery assignments and update the surgeon while the surgery is scheduled."
       />
       <SurgeryScheduleDetail surgeryId={surgeryId} />
     </div>

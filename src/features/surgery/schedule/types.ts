@@ -137,6 +137,11 @@ export type UpdateProgressRequest = {
   progressCd: CodeValue;
 };
 
+/** 예약 상태 수술의 집도의 배정·변경 */
+export type AssignSurgeonRequest = {
+  surgeonId: string;
+};
+
 /** 수술 일정 목록 조회 파라미터 (SL2-25) */
 export type SurgeryListParams = {
   /** yyyy-MM-dd, 미지정 시 전체 조회 */
