@@ -8,6 +8,9 @@ import commonCodeReducer from "@/features/emergency/commonCode/slice";
 import receptionListReducer from "@/features/emergency/receptionList/slice";
 import bedReducer from "@/features/emergency/resource/bed/slice";
 import clinicalNoteReducer from "@/features/emergency/care/clinicalNote/slice";
+import dispositionReducer from "@/features/emergency/disposition/slice";
+import congestionReducer from "@/features/emergency/resource/congestion/slice";
+import dashboardReducer from "@/features/emergency/monitor/slice";
 
 /**
  * emergency 도메인 결합 reducer
@@ -25,6 +28,9 @@ const emergencyReducer = combineReducers({
   receptionList : receptionListReducer,
   bed: bedReducer,
   clinicalNote: clinicalNoteReducer,
+  disposition: dispositionReducer,
+  congestion: congestionReducer,
+  dashboard: dashboardReducer,
 });
 
 export default emergencyReducer;

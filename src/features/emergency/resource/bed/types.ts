@@ -36,11 +36,20 @@ export interface BedReleaseRequest {
   releasedById: string;
 }
 
+/** 공통코드 그룹 ZONE (docs/models.md 4장). admin 미연동 시 이 목록을 라벨 폴백으로 쓴다. */
+export const ZONE_GROUP_CODE = "ZONE";
+
 export const BED_ZONE_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
+  // 소생
+  { value: "RESUS", label: "Resuscitation" },
   // 중증
   { value: "CRITICAL", label: "Critical" },
   // 응급
   { value: "URGENT", label: "Urgent" },
+  // 경증 신속진료
+  { value: "FAST_TRACK", label: "Fast Track" },
+  // 소아
+  { value: "PEDIATRIC", label: "Pediatric" },
   // 격리
   { value: "ISOLATION", label: "Isolation" },
 ];
