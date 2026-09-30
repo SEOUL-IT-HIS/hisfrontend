@@ -73,6 +73,10 @@ const bedAssignmentSlice = createSlice({
         clearBedAssignmentState(state) {
             state.deleteStatus = { ...initialStatus };
         },
+        // 상세 패널에서 다른 배정을 선택했을 때, 이전 배정의 "퇴상처리 완료/에러" 메시지가 남지 않도록 초기화
+        resetBedAssignmentUpdateStatus(state) {
+            state.updateStatus = { ...initialStatus };
+        },
     },
 });
 
@@ -81,7 +85,7 @@ export const { fetchBedAssignmentsRequest, fetchBedAssignmentsSuccess, fetchBedA
     createBedAssignmentRequest, createBedAssignmentSuccess, createBedAssignmentFailure,
     updateBedAssignmentRequest, updateBedAssignmentSuccess, updateBedAssignmentFailure,
     deleteBedAssignmentRequest, deleteBedAssignmentSuccess, deleteBedAssignmentFailure,
-    clearBedAssignmentState } = bedAssignmentSlice.actions;
+    clearBedAssignmentState, resetBedAssignmentUpdateStatus } = bedAssignmentSlice.actions;
 export default bedAssignmentSlice.reducer;
 
 // ----- Selector -----

@@ -3,6 +3,7 @@ import type {
   ConsentCreateRequest,
   ConsentState,
   ConsentSummary,
+  ConsentWithdrawRequest,
 } from "@/features/labimaging/imagingconsent/types";
 
 /**
@@ -18,6 +19,10 @@ const initialState: ConsentState = {
   creating: false,
   createError: "",
   lastCreated: null,
+  withdrawing: false,
+  withdrawError: "",
+  lastWithdrawCode: null,
+  lastWithdrawnConsentId: null,
 };
 
 const consentSlice = createSlice({
@@ -78,6 +83,28 @@ const consentSlice = createSlice({
       state.createError = action.payload;
     },
 
+    // ---------- 동의 철회 (5차 Phase 9-3) ----------
+    /** 성공하면 saga 가 같은 오더의 이력을 다시 불러온다(철회 행 표시 + 워크리스트 배지 갱신 근거) */
+    withdrawConsentRequest: {
+      reducer(state) {
+        state.withdrawing = true;
+        state.withdrawError = "";
+        state.lastWithdrawCode = null;
+      },
+      prepare(consentId: string, request: ConsentWithdrawRequest, imageOrderId: string) {
+        return { payload: { consentId, request, imageOrderId } };
+      },
+    },
+    withdrawConsentSuccess(state, action: PayloadAction<{ consentId: string; code: string }>) {
+      state.withdrawing = false;
+      state.lastWithdrawCode = action.payload.code;
+      state.lastWithdrawnConsentId = action.payload.consentId;
+    },
+    withdrawConsentFailure(state, action: PayloadAction<string>) {
+      state.withdrawing = false;
+      state.withdrawError = action.payload;
+    },
+
     /** 다른 오더를 고르면 이전 오더의 이력/등록 결과가 남아 있으면 안 된다. */
     resetConsentState(state) {
       state.consents = [];
@@ -85,6 +112,8 @@ const consentSlice = createSlice({
       state.loadedImageOrderId = null;
       state.createError = "";
       state.lastCreated = null;
+      state.withdrawError = "";
+      state.lastWithdrawCode = null;
     },
   },
 });
@@ -96,6 +125,9 @@ export const {
   createConsentRequest,
   createConsentSuccess,
   createConsentFailure,
+  withdrawConsentRequest,
+  withdrawConsentSuccess,
+  withdrawConsentFailure,
   resetConsentState,
 } = consentSlice.actions;
 
@@ -119,3 +151,13 @@ export const selectConsentCreateError = (s: ConsentRoot) =>
   s.labImaging.imagingconsent.createError;
 export const selectLastCreatedConsent = (s: ConsentRoot) =>
   s.labImaging.imagingconsent.lastCreated;
+
+export const selectConsentWithdrawing = (s: ConsentRoot) =>
+  s.labImaging.imagingconsent.withdrawing;
+export const selectConsentWithdrawError = (s: ConsentRoot) =>
+  s.labImaging.imagingconsent.withdrawError;
+export const selectLastWithdrawCode = (s: ConsentRoot) =>
+  s.labImaging.imagingconsent.lastWithdrawCode;
+/** 워크리스트 재조회 키 — 동의 1건은 한 번만 철회되므로 consentId 로 충분하다 */
+export const selectLastWithdrawnConsentId = (s: ConsentRoot) =>
+  s.labImaging.imagingconsent.lastWithdrawnConsentId;

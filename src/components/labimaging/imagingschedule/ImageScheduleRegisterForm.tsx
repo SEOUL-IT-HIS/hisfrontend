@@ -12,6 +12,8 @@ import {
   Panel,
   Select,
 } from "@/components/common";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveImageScheduleMessage } from "@/features/labimaging/imagingschedule/messages";
@@ -102,6 +104,9 @@ export default function ImageScheduleRegisterForm({
   onCancel,
 }: Props = {}) {
   const dispatch = useDispatch<AppDispatch>();
+
+  /** 담당자는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
   const router = useRouter();
 
   const imageReceptionId = imageReceptionIdProp ?? "";
@@ -201,8 +206,7 @@ export default function ImageScheduleRegisterForm({
     if (!form.scheduledAt) next.scheduledAt = "Scheduled imaging date and time is required.";
     if (!form.contraindicationCheckCode.trim())
       next.contraindicationCheckCode = "Contraindication check result is required.";
-    if (!form.confirmedById.trim())
-      next.confirmedById = "Confirming staff ID is required.";
+    if (!signedIn) next.confirmedById = "Sign in to record this action.";
     return next;
   }
 
@@ -222,7 +226,7 @@ export default function ImageScheduleRegisterForm({
       reservationYn: form.reservationYn,
       contraindicationCheckCode: form.contraindicationCheckCode.trim(),
       contraindicationNote: form.contraindicationNote.trim() || undefined,
-      confirmedById: form.confirmedById.trim(),
+      confirmedById: actorId,
     };
 
     if (isReschedule) {
@@ -431,15 +435,8 @@ export default function ImageScheduleRegisterForm({
               ) : null}
             </FormField>
 
-            <FormField label="Confirming Staff ID" required>
-              <Input
-                name="confirmedById"
-                value={form.confirmedById}
-                onChange={handleChange}
-                maxLength={20}
-                disabled={creating}
-                placeholder="e.g. STF00021"
-              />
+            <FormField label="Confirmed By" required>
+              <LoginActorInput name="confirmedById" actorName={actorName} signedIn={signedIn} />
               {errors.confirmedById ? (
                 <span className="text-xs text-rose-500">{errors.confirmedById}</span>
               ) : null}

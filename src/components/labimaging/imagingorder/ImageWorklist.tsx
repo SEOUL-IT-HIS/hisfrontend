@@ -27,7 +27,10 @@ import {
   type ImageWorklistStatusFilter,
 } from "@/features/labimaging/imagingorder/types";
 import { selectLastCreatedImageSchedule } from "@/features/labimaging/imagingschedule/slice";
-import { selectLastCreatedConsent } from "@/features/labimaging/imagingconsent/slice";
+import {
+  selectLastCreatedConsent,
+  selectLastWithdrawnConsentId,
+} from "@/features/labimaging/imagingconsent/slice";
 import { selectLastUploadedImageFile } from "@/features/labimaging/imagingacquisition/slice";
 import { selectLastSubmittedReading } from "@/features/labimaging/imaginginterpretation/slice";
 import ImageWorklistProgress from "@/components/labimaging/imagingorder/ImageWorklistProgress";
@@ -104,6 +107,8 @@ export default function ImageWorklist() {
   const lastScheduleId =
     useSelector(selectLastCreatedImageSchedule)?.imageScheduleId ?? null;
   const lastConsentId = useSelector(selectLastCreatedConsent)?.consentId ?? null;
+  // 동의 철회도 단계·배지를 바꾼다 (5차 Phase 9-3)
+  const lastWithdrawnConsentId = useSelector(selectLastWithdrawnConsentId);
   const lastImageFileId = useSelector(selectLastUploadedImageFile)?.imageFileId ?? null;
   const lastSubmittedReadingId =
     useSelector(selectLastSubmittedReading)?.imageReadingId ?? null;
@@ -115,6 +120,7 @@ export default function ImageWorklist() {
     filter,
     lastScheduleId,
     lastConsentId,
+    lastWithdrawnConsentId,
     lastImageFileId,
     lastSubmittedReadingId,
   ]);

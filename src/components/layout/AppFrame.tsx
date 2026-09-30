@@ -135,7 +135,7 @@ export default function AppFrame({ children }: AppFrameProps) {
   if (!authUser) {
     return (
       <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
-        확인 중...
+        Checking sign-in...
       </div>
     );
   }

@@ -186,9 +186,15 @@ export interface ImageWorklistItem {
   imageItemCount: number;
   /** 일정이 잡힌 촬영항목 수 */
   scheduledItemCount: number;
-  /** 유효한(철회되지 않은) 동의가 하나라도 있는지 */
+  /** 유효한 동의(동의함 + 미철회)가 하나라도 있는지 */
   consentYn: "Y" | "N";
-  /** 등록된 영상파일 수. ⚠ 촬영 등록 기능(ZP2-21) 전까지 항상 0 이다. */
+  /** 동의 필요 여부 — N 이면 CONSENT 단계를 건너뛴다 (5차 Phase 9-1, 기본 설정에서는 항상 Y) */
+  consentRequiredYn: "Y" | "N";
+  /** 동의 거부 상태 — 유효 동의 없음 + 미철회 거부 기록 (5차 Phase 9-2) */
+  consentRefusedYn: "Y" | "N";
+  /** 동의 철회 상태 — 유효 동의 없음 + 철회 기록. 촬영 후 철회면 READING 에 머문다 (D14) */
+  consentWithdrawnYn: "Y" | "N";
+  /** 등록된 영상파일 수 (오더의 촬영항목 전체 합산). 1 이상이면 동의가 철회돼도 READING 에 머문다 (D14) */
   imageFileCount: number;
   /**
    * 촬영된 항목 중 판독까지 끝난(확정) 항목 수. (ZP2-23)

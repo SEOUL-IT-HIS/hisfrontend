@@ -11,6 +11,10 @@ import {
   Input,
 } from "@/components/common";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import MicrobiologyResultWorkPanel from "@/components/labimaging/microbiologyresult/MicrobiologyResultWorkPanel";
+import PathologyResultWorkPanel from "@/components/labimaging/pathologyresult/PathologyResultWorkPanel";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveLabResultMessage } from "@/features/labimaging/labresult/messages";
@@ -148,6 +152,9 @@ export default function LabResultWorkPanel({
    */
   const { names: patientNames } = usePatientNames([reception.patientId]);
 
+  /** 입력자·확정자는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
+
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -168,7 +175,14 @@ export default function LabResultWorkPanel({
   }, [dispatch, reception.receptionNo]);
 
   const selected = items.find((i) => i.labOrderItemId === selectedItemId) ?? null;
-  const unregistered = items.filter((i) => !i.result);
+  /**
+   * 이 목록의 폼으로 결과를 받는 건 일반검사(GENERAL) 항목뿐이다. (5차 D1)
+   * 미생물·병리 항목은 아래 전용 패널에서 등록한다 — 서버도 일반 결과 API 로는 LAB079 로 막는다.
+   */
+  const isGeneral = (item: LabResultItem) => (item.resultType ?? "GENERAL") === "GENERAL";
+  const unregistered = items.filter((i) => isGeneral(i) && !i.result);
+  const microItems = items.filter((i) => i.resultType === "MICROBIOLOGY");
+  const pathologyItems = items.filter((i) => i.resultType === "PATHOLOGY");
 
   /** 수정 중인가 — 고른 항목에 이미 결과가 있으면 수정, 없으면 신규 등록이다. */
   const isEditing = Boolean(selected?.result);
@@ -204,9 +218,8 @@ export default function LabResultWorkPanel({
   function validate(): FieldErrors {
     const next: FieldErrors = {};
     if (!form.resultValue.trim()) next.resultValue = "Result value is required.";
-    // 등록일 때만 입력자가 필요하다. 수정 요청에는 이 값이 들어가지 않는다.
-    if (!isEditing && !form.recordedById.trim())
-      next.recordedById = "Recording staff ID is required.";
+    // 등록일 때만 입력자가 필요하다. 입력자는 로그인 사용자라 로그인 여부만 본다.
+    if (!isEditing && !signedIn) next.recordedById = "Sign in to register a result.";
     return next;
   }
 
@@ -238,7 +251,7 @@ export default function LabResultWorkPanel({
             resultValue: form.resultValue.trim(),
             resultUnit,
             referenceRange,
-            recordedById: form.recordedById.trim(),
+            recordedById: actorId,
           },
           reception.receptionNo,
         ),
@@ -265,10 +278,9 @@ export default function LabResultWorkPanel({
     dispatch(
       confirmLabResultRequest(
         confirmTarget.result.labResultId,
-        // 확정자는 입력자와 다를 수 있으나, 별도 입력칸을 두면 목록이 폼이 된다.
-        // 지금은 입력자ID를 그대로 쓴다. 로그인 사용자가 붙으면 그 값으로 바꾼다.
-        // TODO(인증 연동): confirmedById 를 로그인 사용자 ID 로 교체한다.
-        { confirmedById: confirmTarget.result.recordedById },
+        // 확정자는 로그인 사용자다(UC-RST-05). 서버도 세션 기준으로 기록하고, 이 값은 과도기(D2)용이다.
+        // (예전 TODO(인증 연동) — 입력자ID 를 확정자로 보내던 임시 처리를 해소했다. 5차 Phase 2)
+        { confirmedById: actorId },
         reception.receptionNo,
       ),
     );
@@ -277,6 +289,10 @@ export default function LabResultWorkPanel({
 
   /** 결과 상태 표시. 미등록이면 회색. */
   function statusCell(item: LabResultItem) {
+    if (item.resultType === "MICROBIOLOGY")
+      return <span className="text-slate-500">Microbiology — see panel below</span>;
+    if (item.resultType === "PATHOLOGY")
+      return <span className="text-slate-500">Pathology — see panel below</span>;
     if (!item.result) return <span className="text-slate-400">Not recorded</span>;
 
     const confirmed = item.result.resultStatusCode === RESULT_STATUS.CONFIRMED;
@@ -357,7 +373,7 @@ export default function LabResultWorkPanel({
                   */}
                   <button
                     type="button"
-                    disabled={confirmed || submitting}
+                    disabled={confirmed || submitting || !isGeneral(item)}
                     onClick={() => handleSelectItem(item)}
                     className={`flex flex-1 items-center gap-3 text-left ${
                       confirmed
@@ -498,15 +514,13 @@ export default function LabResultWorkPanel({
               수정할 때는 입력자를 바꾸지 않는다. 최초 입력자를 바꾸는 건 기록 조작이라
               서버도 수정 요청에서 이 필드를 받지 않는다. 화면에서는 읽기 전용으로 보여준다.
             */}
-            <FormField label="Recording Staff ID" required={!isEditing}>
-              <Input
-                name="recordedById"
-                value={form.recordedById}
-                onChange={handleChange}
-                maxLength={20}
-                disabled={submitting || isEditing}
-                placeholder="e.g. STF00021"
-              />
+            <FormField label="Recorded By" required={!isEditing}>
+              {/* 등록: 로그인 사용자로 기록된다. 수정: 최초 입력자를 그대로 보여준다(바꿀 수 없다). */}
+              {isEditing ? (
+                <Input name="recordedById" value={form.recordedById} readOnly disabled />
+              ) : (
+                <LoginActorInput name="recordedById" actorName={actorName} signedIn={signedIn} />
+              )}
               {errors.recordedById ? (
                 <span className="text-xs text-rose-500">{errors.recordedById}</span>
               ) : null}
@@ -548,6 +562,20 @@ export default function LabResultWorkPanel({
         ⚠ 공통 ConfirmDialog 의 기본 라벨은 한글("확인"/"취소")이라 영문으로 덮어쓴다.
           공용 컴포넌트 자체는 손대지 않는다. (12.4 화면 텍스트 언어 원칙)
       */}
+      {/* ---------- 미생물 결과 (5차 Phase 3) — 접수당 미생물 항목 1개일 때만 입력할 수 있다 ---------- */}
+      {microItems.length === 1 ? (
+        <MicrobiologyResultWorkPanel reception={reception} microItem={microItems[0]} />
+      ) : microItems.length > 1 ? (
+        <Alert>
+          This reception has more than one microbiology test item. Only one is supported per reception.
+        </Alert>
+      ) : null}
+
+      {/* ---------- 병리 결과 (5차 Phase 4) — 병리 항목마다 결과 1건 ---------- */}
+      {pathologyItems.length > 0 ? (
+        <PathologyResultWorkPanel reception={reception} pathologyItems={pathologyItems} />
+      ) : null}
+
       <ConfirmDialog
         open={confirmTarget !== null}
         title="Confirm Test Result"

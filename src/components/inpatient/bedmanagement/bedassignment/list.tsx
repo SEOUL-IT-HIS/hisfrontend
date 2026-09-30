@@ -12,6 +12,8 @@ import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/a
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
+import { fetchBedRequest, selectBed } from "@/features/inpatient/bedmanagement/bedstatus/slice";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import BedAssignmentDetail from "@/components/inpatient/bedmanagement/bedassignment/detail";
 
 type BedAssignmentListProps = {
@@ -25,6 +27,8 @@ const BedAssignmentList = ({ embedded = false }: BedAssignmentListProps = {}) =>
   const listStatus = useSelector(selectBedAssignmentListStatus);
   const admissions = useSelector(selectAdmissions);
   const patients = useSelector((state: RootState) => state.patient.patients);
+  const beds = useSelector(selectBed);
+  const { options: wardOptions } = useCommonCodeOptions("WARD_CD");
   const searchParams = useSearchParams();
   const highlightParam = searchParams.get("highlight");
   const [selectedId, setSelectedId] = useState<number | null>(
@@ -52,6 +56,18 @@ const patientNameById = useMemo(
   [patients],
 );
 
+// 병동: bedId → wardCd → 병동명
+// BED_ASSIGNMENT에는 병동 컬럼이 없고 BED에만 wardCd가 있어서, 병상 목록으로 bedId → wardCd를 이어붙이고
+// 병동명은 admin 공통코드(WARD_CD)에서 찾음. 공통코드를 못 불러오면 코드값을 그대로 보여줌
+const wardCdByBedId = useMemo(
+  () => new Map(beds.map((b) => [b.bedId, b.wardCd])),
+  [beds],
+);
+const wardNameByCd = useMemo(
+  () => new Map(wardOptions.map((opt) => [opt.value, opt.label])),
+  [wardOptions],
+);
+
   // 지금 구조: bedAssignments/admissions/patients 세 가지를 각각 따로 fetch하고,
   // 위 두 Map으로 프론트에서 조립함(client-side join).
   // - bedAssignments + admissions → 백엔드가 JOIN 쿼리 하나로 합쳐주면 fetch 1번으로 줄일 수 있음
@@ -61,6 +77,7 @@ const patientNameById = useMemo(
     dispatch(fetchBedAssignmentsRequest());
     dispatch(fetchAdmissionsRequest());
     dispatch(fetchPatientListRequest({}));
+    dispatch(fetchBedRequest());
   }, [dispatch]);
 
   return (
@@ -93,6 +110,7 @@ const patientNameById = useMemo(
                 <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
                   <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
                   <th className="whitespace-nowrap px-4 py-3">Assignment ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Ward</th>
                   <th className="whitespace-nowrap px-4 py-3">Bed ID</th>
                   <th className="whitespace-nowrap px-4 py-3">Admission ID</th>
                   <th className="whitespace-nowrap px-4 py-3">Assigned At</th>
@@ -103,6 +121,7 @@ const patientNameById = useMemo(
               <tbody className="divide-y divide-slate-100">
                 {bedAssignments.map((bedAssignment) => {
                   const isActive = bedAssignment.releasedAt === null;
+                  const wardCd = wardCdByBedId.get(bedAssignment.bedId);
                   return (
                     <tr
                       key={bedAssignment.assignmentId}
@@ -116,6 +135,9 @@ const patientNameById = useMemo(
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 font-medium text-sky-700">
                         {bedAssignment.assignmentId}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                        {wardCd ? wardNameByCd.get(wardCd) ?? wardCd : "-"}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bedAssignment.bedId}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bedAssignment.admissionId}</td>

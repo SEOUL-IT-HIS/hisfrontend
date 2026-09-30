@@ -90,6 +90,10 @@ const vitalSignSlice = createSlice({
         clearVitalSignState(state) {
             state.deleteStatus = { ...initialStatus };
         },
+        // 등록 성공 처리 후 createStatus를 초기화 — 안 하면 success=true가 남아서 등록 화면을 다시 열자마자 바로 이동해버림
+        resetVitalSignCreateStatus(state) {
+            state.createStatus = { ...initialStatus };
+        },
         fetchVitalSignHistoryRequest(state, action: PayloadAction<string>) {
         state.historyStatus = { ...initialStatus, loading: true };
         },
@@ -109,7 +113,7 @@ export const { fetchVitalSignsRequest, fetchVitalSignsSuccess, fetchVitalSignsFa
     updateVitalSignRequest, updateVitalSignSuccess, updateVitalSignFailure,
     updateVitalSignScheduleRequest, updateVitalSignScheduleSuccess, updateVitalSignScheduleFailure,
     deleteVitalSignRequest, deleteVitalSignSuccess, deleteVitalSignFailure,
-    clearVitalSignState,fetchVitalSignHistoryRequest, fetchVitalSignHistorySuccess, fetchVitalSignHistoryFailure } = vitalSignSlice.actions;
+    clearVitalSignState, resetVitalSignCreateStatus, fetchVitalSignHistoryRequest, fetchVitalSignHistorySuccess, fetchVitalSignHistoryFailure } = vitalSignSlice.actions;
 export default vitalSignSlice.reducer;
 
 // ----- Selector -----

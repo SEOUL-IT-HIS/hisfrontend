@@ -11,9 +11,11 @@ import { fetchIandORecordsRequest, selectIandORecords, selectIandORecordListStat
 type IandORecordListProps = {
   /** 간호기록관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
   embedded?: boolean;
+  /** 간호기록 홈에서 선택한 입원 건 — 있으면 그 입원 건 기록만 보여주고, 없으면(단독 목록 페이지) 전체 */
+  admissionId?: string | null;
 };
 
-const IandORecordList = ({ embedded = false }: IandORecordListProps = {}) => {
+const IandORecordList = ({ embedded = false, admissionId = null }: IandORecordListProps = {}) => {
   const dispatch = useDispatch<AppDispatch>();
   const iandorecords = useSelector(selectIandORecords);
   const listStatus = useSelector(selectIandORecordListStatus);
@@ -27,6 +29,12 @@ const IandORecordList = ({ embedded = false }: IandORecordListProps = {}) => {
   const patientNameById = useMemo(() => {
     return new Map(patients.map((patient) => [patient.patientId, patient.patientName]));
   }, [patients]);
+
+  // 지금은 백엔드가 전체 목록만 주므로 프론트에서 admissionId로 걸러냄 (백엔드에 입원 건별 조회 API가 생기면 이 filter는 제거)
+  const visibleIandORecords = useMemo(
+    () => (admissionId ? iandorecords.filter((iandorecord) => iandorecord.admissionId === admissionId) : iandorecords),
+    [iandorecords, admissionId],
+  );
 
   useEffect(() => {
     dispatch(fetchIandORecordsRequest());
@@ -46,7 +54,7 @@ const IandORecordList = ({ embedded = false }: IandORecordListProps = {}) => {
           </div>
         )}
         <Link
-          href="/inpatient/nursingrecord/iandorecord/create"
+          href={`/inpatient/nursingrecord/iandorecord/create${admissionId ? `?admissionId=${admissionId}` : ""}`}
           className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
         >
           Register I&O Record
@@ -74,7 +82,7 @@ const IandORecordList = ({ embedded = false }: IandORecordListProps = {}) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {iandorecords.map((iandorecord) => {
+              {visibleIandORecords.map((iandorecord) => {
                 const patientId = patientIdByAdmissionId.get(iandorecord.admissionId);
                 const patientName = patientId ? (patientNameById.get(patientId) ?? "Loading...") : "None";
                 return (
@@ -101,7 +109,7 @@ const IandORecordList = ({ embedded = false }: IandORecordListProps = {}) => {
               })}
             </tbody>
           </table>
-          {iandorecords.length === 0 && (
+          {visibleIandORecords.length === 0 && (
             <p className="px-4 py-6 text-center text-sm text-slate-500">No I&O record data available.</p>
           )}
         </div>

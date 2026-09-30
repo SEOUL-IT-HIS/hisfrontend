@@ -108,6 +108,8 @@ export default function CommonCodeItemUpdateForm({
           onCancel={onClose}
           submitLabel="Save"
           loading={loading}
+          loadingLabel="Saving…"
+          cancelLabel="Cancel"
         />
       </form>
     </div>

@@ -166,6 +166,27 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
                     Assign Bed
                   </Link>
                 )}
+
+                {/* 입원 중(ADMITTED)인 환자만 처방 요청 화면으로 이동 — 퇴원신청 이후는 처방요청 대상이 아님
+                    admissionId를 넘겨 해당 환자가 미리 선택된 채 열림 */}
+                {admission.status === "ADMITTED" && (
+                  <Link
+                    href={`/inpatient/medicationmanagement?admissionId=${admissionId}`}
+                    className="inline-flex items-center rounded-lg border border-sky-300 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50"
+                  >
+                    Request Prescription
+                  </Link>
+                )}
+
+                {/* 입원 중(퇴원신청 포함)인 환자의 간호기록 화면으로 이동 — admissionId를 넘겨 해당 환자가 미리 선택된 채 열림 */}
+                {(admission.status === "ADMITTED" || admission.status === "DISCHARGE_REQUESTED") && (
+                  <Link
+                    href={`/inpatient/nursingrecord?admissionId=${admissionId}`}
+                    className="inline-flex items-center rounded-lg border border-sky-300 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50"
+                  >
+                    Nursing Records
+                  </Link>
+                )}
               </div>
             </div>
           )}

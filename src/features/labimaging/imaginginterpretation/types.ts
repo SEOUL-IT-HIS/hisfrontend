@@ -1,5 +1,5 @@
 /**
- * 영상판독(imaginginterpretation) 타입 — UC-IMG-04 영상판독처리 (Jira ZP2-23)
+ * 영상판독(imaginginterpretation) 타입 — UC-RD-01 영상판독처리 (Jira ZP2-23)
  *
  * 필드명은 백엔드 DTO 를 그대로 미러링한다.
  * - ImageReadingSummaryDto / ImageReadingAssignRequestDto / ImageReadingFindingsRequestDto

@@ -7,6 +7,7 @@
 import apiClient from "@/lib/axios";
 import type { ApiResponse, PageResponse } from "@/features/surgery/types";
 import type {
+  AssignSurgeonRequest,
   CancelSurgeryRequest,
   Surgery,
   SurgeryListParams,
@@ -70,6 +71,18 @@ export async function getTodaySurgeries(): Promise<Surgery[]> {
 export async function getSurgerySchedule(surgeryId: string): Promise<Surgery> {
   const { data } = await apiClient.get<ApiResponse<Surgery>>(
     `${SCHEDULE_PATH}/${surgeryId}`,
+  );
+  return data.data;
+}
+
+/** 예약 상태 수술의 집도의 배정·변경 */
+export async function assignSurgerySurgeon(
+  surgeryId: string,
+  request: AssignSurgeonRequest,
+): Promise<Surgery> {
+  const { data } = await apiClient.patch<ApiResponse<Surgery>>(
+    `${SCHEDULE_PATH}/${surgeryId}/surgeon`,
+    request,
   );
   return data.data;
 }

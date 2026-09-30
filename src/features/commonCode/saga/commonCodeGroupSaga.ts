@@ -31,7 +31,7 @@ function* fetchCommonCodeGroupSaga() {
     yield put(fetchCommonCodeGroupSuccess(groups));
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "공통코드 그룹 조회에 실패했습니다.";
+      error instanceof Error ? error.message : "Failed to load code groups.";
     yield put(fetchCommonCodeGroupFailure(message));
   }
 }
@@ -48,7 +48,7 @@ function* fetchCommonCodeGroupRegisterSaga(
     yield put(fetchCommonCodeGroupRegisterSuccess(newGroup));
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "공통코드 그룹 등록에 실패했습니다.";
+      error instanceof Error ? error.message : "Failed to register the code group.";
     yield put(fetchCommonCodeGroupRegisterFailure(message));
   }
 }
@@ -65,7 +65,7 @@ function* fetchCommonCodeGroupUpdateSaga(
     yield put(fetchCommonCodeGroupUpdateSuccess(updatedGroup));
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "공통코드 그룹 수정에 실패했습니다.";
+      error instanceof Error ? error.message : "Failed to update the code group.";
     yield put(fetchCommonCodeGroupUpdateFailure(message));
   }
 }

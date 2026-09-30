@@ -114,7 +114,7 @@ export default function MainPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const dateLabel = now.toLocaleDateString("ko-KR", {
+  const dateLabel = now.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
