@@ -9,6 +9,12 @@ export const CONSENT_MESSAGES = {
   LAB029: "Consent loaded successfully.",
   LAB030: "Imaging order not found.",
   LAB031: "Consent has already been registered.",
+  LAB067: "Please sign in again.",
+  LAB093: "Consent has been withdrawn.",
+  LAB094: "Consent not found.",
+  LAB095: "This consent has already been withdrawn.",
+  LAB096: "A declined record cannot be withdrawn.",
+  LAB097: "Consent has been withdrawn. Images already acquired are kept.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;

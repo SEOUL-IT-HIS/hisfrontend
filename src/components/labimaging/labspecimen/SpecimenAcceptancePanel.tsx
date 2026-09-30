@@ -10,6 +10,8 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveLabSpecimenMessage } from "@/features/labimaging/labspecimen/messages";
@@ -130,6 +132,9 @@ export default function SpecimenAcceptancePanel({
 }) {
   const dispatch = useDispatch<AppDispatch>();
 
+  /** 담당자는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
+
   const specimens = useSelector(selectSpecimens);
   const listLoading = useSelector(selectSpecimensLoading);
   const listError = useSelector(selectSpecimensError);
@@ -243,7 +248,7 @@ export default function SpecimenAcceptancePanel({
   function validate(): FieldErrors {
     const next: FieldErrors = {};
     if (!form.acceptedAt) next.acceptedAt = "Acceptance date and time is required.";
-    if (!form.acceptedById.trim()) next.acceptedById = "Accepting staff ID is required.";
+    if (!signedIn) next.acceptedById = "Sign in to record this action.";
     // 부적합일 때만 사유가 필수다. 서버(SpecimenAcceptanceService.validateJudgment)와 같은 규칙.
     if (isUnfit && !form.unfitReasonCode)
       next.unfitReasonCode = "An unfit assessment requires a reason.";
@@ -263,7 +268,7 @@ export default function SpecimenAcceptancePanel({
         selected.specimenId,
         {
           acceptedAt: form.acceptedAt,
-          acceptedById: form.acceptedById.trim(),
+          acceptedById: actorId,
           fitnessStatus: form.fitnessStatus,
           // 적합이면 사유를 아예 보내지 않는다. 빈 문자열도 서버에서는 "값이 있음"이 아니다.
           unfitReasonCode: isUnfit ? form.unfitReasonCode : undefined,
@@ -460,15 +465,8 @@ export default function SpecimenAcceptancePanel({
               ) : null}
             </FormField>
 
-            <FormField label="Accepting Staff ID" required>
-              <Input
-                name="acceptedById"
-                value={form.acceptedById}
-                onChange={handleChange}
-                maxLength={20}
-                disabled={accepting}
-                placeholder="e.g. STF00021"
-              />
+            <FormField label="Accepted By" required>
+              <LoginActorInput name="acceptedById" actorName={actorName} signedIn={signedIn} />
               {errors.acceptedById ? (
                 <span className="text-xs text-rose-500">{errors.acceptedById}</span>
               ) : null}

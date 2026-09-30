@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input } from "@/components/common";
+import { Alert, Button, FormField } from "@/components/common";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveImageFileMessage } from "@/features/labimaging/imagingacquisition/messages";
@@ -96,7 +98,8 @@ export default function ImageAcquisitionWorkPanel({
 
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadedById, setUploadedById] = useState<string>("");
+  /** 업로더는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
   const [fieldErrors, setFieldErrors] = useState<{ file?: string; uploadedById?: string }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -142,7 +145,7 @@ export default function ImageAcquisitionWorkPanel({
 
     const nextErrors: { file?: string; uploadedById?: string } = {};
     if (!selectedFile) nextErrors.file = "Please choose a file to upload.";
-    if (!uploadedById.trim()) nextErrors.uploadedById = "Uploaded-by staff ID is required.";
+    if (!signedIn) nextErrors.uploadedById = "Sign in to record this action.";
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0 || !selectedFile) return;
 
@@ -152,7 +155,7 @@ export default function ImageAcquisitionWorkPanel({
         imageReceptionId: reception.imageReceptionId,
         imageOrderItemId: selected.imageOrderItemId,
         patientId: reception.patientId,
-        uploadedById: uploadedById.trim(),
+        uploadedById: actorId,
       }),
     );
 
@@ -250,13 +253,7 @@ export default function ImageAcquisitionWorkPanel({
               ) : null}
             </FormField>
             <FormField label="Uploaded By" className="w-40">
-              <Input
-                value={uploadedById}
-                onChange={(e) => setUploadedById(e.target.value)}
-                maxLength={20}
-                disabled={uploading}
-                placeholder="e.g. STF00021"
-              />
+              <LoginActorInput name="uploadedById" actorName={actorName} signedIn={signedIn} />
               {fieldErrors.uploadedById ? (
                 <span className="text-xs text-rose-500">{fieldErrors.uploadedById}</span>
               ) : null}

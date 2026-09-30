@@ -85,13 +85,14 @@ export async function excludeReception(
 
 /**
  * 제외된 접수를 워크리스트로 되돌린다.
- * DELETE /api/lab-imaging/lab-orders/receptions/{receptionNo}/exclusion
+ * POST /api/lab-imaging/lab-orders/receptions/{receptionNo}/restoration
  *
  * ⚠ 제외 상태가 아닌 접수면 백엔드가 LAB026 으로 거절한다.
  *   (결과 등록으로 목록에서 빠진 건까지 되살아나면 안 되기 때문)
+ * ⚠ 예전 DELETE .../exclusion 은 5차 Phase 10-3 에서 제거됐다 — 영상(imagingorder/api.ts)과 같은 규칙이다.
  */
 export async function restoreReception(receptionNo: string): Promise<void> {
-  await apiClient.delete<ApiResponse<null>>(
-    `${LAB_ORDER_PATH}/receptions/${encodeURIComponent(receptionNo)}/exclusion`,
+  await apiClient.post<ApiResponse<null>>(
+    `${LAB_ORDER_PATH}/receptions/${encodeURIComponent(receptionNo)}/restoration`,
   );
 }

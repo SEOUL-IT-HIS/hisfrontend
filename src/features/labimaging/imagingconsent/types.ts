@@ -2,11 +2,10 @@
  * 조영제/침습검사 동의(imagingconsent) 타입 — UC-IMG-05 (Jira ZP2-28)
  *
  * 필드명은 백엔드 DTO 를 그대로 미러링한다.
- * - ConsentCreateRequestDto / ConsentSummaryDto
+ * - ConsentCreateRequestDto / ConsentSummaryDto / ConsentWithdrawRequestDto
  *   (kr.co.seoulit.his.labimagingservice.imagingconsent.dto)
  *
- * ⚠ 동의 철회는 1차 배포 범위 밖이다 (2026-08-24 결정, 4차 이월).
- *   응답에는 철회 관련 필드가 이미 내려오므로 표시만 하고, 철회 요청 타입은 두지 않았다.
+ * ⚠ 동의 철회는 5차 Phase 9-3 에서 붙었다 (1차 배포 때 이월했던 기능). POST /consents/{id}/withdrawal
  */
 
 /** 동의 등록 요청 — 백엔드 ConsentCreateRequestDto */
@@ -27,6 +26,22 @@ export interface ConsentCreateRequest {
   signedByName: string;
   /** 확인자ID */
   witnessId: string;
+  /** 거부 사유 — 거부(N)일 때만 서버가 저장한다 (5차 Phase 9-2) */
+  refusalNote?: string;
+}
+
+/** 동의 철회 요청 (5차 Phase 9-3). 철회일시는 서버 시각, 처리자는 로그인 사용자 */
+export interface ConsentWithdrawRequest {
+  /** 철회사유코드 (공통코드 CONSENT_WITHDRAW_CD) */
+  withdrawnReasonCode: string;
+  /** 로그인 세션이 있으면 서버가 무시한다 */
+  withdrawnById: string;
+}
+
+/** 철회 응답 — code 가 LAB097 이면 "이미 촬영된 영상은 유지" 안내를 보여준다 (D14) */
+export interface ConsentWithdrawResult {
+  consent: ConsentSummary;
+  code: string;
 }
 
 /** 동의 요약 (목록/단건 공용) — 백엔드 ConsentSummaryDto */
@@ -43,6 +58,10 @@ export interface ConsentSummary {
   withdrawnAt?: string;
   /** 철회 전이면 없음 */
   withdrawnReasonCode?: string;
+  /** 철회 처리자 — 철회 전이면 없음 */
+  withdrawnById?: string;
+  /** 거부 사유 — 거부 건만 */
+  refusalNote?: string;
 }
 
 /** 동의여부 표시용 옵션. 공통코드가 아니라 API 계약상 고정값이라 상수로 둔다. */
@@ -84,4 +103,12 @@ export interface ConsentState {
   createError: string;
   /** 마지막 등록 성공 결과 — 성공 안내에 쓴다 */
   lastCreated: ConsentSummary | null;
+
+  /** 동의 철회 진행 상태 (5차 Phase 9-3) */
+  withdrawing: boolean;
+  withdrawError: string;
+  /** 마지막 철회 응답 코드 — LAB093 / LAB097(촬영 영상 유지 안내) */
+  lastWithdrawCode: string | null;
+  /** 마지막으로 철회된 동의ID — 워크리스트 재조회 키 (배지·단계 갱신) */
+  lastWithdrawnConsentId: string | null;
 }
