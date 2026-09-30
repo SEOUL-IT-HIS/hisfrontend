@@ -3,6 +3,7 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import {
   acceptSpecimen,
   createSpecimen,
+  fetchSpecimenByBarcode,
   fetchSpecimensByReceptionNo,
 } from "@/features/labimaging/labspecimen/api";
 import {
@@ -15,6 +16,9 @@ import {
   acceptSpecimenRequest,
   acceptSpecimenSuccess,
   acceptSpecimenFailure,
+  lookupSpecimenByBarcodeRequest,
+  lookupSpecimenByBarcodeSuccess,
+  lookupSpecimenByBarcodeFailure,
 } from "@/features/labimaging/labspecimen/slice";
 import type {
   SpecimenAcceptanceRequest,
@@ -36,7 +40,7 @@ function* fetchSpecimensSaga(action: PayloadAction<string>) {
     yield put(fetchSpecimensSuccess(list));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "검체 목록 조회에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to load specimen list.";
     yield put(fetchSpecimensFailure(message));
   }
 }
@@ -55,7 +59,7 @@ function* createSpecimenSaga(
     yield put(fetchSpecimensRequest(receptionNo));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "검체 등록에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to register specimen.";
     yield put(createSpecimenFailure(message));
   }
 }
@@ -82,8 +86,32 @@ function* acceptSpecimenSaga(
     yield put(fetchSpecimensRequest(receptionNo));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "적합성 판정에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to submit fitness assessment.";
     yield put(acceptSpecimenFailure(message));
+  }
+}
+
+/**
+ * 바코드로 검체를 찾는다. (ZP2-75)
+ *
+ * ⚠ 조회만 하고 끝난다. 목록을 다시 부르지 않는다.
+ *   찾은 검체가 이 접수 것이라면 이미 목록에 들어 있고(목록은 접수번호로 받아온다),
+ *   이 접수 것이 아니라면 목록에 넣어서도 안 되는 검체다.
+ *
+ * ⚠ 없는 바코드(LAB020)의 문구는 서버가 내려준 것을 그대로 싣는다.
+ *   그 문구에 입력한 바코드가 들어 있어 담당자가 오타를 바로 확인할 수 있다.
+ */
+function* lookupSpecimenByBarcodeSaga(action: PayloadAction<string>) {
+  try {
+    const specimen: SpecimenSummary = yield call(
+      fetchSpecimenByBarcode,
+      action.payload,
+    );
+    yield put(lookupSpecimenByBarcodeSuccess(specimen));
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Failed to look up barcode.";
+    yield put(lookupSpecimenByBarcodeFailure(message));
   }
 }
 
@@ -91,4 +119,5 @@ export default function* labSpecimenSaga() {
   yield takeLatest(fetchSpecimensRequest.type, fetchSpecimensSaga);
   yield takeLatest(createSpecimenRequest.type, createSpecimenSaga);
   yield takeLatest(acceptSpecimenRequest.type, acceptSpecimenSaga);
+  yield takeLatest(lookupSpecimenByBarcodeRequest.type, lookupSpecimenByBarcodeSaga);
 }

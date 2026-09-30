@@ -1,0 +1,133 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { SearchBar, Input, Select, DataTable, Pagination } from "@/components/common";
+import type { DataTableColumn } from "@/components/common/DataTable";
+import KtasLevelBadge from "@/components/emergency/receptionList/KtasLevelBadge";
+import {
+    fetchReceptionListRequest,
+    selectReceptionListItems,
+    selectReceptionListLoading,
+} from "@/features/emergency/receptionList/slice";
+import type { ReceptionListItem } from "@/features/emergency/receptionList/types";
+import { BED_ZONE_OPTIONS } from "@/features/emergency/resource/bed/types";
+import type { AppDispatch } from "@/store/store";
+import { selectDispositionByReceptionId } from "@/features/emergency/disposition/slice";
+import { selectAdmissionsByDisposition, selectTransfersByDisposition } from "@/features/emergency/disposition/followup/slice";
+
+/** 목록 상태 필터 — 저장 코드가 아니라 백엔드가 퇴실 처리 진행에 따라 계산하는 값 */
+const STATUS_OPTIONS = [
+    // 진료 중(기본): 퇴실 결정 전, 또는 입원/전원 후속 처리가 끝나기 전
+    { value: "IN_CARE", label: "In Care" },
+    // 퇴실 처리 완료
+    { value: "DONE", label: "Done" },
+    // 전체
+    { value: "ALL", label: "All" },
+];
+
+function zoneLabel(zoneCode: string): string {
+    return BED_ZONE_OPTIONS.find((o) => o.value === zoneCode)?.label ?? zoneCode;
+}
+
+const PAGE_SIZE = 10;
+
+type ReceptionListPanelProps = {
+    onSelect: (receptionNo: string) => void;
+    activeReceptionNo?: string;
+};
+
+
+
+export default function ReceptionListPanel({ onSelect, activeReceptionNo }: ReceptionListPanelProps) {
+    const dispatch = useDispatch<AppDispatch>();
+    const items = useSelector(selectReceptionListItems);
+    const loading = useSelector(selectReceptionListLoading);
+
+    const [keyword, setKeyword] = useState("");
+    const [page, setPage] = useState(1);
+    const [status, setStatus] = useState("IN_CARE");
+
+    // 선택한 환자의 퇴실 결정·입원 회신·전원 소견서가 바뀌면 목록 상태(진료 중/완료)도 다시 불러온다.
+    const disposition = useSelector(selectDispositionByReceptionId(activeReceptionNo ?? ""));
+    const admissions = useSelector(selectAdmissionsByDisposition(disposition?.id ?? ""));
+    const transfers = useSelector(selectTransfersByDisposition(disposition?.id ?? ""));
+    const followUpKey = `${disposition?.id ?? ""}|${admissions[0]?.requestStatusCode ?? ""}|${transfers.length}`;
+
+    useEffect(() => {
+        dispatch(fetchReceptionListRequest(status === "ALL" ? undefined : status));
+    }, [dispatch, status, followUpKey]);
+
+    // 백엔드가 조회 순서를 보장하지 않으므로(ORDER BY 없음), 접수번호 오름차순(먼저 접수한 환자 순)으로 직접 정렬한다.
+    const sortedItems = [...items].sort((a, b) => a.receptionId.localeCompare(b.receptionId));
+    // patientName은 환자서비스 배치조회 붙기 전까지 null일 수 있다(정상).
+    // 검색어가 비어있으면(기본 상태) 이름 유무와 상관없이 전부 통과시켜야 한다 —
+    // null?.includes("") 는 undefined 라 그냥 두면 검색 안 한 상태에서도 이름 없는 건이
+    // 전부 걸러져버리는 버그가 났었다(실제로 겪음).
+    const filtered = sortedItems.filter(
+        (item) => keyword === "" || (item.patientName?.includes(keyword) ?? false),
+    );
+    const totalPages = Math.max(Math.ceil(filtered.length / PAGE_SIZE), 1);
+    const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+    const columns: DataTableColumn<ReceptionListItem>[] = [
+        { key: "ktas", header: "KTAS", render: (r) => <KtasLevelBadge level={r.ktasLevelCode} /> },
+
+        // 환자명 — 환자서비스 배치조회 붙기 전까지는 null일 수 있음(정상)
+        { key: "patientName", header: "Patient Name", render: (r) => r.patientName ?? "-" },
+
+        // 병상/구역 — 외래 "진료과" 컬럼에 대응. 미배정이면 "-"
+        {
+            key: "bed",
+            header: "Bed / Zone",
+            render: (r) => (r.bedNo ? `${r.bedNo} (${zoneLabel(r.zoneCode ?? "")})` : "-"),
+        },
+
+
+    ];
+
+    return (
+        <div className="flex h-[calc(100vh-180px)] flex-col gap-3">
+            {/* 조회 / 초기화 — 공용 SearchBar 기본값(한글)을 이 화면에서만 영어로 덮어씀 */}
+            <SearchBar
+                onSearch={() => setPage(1)}
+                searchLabel="Search"
+                onReset={() => { setKeyword(""); setPage(1); }}
+                resetLabel="Reset"
+            >
+                <Select
+                    value={status}
+                    onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+                    options={STATUS_OPTIONS}
+                    className="max-w-[130px]"
+                />
+                <Input
+                    // 환자명 검색
+                    placeholder="Search patient name"
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    className="max-w-[200px]"
+                />
+            </SearchBar>
+
+            <div className="flex min-h-0 flex-1 flex-col">
+                <DataTable
+                    columns={columns}
+                    rows={paged}
+                    rowKey={(r) => r.receptionId}
+                    onRowClick={(r) => onSelect(r.receptionId)}
+                    isRowActive={(r) => r.receptionId === activeReceptionNo}
+                    loading={loading}
+                    // 오늘 접수된 응급 환자가 없습니다.
+                    emptyMessage={status === "DONE" ? "No discharged patients." : "No emergency patients in care."}
+                    minWidthClassName="min-w-0"
+                    className="!rounded-b-none !border-b-0 !shadow-none"
+                />
+                <div className="flex justify-center rounded-b-2xl border border-t-0 border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                    {/* 이전 / 다음 — 공용 Pagination 기본값(한글)을 이 화면에서만 영어로 덮어씀 */}
+                    <Pagination page={page} totalPages={totalPages} onPageChange={setPage} prevLabel="Previous" nextLabel="Next" />
+                </div>
+            </div>
+        </div>
+    );
+}

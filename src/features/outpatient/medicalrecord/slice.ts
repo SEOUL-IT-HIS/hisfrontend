@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { MedicalRecordCreateParams, MedicalRecordDto, MedicalRecordSearchParams, MedicalRecordUpdateParams } from "./types";
+import { MedicalRecordDto, MedicalRecordSearchParams, MedicalRecordUpdateParams } from "./types";
 
 interface MedicalRecordState {
     // 목록 조회 상태
@@ -9,9 +9,6 @@ interface MedicalRecordState {
     // 상세 조회 상태
     detailStatus: { loading: boolean; error: string | null };
     selectedRecord: MedicalRecordDto | null;
-
-    // 등록 상태
-    createStatus: { loading: boolean; error: string | null };
 
     // 수정 상태
     updateStatus: { loading: boolean; error: string | null };
@@ -25,7 +22,6 @@ const initialState: MedicalRecordState = {
     list: [],
     detailStatus: { loading: false, error: null },
     selectedRecord: null,
-    createStatus: { loading: false, error: null },
     updateStatus: { loading: false, error: null },
     deactivateStatus: { loading: false, error: null }
 };
@@ -66,20 +62,6 @@ const medicalRecordSlice = createSlice({
         clearSelectedRecord: (state) => {
             state.selectedRecord = null;
             state.detailStatus = { loading: false, error: null };
-        },
-
-        // 진료기록 등록
-        createRecordRequest: (state, _action: PayloadAction<MedicalRecordCreateParams>) => {
-            state.createStatus.loading = true;
-            state.createStatus.error = null;
-        },
-        createRecordSuccess: (state, action: PayloadAction<MedicalRecordDto>) => {
-            state.createStatus.loading = false;
-            state.list = [action.payload, ...state.list];
-        },
-        createRecordFailure: (state, action: PayloadAction<string>) => {
-            state.createStatus.loading = false;
-            state.createStatus.error = action.payload;
         },
 
         // 진료기록 수정
@@ -132,9 +114,6 @@ export const {
     fetchRecordDetailSuccess,
     fetchRecordDetailFailure,
     clearSelectedRecord,
-    createRecordRequest,
-    createRecordSuccess,
-    createRecordFailure,
     updateRecordRequest,
     updateRecordSuccess,
     updateRecordFailure,

@@ -5,7 +5,7 @@ import type {
   BillingMasterCreateRequest,
 } from "@/features/billing/billingMaster/types";
 
-const BILLING_MASTER_PATH = "/api/billing/master";
+const BILLING_MASTER_PATH = "/api/billing/statistics";
 
 // 전체조회
 export const fetchBillingMasterAPI = () => {

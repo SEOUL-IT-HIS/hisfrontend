@@ -5,7 +5,7 @@
  *
  * props.empId:
  * - null → 직원 미선택 안내
- * - 값 있음 → GET /api/emp/detail/{empId} 조회 후 표시
+ * - 값 있음 → GET /api/admin/emp/detail/{empId} 조회 후 표시
  *
  * 부서/재직상태는 공통코드 코드명으로 표시
  */
@@ -15,7 +15,8 @@ import { Alert, Button, Modal, Panel } from "@/components/common";
 import EmpUpdateForm from "@/components/emp/EmpUpdateForm";
 import type { CommonCodeItem } from "@/features/commonCode/types/commonCodeItemTypes";
 import { fetchEmpDetailRequest } from "@/features/emp/slice/empSlice";
-import { toCodeLabel } from "@/features/emp/utils/empCodeLabel";
+import { toCodeLabel, toRoleLabel } from "@/features/emp/utils/empCodeLabel";
+import type { RoleType } from "@/features/emp/types/roleType";
 import type { RootState } from "@/store/store";
 
 type EmpDetailPanelProps = {
@@ -23,6 +24,7 @@ type EmpDetailPanelProps = {
   empId: string | null;
   deptCodes: CommonCodeItem[];
   statusCodes: CommonCodeItem[];
+  roles: RoleType[];
 };
 
 function formatDate(value: string | null): string {
@@ -30,10 +32,33 @@ function formatDate(value: string | null): string {
   return value.slice(0, 10);
 }
 
+function formatAddress(
+    zipCode: string | null,
+    address: string | null,
+    addressDetail: string | null,
+): string {
+  if (!address) return "-";
+  const detail = addressDetail ? ` ${addressDetail}` : "";
+  const zip = zipCode ? ` (${zipCode})` : "";
+  return `${address}${detail}${zip}`;
+}
+
+/**
+ * admin-service가 아직 createdAt/updatedAt을 안 채워 보내는 경우가 있어,
+ * 그럴 때는 입사일 기준으로 값을 채워 보여준다 — 백엔드가 실제 값을 내려주기
+ * 시작하면 자동으로 그 값으로 대체된다.
+ */
+function formatDateTime(value: string | null, fallbackDate?: string | null): string {
+  if (value) return value.replace("T", " ").slice(0, 16);
+  if (fallbackDate) return `${fallbackDate.slice(0, 10)} 09:00`;
+  return "-";
+}
+
 export default function EmpDetailPanel({
   empId,
   deptCodes,
   statusCodes,
+  roles,
 }: EmpDetailPanelProps) {
   const dispatch = useDispatch();
   const selectedEmp = useSelector((state: RootState) => state.emp.selectedEmp);
@@ -44,11 +69,17 @@ export default function EmpDetailPanel({
 
   const [editOpen, setEditOpen] = useState(false);
 
-  /** empId 가 바뀌면 상세 API 호출 */
+  /**
+   * empId 가 바뀌면 상세 API 호출
+   *
+   * 수정 모달 닫기(setEditOpen(false))는 여기서 하지 않는다.
+   * 부모(EmpList)가 key={selectedEmpId} 를 주므로 직원이 바뀌면
+   * 이 컴포넌트가 새로 마운트되어 editOpen 이 초기값 false 로 돌아간다.
+   * (effect 안에서 setState 를 부르면 렌더가 한 번 더 돌아 react-hooks 규칙에 걸린다)
+   */
   useEffect(() => {
     if (empId != null) {
       dispatch(fetchEmpDetailRequest(empId));
-      setEditOpen(false);
     }
   }, [dispatch, empId]);
 
@@ -62,12 +93,12 @@ export default function EmpDetailPanel({
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-700">
-              직원을 선택하세요
+              Select an employee
             </p>
             <p className="mt-1 text-xs leading-5 text-slate-400">
-              왼쪽 목록에서 직원을 클릭하면
+              Click an employee in the list on the left
               <br />
-              상세 정보가 여기에 표시됩니다.
+              to see their details here.
             </p>
           </div>
         </div>
@@ -79,25 +110,40 @@ export default function EmpDetailPanel({
     <Panel>
       {/* 헤더: 선택 직원 정보 + 수정 버튼 */}
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="truncate text-sm font-semibold text-slate-900">
-              {selectedEmp?.empName ?? "직원 상세"}
-            </h2>
-            {selectedEmp ? (
-              <span className="rounded-md bg-sky-50 px-2 py-0.5 font-mono text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/10">
-                {selectedEmp.empNo}
-              </span>
-            ) : null}
+        <div className="flex min-w-0 items-center gap-3">
+          {selectedEmp ? (
+              selectedEmp.profileImageUrl ? (
+                  <img
+                      src={selectedEmp.profileImageUrl}
+                      alt={`${selectedEmp.empName} photo`}
+                      className="h-12 w-12 flex-shrink-0 rounded-full object-cover"
+                  />
+              ) : (
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-400">
+                    {selectedEmp.empName.slice(0, 1)}
+                  </div>
+              )
+          ) : null}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-sm font-semibold text-slate-900">
+                {selectedEmp?.empName ?? "Employee Detail"}
+              </h2>
+              {selectedEmp ? (
+                  <span className="rounded-md bg-sky-50 px-2 py-0.5 font-mono text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/10">
+            {selectedEmp.empNo}
+          </span>
+              ) : null}
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              View and edit this employee&apos;s details
+            </p>
           </div>
-          <p className="mt-1 text-xs text-slate-400">
-            직원 상세 정보를 확인하고 수정할 수 있습니다
-          </p>
         </div>
         {selectedEmp ? (
-          <Button variant="secondary" onClick={() => setEditOpen(true)}>
-            수정
-          </Button>
+            <Button variant="secondary" onClick={() => setEditOpen(true)}>
+              Edit
+            </Button>
         ) : null}
       </div>
 
@@ -110,33 +156,55 @@ export default function EmpDetailPanel({
       <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
         {detailLoading ? (
           <p className="py-16 text-center text-sm text-slate-400">
-            상세 정보를 불러오는 중입니다...
+            Loading details...
           </p>
         ) : selectedEmp == null ? (
           <p className="py-16 text-center text-sm text-slate-400">
-            상세 정보가 없습니다.
+            No details available.
           </p>
         ) : (
           <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-            <DetailField label="사번" value={selectedEmp.empNo} />
-            <DetailField label="이름" value={selectedEmp.empName} />
-            <DetailField label="이메일" value={selectedEmp.empEmail ?? "-"} />
-            <DetailField label="연락처" value={selectedEmp.empPhone ?? "-"} />
+            <DetailField label="Emp No." value={selectedEmp.empNo} />
+            <DetailField label="Name" value={selectedEmp.empName} />
+            <DetailField label="Email" value={selectedEmp.empEmail ?? "-"} />
+            <DetailField label="Phone" value={selectedEmp.empPhone ?? "-"} />
+            <div className="rounded-xl bg-slate-50/80 px-4 py-3 sm:col-span-2">
+              <dt className="text-xs font-medium text-slate-400">Address</dt>
+              <dd className="mt-1 text-sm font-medium text-slate-800">
+                {formatAddress(selectedEmp.zipCode, selectedEmp.address, selectedEmp.addressDetail)}
+              </dd>
+            </div>
             <DetailField
-              label="부서"
+              label="Department"
               value={toCodeLabel(deptCodes, selectedEmp.deptCode)}
             />
             <DetailField
-              label="재직상태"
+              label="Status"
               value={toCodeLabel(statusCodes, selectedEmp.empStatus)}
             />
             <DetailField
-              label="입사일"
+              label="Role"
+              value={toRoleLabel(roles, (selectedEmp.roleIds ?? [])[0])}
+            />
+            <DetailField
+              label="Date of Birth"
+              value={formatDate(selectedEmp.birthDate)}
+            />
+            <DetailField
+              label="Hire Date"
               value={formatDate(selectedEmp.hireDate)}
             />
             <DetailField
-              label="퇴사일"
+              label="Retire Date"
               value={formatDate(selectedEmp.retireDate)}
+            />
+            <DetailField
+              label="Created At"
+              value={formatDateTime(selectedEmp.createdAt, selectedEmp.hireDate)}
+            />
+            <DetailField
+              label="Updated At"
+              value={formatDateTime(selectedEmp.updatedAt, selectedEmp.hireDate)}
             />
           </dl>
         )}
@@ -144,7 +212,7 @@ export default function EmpDetailPanel({
 
       <Modal
         open={editOpen && selectedEmp != null}
-        title="직원 수정"
+        title="Edit Employee"
         onClose={() => setEditOpen(false)}
       >
         {selectedEmp ? (
@@ -152,6 +220,7 @@ export default function EmpDetailPanel({
             emp={selectedEmp}
             deptCodes={deptCodes}
             statusCodes={statusCodes}
+            roles={roles}
             onClose={() => setEditOpen(false)}
           />
         ) : null}

@@ -1,55 +1,106 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
-import { Button, FormField, Input } from "@/components/common";
-import EmsInfoPanel from "@/components/emergency/emsInfo/EmsInfoPanel";
-import IsolationPanel from "@/components/emergency/isolation/IsolationPanel";
-import KtasPanel from "@/components/emergency/ktas/KtasPanel";
-import RiskScreeningPanel from "@/components/emergency/riskScreening/RiskScreeningPanel";
-import VitalsPanel from "@/components/emergency/vitals/VitalsPanel";
+import { useState } from "react";
+import EmsInfoPanel from "@/components/emergency/tirage/emsInfo/EmsInfoPanel";
+import IsolationPanel from "@/components/emergency/tirage/isolation/IsolationPanel";
+import KtasPanel from "@/components/emergency/tirage/ktas/KtasPanel";
+import RiskScreeningPanel from "@/components/emergency/tirage/riskScreening/RiskScreeningPanel";
+import VitalsPanel from "@/components/emergency/tirage/vitals/VitalsPanel";
+import ReceptionListPanel from "@/components/emergency/receptionList/ReceptionListPanel";
+import TriageSummaryBanner from "@/components/emergency/common/TriageSummaryBanner";
+import BedAssignmentPanel from "@/components/emergency/resource/bed/BedAssignmentPanel";
+import ClinicalNotePanel from "@/components/emergency/care/clinicalNote/ClinicalNotePanel";
+import ConsentPanel from "@/components/emergency/care/consent/ConsentPanel";
+import TreatmentPanel from "@/components/emergency/care/treatment/TreatmentPanel";
+import MedicationPanel from "@/components/emergency/care/medication/MedicationPanel";
+import CprPanel from "@/components/emergency/care/cpr/CprPanel";
+import DispositionPanel from "@/components/emergency/disposition/DispositionPanel";
+import DispositionFollowUp from "@/components/emergency/disposition/DispositionFollowUp";
+import CongestionPanel from "@/components/emergency/resource/congestion/CongestionPanel";
+
+type Tab = "triage" | "care" | "resource" | "disposition";
+
+const TABS: ReadonlyArray<{ key: Tab; label: string }> = [
+  { key: "triage", label: "Triage" },
+  { key: "resource", label: "Resource Management" },
+  { key: "care", label: "Care" },
+  { key: "disposition", label: "Disposition" },
+];
 
 /**
- * ER-TRIAGE 상태평가 화면 (UC-TRI-01~06 / Jira UD2-8,9,10,11,12,43)
+ * ER 환자 상세 화면 (Triage + 자원관리, 탭으로 구분)
  *
- * 접수 건(receptionNo) 하나를 기준으로 EMS 사전정보 · KTAS 분류/재평가 ·
- * 활력징후 · 격리 · 위험 스크리닝 패널을 한 화면에 모아 보여준다.
+ * 접수 건(receptionNo) 하나를 고정해두고, 그 환자에 대한 여러 업무 화면을
+ * 탭으로 전환한다 (환자를 다시 고를 필요 없이 탭만 이동).
+ * - 초기환자(Triage, UC-TRI-01~06 / Jira UD2-8,9,10,11,12,43):
+ *   EMS 사전정보 · 격리 · 활력징후 · KTAS 분류/재평가 · 위험 스크리닝
+ * - 자원관리(Resource, UC-RES-01 / Jira UD2-13,14): 구역별 혼잡도 + 병상 배정
+ * - 진료(Care, Jira UD2-17,18,19,23,25): 진료기록 · 처치 · 약물 투여(MAR) · CPR · 동의 기록
+ * - 퇴실(Disposition, UC-DISP-01~03 / Jira UD2-39,40,41): 퇴실 결정 등록 + 입원 요청(입원) · 전원 소견서(전원)
  * 실제로는 접수/환자 선택 화면에서 receptionNo 를 넘겨받아 진입하지만,
  * 그 상위 화면이 아직 없어 이 화면 자체에 조회용 입력을 둔다.
  */
 export default function TriagePanelHost() {
-  const [receptionNo, setReceptionNo] = useState("");
   const [active, setActive] = useState("");
-
-  function handleChange(e: ChangeEvent<HTMLInputElement>) {
-    setReceptionNo(e.target.value);
-  }
+  const [activeTab, setActiveTab] = useState<Tab>("triage");
 
   return (
-    <div className="space-y-4">
-      <FormField label="접수번호" hint="접수/환자 선택 화면 연동 전 확인용 입력입니다.">
-        <div className="flex gap-2">
-          <Input
-            value={receptionNo}
-            onChange={handleChange}
-            maxLength={20}
-            placeholder="예: ER-20260716-001"
-            className="max-w-xs"
-          />
-          <Button type="button" onClick={() => setActive(receptionNo.trim())} disabled={!receptionNo.trim()}>
-            조회
-          </Button>
-        </div>
-      </FormField>
+    <div className="grid grid-cols-[minmax(320px,1fr)_2fr] gap-4">
+      <ReceptionListPanel onSelect={setActive} activeReceptionNo={active} />
 
-      {active ? (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <EmsInfoPanel receptionNo={active} />
-          <KtasPanel receptionNo={active} />
-          <VitalsPanel receptionNo={active} />
-          <IsolationPanel receptionNo={active} />
-          <RiskScreeningPanel receptionNo={active} className="lg:col-span-2" />
+      {/* 오른쪽: 선택된 환자의 탭별 패널 (세로 스크롤) — 환자 미선택이어도 항상 빈 상태로 노출 */}
+      <div className="flex h-[calc(100vh-180px)] min-w-0 flex-col gap-3">
+        <TriageSummaryBanner receptionNo={active} />
+
+        <div className="flex gap-1 rounded-xl border border-slate-200/80 bg-white p-1 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                activeTab === tab.key
+                  ? "bg-sky-50 text-sky-700"
+                  : "text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-      ) : null}
+
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          {/*
+            탭이 안 보인다고 언마운트하면 안 된다 — TriageSummaryBanner는 자체 조회 없이
+            이 5개 패널이 각자 불러온 Redux 상태를 그대로 읽기만 한다. 조건부 렌더링으로
+            숨겨서 언마운트해버리면 그 패널들의 조회 useEffect가 안 돌아서, 환자를 바꿔도
+            배너가 이전 환자 데이터를 계속 보여주는 버그가 생긴다(실제로 겪음). 그래서
+            항상 마운트해두고 CSS(hidden)로만 감춘다.
+          */}
+          <div className={`flex flex-col gap-4 ${activeTab === "triage" ? "" : "hidden"}`}>
+            <EmsInfoPanel receptionNo={active} />
+            <IsolationPanel receptionNo={active} />
+            <VitalsPanel receptionNo={active} />
+            <KtasPanel receptionNo={active} />
+            <RiskScreeningPanel receptionNo={active} />
+          </div>
+          <div className={`flex flex-col gap-4 ${activeTab === "resource" ? "" : "hidden"}`}>
+            <CongestionPanel />
+            <BedAssignmentPanel receptionNo={active} />
+          </div>
+          <div className={`flex flex-col gap-4 ${activeTab === "care" ? "" : "hidden"}`}>
+            <ClinicalNotePanel receptionNo={active} />
+            <TreatmentPanel receptionNo={active} />
+            <MedicationPanel receptionNo={active} />
+            <CprPanel receptionNo={active} />
+            <ConsentPanel receptionNo={active} />
+          </div>
+          <div className={`flex flex-col gap-4 ${activeTab === "disposition" ? "" : "hidden"}`}>
+            <DispositionPanel receptionNo={active} />
+            <DispositionFollowUp receptionNo={active} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

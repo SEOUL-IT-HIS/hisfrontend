@@ -2,8 +2,8 @@
 
 /**
  * [로그인 폼]
- * dispatch(fetchAuthLoginRequest) → saga → POST /api/auth/login
- * 성공 시 /admin/emp 이동
+ * dispatch(fetchAuthLoginRequest) → saga → POST /api/admin/auth/login
+ * 성공 시 /main(대문) 이동
  */
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -37,7 +37,7 @@ export default function LoginForm() {
 
   /**
    * 이번 화면에서 실제로 로그인을 시도한 적 있는지.
-   * 이게 없으면, 세션 만료로 리다이렉트됐을 때 배경에서 실패했던 /api/auth/me 의
+   * 이게 없으면, 세션 만료로 리다이렉트됐을 때 배경에서 실패했던 /api/admin/auth/me 의
    * leftover 에러("로그인이 필요합니다.")까지 같이 떠서 안내 문구랑 중복돼 보인다.
    * 실제로 로그인 버튼을 눌러본 뒤부터는(성공이든 실패든) 정상적으로 에러를 보여줘야 한다.
    */
@@ -59,8 +59,8 @@ export default function LoginForm() {
     const loginId = form.loginId.trim();
     const password = form.password.trim();
     const nextFieldErrors: { loginId?: string; password?: string } = {};
-    if (!loginId) nextFieldErrors.loginId = "아이디를 입력하세요.";
-    if (!password) nextFieldErrors.password = "비밀번호를 입력하세요.";
+    if (!loginId) nextFieldErrors.loginId = "Enter your user ID.";
+    if (!password) nextFieldErrors.password = "Enter your password.";
 
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
@@ -88,7 +88,7 @@ export default function LoginForm() {
     }
     if (user) {
       waitRedirect.current = false;
-      router.push("/admin/emp");
+      router.push("/main");
     }
   }, [loading, error, user, router]);
 
@@ -99,16 +99,16 @@ export default function LoginForm() {
           HIS
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
-          로그인
+          Sign In
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          아이디와 비밀번호를 입력하세요.
+          Enter your user ID and password.
         </p>
       </div>
 
       {isExpired ? (
         <div className="mb-4">
-          <Alert variant="info">세션이 만료되어 다시 로그인해주세요.</Alert>
+          <Alert variant="info">Your session has expired. Please sign in again.</Alert>
         </div>
       ) : null}
 
@@ -119,11 +119,11 @@ export default function LoginForm() {
       ) : null}
 
       <form onSubmit={onSubmit} className="space-y-4">
-        <FormField label="아이디" required htmlFor="loginId">
+        <FormField label="User ID" required htmlFor="loginId">
           <Input
             id="loginId"
             value={form.loginId}
-            placeholder="로그인 아이디"
+            placeholder="User ID"
             autoComplete="username"
             disabled={loading}
             onChange={(e) => {
@@ -136,12 +136,12 @@ export default function LoginForm() {
           ) : null}
         </FormField>
 
-        <FormField label="비밀번호" required htmlFor="password">
+        <FormField label="Password" required htmlFor="password">
           <Input
             id="password"
             type="password"
             value={form.password}
-            placeholder="비밀번호"
+            placeholder="Password"
             autoComplete="current-password"
             disabled={loading}
             onChange={(e) => {
@@ -161,7 +161,7 @@ export default function LoginForm() {
             className="w-full"
             disabled={loading}
           >
-            {loading ? "로그인 중..." : "로그인"}
+            {loading ? "Signing in..." : "Sign In"}
           </Button>
         </div>
       </form>

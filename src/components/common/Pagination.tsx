@@ -7,6 +7,8 @@ type PaginationProps = {
   totalPages: number;
   onPageChange: (page: number) => void;
   className?: string;
+  prevLabel?: string;
+  nextLabel?: string;
 };
 
 /**
@@ -18,6 +20,10 @@ export default function Pagination({
   totalPages,
   onPageChange,
   className = "",
+  // 이전
+  prevLabel = "이전",
+  // 다음
+  nextLabel = "다음",
 }: PaginationProps) {
   const safeTotal = Math.max(totalPages, 1);
   const canPrev = page > 1;
@@ -31,7 +37,7 @@ export default function Pagination({
         onClick={() => onPageChange(page - 1)}
         className="h-8 px-3"
       >
-        이전
+        {prevLabel}
       </Button>
       <span className="min-w-[80px] text-center text-sm font-medium text-slate-600">
         {page} / {safeTotal}
@@ -42,7 +48,7 @@ export default function Pagination({
         onClick={() => onPageChange(page + 1)}
         className="h-8 px-3"
       >
-        다음
+        {nextLabel}
       </Button>
     </div>
   );

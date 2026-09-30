@@ -1,0 +1,147 @@
+"use client";
+
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import type { AppDispatch } from "@/store/store";
+import { calculateAdmissionDays } from "@/features/inpatient/admissiondischarge/utils";
+import {
+  fetchAdmissionDetailRequest,
+  changeStatusRequest,
+  selectAdmissionDetail,
+  selectAdmissionDetailStatus,
+  selectAdmissionChangeStatusStatus,
+} from "@/features/inpatient/admissiondischarge/slice";
+
+const STATUS_BADGE: Record<string, string> = {
+  ADMITTED: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
+  DISCHARGE_REQUESTED: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+  DISCHARGED: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  ADMITTED: "Admitted",
+  DISCHARGE_REQUESTED: "Discharge Requested",
+  DISCHARGED: "Discharged",
+};
+
+const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
+
+type DischargeRequestDetailProps = {
+  /** 목록 옆에 끼워 넣을 때 라우트 파라미터 대신 직접 전달 */
+  admissionId?: string;
+  /** 목록 옆에 끼워 넣었을 때만 표시되는 "선택 해제" 버튼 */
+  onClose?: () => void;
+};
+
+const DischargeRequestDetail = ({ admissionId: admissionIdProp, onClose }: DischargeRequestDetailProps = {}) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const routeParams = useParams() as { admissionId?: string };
+  const admissionId = admissionIdProp ?? routeParams.admissionId ?? "";
+  const admission = useSelector(selectAdmissionDetail);
+  const { loading, error } = useSelector(selectAdmissionDetailStatus);
+  const changeStatusStatus = useSelector(selectAdmissionChangeStatusStatus);
+
+  useEffect(() => {
+    if (!admissionId) return;
+    dispatch(fetchAdmissionDetailRequest(admissionId));
+  }, [admissionId, dispatch]);
+
+  useEffect(() => {
+    if (changeStatusStatus.success && admissionId) {
+      dispatch(fetchAdmissionDetailRequest(admissionId));
+    }
+  }, [changeStatusStatus.success, admissionId, dispatch]);
+
+  const handleRequestDischarge = () => {
+    if (!admissionId) return;
+    dispatch(changeStatusRequest({ admissionId, status: "DISCHARGE_REQUESTED" }));
+  };
+
+  return (
+    <div className="w-full p-6">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-semibold text-slate-800">Discharge Processing</h1>
+          <p className="mt-1 text-sm text-slate-500">Submit the discharge request and complete discharge processing.</p>
+        </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            Deselect
+          </button>
+        )}
+      </div>
+
+      {loading && <p className="text-sm text-slate-500">Loading...</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {!loading && admission && (
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <span className="text-sm font-medium text-slate-800">{admission.admissionId}</span>
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
+                  STATUS_BADGE[admission.status] ?? "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
+                }`}
+              >
+                {STATUS_LABEL[admission.status] ?? admission.status}
+              </span>
+            </div>
+            <div>
+              <div className={INFO_ROW}>
+                <span className="text-slate-500">Patient ID</span>
+                <span className="text-slate-800">{admission.patientId}</span>
+              </div>
+              <div className={INFO_ROW}>
+                <span className="text-slate-500">Admission Dept ID</span>
+                <span className="text-slate-800">{admission.admissionDeptId}</span>
+              </div>
+              <div className={INFO_ROW}>
+                <span className="text-slate-500">Admission Date</span>
+                <span className="text-slate-800">{admission.admissionDate}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="mb-3 text-sm font-medium text-slate-800">Next Step</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {admission.status === "ADMITTED" && (
+                <button
+                  onClick={handleRequestDischarge}
+                  disabled={changeStatusStatus.loading}
+                  className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+                >
+                  {changeStatusStatus.loading ? "Processing..." : "Request Discharge"}
+                </button>
+              )}
+              {admission.status === "DISCHARGE_REQUESTED" && (
+                <>
+                  <span className="text-sm text-slate-600">Waiting for payment completion — discharge will complete automatically once billing is finalized</span>
+                  <Link
+                    href={`/inpatient/admissiondischarge/discharge/settlement/${admissionId}`}
+                    className="inline-flex items-center rounded-lg border border-sky-600 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50"
+                  >
+                    View Billing
+                  </Link>
+                </>
+              )}
+              {admission.status === "DISCHARGED" && (
+                <span className="text-sm text-slate-600">Discharged</span>
+              )}
+            </div>
+            {changeStatusStatus.error && <p className="mt-2 text-sm text-red-600">{changeStatusStatus.error}</p>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default DischargeRequestDetail;

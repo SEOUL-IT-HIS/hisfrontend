@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import {
   Alert,
   DataTable,
+  Modal,
   Pagination,
   Select,
   type DataTableColumn,
 } from "@/components/common";
+import EquipmentUpdateForm from "@/components/surgery/room/EquipmentUpdateForm";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import type { SurgicalEquipment } from "@/features/surgery/room/types";
@@ -53,6 +54,9 @@ export default function EquipmentList() {
   // 공통 Pagination 은 1-base, 백엔드 Pageable 은 0-base 다.
   const [page, setPage] = useState(1);
 
+  /** 수정 모달에 열려 있는 장비. null 이면 닫힌 상태다 */
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   const { options: statusOptions } = useCommonCodeOptions("OR_EQUIP_STATUS_CD");
   const { options: inoutOptions } = useCommonCodeOptions("EQUIP_INOUT_CD");
 
@@ -65,26 +69,26 @@ export default function EquipmentList() {
   const columns: DataTableColumn<SurgicalEquipment>[] = [
     {
       key: "equipmentId",
-      header: "장비 ID",
+      header: "Equipment ID",
       render: (equipment) => equipment.equipmentId,
     },
     {
       key: "equipmentName",
-      header: "장비명",
+      header: "Equipment name",
       render: (equipment) => equipment.equipmentName,
     },
     {
       key: "roomCode",
-      header: "소속 수술실",
+      header: "Operating room",
       render: (equipment) => equipment.roomCode,
     },
     {
       key: "statusCd",
-      header: "상태",
+      header: "Status",
       render: (equipment) => (
         <Select
           className="h-8 text-xs"
-          placeholder="미지정"
+          placeholder="Not set"
           options={statusOptions}
           value={equipment.statusCd ?? ""}
           disabled={saving || equipment.inoutCd === STATUS_LOCKED_INOUT}
@@ -103,11 +107,11 @@ export default function EquipmentList() {
     },
     {
       key: "inoutCd",
-      header: "출고/반입",
+      header: "Check-out / in",
       render: (equipment) => (
         <Select
           className="h-8 text-xs"
-          placeholder="미지정"
+          placeholder="Not set"
           options={inoutOptions}
           value={equipment.inoutCd ?? ""}
           disabled={saving}
@@ -126,14 +130,16 @@ export default function EquipmentList() {
     },
     {
       key: "actions",
-      header: "수정",
+      header: "Edit",
       render: (equipment) => (
-        <Link
-          href={`/surgery/equipment/update/${equipment.equipmentId}`}
+        // 페이지 이동 대신 모달을 연다 — 장비명 한 칸 고치자고 목록을 떠날 이유가 없다
+        <button
+          type="button"
           className="text-sky-600 underline"
+          onClick={() => setEditingId(equipment.equipmentId)}
         >
-          수정
-        </Link>
+          Edit
+        </button>
       ),
     },
   ];
@@ -147,13 +153,13 @@ export default function EquipmentList() {
         rows={items}
         rowKey={(equipment) => equipment.equipmentId}
         loading={loading}
-        emptyMessage="등록된 장비가 없습니다."
+        emptyMessage="No equipment registered."
       />
 
       {equipments ? (
         <div className="flex items-center justify-between">
           <p className="text-xs text-slate-500">
-            전체 {equipments.totalElements}건
+            {equipments.totalElements} total
           </p>
           <Pagination
             page={page}
@@ -162,6 +168,25 @@ export default function EquipmentList() {
           />
         </div>
       ) : null}
+
+      {/*
+        editingId 가 있을 때만 폼을 그린다 — 미리 그려두면 목록에 장비가 20개일 때
+        단건 조회가 20번 나간다. key 를 걸어 다른 장비를 열면 폼 상태가 초기화되게 한다.
+      */}
+      <Modal
+        open={editingId !== null}
+        title="Edit equipment"
+        onClose={() => setEditingId(null)}
+        closeDisabled={saving}
+      >
+        {editingId ? (
+          <EquipmentUpdateForm
+            key={editingId}
+            equipmentId={editingId}
+            onDone={() => setEditingId(null)}
+          />
+        ) : null}
+      </Modal>
     </div>
   );
 }

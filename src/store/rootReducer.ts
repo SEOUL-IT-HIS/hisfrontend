@@ -1,25 +1,24 @@
 import { combineReducers } from "@reduxjs/toolkit";
 
 // ----- 서비스별 reducer (담당자 slice 준비되면 import 후 아래에 등록) -----
-// import patientReducer from "@/features/patient/slice";
-// import receptionReducer from "@/features/reception/slice";
-// import billingReducer from "@/features/billing/slice";
- import outpatientReducer from "@/features/outpatient/common/slice";
+import receptionReducer from "@/features/reception/slice";
+import billingReducer from "@/features/billing/slice";
+import outpatientReducer from "@/features/outpatient/common/slice";
 import emergencyReducer from "@/features/emergency/common/slice";
 import inpatientReducer from "@/features/inpatient/slice";
 import labImagingReducer from "@/features/labimaging/common/slice";
-// import pharmacyReducer from "@/features/pharmacy/slice";
+import pharmacyReducer from "@/features/pharmacy/slice";
 import surgeryReducer from "@/features/surgery/slice";
 // import adminReducer from "@/features/admin/slice";
 import commonCodeItemReducer from "@/features/commonCode/slice/commonCodeItemSlice";
 import commonCodeGroupReducer from "@/features/commonCode/slice/commonCodeGroupSlice";
 import authReducer from "@/features/auth/slice/authSlice";
 import empReducer from "@/features/emp/slice/empSlice";
+import roleMenuReducer from "@/features/roleMenu/slice/roleMenuSlice";
 import systemReducer from "@/features/system/slice/menuSlice";
 import patientReducer from "@/features/patient/slice/patientSlice";
-import billingDetailReducer from "@/features/billing/searchBillingDetail/slice";
-import billingMasterReducer from "@/features/billing/billingMaster/slice";
-import billingPaymentReducer from "@/features/billing/payment/slice";
+import patientSafetyReducer from "@/features/patient/slice/patientSafetySlice";
+import patientContactReducer from "@/features/patient/slice/patientContactSlice";
 
 /**
  * RootReducer (프론트 리더 관리 영역)
@@ -37,20 +36,21 @@ const rootReducer = combineReducers({
   commonCodeGroup: commonCodeGroupReducer,
   commonCodeItem: commonCodeItemReducer,
   emp: empReducer,
+  roleMenu: roleMenuReducer,
 
   // 관리자 (ADM)
   // admin: adminReducer,
 
   // 환자 (PAT)
   patient: patientReducer,
+  patientSafety: patientSafetyReducer,
+  patientContact: patientContactReducer,
 
   // 접수 (RCP)
-  // reception: receptionReducer,
+  reception: receptionReducer,
 
   // 수납/청구 (BIL)
-  billingDetail: billingDetailReducer,
-  billingMaster: billingMasterReducer,
-  billingPayment: billingPaymentReducer,
+  billing: billingReducer,
 
   // 외래 (OPD)
   outpatient: outpatientReducer,
@@ -65,7 +65,7 @@ const rootReducer = combineReducers({
   labImaging: labImagingReducer,
 
   // 약국 (PHM)
-  // pharmacy: pharmacyReducer,
+  pharmacy: pharmacyReducer,
 
   // 수술 (SUR)
   surgery: surgeryReducer,

@@ -34,7 +34,7 @@ function* fetchAuthLoginSaga(
     yield put(fetchAuthLoginSuccess(user));
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "로그인에 실패했습니다.";
+      error instanceof Error ? error.message : "Sign-in failed.";
     yield put(fetchAuthLoginFailure(message));
   }
 }
@@ -47,7 +47,7 @@ function* fetchAuthMeSaga() {
   } catch (error) {
     localStorage.removeItem(USER_INFO_KEY);
     const message =
-      error instanceof Error ? error.message : "세션 확인에 실패했습니다.";
+      error instanceof Error ? error.message : "Session check failed.";
     yield put(fetchAuthMeFailure(message));
   }
 }
@@ -59,7 +59,7 @@ function* fetchAuthLogoutSaga() {
     yield put(fetchAuthLogoutSuccess());
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "로그아웃에 실패했습니다.";
+      error instanceof Error ? error.message : "Sign-out failed.";
     yield put(fetchAuthLogoutFailure(message));
   }
 }

@@ -22,8 +22,6 @@ export interface ImageOrderCreateRequest {
   imageOrderNo: string;
   /** 연계시스템코드 (예: "GR2") */
   systemCode: string;
-  /** 환자번호 (화면 표시용 업무번호) */
-  patientNo: string;
   /** 환자ID (patient-service 내부 식별자, 참조/검증용) */
   patientId: string;
   /** 처방의번호 (화면 표시용 업무번호, NULL 허용) */
@@ -63,10 +61,9 @@ export interface ImageOrderCreateResponse {
 export interface ImageReceptionSummary extends ImageReceptionContext {
   imageOrderId: string;
   imageOrderNo: string;
-  patientNo: string;
   /**
    * 환자ID (patient-service 내부 식별자).
-   * 하위 작업(동의 등록 등)이 요청 본문에 담아야 해서 함께 내려온다. 화면 표시용은 patientNo 다.
+   * 하위 작업(동의 등록 등)의 요청 본문에 담고, 화면의 환자명 조회에도 쓴다.
    */
   patientId: string;
   orderStatusCode: string;
@@ -92,6 +89,21 @@ export interface ImageOrderState {
   /** 일정 화면으로 넘길 컨텍스트 (검사 쪽과 동일 규약) */
   selectedReception: ImageReceptionContext | null;
 
+  /**
+   * 워크리스트에서 고른 행의 접수번호. 빈 문자열이면 선택 없음.
+   * ⚠ 위 selectedReception 과 다른 상태다. 합치지 않는 이유는 slice 주석 참고.
+   */
+  selectedWorklistReceptionNo: string;
+
+  /** 워크리스트 조회 결과 */
+  worklist: ImageWorklistItem[];
+  worklistLoading: boolean;
+  worklistError: string;
+
+  /** 제외/복구 진행 상태 */
+  exclusionSubmitting: boolean;
+  exclusionError: string;
+
   /** 접수 상세 조회 결과 (촬영항목 포함) */
   receptionDetail: ImageReceptionDetail | null;
   receptionLoading: boolean;
@@ -106,8 +118,8 @@ export interface ImageOrderState {
  * — 이쪽은 공통코드가 아니라 API 계약상 고정값이라 상수로 유지한다.
  */
 export const URGENCY_YN_OPTIONS: ReadonlyArray<{ value: "Y" | "N"; label: string }> = [
-  { value: "N", label: "일반" },
-  { value: "Y", label: "긴급" },
+  { value: "N", label: "Routine" },
+  { value: "Y", label: "Urgent" },
 ];
 
 /**
@@ -121,10 +133,104 @@ export const RECEPTION_FILTER_OPTIONS: ReadonlyArray<{
   value: ReceptionScheduledFilter;
   label: string;
 }> = [
-  { value: "N", label: "일정 미등록" },
-  { value: "Y", label: "일정 등록됨" },
-  { value: "ALL", label: "전체" },
+  { value: "N", label: "Not scheduled" },
+  { value: "Y", label: "Scheduled" },
+  { value: "ALL", label: "All" },
 ];
+
+// ============================================================
+// 워크리스트 (영상 업무 화면)
+// ============================================================
+
+/**
+ * 다음에 해야 할 일 — 백엔드 imagingorder/dto/ImageWorklistStep enum 미러링.
+ *
+ * ⚠ 프론트에서 계산하지 않는다. 서버가 정한 값을 표시만 한다.
+ *   판단 규칙이 화면마다 흩어지면 검사 화면과 영상 화면이 서로 다르게 판단하기 시작한다.
+ *
+ * ⚠ 검사(WorklistStep)와 단계가 다르다. 영상에는 검체가 없어 적합성 판정이 성립하지 않고,
+ *   대신 조영제·침습검사 동의가 촬영 앞을 막는 단계로 들어간다.
+ */
+export type ImageWorklistStep = "SCHEDULE" | "CONSENT" | "ACQUISITION" | "READING";
+
+export const IMAGE_WORKLIST_STEP_LABELS: Record<ImageWorklistStep, string> = {
+  SCHEDULE: "Schedule",
+  CONSENT: "Consent",
+  ACQUISITION: "Acquisition",
+  READING: "Reading",
+};
+
+/** 워크리스트 1행 — 백엔드 ImageWorklistItemDto */
+export interface ImageWorklistItem {
+  imageReceptionId: string;
+  receptionNo: string;
+  imageOrderNo: string;
+  /**
+   * ⚠ 화면에 표시하는 값이 아니라 동의 작업이 쓰는 열쇠다.
+   *   CONSENT 는 접수가 아니라 오더에 붙어서(CONSENT.image_order_id),
+   *   ConsentWorkPanel 이 이 값으로 동의를 조회·등록한다.
+   */
+  imageOrderId: string;
+  /** 환자ID — 화면 표시용이 아니라 하위 작업(동의 등록 등) 요청에 담는 값 */
+  patientId: string;
+  urgencyYn: "Y" | "N";
+  /** 접수일시 — 목록 정렬 기준(오래된 건이 위) */
+  receivedAt: string;
+
+  /**
+   * ⚠ 촬영항목 중 "가장 이른" 예정일시다. (2026-09-03 — 일정이 항목 단위로 바뀜)
+   *   목록 한 줄에 시각 하나만 보여줘야 하고, 알고 싶은 건 "이 환자가 언제 오는가"라 첫 촬영 시각이 답이다.
+   */
+  scheduledAt?: string;
+  /** 촬영항목 수 */
+  imageItemCount: number;
+  /** 일정이 잡힌 촬영항목 수 */
+  scheduledItemCount: number;
+  /** 유효한 동의(동의함 + 미철회)가 하나라도 있는지 */
+  consentYn: "Y" | "N";
+  /** 동의 필요 여부 — N 이면 CONSENT 단계를 건너뛴다 (5차 Phase 9-1, 기본 설정에서는 항상 Y) */
+  consentRequiredYn: "Y" | "N";
+  /** 동의 거부 상태 — 유효 동의 없음 + 미철회 거부 기록 (5차 Phase 9-2) */
+  consentRefusedYn: "Y" | "N";
+  /** 동의 철회 상태 — 유효 동의 없음 + 철회 기록. 촬영 후 철회면 READING 에 머문다 (D14) */
+  consentWithdrawnYn: "Y" | "N";
+  /** 등록된 영상파일 수 (오더의 촬영항목 전체 합산). 1 이상이면 동의가 철회돼도 READING 에 머문다 (D14) */
+  imageFileCount: number;
+  /**
+   * 촬영된 항목 중 판독까지 끝난(확정) 항목 수. (ZP2-23)
+   *
+   * ⚠ nextStep 은 판독이 끝나도 READING 에서 계속 머문다 — 검사 쪽 WorklistStep 이 결과 확정
+   *   후에도 RESULT 에 머무는 것과 같은 원칙이다. "판독 완료 후 목록에서 빼는" 문제는 이 값을
+   *   진행도 칩으로 보여주는 방식으로 해결했다(ImageWorklistProgress 참고) — 목록에서 빼지 않는다.
+   */
+  readingCompletedCount: number;
+  nextStep: ImageWorklistStep;
+
+  /** ACCEPTED = 처리 대상, EXCLUDED = 제외됨 */
+  receptionStatusCode: string;
+  exclusionReason?: string;
+  excludedAt?: string;
+}
+
+/**
+ * 워크리스트 필터. 백엔드 GET /worklist?receptionStatusCode= 와 대응한다.
+ * "ALL" 이면 파라미터를 보내지 않는다.
+ */
+export type ImageWorklistStatusFilter = "ACCEPTED" | "EXCLUDED" | "ALL";
+
+export const IMAGE_WORKLIST_FILTER_OPTIONS: ReadonlyArray<{
+  value: ImageWorklistStatusFilter;
+  label: string;
+}> = [
+  { value: "ACCEPTED", label: "Active" },
+  { value: "EXCLUDED", label: "Excluded" },
+  { value: "ALL", label: "All" },
+];
+
+/** 접수 제외 요청 — 백엔드 ReceptionExclusionRequestDto (검사와 같은 DTO 를 쓴다) */
+export interface ImageReceptionExclusionRequest {
+  exclusionReason: string;
+}
 
 /**
  * 일정 화면으로 넘길 접수 컨텍스트. (검사 쪽 laborder/types.ts 와 동일 규약)
@@ -132,7 +238,6 @@ export const RECEPTION_FILTER_OPTIONS: ReadonlyArray<{
 export interface ImageReceptionContext {
   imageReceptionId: string;
   receptionNo: string;
-  patientNo: string;
 }
 
 /**
@@ -140,6 +245,8 @@ export interface ImageReceptionContext {
  * 목록(ImageReceptionSummary)과 달리 촬영항목(imageItemCodes)을 담는다.
  */
 export interface ImageReceptionDetail extends ImageReceptionContext {
+  /** 환자ID — 표시용이 아니라 환자명을 조회하는 열쇠 */
+  patientId: string;
   imageOrderNo: string;
   /** 진료구분코드 (공통코드 RCPT_TYPE_CD) */
   treatTypeCode: string;

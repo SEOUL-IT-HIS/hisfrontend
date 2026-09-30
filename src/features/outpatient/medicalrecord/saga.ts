@@ -2,7 +2,6 @@ import { call, put, takeLatest } from "redux-saga/effects";
 import {
     fetchMedicalRecordList,
     fetchMedicalRecordDetail,
-    createMedicalRecord,
     updateMedicalRecord,
     deactivateMedicalRecord,
 } from "./api";
@@ -13,9 +12,6 @@ import {
     fetchRecordDetailRequest,
     fetchRecordDetailSuccess,
     fetchRecordDetailFailure,
-    createRecordRequest,
-    createRecordSuccess,
-    createRecordFailure,
     updateRecordRequest,
     updateRecordSuccess,
     updateRecordFailure,
@@ -47,25 +43,6 @@ function* fetchRecordDetailSaga(action: ReturnType<typeof fetchRecordDetailReque
     }
 }
 
-// 등록
-function* createRecordSaga(action: ReturnType<typeof createRecordRequest>) {
-    try {
-        // 기존처럼 서버에 진료기록 데이터(JSON) 전송
-        const created = (yield call(createMedicalRecord, action.payload)) as MedicalRecordDto;
-
-        // 백엔드는 파일을 모르므로, 프론트가 보낸 fileNames가 있다면 강제로 붙여줌 (가라 데이터 시뮬레이션)
-        const mockCreatedWithFiles: MedicalRecordDto = {
-            ...created,
-            fileNames: action.payload.fileNames || []
-        };
-
-        yield put(createRecordSuccess(mockCreatedWithFiles));
-    } catch (error) {
-        const message = error instanceof Error ? error.message : "Medical record create failed";
-        yield put(createRecordFailure(message));
-    }
-}
-
 // 수정
 function* updateRecordSaga(action: ReturnType<typeof updateRecordRequest>) {
     try {
@@ -75,13 +52,7 @@ function* updateRecordSaga(action: ReturnType<typeof updateRecordRequest>) {
             action.payload.params
         )) as MedicalRecordDto;
 
-        // 수정 시에도 fileNames 유지 처리
-        const mockUpdatedWithFiles: MedicalRecordDto = {
-            ...updated,
-            fileNames: action.payload.params.fileNames || []
-        };
-
-        yield put(updateRecordSuccess(mockUpdatedWithFiles));
+        yield put(updateRecordSuccess(updated));
     } catch (error) {
         const message = error instanceof Error ? error.message : "Medical record update failed";
         yield put(updateRecordFailure(message));
@@ -102,7 +73,6 @@ function* deactivateRecordSaga(action: ReturnType<typeof deactivateRecordRequest
 export function* watchMedicalRecordSaga() {
     yield takeLatest(fetchRecordListRequest.type, fetchRecordListSaga);
     yield takeLatest(fetchRecordDetailRequest.type, fetchRecordDetailSaga);
-    yield takeLatest(createRecordRequest.type, createRecordSaga);
     yield takeLatest(updateRecordRequest.type, updateRecordSaga);
     yield takeLatest(deactivateRecordRequest.type, deactivateRecordSaga);
 }

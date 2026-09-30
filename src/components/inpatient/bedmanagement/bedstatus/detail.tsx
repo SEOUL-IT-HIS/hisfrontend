@@ -1,46 +1,151 @@
-"use client"
+"use client";
 
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { fetchBedDetailRequest, selectBedDetail, selectBedDetailStatus } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice";
 import type { AppDispatch, RootState } from "@/store/store";
 import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-const BedStatusDetail=()=>{
-    const dispatch=useDispatch<AppDispatch>();
-    const { bedId }:{bedId:string} = useParams();
-    const bed=useSelector(selectBedDetail);
-    const {loading,error}=useSelector(selectBedDetailStatus);
+const STATUS_BADGE: Record<string, string> = {
+    EMPTY: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
+    OCCUPIED: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
+    RESERVED: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+    EMPTY: "Empty",
+    OCCUPIED: "Occupied",
+    RESERVED: "Reserved",
+};
+
+const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
+
+type BedStatusDetailProps = {
+    /** 목록 옆에 끼워 넣을 때 라우트 파라미터 대신 직접 전달 */
+    bedId?: string;
+    /** 목록 옆에 끼워 넣었을 때만 표시되는 "선택 해제" 버튼 */
+    onClose?: () => void;
+};
+
+const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {}) => {
+    const dispatch = useDispatch<AppDispatch>();
+    const routeParams = useParams() as { bedId?: string };
+    const bedId = bedIdProp ?? routeParams.bedId ?? "";
+    const bed = useSelector(selectBedDetail);
+    const { loading, error } = useSelector(selectBedDetailStatus);
     const patientDetail = useSelector((state: RootState) => state.patient.patientDetail);
-    useEffect(()=>{
+    const { options: roomTypeOptions } = useCommonCodeOptions("ROOM_TYPE_CD");
+    const { options: wardOptions } = useCommonCodeOptions("WARD_CD");
+    const [roomTypeCode, setRoomTypeCode] = useState(bed?.roomTypeCode ?? "");
+    const [wardCd, setWardCd] = useState(bed?.wardCd ?? "");
+    useEffect(() => {
         if (!bedId) return;
         dispatch(fetchBedDetailRequest(bedId));
-    },[bedId, dispatch]);
+    }, [bedId, dispatch]);
 
-    useEffect(()=>{
+    useEffect(() => {
         if (!bed?.patientId) return;
         dispatch(fetchPatientDetailRequest(bed.patientId));
-    },[bed?.patientId, dispatch]);
+    }, [bed?.patientId, dispatch]);
 
-    return(
-        <div>
-            { loading && <p>로딩중...</p> }
-            { error && <p>{error}</p> }
-            { !loading && bed &&
+    useEffect(() => {
+        setRoomTypeCode(bed?.roomTypeCode ?? "");
+    }, [bed?.roomTypeCode]);
 
+    useEffect(() => {
+        setWardCd(bed?.wardCd ?? "");
+    }, [bed?.wardCd]);
 
-            <div>
-            <p>환자명: {bed.patientId ? (patientDetail?.patientId === bed.patientId ? patientDetail.patientName : '조회중...') : '없음'}</p>
-            <p>환자ID: {bed.patientId ?? '없음'}</p>
-            <p>BedId: {bed.bedId}</p>
-            <p>roomNo: {bed.roomNo}</p>
-            <p>bedNo: {bed.bedNo}</p>
-            <p>bedStatus: {bed.bedStatus}</p>
-           
+    const handleSaveWard = () => {
+        if (!bedId || !wardCd) return;
+        dispatch({type: "bed/updateBedWardRequest", payload: { bedId, wardCd }});
+    }
+    const handleSaveRoomType = () => {
+        if (!bedId || !roomTypeCode) return;
+        dispatch({type: "bed/updateBedRoomTypeRequest", payload: { bedId, roomTypeCode }});
+    };
+    return (
+        <div className="w-full p-6">
+            <div className="mb-6 flex items-center justify-between">
+                <div>
+                    <h1 className="text-lg font-semibold text-slate-800">Bed Status Details</h1>
+                    <p className="mt-1 text-sm text-slate-500">Current usage status of the bed.</p>
+                </div>
+                {onClose && (
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+                    >
+                        Deselect
+                    </button>
+                )}
             </div>
-}
 
+            {loading && <p className="text-sm text-slate-500">Loading...</p>}
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            {!loading && bed && (
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                        <span className="text-sm font-medium text-slate-800">{bed.bedId}</span>
+                        <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
+                                STATUS_BADGE[bed.bedStatus] ?? "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
+                            }`}
+                        >
+                            {STATUS_LABEL[bed.bedStatus] ?? bed.bedStatus}
+                        </span>
+                    </div>
+                    <div>
+                        <div className={INFO_ROW}>
+                            <span className="text-slate-500">Patient Name</span>
+                            <span className="text-slate-800">
+                                {bed.patientId ? (patientDetail?.patientId === bed.patientId ? patientDetail.patientName : "Loading...") : "None"}
+                            </span>
+                        </div>
+                        <div className={INFO_ROW}>
+                            <span className="text-slate-500">Patient ID</span>
+                            <span className="text-slate-800">{bed.patientId ?? "None"}</span>
+                        </div>
+                        <div className={INFO_ROW}>
+                            <span className="text-slate-500">Room No.</span>
+                            <span className="text-slate-800">{bed.roomNo}</span>
+                        </div>
+                        <div className={INFO_ROW}>
+                            <span className="text-slate-500">Bed No.</span>
+                            <span className="text-slate-800">{bed.bedNo}</span>
+                        </div>
+                        <div className={INFO_ROW}>
+                        <span className="text-slate-500">Room Type</span>
+                        <div className="flex items-center gap-2">
+                        <select value={roomTypeCode} onChange={(e) => setRoomTypeCode(e.target.value)} className="rounded border border-slate-300 px-2 py-1 text-sm">
+                        <option value="">Select</option>
+                        {roomTypeOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                        </select>
+                        <button onClick={handleSaveRoomType} className="rounded bg-sky-600 px-2 py-1 text-xs text-white">Save</button>
+                        </div>
+                        </div>
+                        <div className={INFO_ROW}>
+                        <span className="text-slate-500">Ward</span>
+                        <div className="flex items-center gap-2">
+                        <select value={wardCd} onChange={(e) => setWardCd(e.target.value)} className="rounded border border-slate-300 px-2 py-1 text-sm">
+                        <option value="">Select</option>
+                        {wardOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                        </select>
+                        <button onClick={handleSaveWard} className="rounded bg-sky-600 px-2 py-1 text-xs text-white">Save</button>
+                        </div>
+                        </div>
+
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

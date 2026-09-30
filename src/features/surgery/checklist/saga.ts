@@ -41,7 +41,7 @@ function* fetchChecklistSaga(action: PayloadAction<string>) {
   } catch (err) {
     yield put(
       fetchChecklistFailure(
-        getSurgeryErrorMessage(err, "체크리스트 조회에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to load the checklist."),
       ),
     );
   }
@@ -58,7 +58,7 @@ function* createChecklistSaga(
   } catch (err) {
     yield put(
       checklistMutationFailure(
-        getSurgeryErrorMessage(err, "체크리스트 작성에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to create the checklist entry."),
       ),
     );
   }
@@ -79,7 +79,7 @@ function* updateChecklistSaga(
   } catch (err) {
     yield put(
       checklistMutationFailure(
-        getSurgeryErrorMessage(err, "체크리스트 수정에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to update the checklist entry."),
       ),
     );
   }

@@ -10,7 +10,7 @@ import ImageOrderReceptionForm from "@/components/labimaging/imagingorder/ImageO
 export default function Page() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
-      <PageHeader title="영상오더 접수" description="외부 시스템에서 발생한 영상촬영 오더를 접수합니다." />
+      <PageHeader title="Imaging Order Reception" description="Receive imaging orders raised by external systems." />
       <ImageOrderReceptionForm />
     </div>
   );

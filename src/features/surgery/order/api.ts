@@ -3,7 +3,7 @@
  *
  * <p>백엔드 SurgeryOrderController(@RequestMapping("/api/surgery/orders")) 와 1:1 대응.</p>
  *
- * <p><b>예전 경로에서 옮겨왔다</b>(2026-08-13) — 수술 요청은 {@code POST /api/surgery/schedule}
+ * <p><b>예전 경로에서 옮겨왔다</b> — 수술 요청은 {@code POST /api/surgery/schedule}
  * 로 들어왔었다. 그런데 그 시점에는 수술실도 확정 시각도 없어 '일정'이라 부를 것이 없었고,
  * 같은 대상을 읽을 때는 {@code /requests} 라 부르면서 쓸 때만 {@code /schedule} 이라
  * 부르는 모순이 있었다. 이제 요청은 요청대로 부른다.</p>
@@ -99,7 +99,7 @@ export async function assignSurgeryOrder(
  */
 export async function rejectSurgeryOrder(
   orderId: string,
-  request?: RejectSurgeryOrderRequest,
+  request: RejectSurgeryOrderRequest,
 ): Promise<SurgeryOrder> {
   const { data } = await apiClient.patch<ApiResponse<SurgeryOrder>>(
     `${ORDER_PATH}/${orderId}/reject`,

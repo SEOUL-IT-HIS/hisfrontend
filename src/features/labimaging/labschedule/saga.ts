@@ -28,7 +28,7 @@ function* createLabScheduleSaga(action: PayloadAction<LabScheduleCreateRequest>)
     yield put(createLabScheduleSuccess(response));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "검사 일정 등록에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to register lab schedule.";
     yield put(createLabScheduleFailure(message));
   }
 }
@@ -44,7 +44,7 @@ function* rescheduleLabScheduleSaga(action: PayloadAction<{ labReceptionId: stri
     yield put(rescheduleLabScheduleSuccess(response));
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "검사 일정 변경(재조정)에 실패했습니다.";
+      err instanceof Error ? err.message : "Failed to reschedule lab schedule.";
     yield put(rescheduleLabScheduleFailure(message));
   }
 }

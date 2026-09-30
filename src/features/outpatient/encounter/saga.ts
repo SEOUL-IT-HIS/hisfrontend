@@ -7,7 +7,7 @@ import {
 } from "./slice";
 import type { EncounterDto } from "./types";
 
-// 목록 조회: EncounterList.tsx → GET /api/outpatient/encounters ---
+// 목록 조회 GET /api/outpatient/encounters
 function* fetchEncounterListSaga(action: ReturnType<typeof fetchEncounterListRequest>) {
     try {
         const items: EncounterDto[] = yield call(fetchEncounterList, action.payload);

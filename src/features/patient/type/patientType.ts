@@ -9,11 +9,21 @@ export type PatientStatus = "ACTIVE" | "INACTIVE";
 export type GenderCd = "01" | "02" | "03" | "04";
 export type Yn = "Y" | "N";
 
+
 /** GET /api/patient/list 검색조건 */
 export type PatientSearchCondition = {
   patientName?: string;
   birthDate?: string;
   statusCd?: PatientStatus;
+};
+
+export type PatientPageRequest = PatientSearchCondition & { page: number };
+export type PatientPage = {
+  items: PatientListItem[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
 };
 
 /** POST /api/patient/register 요청 */
@@ -22,8 +32,8 @@ export type PatientRegisterRequest = {
   birthDate: string;
   residentRegNo: string;
   genderCd: GenderCd;
-  statusCd: PatientStatus;
   tempPatientYn: Yn;
+  tempRegisterReason?: string;
 };
 
 /** POST /api/patient/register 응답 데이터 */
@@ -43,7 +53,7 @@ export type PatientListItem = {
   patientName: string;
   /** 마스킹된 주민등록번호 (예: 000813-4******) */
   residentRegNo: string;
-  birthDate: string;
+  birthDate: string | null;
   genderCd: GenderCd;
   statusCd: PatientStatus;
   tempPatientYn: Yn;
@@ -57,10 +67,11 @@ export type PatientDetail = {
   patientId: string;
   patientName: string;
   residentRegNo: string;
-  birthDate: string;
+  birthDate: string | null;
   genderCd: GenderCd;
   statusCd: PatientStatus;
   tempPatientYn: Yn;
+  tempRegisterReason: string | null;
   deathYn: Yn;
   deathDtm: string | null;
   createdAt: string;
@@ -70,12 +81,21 @@ export type PatientDetail = {
 /** POST /api/patient/duplicate-check 요청 */
 export type PatientDuplicateCheckRequest = {
   residentRegNo: string;
+  excludePatientId?: string;
 };
 
 /** PATCH /api/patient/{patientId} 요청 */
 export type PatientUpdateRequest = {
   patientId: string;
   patientName: string;
+};
+
+export type PatientTemporaryConversionRequest = {
+  patientId: string;
+  patientName: string;
+  residentRegNo: string;
+  birthDate: string;
+  genderCd: GenderCd;
 };
 
 /** PATCH /api/patient/{patientId}/death-status 요청 */
@@ -87,6 +107,11 @@ export type PatientDeathUpdateRequest = {
 
 /** PATCH /api/patient/{patientId}/deactivate 요청 */
 export type PatientDeactivateRequest = {
+  patientId: string;
+};
+
+/** PATCH /api/patient/{patientId}/activate 요청 */
+export type PatientActivateRequest = {
   patientId: string;
 };
 
@@ -104,5 +129,10 @@ export type PatientUpdateApiResponse = ApiResponse<PatientDetail>;
 /** PATCH /api/patient/{patientId}/deactivate 응답 */
 export type PatientDeactivateApiResponse = ApiResponse<PatientDetail>;
 
+/** PATCH /api/patient/{patientId}/activate 응답 */
+export type PatientActivateApiResponse = ApiResponse<PatientDetail>;
+
 /** PATCH /api/patient/{patientId}/death-status 응답 */
 export type PatientDeathUpdateApiResponse = ApiResponse<PatientDetail>;
+
+export type PatientTemporaryConversionApiResponse = ApiResponse<PatientDetail>;

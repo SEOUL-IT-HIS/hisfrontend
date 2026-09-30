@@ -40,7 +40,7 @@ export interface LabScheduleState {
 }
 
 export const RESERVATION_YN_OPTIONS: ReadonlyArray<{ value: "Y" | "N"; label: string }> = [
-  { value: "N", label: "비예약검사" },
-  { value: "Y", label: "예약검사" },
+  { value: "N", label: "Walk-in" },
+  { value: "Y", label: "Appointment" },
 ];
 

@@ -74,7 +74,7 @@ function* fetchOperativeRecordsSaga(action: PayloadAction<string>) {
   } catch (err) {
     yield put(
       fetchOperativeRecordsFailure(
-        getSurgeryErrorMessage(err, "수술기록 조회에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to load the operative record."),
       ),
     );
   }
@@ -90,7 +90,7 @@ function* fetchOperativeRecordSaga(action: PayloadAction<string>) {
   } catch (err) {
     yield put(
       fetchOperativeRecordFailure(
-        getSurgeryErrorMessage(err, "수술기록 조회에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to load the operative record."),
       ),
     );
   }
@@ -110,7 +110,7 @@ function* createOperativeRecordSaga(
   } catch (err) {
     yield put(
       operativeRecordMutationFailure(
-        getSurgeryErrorMessage(err, "수술기록 작성에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to create the operative record."),
       ),
     );
   }
@@ -132,7 +132,7 @@ function* updateOperativeRecordSaga(
     // 확정된 기록 수정 시도는 SUR043 으로 내려온다
     yield put(
       operativeRecordMutationFailure(
-        getSurgeryErrorMessage(err, "수술기록 수정에 실패했습니다."),
+        getSurgeryErrorMessage(err, "Failed to update the operative record."),
       ),
     );
   }

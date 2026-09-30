@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, Panel } from "@/components/common";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import {
@@ -13,7 +14,7 @@ import {
   selectImageReceptionDetail,
   selectImageReceptionLoading,
   selectImageReceptionError,
-  selectImageReception,
+  selectImageWorklistReception,
 } from "@/features/labimaging/imagingorder/slice";
 import {
   ORDER_STATUS_LABELS,
@@ -49,6 +50,14 @@ export default function ImageReceptionDetail() {
   const loading = useSelector(selectImageReceptionLoading);
   const error = useSelector(selectImageReceptionError);
 
+  /*
+   * ⚠ 훅은 조건부로 부를 수 없어 reception 이 없을 때도 호출된다.
+   *   빈 배열이면 요청을 보내지 않으므로 early return 보다 위에 두어도 안전하다.
+   */
+  const { names: patientNames } = usePatientNames(
+    reception?.patientId ? [reception.patientId] : [],
+  );
+
   const treatTypes = useCommonCodeOptions("RCPT_TYPE_CD");
   const imageItems = useCommonCodeOptions("IMG_ITEM_CD");
 
@@ -56,27 +65,28 @@ export default function ImageReceptionDetail() {
     if (receptionNo) dispatch(fetchImageReceptionByNoRequest(receptionNo));
   }, [dispatch, receptionNo]);
 
-  if (loading) return <p className="text-sm text-slate-400">불러오는 중…</p>;
+  if (loading) return <p className="text-sm text-slate-400">Loading…</p>;
   if (error) return <Alert>{error}</Alert>;
-  if (!reception) return <p className="text-sm text-slate-400">접수 정보가 없습니다.</p>;
+  if (!reception) return <p className="text-sm text-slate-400">No reception found.</p>;
 
   const items = reception.imageItemCodes
     .map((code) => toCodeLabel(imageItems.options, code))
     .join(", ");
 
   const rows: Array<[string, string]> = [
-    ["접수번호", reception.receptionNo],
-    ["오더번호", reception.imageOrderNo],
-    ["진료구분", toCodeLabel(treatTypes.options, reception.treatTypeCode)],
-    ["긴급여부", reception.urgencyYn === "Y" ? "긴급" : "일반"],
-    ["환자번호", reception.patientNo],
-    ["처방의번호", reception.physicianNo || "-"],
-    ["촬영항목", items || "-"],
-    ["접수일시", formatDateTime(reception.receivedAt)],
-    ["촬영 예정일시", reception.scheduledAt ? formatDateTime(reception.scheduledAt) : "미등록"],
-    ["오더상태", toStatusLabel(ORDER_STATUS_LABELS, reception.orderStatusCode)],
-    ["접수상태", toStatusLabel(RECEPTION_STATUS_LABELS, reception.receptionStatusCode)],
-    ["접수담당자", reception.receivedById],
+    ["Reception No.", reception.receptionNo],
+    ["Order No.", reception.imageOrderNo],
+    ["Treatment Type", toCodeLabel(treatTypes.options, reception.treatTypeCode)],
+    ["Urgency", reception.urgencyYn === "Y" ? "Urgent" : "Routine"],
+    // 환자번호는 화면에서 쓰지 않기로 해서 이름만 둔다. (2026-08-25)
+    ["Patient Name", patientNames[reception.patientId] || "Unknown"],
+    ["Physician No.", reception.physicianNo || "-"],
+    ["Imaging Items", items || "-"],
+    ["Received At", formatDateTime(reception.receivedAt)],
+    ["Scheduled Imaging", reception.scheduledAt ? formatDateTime(reception.scheduledAt) : "Not scheduled"],
+    ["Order Status", toStatusLabel(ORDER_STATUS_LABELS, reception.orderStatusCode)],
+    ["Reception Status", toStatusLabel(RECEPTION_STATUS_LABELS, reception.receptionStatusCode)],
+    ["Received By", reception.receivedById],
   ];
 
   return (
@@ -93,19 +103,22 @@ export default function ImageReceptionDetail() {
       </Panel>
       <div className="flex justify-end gap-2">
         <Link
-          href="/labimaging/imagingorder/receptions"
+          href="/labimaging/imagingorder/worklist"
           className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
         >
-          목록
+          Worklist
         </Link>
+        {/*
+          ⚠ 단독 일정 페이지는 없앴다. (2026-09-03 — 워크리스트 Schedule 탭이 같은 일을 한다)
+            워크리스트로 보내면서 이 접수를 선택 상태로 만들어, 도착하자마자 항목별 일정 폼이 열리게 한다.
+        */}
         <Button
           onClick={() => {
-            // 일정 화면이 쓸 컨텍스트만 넘긴다. (ImageReceptionContext)
-            dispatch(selectImageReception(reception));
-            router.push(`/labimaging/imagingschedule/register/${reception.imageReceptionId}`);
+            dispatch(selectImageWorklistReception(reception.receptionNo));
+            router.push("/labimaging/imagingorder/worklist");
           }}
         >
-          {reception.scheduledAt ? "일정 재등록" : "일정 등록"}
+          {reception.scheduledAt ? "Reschedule" : "Schedule"}
         </Button>
       </div>
     </div>

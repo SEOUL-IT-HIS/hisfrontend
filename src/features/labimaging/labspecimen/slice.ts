@@ -23,6 +23,10 @@ const initialState: SpecimenState = {
   accepting: false,
   acceptError: "",
   lastAccepted: null,
+
+  barcodeLookupLoading: false,
+  barcodeLookupError: "",
+  barcodeLookupResult: null,
 };
 
 const specimenSlice = createSlice({
@@ -103,6 +107,41 @@ const specimenSlice = createSlice({
       state.acceptError = action.payload;
     },
 
+    // ---------- 바코드 조회 (ZP2-75) ----------
+    /**
+     * 검체바코드로 검체를 찾는다.
+     *
+     * ⚠ 여기서 하는 건 조회까지다. "지금 선택한 접수의 검체인지" 대조는 화면이 한다.
+     *   서버도 slice 도 화면이 어느 접수를 보고 있는지 모른다.
+     *   그래서 결과를 걸러 담지 않고 조회된 원본을 그대로 둔다.
+     */
+    lookupSpecimenByBarcodeRequest: {
+      reducer(state) {
+        state.barcodeLookupLoading = true;
+        state.barcodeLookupError = "";
+        // 이전 조회 결과를 먼저 비운다. 남겨두면 새 조회가 실패했을 때
+        // 지난 검체가 선택된 채로 오류 문구만 뜬다.
+        state.barcodeLookupResult = null;
+      },
+      prepare(specimenBarcode: string) {
+        return { payload: specimenBarcode };
+      },
+    },
+    lookupSpecimenByBarcodeSuccess(state, action: PayloadAction<SpecimenSummary>) {
+      state.barcodeLookupLoading = false;
+      state.barcodeLookupResult = action.payload;
+    },
+    lookupSpecimenByBarcodeFailure(state, action: PayloadAction<string>) {
+      state.barcodeLookupLoading = false;
+      state.barcodeLookupError = action.payload;
+    },
+    /** 접수를 바꾸거나, 목록에서 검체를 직접 클릭했거나, 판정을 마쳤을 때 지운다. */
+    resetBarcodeLookup(state) {
+      state.barcodeLookupLoading = false;
+      state.barcodeLookupError = "";
+      state.barcodeLookupResult = null;
+    },
+
     /** 다른 접수를 고르면 이전 접수의 등록/판정 결과나 오류가 남아 있으면 안 된다. */
     resetSpecimenState(state) {
       state.specimens = [];
@@ -111,6 +150,8 @@ const specimenSlice = createSlice({
       state.lastCreated = null;
       state.acceptError = "";
       state.lastAccepted = null;
+      state.barcodeLookupError = "";
+      state.barcodeLookupResult = null;
     },
   },
 });
@@ -125,6 +166,10 @@ export const {
   acceptSpecimenRequest,
   acceptSpecimenSuccess,
   acceptSpecimenFailure,
+  lookupSpecimenByBarcodeRequest,
+  lookupSpecimenByBarcodeSuccess,
+  lookupSpecimenByBarcodeFailure,
+  resetBarcodeLookup,
   resetSpecimenState,
 } = specimenSlice.actions;
 
@@ -153,3 +198,10 @@ export const selectSpecimenAcceptError = (s: SpecimenRoot) =>
   s.labImaging.labspecimen.acceptError;
 export const selectLastAcceptedSpecimen = (s: SpecimenRoot) =>
   s.labImaging.labspecimen.lastAccepted;
+
+export const selectBarcodeLookupLoading = (s: SpecimenRoot) =>
+  s.labImaging.labspecimen.barcodeLookupLoading;
+export const selectBarcodeLookupError = (s: SpecimenRoot) =>
+  s.labImaging.labspecimen.barcodeLookupError;
+export const selectBarcodeLookupResult = (s: SpecimenRoot) =>
+  s.labImaging.labspecimen.barcodeLookupResult;

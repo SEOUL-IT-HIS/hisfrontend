@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { RootState } from "@/store/store";
 import type {
   BillingMaster,
   BillingMasterCreateRequest,
@@ -74,6 +75,10 @@ const billingMasterSlice = createSlice({
       state.createStatus = { loading: false, error: action.payload };
       state.createSuccess = false;
     },
+    resetBillingMasterCreateStatus(state) {
+      state.createStatus = { ...initialStatus };
+      state.createSuccess = false;
+    },
   },
 });
 
@@ -87,19 +92,22 @@ export const {
   registerBillingMasterRequest,
   registerBillingMasterSuccess,
   registerBillingMasterFailure,
+  resetBillingMasterCreateStatus,
 } = billingMasterSlice.actions;
 
 export default billingMasterSlice.reducer;
 
 // ----- Selector (가이드 10.4: 컴포넌트에서 state.xxx.yyy 깊게 파지 않기) -----
 
-type BillingMasterRoot = { billingMaster: BillingMasterState };
+type BillingMasterRoot = { billing: { billingMaster: BillingMasterState } };
 
-export const selectBillingMasterList = (state: BillingMasterRoot) => state.billingMaster.list;
+export const selectBillingMasterList = (state: BillingMasterRoot) => state.billing.billingMaster.list;
 export const selectBillingMasterListStatus = (state: BillingMasterRoot) =>
-  state.billingMaster.listStatus;
-export const selectBillingMasterDetail = (state: BillingMasterRoot) => state.billingMaster.detail;
+  state.billing.billingMaster.listStatus;
+export const selectBillingMasterDetail = (state: BillingMasterRoot) => state.billing.billingMaster.detail;
 export const selectBillingMasterDetailStatus = (state: BillingMasterRoot) =>
-  state.billingMaster.detailStatus;
+  state.billing.billingMaster.detailStatus;
 export const selectBillingMasterCreateStatus = (state: BillingMasterRoot) =>
-  state.billingMaster.createStatus;
+  state.billing.billingMaster.createStatus;
+export const selectBillingMasterCreateSuccess = (state: BillingMasterRoot) =>
+  state.billing.billingMaster.createSuccess;

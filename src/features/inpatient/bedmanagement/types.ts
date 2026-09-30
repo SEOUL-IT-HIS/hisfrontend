@@ -11,9 +11,11 @@ export interface BedAssignmentDTO {
 export interface BedDTO {
   patientId: string | null;
   bedId: string;
+  wardCd: string | null;
   roomNo: string;
   bedNo: string;
   bedStatus: string;
+  roomTypeCode: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -73,6 +75,8 @@ export interface BedState {
   detail: BedDTO | null;
   listStatus: Status;
   detailStatus: Status;
+  updateRoomTypeStatus: Status;
+  updateWardStatus: Status;
 }
 
 // ----- 병상예약(bedreservation) 전용 -----

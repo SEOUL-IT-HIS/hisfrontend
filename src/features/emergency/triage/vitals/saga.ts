@@ -1,0 +1,41 @@
+import { call, put, takeLatest } from "redux-saga/effects";
+import type { PayloadAction } from "@reduxjs/toolkit";
+import { createVitalAssessments, getVitalAssessments } from "@/features/emergency/triage/vitals/api";
+import {
+  createVitalsFailure,
+  createVitalsRequest,
+  createVitalsSuccess,
+  fetchVitalsFailure,
+  fetchVitalsRequest,
+  fetchVitalsSuccess,
+} from "@/features/emergency/triage/vitals/slice";
+import type { EwsRecord, VitalAssessmentCreateRequest } from "@/features/emergency/triage/vitals/types";
+
+function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error ? err.message : fallback;
+}
+
+function* fetchVitalsSaga(action: PayloadAction<string>) {
+  try {
+    const items: EwsRecord[] = yield call(getVitalAssessments, action.payload);
+    yield put(fetchVitalsSuccess(items));
+  } catch (err) {
+    // 활력징후 조회에 실패했습니다.
+    yield put(fetchVitalsFailure(errorMessage(err, "Failed to load vital signs.")));
+  }
+}
+
+function* createVitalsSaga(action: PayloadAction<VitalAssessmentCreateRequest>) {
+  try {
+    const items: EwsRecord[] = yield call(createVitalAssessments, action.payload);
+    yield put(createVitalsSuccess(items));
+  } catch (err) {
+    // 활력징후 등록에 실패했습니다.
+    yield put(createVitalsFailure(errorMessage(err, "Failed to register vital signs.")));
+  }
+}
+
+export default function* vitalsSaga() {
+  yield takeLatest(fetchVitalsRequest.type, fetchVitalsSaga);
+  yield takeLatest(createVitalsRequest.type, createVitalsSaga);
+}

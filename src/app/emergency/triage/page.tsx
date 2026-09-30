@@ -1,14 +1,9 @@
-import TriagePanelHost from "@/components/emergency/common/TriagePanelHost";
+import { redirect } from "next/navigation";
 
 /**
- * ER-TRIAGE 상태평가 화면 (UC-TRI-01~06 / Jira UD2-8,9,10,11,12,43)
- * 경로: /emergency/triage
+ * 예전 경로 /emergency/triage — 화면이 /emergency 로 합쳐졌다.
+ * 사이드바(admin 메뉴)에서 이 항목이 빠질 때까지 옛 링크가 깨지지 않도록 넘겨준다.
  */
 export default function Page() {
-  return (
-    <div className="mx-auto h-full w-full max-w-6xl p-6">
-      <h1 className="mb-6 text-lg font-semibold text-slate-800">상태평가 (Triage)</h1>
-      <TriagePanelHost />
-    </div>
-  );
+  redirect("/emergency");
 }

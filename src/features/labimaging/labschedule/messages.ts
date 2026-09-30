@@ -1,12 +1,12 @@
 
 export const LAB_SCHEDULE_MESSAGES = {
-  LAB009: "검사 일정이 등록되었습니다.",
-  LAB010: "검사 일정이 재등록되었습니다.",
-  LAB013: "검사접수 정보를 찾을 수 없습니다.",
-  LAB014: "재등록할 기존 검사 일정이 없습니다.",
-  LAB027: "이미 등록된 검사 일정이 있습니다. 재등록을 사용하세요.",
-  LAB998: "필수 항목이 누락되었거나 형식이 올바르지 않습니다.",
-  LAB999: "처리 중 오류가 발생했습니다.",
+  LAB009: "Lab schedule has been registered.",
+  LAB010: "Lab schedule has been rescheduled.",
+  LAB013: "Lab reception not found.",
+  LAB014: "There is no existing lab schedule to reschedule.",
+  LAB027: "A lab schedule already exists. Use Reschedule instead.",
+  LAB998: "A required field is missing or has an invalid format.",
+  LAB999: "An error occurred while processing the request.",
 } as const;
 
 export type LabScheduleMessageCode = keyof typeof LAB_SCHEDULE_MESSAGES;

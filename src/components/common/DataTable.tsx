@@ -19,6 +19,10 @@ type DataTableProps<T> = {
   minWidthClassName?: string;
   equalColumns?: boolean;
   className?: string;
+  /** 지정하면 행 전체(여백 포함) 클릭이 가능해진다 */
+  onRowClick?: (row: T) => void;
+  /** true를 반환한 행을 강조 표시한다 (예: 현재 선택된 행) */
+  isRowActive?: (row: T) => boolean;
 };
 
 /**
@@ -34,6 +38,8 @@ export default function DataTable<T>({
   minWidthClassName = "min-w-[720px]",
   equalColumns = false,
   className = "",
+  onRowClick,
+  isRowActive,
 }: DataTableProps<T>) {
   const colSpan = columns.length;
   const equalWidth = equalColumns && colSpan > 0 ? `${100 / colSpan}%` : undefined;
@@ -72,10 +78,17 @@ export default function DataTable<T>({
               </td>
             </tr>
           ) : (
-            rows.map((row) => (
+            rows.map((row) => {
+              const active = isRowActive?.(row) ?? false;
+              return (
               <tr
                 key={rowKey(row)}
-                className="border-t border-slate-50 transition-colors hover:bg-slate-50/80"
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                className={`border-t border-l-4 transition-colors ${onRowClick ? "cursor-pointer" : ""} ${
+                  active
+                    ? "border-l-sky-500 bg-sky-50 hover:bg-sky-50"
+                    : "border-l-transparent border-t-slate-50 hover:bg-slate-50/80"
+                }`}
               >
                 {columns.map((col) => (
                   <td
@@ -86,7 +99,8 @@ export default function DataTable<T>({
                   </td>
                 ))}
               </tr>
-            ))
+              );
+            })
           )}
         </tbody>
       </table>

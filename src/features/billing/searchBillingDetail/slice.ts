@@ -145,14 +145,14 @@ export default billingDetailSlice.reducer;
 
 // ----- Selector (가이드 10.4: 컴포넌트에서 state.xxx.yyy 깊게 파지 않기) -----
 
-type BillingDetailRoot = { billingDetail: BillingDetailState };
+type BillingDetailRoot = { billing: { billingDetail: BillingDetailState } };
 
-export const selectBillingDetails = (state: BillingDetailRoot) =>state.billingDetail.searchPatient;
-export const selectBillingDetailLoading = (state: BillingDetailRoot) =>state.billingDetail.loading;
-export const selectBillingDetailError = (state: BillingDetailRoot) => state.billingDetail.error;
-export const selectAdmissionDetail = (state: BillingDetailRoot) => state.billingDetail.admissionDetail;
-export const selectAdmissionDetailLoading = (state: BillingDetailRoot) => state.billingDetail.admissionDetailStatus.loading;
-export const selectAdmissionDetailError = (state: BillingDetailRoot) => state.billingDetail.admissionDetailStatus.error;
-export const selectVisitDetail = (state: BillingDetailRoot) => state.billingDetail.visitDetail;
-export const selectVisitDetailLoading = (state: BillingDetailRoot) => state.billingDetail.visitDetailStatus.loading;
-export const selectVisitDetailError = (state: BillingDetailRoot) => state.billingDetail.visitDetailStatus.error;
+export const selectBillingDetails = (state: BillingDetailRoot) =>state.billing.billingDetail.searchPatient;
+export const selectBillingDetailLoading = (state: BillingDetailRoot) =>state.billing.billingDetail.loading;
+export const selectBillingDetailError = (state: BillingDetailRoot) => state.billing.billingDetail.error;
+export const selectAdmissionDetail = (state: BillingDetailRoot) => state.billing.billingDetail.admissionDetail;
+export const selectAdmissionDetailLoading = (state: BillingDetailRoot) => state.billing.billingDetail.admissionDetailStatus.loading;
+export const selectAdmissionDetailError = (state: BillingDetailRoot) => state.billing.billingDetail.admissionDetailStatus.error;
+export const selectVisitDetail = (state: BillingDetailRoot) => state.billing.billingDetail.visitDetail;
+export const selectVisitDetailLoading = (state: BillingDetailRoot) => state.billing.billingDetail.visitDetailStatus.loading;
+export const selectVisitDetailError = (state: BillingDetailRoot) => state.billing.billingDetail.visitDetailStatus.error;

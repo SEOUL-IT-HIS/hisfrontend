@@ -3,8 +3,9 @@
  *
  * <p>백엔드 ConsentController(@RequestMapping("/api/surgery")) 와 1:1 대응.</p>
  *
- * <p>수정 API 가 없는 이유 — 동의서는 서명 시점의 사실 기록이라 고쳐 쓰지 않는다.
- * 내용이 바뀌면 새로 동의를 받아 다른 행으로 남긴다(§21.6). 백엔드도 PUT 을 열지 않는다.</p>
+ * <p><b>수정 API 가 따로 없다.</b> 등록(POST)이 "있으면 갱신"이라 체크와 해제를
+ * 같은 호출로 처리한다. 별도 PUT 을 두면 프론트가 "이 종류가 이미 있나"를 먼저
+ * 판단해 분기해야 하는데, 그 판단은 서버가 하는 편이 정확하다.</p>
  */
 import apiClient from "@/lib/axios";
 import type { ApiResponse } from "@/features/surgery/types";
