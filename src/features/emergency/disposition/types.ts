@@ -8,6 +8,8 @@ export interface Disposition {
   dispositionTypeCode: string;
   decidedById: string;
   decidedAt: string;
+  /** 최신 결정을 다른 유형으로 바꿀 수 있는지 — 후속 조치 전(입원요청 없음·거부됨, 전원 소견서 없음)일 때만 true */
+  changeable: boolean;
 }
 
 /** 백엔드 DispositionCreateRequestDto 미러링 */
