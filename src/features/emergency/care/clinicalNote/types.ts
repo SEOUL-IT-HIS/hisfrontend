@@ -15,16 +15,16 @@ export interface ClinicalNoteCreateRequest {
   recordedById: string;
 }
 
-/** 백엔드 CareServiceImpl.VALID_NOTE_TYPES 하드코딩 값과 동일 (EMG 내부 전용 분류, admin 공통코드 아님) */
+/** 진료기록 종류 폴백 — 공통코드 NOTE_TYPE_CD 와 같은 값(숫자 2자리) */
 export const NOTE_TYPE_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   // 초진
-  { value: "INITIAL", label: "Initial Note" },
+  { value: "01", label: "Initial Note" },
   // 재평가
-  { value: "REASSESSMENT", label: "Reassessment" },
+  { value: "02", label: "Reassessment" },
   // 처치
-  { value: "PROCEDURE", label: "Procedure" },
+  { value: "03", label: "Procedure" },
   // 퇴실요약
-  { value: "DISCHARGE_SUMMARY", label: "Discharge Summary" },
+  { value: "04", label: "Discharge Summary" },
 ];
 
 export interface ClinicalNoteState {

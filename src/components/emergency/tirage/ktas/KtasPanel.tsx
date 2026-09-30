@@ -16,6 +16,7 @@ import {
   selectKtasSubmitting,
 } from "@/features/emergency/triage/ktas/slice";
 import { KTAS_LEVEL_FALLBACK_OPTIONS } from "@/features/emergency/triage/ktas/types";
+import { ASSESSMENT_TYPE, CODE_GROUP, codeToNumber } from "@/features/emergency/codes";
 import {
   fetchAllCommonCodesRequest,
   selectCommonCodeLoaded,
@@ -43,7 +44,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
   const submitting = useSelector(selectKtasSubmitting);
   const submitError = useSelector(selectKtasSubmitError);
   const commonCodeLoaded = useSelector(selectCommonCodeLoaded);
-  const ktasLevelCodes = useSelector(selectCommonCodesByGroup("KTAS_LEVEL"));
+  const ktasLevelCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.KTAS_LEVEL));
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
@@ -77,7 +78,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
     }
   }
 
-  const hasInitial = items.some((item) => item.assessmentTypeCode === "INITIAL");
+  const hasInitial = items.some((item) => item.assessmentTypeCode === ASSESSMENT_TYPE.INITIAL);
   const latest = items.length > 0 ? items[items.length - 1] : null;
   const previous = items.length > 1 ? items[items.length - 2] : null;
 
@@ -93,7 +94,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
         createKtasRequest({
           encounterId: receptionNo,
           ktasScore: form.ktasScore,
-          assessmentTypeCode: "INITIAL",
+          assessmentTypeCode: ASSESSMENT_TYPE.INITIAL,
           reason: form.reason || undefined,
           assessedById: form.assessedById || undefined,
         }),
@@ -126,15 +127,15 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
               {previous ? (
                 <>
                   {/* {previous}단계 */}
-                  <span className="text-sm text-slate-400 line-through">Level {previous.ktasLevelCode}</span>
+                  <span className="text-sm text-slate-400 line-through">Level {codeToNumber(previous.ktasLevelCode)}</span>
                   <span className="text-slate-400">→</span>
                 </>
               ) : null}
               {/* {latest}단계 */}
-              <span className="text-lg font-semibold text-sky-600">Level {latest.ktasLevelCode}</span>
+              <span className="text-lg font-semibold text-sky-600">Level {codeToNumber(latest.ktasLevelCode)}</span>
               <span className="text-xs text-slate-500">
                 {/* (최초 분류 | 재평가 · 일시) */}
-                ({latest.assessmentTypeCode === "INITIAL" ? "Initial" : "Reassessment"} · {formatDateTime(latest.assessedAt)})
+                ({latest.assessmentTypeCode === ASSESSMENT_TYPE.INITIAL ? "Initial" : "Reassessment"} · {formatDateTime(latest.assessedAt)})
               </span>
             </div>
           ) : (
@@ -150,10 +151,10 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
                 <li key={item.id} className="flex gap-2">
                   <span className="w-16 shrink-0 font-medium text-slate-600">
                     {/* 최초분류 / 재평가 */}
-                    {item.assessmentTypeCode === "INITIAL" ? "Initial" : "Reassessment"}
+                    {item.assessmentTypeCode === ASSESSMENT_TYPE.INITIAL ? "Initial" : "Reassessment"}
                   </span>
                   {/* {level}단계 */}
-                  <span className="w-10 shrink-0">Level {item.ktasLevelCode}</span>
+                  <span className="w-10 shrink-0">Level {codeToNumber(item.ktasLevelCode)}</span>
                   <span className="shrink-0">{formatDateTime(item.assessedAt)}</span>
                   <span className="truncate text-slate-400">{item.reason}</span>
                 </li>

@@ -21,6 +21,7 @@ import {
   CONSENT_STATUS_DEFERRED,
   CONSENT_STATUS_FALLBACK_OPTIONS,
   CONSENT_STATUS_GROUP_CODE,
+  CONSENT_TYPE_ALLOWED,
   CONSENT_TYPE_FALLBACK_OPTIONS,
   CONSENT_TYPE_GROUP_CODE,
 } from "@/features/emergency/care/consent/types";
@@ -103,7 +104,9 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
       ? codes.filter((code) => code.useYn !== "N").map((code) => ({ value: code.codeValue, label: code.codeName }))
       : [...fallback];
 
-  const typeOptions = toOptions(typeCodes, CONSENT_TYPE_FALLBACK_OPTIONS);
+  const typeOptions = toOptions(typeCodes, CONSENT_TYPE_FALLBACK_OPTIONS).filter((o) =>
+    CONSENT_TYPE_ALLOWED.includes(o.value),
+  );
   const statusOptions = toOptions(statusCodes, CONSENT_STATUS_FALLBACK_OPTIONS);
   const byOptions = toOptions(byCodes, CONSENT_BY_FALLBACK_OPTIONS);
 

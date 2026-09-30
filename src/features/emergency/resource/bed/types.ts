@@ -36,31 +36,31 @@ export interface BedReleaseRequest {
   releasedById: string;
 }
 
-/** 공통코드 그룹 ZONE (docs/models.md 4장). admin 미연동 시 이 목록을 라벨 폴백으로 쓴다. */
-export const ZONE_GROUP_CODE = "ZONE";
+/** 공통코드 그룹 ZONE_CD. admin 에 그룹이 없을 때 이 목록을 라벨 폴백으로 쓴다(값은 숫자 2자리). */
+export const ZONE_GROUP_CODE = "ZONE_CD";
 
 export const BED_ZONE_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   // 소생
-  { value: "RESUS", label: "Resuscitation" },
+  { value: "01", label: "Resuscitation" },
   // 중증
-  { value: "CRITICAL", label: "Critical" },
+  { value: "02", label: "Critical" },
   // 응급
-  { value: "URGENT", label: "Urgent" },
+  { value: "03", label: "Urgent" },
   // 경증 신속진료
-  { value: "FAST_TRACK", label: "Fast Track" },
+  { value: "04", label: "Fast Track" },
   // 소아
-  { value: "PEDIATRIC", label: "Pediatric" },
+  { value: "05", label: "Pediatric" },
   // 격리
-  { value: "ISOLATION", label: "Isolation" },
+  { value: "06", label: "Isolation" },
 ];
 
 export const BED_TYPE_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   // 일반
-  { value: "GENERAL", label: "General" },
+  { value: "01", label: "General" },
   // 처치
-  { value: "TREATMENT", label: "Treatment" },
+  { value: "02", label: "Treatment" },
   // 격리실
-  { value: "ISOLATION_ROOM", label: "Isolation Room" },
+  { value: "03", label: "Isolation Room" },
 ];
 
 export interface BedState {

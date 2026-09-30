@@ -17,20 +17,20 @@ export interface DispositionCreateRequest {
   decidedById?: string;
 }
 
-/** 공통코드 그룹 DISPOSITION_TYPE (docs/models.md 4장). admin 미연동 시 폴백. */
-export const DISPOSITION_TYPE_GROUP_CODE = "DISPOSITION_TYPE";
+/** 공통코드 그룹 DISPOSITION_TYPE_CD. admin 에 그룹이 없을 때 폴백(값은 숫자 2자리). */
+export const DISPOSITION_TYPE_GROUP_CODE = "DISPOSITION_TYPE_CD";
 
 export const DISPOSITION_TYPE_FALLBACK_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   // 귀가
-  { value: "HOME", label: "Home" },
+  { value: "01", label: "Home" },
   // 입원
-  { value: "ADMIT", label: "Admit" },
+  { value: "02", label: "Admit" },
   // 전원
-  { value: "TRANSFER", label: "Transfer" },
+  { value: "03", label: "Transfer" },
   // 사망
-  { value: "DEATH", label: "Death" },
+  { value: "04", label: "Death" },
   // 자의퇴원
-  { value: "DAMA", label: "Discharge Against Medical Advice" },
+  { value: "05", label: "Discharge Against Medical Advice" },
 ];
 
 export interface DispositionState {

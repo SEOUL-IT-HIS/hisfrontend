@@ -2,6 +2,7 @@
 
 import { useSelector } from "react-redux";
 import KtasLevelBadge from "@/components/emergency/receptionList/KtasLevelBadge";
+import { SCREENING_RESULT, SCREENING_TYPE } from "@/features/emergency/codes";
 import { selectKtasItems } from "@/features/emergency/triage/ktas/slice";
 import { selectVitalsItems } from "@/features/emergency/triage/vitals/slice";
 import { selectIsolationItems } from "@/features/emergency/triage/isolation/slice";
@@ -65,10 +66,10 @@ export default function TriageSummaryBanner({ receptionNo: _receptionNo }: Triag
       )}
 
 
-      {latestRisk?.resultCode === "POSITIVE" ? (
+      {latestRisk?.resultCode === SCREENING_RESULT.POSITIVE ? (
         <span className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-600">
           {/* 패혈증 고위험 / 뇌졸중 의심 */}
-          {latestRisk.screeningTypeCode === "SEPSIS" ? "High Sepsis Risk" : "Stroke Suspected"}
+          {latestRisk.screeningTypeCode === SCREENING_TYPE.SEPSIS ? "High Sepsis Risk" : "Stroke Suspected"}
         </span>
       ) : null}
     </div>
