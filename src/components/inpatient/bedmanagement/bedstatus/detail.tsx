@@ -12,14 +12,12 @@ const STATUS_BADGE: Record<string, string> = {
     EMPTY: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
     OCCUPIED: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
     RESERVED: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
-    MAINTENANCE: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
 };
 
 const STATUS_LABEL: Record<string, string> = {
     EMPTY: "Empty",
     OCCUPIED: "Occupied",
     RESERVED: "Reserved",
-    MAINTENANCE: "Maintenance",
 };
 
 const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";

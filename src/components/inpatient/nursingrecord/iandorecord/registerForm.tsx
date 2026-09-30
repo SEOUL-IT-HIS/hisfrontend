@@ -2,20 +2,22 @@
 
 import { AppDispatch } from "@/store/store";
 import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createIandORecordRequest, selectIandORecordCreateStatus } from "@/features/inpatient/nursingrecord/iandorecord/slice";
+import { createIandORecordRequest, resetIandORecordCreateStatus, selectIandORecordCreateStatus } from "@/features/inpatient/nursingrecord/iandorecord/slice";
 
 const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 const IandORecordRegisterForm = () => {
     const router = useRouter();
+    // 간호기록 홈에서 환자를 선택하고 들어오면 ?admissionId=가 붙어 옴 → 입원 ID 자동 입력 + 수정 불가
+    const presetAdmissionId = useSearchParams().get("admissionId") ?? "";
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error, success } = useSelector(selectIandORecordCreateStatus);
 
     const [form, setForm] = useState({
-        admissionId: "",
+        admissionId: presetAdmissionId,
         recordedAt: "",
         ioTypeCd: "",
         routeCd: "",
@@ -41,10 +43,13 @@ const IandORecordRegisterForm = () => {
     };
 
     useEffect(() => {
-        if (success) {
-            router.push("/inpatient/nursingrecord/iandorecord/list");
-        }
-    }, [success, router]);
+        if (!success) return;
+        dispatch(resetIandORecordCreateStatus());
+        // 환자를 선택하고 들어왔으면 간호기록 홈의 그 환자·해당 탭으로, 아니면 기존처럼 단독 목록으로
+        router.push(presetAdmissionId
+            ? `/inpatient/nursingrecord?admissionId=${presetAdmissionId}&tab=iandorecord`
+            : "/inpatient/nursingrecord/iandorecord/list");
+    }, [success, router, dispatch, presetAdmissionId]);
 
     return (
         <div className="mx-auto w-full max-w-lg p-6">
@@ -59,7 +64,7 @@ const IandORecordRegisterForm = () => {
             <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div>
                     <label htmlFor="admissionId" className={LABEL}>Admission ID</label>
-                    <input type="text" id="admissionId" name="admissionId" value={form.admissionId} onChange={onChange} required className={FIELD} />
+                    <input type="text" id="admissionId" name="admissionId" value={form.admissionId} onChange={onChange} required readOnly={!!presetAdmissionId} className={`${FIELD} ${presetAdmissionId ? "bg-slate-50 text-slate-500" : ""}`} />
                 </div>
                 <div>
                     <label htmlFor="recordedAt" className={LABEL}>Recorded At</label>
