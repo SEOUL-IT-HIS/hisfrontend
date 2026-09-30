@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import {
+  clearPrescriptionState,
   createPrescriptionRequest,
   selectPrescriptionCreateStatus,
 } from "@/features/inpatient/medicationmanagement/prescription/slice";
@@ -37,9 +38,10 @@ const EMPTY_ITEM: ItemFormRow = {
 type PrescriptionRegisterFormProps = {
   admissionId: string;
   onSuccess?: () => void;
+  onCancel?: () => void;
 };
 
-const PrescriptionRegisterForm = ({ admissionId, onSuccess }: PrescriptionRegisterFormProps) => {
+const PrescriptionRegisterForm = ({ admissionId, onSuccess, onCancel }: PrescriptionRegisterFormProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error, success } = useSelector(selectPrescriptionCreateStatus);
 
@@ -50,6 +52,11 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess }: PrescriptionRegist
     timingCode: "",
   });
   const [items, setItems] = useState<ItemFormRow[]>([{ ...EMPTY_ITEM }]);
+
+  // 폼을 열 때 이전 요청의 에러 메시지를 지움 (다른 환자 폼에 이전 에러가 남지 않도록)
+  useEffect(() => {
+    dispatch(clearPrescriptionState());
+  }, [dispatch]);
 
   const onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -104,21 +111,34 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess }: PrescriptionRegist
     );
   };
 
+  // 요청 성공 처리 후 바로 success를 false로 되돌림
+  // → 안 되돌리면 success=true가 남아서, 다음에 폼을 다시 열자마자 이 effect가 실행돼 폼이 바로 닫힘
+  // 입력값 초기화는 하지 않음 — 성공하면 부모(PrescriptionRequestHome)가 폼을 닫고, 다시 열 때 새로 마운트됨
   useEffect(() => {
     if (!success) return;
-    setForm({ serviceType: "", orderMethod: "", priorityCode: "", timingCode: "" });
-    setItems([{ ...EMPTY_ITEM }]);
+    dispatch(clearPrescriptionState());
     onSuccess?.();
   }, [success]);
 
   return (
-    <div className="w-full max-w-2xl">
-      <div className="mb-6">
-        <h1 className="text-lg font-semibold text-slate-800">Register Prescription</h1>
-        <p className="mt-1 text-sm text-slate-500">Send a prescription request to the outpatient prescription core.</p>
+    <div className="w-full">
+      <div className="mb-4 flex items-start justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-800">New Prescription Request</h2>
+          <p className="mt-1 text-sm text-slate-500">Send a prescription request to the outpatient prescription core.</p>
+        </div>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+        )}
       </div>
 
-      {loading && <p className="mb-3 text-sm text-slate-500">Submitting...</p>}
+      {loading && <p className="mb-3 text-sm text-slate-500">Sending...</p>}
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
       <form onSubmit={onSubmit} className="space-y-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -210,7 +230,7 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess }: PrescriptionRegist
           disabled={loading}
           className="w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
         >
-          {loading ? "Submitting..." : "Register"}
+          {loading ? "Sending..." : "Send Request"}
         </button>
       </form>
     </div>

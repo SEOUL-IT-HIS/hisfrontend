@@ -11,11 +11,13 @@ import {
 
 type PrescriptionListProps = {
   admissionId: string;
+  /** 지금 선택된(상세가 열린) 처방 — 해당 행을 강조 표시 */
+  selectedPrescriptionId?: string | null;
   onSelectPrescription?: (prescriptionId: string) => void;
   onRegisterClick?: () => void;
 };
 
-const PrescriptionList = ({ admissionId, onSelectPrescription, onRegisterClick }: PrescriptionListProps) => {
+const PrescriptionList = ({ admissionId, selectedPrescriptionId, onSelectPrescription, onRegisterClick }: PrescriptionListProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const prescriptions = useSelector(selectPrescriptions);
   const listStatus = useSelector(selectPrescriptionListStatus);
@@ -28,13 +30,13 @@ const PrescriptionList = ({ admissionId, onSelectPrescription, onRegisterClick }
   return (
     <div className="w-full">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-800">Prescription List</h2>
+        <h2 className="text-sm font-semibold text-slate-800">Prescription Requests</h2>
         {onRegisterClick && (
           <button
             onClick={onRegisterClick}
             className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
           >
-            Register Prescription
+            New Request
           </button>
         )}
       </div>
@@ -59,7 +61,9 @@ const PrescriptionList = ({ admissionId, onSelectPrescription, onRegisterClick }
               {prescriptions.map((prescription) => (
                 <tr
                   key={prescription.prescriptionId}
-                  className="cursor-pointer hover:bg-slate-50"
+                  className={`cursor-pointer hover:bg-slate-50 ${
+                    selectedPrescriptionId === prescription.prescriptionId ? "bg-sky-50" : ""
+                  }`}
                   onClick={() => onSelectPrescription?.(prescription.prescriptionId)}
                 >
                   <td className="whitespace-nowrap px-4 py-3 font-medium text-sky-700">{prescription.prescriptionId}</td>
@@ -75,7 +79,7 @@ const PrescriptionList = ({ admissionId, onSelectPrescription, onRegisterClick }
             </tbody>
           </table>
           {prescriptions.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-slate-500">No prescription data available.</p>
+            <p className="px-4 py-6 text-center text-sm text-slate-500">No prescription requests for this admission.</p>
           )}
         </div>
       )}
