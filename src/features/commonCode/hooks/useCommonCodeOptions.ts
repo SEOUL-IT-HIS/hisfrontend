@@ -31,7 +31,7 @@ export function useCommonCodeOptions(groupCode: string) {
         const items = await fetchCommonCodeItemsByGroupCode(groupCode);
         setOptions(items.map((item) => ({ value: item.codeValue, label: item.codeName })));
       } catch (e) {
-        setError(e instanceof Error ? e.message : "공통코드를 불러오지 못했습니다.");
+        setError(e instanceof Error ? e.message : "Failed to load common codes.");
       } finally {
         setLoading(false);
       }

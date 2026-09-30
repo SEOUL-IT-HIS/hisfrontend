@@ -23,7 +23,7 @@ function* fetchRoleMenuSaga(action: ReturnType<typeof fetchRoleMenuRequest>) {
     yield put(fetchRoleMenuSuccess(roleMenus));
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "메뉴 권한 조회에 실패했습니다.";
+      error instanceof Error ? error.message : "Failed to load menu permissions.";
     yield put(fetchRoleMenuFailure(message));
   }
 }
@@ -42,7 +42,7 @@ function* fetchRoleMenuSaveSaga(action: ReturnType<typeof fetchRoleMenuSaveReque
     yield put(fetchRoleMenuSaveSuccess(roleMenus));
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "메뉴 권한 저장에 실패했습니다.";
+      error instanceof Error ? error.message : "Failed to save menu permissions.";
     yield put(fetchRoleMenuSaveFailure(message));
   }
 }

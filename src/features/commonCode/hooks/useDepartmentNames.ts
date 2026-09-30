@@ -22,7 +22,7 @@ export function useDepartmentNames() {
         setNames(Object.fromEntries(items.map((item) => [item.codeValue, item.codeName])));
         setError("");
       } catch (e) {
-        setError(e instanceof Error ? e.message : "진료과 공통코드를 불러오지 못했습니다.");
+        setError(e instanceof Error ? e.message : "Failed to load department codes.");
       } finally {
         setLoading(false);
       }

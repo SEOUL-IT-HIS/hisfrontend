@@ -105,6 +105,8 @@ export default function CommonCodeGroupUpdateForm({
           onCancel={onClose}
           submitLabel="Save"
           loading={loading}
+          loadingLabel="Saving…"
+          cancelLabel="Cancel"
         />
       </form>
     </div>
