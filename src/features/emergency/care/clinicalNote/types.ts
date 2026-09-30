@@ -23,8 +23,6 @@ export const NOTE_TYPE_OPTIONS: ReadonlyArray<{ value: string; label: string }> 
   { value: "REASSESSMENT", label: "Reassessment" },
   // 처치
   { value: "PROCEDURE", label: "Procedure" },
-  // 컨설트회신
-  { value: "CONSULT_REPLY", label: "Consult Reply" },
   // 퇴실요약
   { value: "DISCHARGE_SUMMARY", label: "Discharge Summary" },
 ];
