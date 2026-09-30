@@ -14,9 +14,10 @@ import PrescriptionList from "@/components/inpatient/medicationmanagement/prescr
 import PrescriptionDetail from "@/components/inpatient/medicationmanagement/prescription/detail";
 import PrescriptionRegisterForm from "@/components/inpatient/medicationmanagement/prescription/registerForm";
 
-// 처방 요청은 입원 중인 환자에게만 보낼 수 있음 (입원 대기/퇴원완료 건은 목록에서 제외)
-// 퇴원신청(DISCHARGE_REQUESTED) 상태도 아직 병동에 있는 환자라 포함
-const REQUESTABLE_STATUSES = ["ADMITTED", "DISCHARGE_REQUESTED"];
+// 처방 요청은 입원 중(ADMITTED)인 환자에게만 보낼 수 있음 (입원 대기/퇴원신청/퇴원완료 건은 목록에서 제외)
+// 퇴원신청(DISCHARGE_REQUESTED) 이후는 수납 청구가 이미 시작돼서 새 처방이 정산과 어긋날 수 있으므로 제외
+// (간호기록은 퇴원신청 환자도 포함 — 기준이 다름)
+const REQUESTABLE_STATUSES = ["ADMITTED"];
 
 const STATUS_LABEL: Record<string, string> = {
   ADMITTED: "Admitted",
