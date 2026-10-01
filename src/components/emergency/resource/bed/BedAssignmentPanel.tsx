@@ -8,6 +8,7 @@ import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   assignBedRequest,
   fetchBedsRequest,
+  fetchCurrentAssignmentRequest,
   releaseBedRequest,
   resetCurrentAssignment,
   selectBeds,
@@ -37,9 +38,9 @@ function zoneLabel(zoneCode: string): string {
  * 병상 배정 패널 (UC-RES-02)
  * - 병상 목록(getBeds)은 접수 건과 무관하게 응급실 전체 현황을 보여준다.
  * - 배정(assignBed)만 이 접수 건(receptionNo)에 연결된다.
- * - 백엔드에 "환자별 배정 이력 조회" API가 없어서, 방금 배정한 결과만
- *   세션 메모리(currentAssignment)로 보여준다. 새로고침하거나 환자를
- *   바꿨다가 돌아오면 다시 알 수 없다(알려진 한계, 위 대화에서 확인함).
+ * - 이 환자의 현재 배정(currentAssignment)은 환자를 고를 때마다 백엔드에서 불러온다
+ *   (GET /bed-assignments/current). 방금 배정한 결과도 같은 자리에 보인다.
+ * - 퇴실 처리가 끝나면 백엔드가 병상을 자동으로 해제한다(해제자 SYSTEM, 병상 EMPTY).
  */
 export default function BedAssignmentPanel({ receptionNo, className = "" }: BedAssignmentPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
@@ -58,9 +59,13 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
     dispatch(fetchBedsRequest());
   }, [dispatch]);
 
-  // 환자가 바뀌면 이전 환자의 "방금 배정한 병상" 표시를 지운다.
+  // 환자가 바뀌면 이전 환자의 배정 표시를 지우고, 그 환자의 현재 배정을 백엔드에서 다시 불러온다
+  // (새로고침하거나 환자를 바꿨다 돌아와도 Release 가 보이게).
   useEffect(() => {
     dispatch(resetCurrentAssignment());
+    if (receptionNo) {
+      dispatch(fetchCurrentAssignmentRequest(receptionNo));
+    }
   }, [dispatch, receptionNo]);
 
   // 폼 입력값 초기화는 렌더 중 비교로 처리한다 (다른 패널들과 동일한 패턴).
