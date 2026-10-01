@@ -14,7 +14,7 @@ import type { NextConfig } from "next";
 const adminApiOrigin =
   process.env.ADMIN_API_ORIGIN ?? "http://192.168.1.128:9191";
 const patientApiOrigin =
-  process.env.PATIENT_API_ORIGIN ?? "http://localhost:8087";
+  process.env.PATIENT_API_ORIGIN ?? "http://192.168.1.128:8087";
 const labImagingApiOrigin =
   process.env.LABIMAGING_API_ORIGIN ?? "http://localhost:8085";
 const inpatientApiOrigin =

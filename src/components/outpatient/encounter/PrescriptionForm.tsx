@@ -23,6 +23,28 @@ const TAB_LABELS: Record<OrderTab, string> = {
     "수술": "Surgery",    // 수술 처방
 };
 
+// 입력칸 위에 이름을 보여주는 라벨 (진료기록의 Chief Complaint 등과 같은 스타일)
+// 약품 검색 결과 목록 클릭이 input 포커스로 새지 않도록 <label> 로 감싸지 않고 div+label 로 구성
+function OrderField({
+    label,
+    required,
+    children,
+}: {
+    label: string;
+    required?: boolean;
+    children: React.ReactNode;
+}) {
+    return (
+        <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">
+                {label}
+                {required ? <span className="text-rose-500"> *</span> : null}
+            </label>
+            {children}
+        </div>
+    );
+}
+
 export default function PrescriptionForm({ items, onChange }: PrescriptionOrderPanelProps) {
     const [activeOrderTab, setActiveOrderTab] = useState<OrderTab>("약품");
 
@@ -148,18 +170,21 @@ export default function PrescriptionForm({ items, onChange }: PrescriptionOrderP
                     <>
                         <div className="grid grid-cols-2 gap-2 mb-3 sm:grid-cols-3">
                             <div className="relative">
-                                <Input
-                                    placeholder="Search drug by name"
-                                    value={drugSearchTerm}
-                                    onChange={(e) => handleDrugSearchChange(e.target.value)}
-                                    onFocus={() => {
-                                        if (drugSearchResults.length > 0) setShowDrugResults(true);
-                                    }}
-                                    onBlur={() => {
-                                        // 결과 클릭(onMouseDown)이 먼저 처리되도록 살짝 지연 후 닫기
-                                        setTimeout(() => setShowDrugResults(false), 150);
-                                    }}
-                                />
+                                <OrderField label="Drug Name" required>
+                                    <Input
+                                        // 약품명을 2글자 이상 입력하면 검색됩니다
+                                        placeholder="Type 2+ characters to search"
+                                        value={drugSearchTerm}
+                                        onChange={(e) => handleDrugSearchChange(e.target.value)}
+                                        onFocus={() => {
+                                            if (drugSearchResults.length > 0) setShowDrugResults(true);
+                                        }}
+                                        onBlur={() => {
+                                            // 결과 클릭(onMouseDown)이 먼저 처리되도록 살짝 지연 후 닫기
+                                            setTimeout(() => setShowDrugResults(false), 150);
+                                        }}
+                                    />
+                                </OrderField>
                                 {showDrugResults && drugSearchTerm.trim().length >= 2 && drugSearchResults.length > 0 && (
                                     <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
                                         {drugSearchResults.map((med) => (
@@ -185,35 +210,50 @@ export default function PrescriptionForm({ items, onChange }: PrescriptionOrderP
                                         </div>
                                     )}
                             </div>
-                            <Input
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                placeholder="Dose per administration"
-                                value={dosageQty}
-                                onChange={(e) => setDosageQty(e.target.value)}
-                            />
-                            <Select
-                                options={dosageFormOptions}
-                                placeholder={dosageFormOptionsLoading ? "Loading..." : "Dosage form"}
-                                value={selectedDosageFormCd}
-                                onChange={(e) => setSelectedDosageFormCd(e.target.value)}
-                            />
-                            <Input
-                                placeholder="Frequency (e.g., 3x/day)"
-                                value={frequency}
-                                onChange={(e) => setFrequency(e.target.value)}
-                            />
-                            <Input
-                                placeholder="Duration (days)"
-                                value={durationDays}
-                                onChange={(e) => setDurationDays(e.target.value)}
-                            />
-                            <Input
-                                placeholder="Instructions (optional)"
-                                value={detailInfo}
-                                onChange={(e) => setDetailInfo(e.target.value)}
-                            />
+                            <OrderField label="Dose per Administration" required>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    // 1회 투여량 (예: 1)
+                                    placeholder="e.g., 1"
+                                    value={dosageQty}
+                                    onChange={(e) => setDosageQty(e.target.value)}
+                                />
+                            </OrderField>
+                            <OrderField label="Dosage Form">
+                                <Select
+                                    options={dosageFormOptions}
+                                    // 투약 형태 선택 (정제, 캡슐 등)
+                                    placeholder={dosageFormOptionsLoading ? "Loading..." : "Select dosage form"}
+                                    value={selectedDosageFormCd}
+                                    onChange={(e) => setSelectedDosageFormCd(e.target.value)}
+                                />
+                            </OrderField>
+                            <OrderField label="Frequency">
+                                <Input
+                                    // 예: 하루 3회
+                                    placeholder="e.g., 3x/day"
+                                    value={frequency}
+                                    onChange={(e) => setFrequency(e.target.value)}
+                                />
+                            </OrderField>
+                            <OrderField label="Duration (Days)">
+                                <Input
+                                    // 예: 7일
+                                    placeholder="e.g., 7"
+                                    value={durationDays}
+                                    onChange={(e) => setDurationDays(e.target.value)}
+                                />
+                            </OrderField>
+                            <OrderField label="Instructions (Optional)">
+                                <Input
+                                    // 예: 식후 30분에 복용
+                                    placeholder="e.g., Take 30 minutes after meals"
+                                    value={detailInfo}
+                                    onChange={(e) => setDetailInfo(e.target.value)}
+                                />
+                            </OrderField>
                         </div>
                         <div className="mb-3">
                             <Button
@@ -265,15 +305,18 @@ export default function PrescriptionForm({ items, onChange }: PrescriptionOrderP
                     </>
                 ) : activeOrderTab === "검사" ? (
                     <>
-                        <div className="flex gap-2 mb-3">
-                            <Select
-                                options={labOptions}
-                                // 불러오는 중... / 검사 항목 선택
-                                placeholder={labOptionsLoading ? "Loading..." : "Select a lab test"}
-                                value={selectedLabCode}
-                                onChange={(e) => setSelectedLabCode(e.target.value)}
-                                className="max-w-xs"
-                            />
+                        <div className="flex items-end gap-2 mb-3">
+                            <div className="w-full max-w-xs">
+                                <OrderField label="Lab Test" required>
+                                    <Select
+                                        options={labOptions}
+                                        // 불러오는 중... / 검사 항목 선택
+                                        placeholder={labOptionsLoading ? "Loading..." : "Select a lab test"}
+                                        value={selectedLabCode}
+                                        onChange={(e) => setSelectedLabCode(e.target.value)}
+                                    />
+                                </OrderField>
+                            </div>
                             <Button variant="primary" onClick={handleAddLabItem} disabled={!selectedLabCode}>
                                 {/* 추가 */}
                                 Add

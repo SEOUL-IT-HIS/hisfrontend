@@ -109,7 +109,7 @@ const EncounterList = () => {
                     serviceType: "OP",
                     orderMethod: "EMR",
                     priorityCode: "03", // ADM 공통코드 ORDER_PRIORITY_CD 의 Routine
-                    timingCode: "ONCE",
+                    timingCode: "03", // ADM 공통코드 ORDER_TIMING_CD 의 Once
                     items: prescriptionItems,
                 },
             },
@@ -254,6 +254,7 @@ const EncounterList = () => {
                                     <label className="block text-sm font-semibold text-slate-700 mb-1">
                                         {/* 주호소 ( 내원 원인 ) */}
                                         Chief Complaint (Reason for Visit)
+                                        <span className="text-rose-500"> *</span>
                                     </label>
                                     <input
                                         type="text"
@@ -283,6 +284,7 @@ const EncounterList = () => {
                                     <label className="block text-sm font-semibold text-slate-700 mb-1">
                                         {/* 진단명 */}
                                         Diagnosis
+                                        <span className="text-rose-500"> *</span>
                                     </label>
                                     <textarea
                                         value={assessmentNote}
