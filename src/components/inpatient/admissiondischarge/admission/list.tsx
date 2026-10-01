@@ -11,7 +11,6 @@ import {
 import { fetchBedAssignmentsRequest, selectBedAssignments } from "@/features/inpatient/bedmanagement/bedassignment/slice"; // 병상배정 목록(다른 feature 슬라이스)
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice"; // 환자 목록(또 다른 feature 슬라이스, patient-service 쪽)
 import AdmissionDetail from "@/components/inpatient/admissiondischarge/admission/detail"; // 마스터-디테일의 "디테일" 쪽 컴포넌트
-import Link from "next/link"; // 페이지 이동용 링크 컴포넌트(a 태그의 Next.js 버전)
 const FILTERS = [
   { key: "all", label: "All" },
   { key: "needsAssignment", label: "Assignment Needed" },
@@ -126,13 +125,7 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
               </button>
             ))}
           </div>
-          {/* 등록 화면으로 이동하는 링크 — embedded 여부와 상관없이 항상 노출 */}
-          <Link
-            href="/inpatient/admissiondischarge/admission/create"
-            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-          >
-            Register Admission Request
-          </Link>
+          {/* 병동 직접 등록 폼은 제거함 — 입원요청은 응급에서 Kafka(emergency.admission.requested.v1)로만 들어옴 */}
         </div>
       </div>
 
