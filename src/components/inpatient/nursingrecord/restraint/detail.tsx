@@ -1,6 +1,8 @@
 "use client";
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
+import StaffSelect from "@/components/inpatient/nursingrecord/StaffSelect";
 import { RESTRAINT_TYPE_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
 import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
 import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
@@ -25,6 +27,8 @@ const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 const RestraintDetail = () => {
+    // 오더 의사 직원 ID(empId) → 의사 이름 (목록에 없는 예전 값은 그대로 표시)
+    const { nameById: doctorNameById } = useDoctorOptions();
     // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
     const { nameById: nurseNameById } = useNurseOptions();
     const dispatch = useDispatch();
@@ -141,8 +145,8 @@ const RestraintDetail = () => {
                                 <span className="text-slate-800">{restraint.reason}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">Doctor Order ID</span>
-                                <span className="text-slate-800">{restraint.doctorOrderId}</span>
+                                <span className="text-slate-500">Ordering Doctor</span>
+                                <span className="text-slate-800">{restraint.doctorOrderId ? doctorNameById.get(restraint.doctorOrderId) ?? restraint.doctorOrderId : "-"}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Evaluator ID</span>
@@ -174,8 +178,8 @@ const RestraintDetail = () => {
                             <input type="text" id="reason" name="reason" value={editForm.reason} onChange={onEditChange} className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="doctorOrderId" className={LABEL}>Doctor Order ID</label>
-                            <input type="text" id="doctorOrderId" name="doctorOrderId" value={editForm.doctorOrderId} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="doctorOrderId" className={LABEL}>Ordering Doctor</label>
+                            <StaffSelect role="DOCTOR" id="doctorOrderId" name="doctorOrderId" value={editForm.doctorOrderId} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
                             <label htmlFor="evaluatorId" className={LABEL}>Evaluator (Nurse)</label>

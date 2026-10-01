@@ -1,6 +1,7 @@
 "use client";
 
 import { AppDispatch, RootState } from "@/store/store";
+import StaffSelect from "@/components/inpatient/nursingrecord/StaffSelect";
 import { RESTRAINT_TYPE_OPTIONS } from "@/features/inpatient/nursingrecord/codes";
 import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
 import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
@@ -86,8 +87,8 @@ const RestraintRegisterForm = () => {
                     <input type="text" id="reason" name="reason" value={form.reason} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="doctorOrderId" className={LABEL}>Doctor Order ID</label>
-                    <input type="text" id="doctorOrderId" name="doctorOrderId" value={form.doctorOrderId} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="doctorOrderId" className={LABEL}>Ordering Doctor</label>
+                    <StaffSelect role="DOCTOR" id="doctorOrderId" name="doctorOrderId" value={form.doctorOrderId} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
                     <label htmlFor="evaluatorId" className={LABEL}>Evaluator (Nurse)</label>
