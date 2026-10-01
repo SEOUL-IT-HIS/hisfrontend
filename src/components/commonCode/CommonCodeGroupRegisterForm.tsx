@@ -103,6 +103,8 @@ export default function CommonCodeGroupRegisterForm({
           onCancel={onClose}
           submitLabel="Register"
           loading={loading}
+          loadingLabel="Saving…"
+          cancelLabel="Cancel"
         />
       </form>
     </div>

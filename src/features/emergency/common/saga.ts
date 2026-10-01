@@ -8,6 +8,14 @@ import commonCodeSaga from "@/features/emergency/commonCode/saga";
 import receptionListSaga from "@/features/emergency/receptionList/saga";
 import bedSaga from "@/features/emergency/resource/bed/saga";
 import clinicalNoteSaga from "@/features/emergency/care/clinicalNote/saga";
+import consentSaga from "@/features/emergency/care/consent/saga";
+import treatmentSaga from "@/features/emergency/care/treatment/saga";
+import medicationSaga from "@/features/emergency/care/medication/saga";
+import cprSaga from "@/features/emergency/care/cpr/saga";
+import dispositionSaga from "@/features/emergency/disposition/saga";
+import dispositionFollowUpSaga from "@/features/emergency/disposition/followup/saga";
+import congestionSaga from "@/features/emergency/resource/congestion/saga";
+import dashboardSaga from "@/features/emergency/monitor/saga";
 
 /**
  * emergency 도메인 결합 saga
@@ -24,5 +32,13 @@ export default function* emergencySaga() {
     fork(receptionListSaga),
     fork(bedSaga),
     fork(clinicalNoteSaga),
+    fork(consentSaga),
+    fork(treatmentSaga),
+    fork(medicationSaga),
+    fork(cprSaga),
+    fork(dispositionSaga),
+    fork(dispositionFollowUpSaga),
+    fork(congestionSaga),
+    fork(dashboardSaga),
   ]);
 }

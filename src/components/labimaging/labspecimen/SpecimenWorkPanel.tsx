@@ -19,8 +19,10 @@ import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeO
 import { resolveLabSpecimenMessage } from "@/features/labimaging/labspecimen/messages";
 import {
   createSpecimenRequest,
+  fetchAllowedSpecimenRulesRequest,
   fetchSpecimensRequest,
   resetSpecimenState,
+  selectAllowedSpecimenRules,
   selectLastCreatedSpecimen,
   selectSpecimenCreateError,
   selectSpecimenCreating,
@@ -77,9 +79,20 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
   const creating = useSelector(selectSpecimenCreating);
   const createError = useSelector(selectSpecimenCreateError);
   const lastCreated = useSelector(selectLastCreatedSpecimen);
+  /** 이 접수의 오더 검사항목들이 허용하는 검체·검체용기 조합 (6차 2-1). 비어 있으면 제한 없음. */
+  const allowedRules = useSelector(selectAllowedSpecimenRules);
 
   // 검체용기코드는 admin 공통코드다. (검체종류는 서비스 내부 Enum 이라 상수 목록을 쓴다)
   const containerCodes = useCommonCodeOptions("SPECIMEN_CONTAINER_CD");
+
+  const hasRules = allowedRules.length > 0;
+  /** 허용 규칙이 있으면 그 검사들의 검체종류만, 없으면 전부 보여준다. */
+  const allowedTypes: SpecimenType[] = hasRules
+    ? Array.from(new Set(allowedRules.map((r) => r.specimenType)))
+    : SPECIMEN_TYPE_OPTIONS.map((o) => o.value);
+  const typeOptions = hasRules
+    ? SPECIMEN_TYPE_OPTIONS.filter((o) => allowedTypes.includes(o.value))
+    : SPECIMEN_TYPE_OPTIONS;
 
   /*
    * ⚠ 채취는 환자를 잘못 고르면 되돌릴 수 없는 작업이다.
@@ -90,11 +103,42 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
 
-  // 선택한 접수가 바뀌면 이전 접수의 목록/결과를 비우고 새로 불러온다.
+  // 선택한 접수가 바뀌면 이전 접수의 목록/결과/허용조합을 비우고 새로 불러온다.
   useEffect(() => {
     dispatch(resetSpecimenState());
     dispatch(fetchSpecimensRequest(reception.receptionNo));
+    dispatch(fetchAllowedSpecimenRulesRequest(reception.receptionNo));
   }, [dispatch, reception.receptionNo]);
+
+  /**
+   * 검체종류 → 검체용기 연쇄선택 (6차 2-1).
+   *
+   * ⚠ form 을 직접 고쳐 쓰지 않고(effect + setState) 렌더링 중에 "지금 실제로 쓸 값"을 파생시킨다.
+   *   form.specimenType 이 규칙에 없는 값(접수가 막 바뀌었거나 규칙이 막 도착한 순간)이면
+   *   effectiveSpecimenType 이 허용 목록의 첫 값으로, form.specimenContainerCode 가 그 종류의
+   *   허용 용기가 아니면 effectiveSpecimenContainerCode 가 기본값(defaultYn="Y")으로 대신한다.
+   *   규칙이 없으면(hasRules=false) 원래 form 값을 그대로 쓴다 — 예전처럼 아무 조합이나 고를 수 있다.
+   */
+  const effectiveSpecimenType: SpecimenType =
+    hasRules && !allowedTypes.includes(form.specimenType) ? allowedTypes[0] : form.specimenType;
+
+  const rulesForSelectedType = hasRules
+    ? allowedRules.filter((r) => r.specimenType === effectiveSpecimenType)
+    : [];
+
+  const effectiveSpecimenContainerCode =
+    rulesForSelectedType.length > 0 &&
+    !rulesForSelectedType.some((r) => r.specimenContainerCode === form.specimenContainerCode)
+      ? (rulesForSelectedType.find((r) => r.defaultYn === "Y") ?? rulesForSelectedType[0])
+          .specimenContainerCode
+      : form.specimenContainerCode;
+
+  const containerOptions =
+    rulesForSelectedType.length > 0
+      ? containerCodes.options.filter((opt) =>
+          rulesForSelectedType.some((r) => r.specimenContainerCode === opt.value),
+        )
+      : containerCodes.options;
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -103,7 +147,8 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!form.specimenContainerCode) next.specimenContainerCode = "Specimen container is required.";
+    if (!effectiveSpecimenContainerCode)
+      next.specimenContainerCode = "Specimen container is required.";
     if (!form.collectedAt) next.collectedAt = "Collection date and time is required.";
     if (!signedIn) next.collectedById = "Sign in to record this action.";
     return next;
@@ -121,8 +166,8 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
       createSpecimenRequest(
         {
           labReceptionId: reception.labReceptionId,
-          specimenContainerCode: form.specimenContainerCode,
-          specimenType: form.specimenType,
+          specimenContainerCode: effectiveSpecimenContainerCode,
+          specimenType: effectiveSpecimenType,
           patientId: reception.patientId,
           collectedAt: form.collectedAt,
           collectedById: actorId,
@@ -201,9 +246,9 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
           <FormField label="Specimen Container" required>
             <Select
               name="specimenContainerCode"
-              value={form.specimenContainerCode}
+              value={effectiveSpecimenContainerCode}
               onChange={handleChange}
-              options={containerCodes.options}
+              options={containerOptions}
               placeholder={containerCodes.loading ? "Loading..." : "Select"}
               disabled={creating || containerCodes.loading}
             />
@@ -215,9 +260,9 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
           <FormField label="Specimen Type" required>
             <Select
               name="specimenType"
-              value={form.specimenType}
+              value={effectiveSpecimenType}
               onChange={handleChange}
-              options={[...SPECIMEN_TYPE_OPTIONS]}
+              options={[...typeOptions]}
               disabled={creating}
             />
           </FormField>

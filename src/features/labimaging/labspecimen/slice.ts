@@ -3,6 +3,7 @@ import type {
   SpecimenAcceptanceRequest,
   SpecimenAcceptanceSummary,
   SpecimenCreateRequest,
+  SpecimenRule,
   SpecimenState,
   SpecimenSummary,
 } from "@/features/labimaging/labspecimen/types";
@@ -27,6 +28,10 @@ const initialState: SpecimenState = {
   barcodeLookupLoading: false,
   barcodeLookupError: "",
   barcodeLookupResult: null,
+
+  allowedRules: [],
+  allowedRulesLoading: false,
+  allowedRulesError: "",
 };
 
 const specimenSlice = createSlice({
@@ -152,6 +157,27 @@ const specimenSlice = createSlice({
       state.lastAccepted = null;
       state.barcodeLookupError = "";
       state.barcodeLookupResult = null;
+      state.allowedRules = [];
+      state.allowedRulesError = "";
+    },
+
+    // ---------- 허용 검체·검체용기 조합 조회 (6차 2-1) ----------
+    fetchAllowedSpecimenRulesRequest: {
+      reducer(state) {
+        state.allowedRulesLoading = true;
+        state.allowedRulesError = "";
+      },
+      prepare(receptionNo: string) {
+        return { payload: receptionNo };
+      },
+    },
+    fetchAllowedSpecimenRulesSuccess(state, action: PayloadAction<SpecimenRule[]>) {
+      state.allowedRulesLoading = false;
+      state.allowedRules = action.payload;
+    },
+    fetchAllowedSpecimenRulesFailure(state, action: PayloadAction<string>) {
+      state.allowedRulesLoading = false;
+      state.allowedRulesError = action.payload;
     },
   },
 });
@@ -171,6 +197,9 @@ export const {
   lookupSpecimenByBarcodeFailure,
   resetBarcodeLookup,
   resetSpecimenState,
+  fetchAllowedSpecimenRulesRequest,
+  fetchAllowedSpecimenRulesSuccess,
+  fetchAllowedSpecimenRulesFailure,
 } = specimenSlice.actions;
 
 export default specimenSlice.reducer;
@@ -205,3 +234,10 @@ export const selectBarcodeLookupError = (s: SpecimenRoot) =>
   s.labImaging.labspecimen.barcodeLookupError;
 export const selectBarcodeLookupResult = (s: SpecimenRoot) =>
   s.labImaging.labspecimen.barcodeLookupResult;
+
+export const selectAllowedSpecimenRules = (s: SpecimenRoot) =>
+  s.labImaging.labspecimen.allowedRules;
+export const selectAllowedSpecimenRulesLoading = (s: SpecimenRoot) =>
+  s.labImaging.labspecimen.allowedRulesLoading;
+export const selectAllowedSpecimenRulesError = (s: SpecimenRoot) =>
+  s.labImaging.labspecimen.allowedRulesError;

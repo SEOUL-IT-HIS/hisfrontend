@@ -15,26 +15,26 @@ export interface RiskScreening {
 /** 백엔드 RiskScreeningCreateRequestDto 미러링 */
 export interface RiskScreeningCreateRequest {
   encounterId: string;
-  screenType: "SEPSIS" | "STROKE";
+  screenType: string;
   score?: number;
-  resultCode?: "NEGATIVE" | "POSITIVE" | "INCONCLUSIVE";
+  resultCode?: string;
   screenedById?: string;
 }
 
-export const SCREEN_TYPE_OPTIONS: ReadonlyArray<{ value: "SEPSIS" | "STROKE"; label: string }> = [
+export const SCREEN_TYPE_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   // 패혈증
-  { value: "SEPSIS", label: "Sepsis" },
+  { value: "01", label: "Sepsis" },
   // 뇌졸중
-  { value: "STROKE", label: "Stroke" },
+  { value: "02", label: "Stroke" },
 ];
 
-export const SCREEN_RESULT_OPTIONS: ReadonlyArray<{ value: "NEGATIVE" | "POSITIVE" | "INCONCLUSIVE"; label: string }> = [
+export const SCREEN_RESULT_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   // 음성
-  { value: "NEGATIVE", label: "Negative" },
+  { value: "01", label: "Negative" },
   // 양성
-  { value: "POSITIVE", label: "Positive" },
+  { value: "02", label: "Positive" },
   // 판정보류
-  { value: "INCONCLUSIVE", label: "Inconclusive" },
+  { value: "03", label: "Inconclusive" },
 ];
 
 export interface RiskScreeningState {

@@ -1,6 +1,10 @@
 "use client";
 
-import { AppDispatch } from "@/store/store";
+import { AppDispatch, RootState } from "@/store/store";
+import StaffSelect from "@/components/inpatient/nursingrecord/StaffSelect";
+import { RESTRAINT_TYPE_OPTIONS } from "@/features/inpatient/nursingrecord/codes";
+import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
+import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,16 +20,20 @@ const RestraintRegisterForm = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error, success } = useSelector(selectRestraintCreateStatus);
 
+    // 기록자 기본값 = 로그인한 사용자(간호사). 다른 간호사로 바꿀 수 있음
+
+    const loginEmpId = useSelector((state: RootState) => state.auth.user?.empId ?? "");
+
     const [form, setForm] = useState({
         admissionId: presetAdmissionId,
         restraintTypeCd: "",
         appliedAt: "",
         reason: "",
         doctorOrderId: "",
-        evaluatorId: "",
+        evaluatorId: loginEmpId,
     });
 
-    const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setForm((prevForm) => ({ ...prevForm, [name]: value }));
     };
@@ -67,8 +75,8 @@ const RestraintRegisterForm = () => {
                     <input type="text" id="admissionId" name="admissionId" value={form.admissionId} onChange={onChange} required readOnly={!!presetAdmissionId} className={`${FIELD} ${presetAdmissionId ? "bg-slate-50 text-slate-500" : ""}`} />
                 </div>
                 <div>
-                    <label htmlFor="restraintTypeCd" className={LABEL}>Restraint Type Code</label>
-                    <input type="text" id="restraintTypeCd" name="restraintTypeCd" value={form.restraintTypeCd} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="restraintTypeCd" className={LABEL}>Restraint Type</label>
+                    <CodeSelect id="restraintTypeCd" name="restraintTypeCd" value={form.restraintTypeCd} options={RESTRAINT_TYPE_OPTIONS} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
                     <label htmlFor="appliedAt" className={LABEL}>Applied At</label>
@@ -79,12 +87,12 @@ const RestraintRegisterForm = () => {
                     <input type="text" id="reason" name="reason" value={form.reason} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="doctorOrderId" className={LABEL}>Doctor Order ID</label>
-                    <input type="text" id="doctorOrderId" name="doctorOrderId" value={form.doctorOrderId} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="doctorOrderId" className={LABEL}>Ordering Doctor</label>
+                    <StaffSelect role="DOCTOR" id="doctorOrderId" name="doctorOrderId" value={form.doctorOrderId} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="evaluatorId" className={LABEL}>Evaluator ID</label>
-                    <input type="text" id="evaluatorId" name="evaluatorId" value={form.evaluatorId} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="evaluatorId" className={LABEL}>Evaluator (Nurse)</label>
+                    <NurseSelect id="evaluatorId" name="evaluatorId" value={form.evaluatorId} onChange={onChange} className={FIELD} />
                 </div>
                 <button
                     type="submit"

@@ -6,7 +6,7 @@ export interface TriageAssessment {
   id: string;
   receptionId: string;
   ktasLevelCode: string;
-  /** "INITIAL" | "REASSESS" */
+  /** "01"(최초) | "02"(재평가) — 공통코드 ER_ASSESSMENT_TYPE_CD */
   assessmentTypeCode: string;
   assessedById: string;
   assessedAt: string;
@@ -31,20 +31,20 @@ export interface KtasUpdateRequest {
 }
 
 /**
- * KTAS 등급 선택 옵션 — 공통코드(commonCode) 캐시에 KTAS_LEVEL 그룹이 없을 때만 쓰는 폴백.
+ * KTAS 등급 선택 옵션 — 공통코드(commonCode) 캐시에 TRIAGE_CD 그룹이 없을 때만 쓰는 폴백(값은 01~05).
  * 평소엔 features/emergency/commonCode 가 서버 기동 시 admin 에서 캐싱해온 값을 우선 쓴다.
  */
 export const KTAS_LEVEL_FALLBACK_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   // 1단계 (소생)
-  { value: "1", label: "Level 1 (Resuscitation)" },
+  { value: "01", label: "Level 1 (Resuscitation)" },
   // 2단계 (긴급)
-  { value: "2", label: "Level 2 (Emergency)" },
+  { value: "02", label: "Level 2 (Emergency)" },
   // 3단계 (응급)
-  { value: "3", label: "Level 3 (Urgent)" },
+  { value: "03", label: "Level 3 (Urgent)" },
   // 4단계 (준응급)
-  { value: "4", label: "Level 4 (Less Urgent)" },
+  { value: "04", label: "Level 4 (Less Urgent)" },
   // 5단계 (비응급)
-  { value: "5", label: "Level 5 (Non-Urgent)" },
+  { value: "05", label: "Level 5 (Non-Urgent)" },
 ];
 
 export interface KtasState {

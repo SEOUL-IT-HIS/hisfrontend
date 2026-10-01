@@ -1,11 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
 import BillingDetailSearchForm from "@/components/billing/detail/BillingDetailSearchForm";
 import BillingDetailSearchDetail from "@/components/billing/detail/BillingDetailSearchDetail";
+import { resetBillingDetail } from "@/features/billing/searchBillingDetail/slice";
+import { resetPayment } from "@/features/billing/payment/slice";
+import type { AppDispatch } from "@/store/store";
 
 export default function BillingDetailWorkspace() {
+  const dispatch = useDispatch<AppDispatch>();
   const [selectedBillingId, setSelectedBillingId] = useState<string | null>(null);
+
+  // redux store는 페이지를 이동해도 유지되므로, 화면을 떠날 때 검색 결과/상세/결제 상태를 비운다.
+  // (안 하면 다시 들어왔을 때 입력창은 빈칸인데 이전 검색 결과가 그대로 보임)
+  useEffect(() => {
+    return () => {
+      dispatch(resetBillingDetail());
+      dispatch(resetPayment());
+    };
+  }, [dispatch]);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">

@@ -4,6 +4,7 @@ import type {
   SpecimenAcceptanceRequest,
   SpecimenAcceptanceSummary,
   SpecimenCreateRequest,
+  SpecimenRule,
   SpecimenSummary,
 } from "@/features/labimaging/labspecimen/types";
 
@@ -88,6 +89,23 @@ export async function acceptSpecimen(
   const { data } = await apiClient.post<ApiResponse<SpecimenAcceptanceSummary>>(
     `${SPECIMEN_PATH}/${encodeURIComponent(specimenId)}/acceptance`,
     request,
+  );
+  return data.data;
+}
+
+/**
+ * 이 접수의 오더 검사항목들이 허용하는 검체·검체용기 조합을 조회한다. (6차 2-1)
+ * GET /api/lab-imaging/specimens/rules?receptionNo={receptionNo}
+ *
+ * ⚠ 빈 배열이면 "규칙이 없어 아무 조합이나 허용"을 뜻한다 — 서버가 막지 않는다(WARN 만 남긴다).
+ *   화면은 그때 검체종류·용기 선택지를 예전처럼 전부 보여준다.
+ */
+export async function fetchAllowedSpecimenRules(
+  receptionNo: string,
+): Promise<SpecimenRule[]> {
+  const { data } = await apiClient.get<ApiResponse<SpecimenRule[]>>(
+    `${SPECIMEN_PATH}/rules`,
+    { params: { receptionNo } },
   );
   return data.data;
 }

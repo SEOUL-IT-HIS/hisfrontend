@@ -1,12 +1,14 @@
 "use client";
 
-import { fetchAdmissionDetailRequest, changeStatusRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { fetchAdmissionDetailRequest, changeStatusRequest, changeDoctorRequest, selectAdmissionChangeDoctorStatus } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchBedAssignmentsRequest, selectBedAssignments } from "@/features/inpatient/bedmanagement/bedassignment/slice";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
+import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 
 import { RootState } from "@/store/store";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 // 입원 상태(admission.status) → 배지 색상
@@ -38,6 +40,97 @@ type AdmissionDetailProps = {
   onClose?: () => void;
 };
 
+// 담당의(주치의) 표시 + 지정/변경
+// - 처방요청 시 이 값이 처방의사(prescribedBy)로 외래에 전달되므로, 비어 있으면 빨간색으로 강조
+// - 부모가 key={admissionId + doctorId}로 그려서, 저장이 끝나 값이 바뀌면 이 컴포넌트가 새로 그려지며 입력 상태가 초기화됨
+const DoctorRow = ({ admissionId, doctorId, editable }: { admissionId: string; doctorId: string | null; editable: boolean }) => {
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector(selectAdmissionChangeDoctorStatus);
+  // admin에 등록된 의사(역할이 의사인 직원) 목록 — 값은 empId, 화면에는 이름
+  const { doctors, nameById, loading: doctorsLoading } = useDoctorOptions();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(doctorId ?? "");
+  // 의사 목록을 못 불러오면(로그인 세션 문제, 의사 역할 미등록 등) 직접 입력으로 대체
+  const useManualInput = !doctorsLoading && doctors.length === 0;
+  const doctorLabel = doctorId ? nameById.get(doctorId) ?? doctorId : null; // 예전 값(D22 등)은 그대로 표시
+
+  const onSave = () => {
+    if (!value.trim()) return;
+    dispatch(changeDoctorRequest({ admissionId, doctorId: value.trim() }));
+  };
+
+  return (
+    <div className="border-b border-slate-100 px-4 py-3 text-sm">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-slate-500">Doctor ID</span>
+        {!editing && (
+          <span className="flex items-center gap-2">
+            {doctorLabel ? (
+              <span className="text-slate-800">{doctorLabel}</span>
+            ) : (
+              <span className="font-medium text-rose-600">Not assigned</span>
+            )}
+            {editable && (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="rounded-md border border-slate-200 px-2 py-0.5 text-xs text-slate-600 hover:bg-slate-50"
+              >
+                {doctorId ? "Change" : "Assign"}
+              </button>
+            )}
+          </span>
+        )}
+      </div>
+      {editing && (
+        <div className="mt-2 flex gap-2">
+          {useManualInput ? (
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="Doctor ID (doctor list unavailable)"
+              className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            />
+          ) : (
+            <select
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            >
+              <option value="">{doctorsLoading ? "Loading doctors..." : "Select doctor"}</option>
+              {doctors.map((d) => (
+                <option key={d.empId} value={d.empId}>
+                  {d.empName} ({d.empNo}{d.deptCode ? ` · ${d.deptCode}` : ""})
+                </option>
+              ))}
+            </select>
+          )}
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={loading || !value.trim()}
+            className="shrink-0 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+          >
+            {loading ? "Saving..." : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+      {editing && error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {!doctorId && !editing && editable && (
+        <p className="mt-1 text-xs text-rose-600">Assign an attending doctor before requesting prescriptions.</p>
+      )}
+    </div>
+  );
+};
+
 const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDetailProps = {}) => {
   const dispatch = useDispatch();
   // 목록 옆 마스터-디테일로 쓸 때는 prop(admissionIdProp)으로,
@@ -59,6 +152,13 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
   // 있으면 이미 병상이 배정된 상태로 간주
   const hasActiveBedAssignment = bedAssignments.some(
     (ba) => ba.admissionId === admissionId && ba.releasedAt === null
+  );
+
+  // 응급 요청의 희망 병동(WARD_CD 코드값) → 병동명. 공통코드를 못 불러오면 코드값 그대로 표시
+  const { options: wardOptions } = useCommonCodeOptions("WARD_CD");
+  const wardNameByCd = useMemo(
+    () => new Map(wardOptions.map((opt) => [opt.value, opt.label])),
+    [wardOptions],
   );
 
   return (
@@ -114,10 +214,12 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
                 <span className="text-slate-500">Patient ID</span>
                 <span className="text-slate-800">{admission.patientId}</span>
               </div>
-              <div className={INFO_ROW}>
-                <span className="text-slate-500">Doctor ID</span>
-                <span className="text-slate-800">{admission.doctorId}</span>
-              </div>
+              <DoctorRow
+                key={`${admission.admissionId}-${admission.doctorId ?? ""}`}
+                admissionId={admission.admissionId}
+                doctorId={admission.doctorId}
+                editable={admission.status !== "DISCHARGED"}
+              />
               <div className={INFO_ROW}>
                 <span className="text-slate-500">Created At</span>
                 <span className="text-slate-800">{admission.createdAt}</span>
@@ -128,6 +230,50 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
               </div>
             </div>
           </div>
+
+          {/* 응급 입원요청 정보 카드 — 응급(Kafka)에서 들어온 건(dispositionId 있음)만 표시
+              병상 배정 전에 보고 판단하도록 Next Step 카드보다 위에 둠
+              (배정하면 그 병동/병상이 응급으로 바로 회신되므로, 격리·희망 병동을 먼저 확인해야 함) */}
+          {admission.dispositionId && (
+            <div className="overflow-hidden rounded-xl border border-rose-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-rose-100 bg-rose-50 px-4 py-3">
+                <span className="text-sm font-medium text-rose-800">Emergency Request</span>
+                {admission.isolationYn === "Y" && (
+                  <span className="inline-flex items-center rounded-full bg-rose-600 px-2.5 py-1 text-xs font-medium text-white">
+                    Isolation Required
+                  </span>
+                )}
+              </div>
+              <div>
+                <div className={INFO_ROW}>
+                  <span className="text-slate-500">Isolation</span>
+                  <span className={admission.isolationYn === "Y" ? "font-medium text-rose-700" : "text-slate-800"}>
+                    {admission.isolationYn === "Y" ? "Required" : "Not required"}
+                  </span>
+                </div>
+                <div className={INFO_ROW}>
+                  <span className="text-slate-500">Preferred Ward</span>
+                  <span className="text-slate-800">
+                    {admission.wardPref ? wardNameByCd.get(admission.wardPref) ?? admission.wardPref : "-"}
+                  </span>
+                </div>
+                <div className={INFO_ROW}>
+                  <span className="text-slate-500">Requested By</span>
+                  <span className="text-slate-800">{admission.requestedBy ?? "-"}</span>
+                </div>
+                <div className={INFO_ROW}>
+                  <span className="text-slate-500">ER Encounter ID</span>
+                  <span className="text-slate-800">{admission.encounterId ?? "-"}</span>
+                </div>
+                {admission.note && (
+                  <div className="border-b border-slate-100 px-4 py-3 text-sm last:border-b-0">
+                    <p className="mb-1 text-slate-500">Note</p>
+                    <p className="whitespace-pre-wrap text-slate-800">{admission.note}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* "다음 단계" 카드 — 이미 퇴원 완료된 건은 더 진행할 액션이 없으므로 카드 자체를 숨김 */}
           {admission.status !== "DISCHARGED" && (

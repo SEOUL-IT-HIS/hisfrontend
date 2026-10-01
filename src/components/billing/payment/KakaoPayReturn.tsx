@@ -9,7 +9,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { kakaoPayApproveRequest } from "@/features/billing/payment/slice";
+import { kakaoPayApproveRequest, resetPayment } from "@/features/billing/payment/slice";
 import type { AppDispatch, RootState } from "@/store/store";
 import { Alert, Button } from "@/components/common";
 
@@ -53,7 +53,13 @@ const KakaoPayReturn = () => {
       {success ? (
         <>
           <Alert variant="success">Payment completed successfully.</Alert>
-          <Button variant="primary" onClick={() => router.push("/billing/payment")}>
+          <Button
+            variant="primary"
+            onClick={() => {
+              dispatch(resetPayment()); // 결제 완료 상태를 남긴 채 돌아가면 다음 결제창이 "완료" 상태로 열림
+              router.push("/billing/payment");
+            }}
+          >
             Back to Payment
           </Button>
         </>

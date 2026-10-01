@@ -11,7 +11,7 @@ import {
 import { fetchBedAssignmentsRequest, selectBedAssignments } from "@/features/inpatient/bedmanagement/bedassignment/slice"; // 병상배정 목록(다른 feature 슬라이스)
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice"; // 환자 목록(또 다른 feature 슬라이스, patient-service 쪽)
 import AdmissionDetail from "@/components/inpatient/admissiondischarge/admission/detail"; // 마스터-디테일의 "디테일" 쪽 컴포넌트
-import Link from "next/link"; // 페이지 이동용 링크 컴포넌트(a 태그의 Next.js 버전)
+import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 const FILTERS = [
   { key: "all", label: "All" },
   { key: "needsAssignment", label: "Assignment Needed" },
@@ -52,6 +52,8 @@ type AdmissionListProps = {
 // { embedded = false }: 구조분해 + 기본값. props를 아예 안 넘기고 <AdmissionList />로 불러도
 // 에러 안 나게 매개변수 자체에도 기본값(= {})을 줌
 const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
+  // 담당의 ID(empId) → 의사 이름 (admin 의사 목록). 목록에 없는 예전 값은 ID 그대로 표시
+  const { nameById: doctorNameById } = useDoctorOptions();
   const dispatch = useDispatch<AppDispatch>(); // 액션을 스토어(사가)로 보내는 함수
   const admissions = useSelector(selectAdmissions); // 입원 목록 배열 (초기엔 빈 배열)
   const listStatus = useSelector(selectAdmissionListStatus); // { loading, error }
@@ -126,13 +128,7 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
               </button>
             ))}
           </div>
-          {/* 등록 화면으로 이동하는 링크 — embedded 여부와 상관없이 항상 노출 */}
-          <Link
-            href="/inpatient/admissiondischarge/admission/create"
-            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-          >
-            Register Admission Request
-          </Link>
+          {/* 병동 직접 등록 폼은 제거함 — 입원요청은 응급에서 Kafka(emergency.admission.requested.v1)로만 들어옴 */}
         </div>
       </div>
 
@@ -174,10 +170,18 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
                       {patientNameById.get(admission.patientId) ?? "Looking up..."}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDeptId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionRoute}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                      {admission.admissionRoute}
+                      {/* 응급 요청 중 격리가 필요한 건은 목록에서도 바로 보이게 표시 (배정 전 확인용) */}
+                      {admission.isolationYn === "Y" && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-200">
+                          Isolation
+                        </span>
+                      )}
+                    </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDate}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.patientId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.doctorId}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.doctorId ? doctorNameById.get(admission.doctorId) ?? admission.doctorId : "-"}</td>
                     <td className="whitespace-nowrap px-4 py-3">
                       {/* STATUS_BADGE/LABEL에 없는 값이 오더라도(예상 못한 상태값) 깨지지 않게 기본 회색 스타일/원본 문자열로 대체 */}
                       <span

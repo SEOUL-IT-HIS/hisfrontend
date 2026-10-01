@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { ASSESSMENT_TYPE_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
+import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import Link from "next/link";
@@ -28,6 +30,8 @@ type RiskAssessmentListProps = {
 };
 
 const RiskAssessmentList = ({ embedded = false, admissionId = null }: RiskAssessmentListProps = {}) => {
+    // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
+    const { nameById: nurseNameById } = useNurseOptions();
   const dispatch = useDispatch<AppDispatch>();
   const riskAssessments = useSelector(selectRiskAssessments);
   const listStatus = useSelector(selectRiskAssessmentListStatus);
@@ -109,7 +113,7 @@ const RiskAssessmentList = ({ embedded = false, admissionId = null }: RiskAssess
                       </Link>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{riskAssessment.admissionId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{riskAssessment.assessmentTypeCd}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{codeLabel(ASSESSMENT_TYPE_OPTIONS, riskAssessment.assessmentTypeCd)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{riskAssessment.score}</td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <span
@@ -121,7 +125,7 @@ const RiskAssessmentList = ({ embedded = false, admissionId = null }: RiskAssess
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(riskAssessment.assessedAt).toLocaleDateString()}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{riskAssessment.assessorId}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{riskAssessment.assessorId ? nurseNameById.get(riskAssessment.assessorId) ?? riskAssessment.assessorId : "-"}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(riskAssessment.createdAt).toLocaleString()}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(riskAssessment.updatedAt).toLocaleString()}</td>
                   </tr>

@@ -5,7 +5,7 @@ import type {
   RegisterAdmissionRequest,
   UpdateAdmissionRequest,
 } from "./types";
-import {
+import { changeAdmissionDoctorApi,
   createAdmissionApi,
   deleteAdmissionApi,
   fetchAdmissionApi,
@@ -13,7 +13,7 @@ import {
   updateAdmissionApi,
   changeAdmissionStatusApi, 
 } from "./api";
-import { changeStatusFailure, changeStatusSuccess, fetchAdmissionsFailure } from "./slice";
+import { changeDoctorFailure, changeDoctorSuccess, changeStatusFailure, changeStatusSuccess, fetchAdmissionsFailure } from "./slice";
 
 function extractErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -78,6 +78,14 @@ function* changeStatusSaga(action: PayloadAction<{ admissionId: string; status: 
     yield put(changeStatusFailure(extractErrorMessage(e)));
   }
 }
+function* changeDoctorSaga(action: PayloadAction<{ admissionId: string; doctorId: string }>) {
+  try {
+    const admission: AdmissionDTO = yield call(changeAdmissionDoctorApi, action.payload.admissionId, action.payload.doctorId);
+    yield put(changeDoctorSuccess(admission));
+  } catch (e: unknown) {
+    yield put(changeDoctorFailure(extractErrorMessage(e)));
+  }
+}
 export default function* admissionSaga() {
   yield all([
     takeLatest("admission/fetchAdmissionsRequest", fetchAdmissionsSaga),
@@ -86,5 +94,6 @@ export default function* admissionSaga() {
     takeLatest("admission/updateAdmissionRequest", updateAdmissionSaga),
     takeLatest("admission/deleteAdmissionRequest", deleteAdmissionSaga),
     takeLatest("admission/changeStatusRequest", changeStatusSaga),
+    takeLatest("admission/changeDoctorRequest", changeDoctorSaga),
   ]);
 }

@@ -8,9 +8,13 @@ import { createBedAssignmentRequest } from "@/features/inpatient/bedmanagement/b
 import { fetchBedRequest, selectBed } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchBedAssignmentsRequest, selectBedAssignments } from "@/features/inpatient/bedmanagement/bedassignment/slice";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 
 const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
+
+// 병실 유형 코드(bed.roomTypeCode) → 표시 라벨 (입원료 매핑과 같은 기준: 01 1인실 / 02 다인실)
+const ROOM_TYPE_LABEL: Record<string, string> = { "01": "Single", "02": "Multi" };
 
 const BedAssignmentRegisterForm = () => {
     const router = useRouter();
@@ -57,11 +61,48 @@ const BedAssignmentRegisterForm = () => {
     // 병상ID 드롭다운엔 EMPTY(빈 병상)만 노출 — 이미 사용중/예약된 병상은 선택 못 하게 막음
     const emptyBeds = useMemo(() => beds.filter((bed) => bed.bedStatus === "EMPTY"), [beds]);
 
+    // 병동 코드(WARD_CD) → 병동명. 공통코드를 못 불러오면 코드값 그대로 표시
+    const { options: wardOptions } = useCommonCodeOptions("WARD_CD");
+    const wardNameByCd = useMemo(() => new Map(wardOptions.map((opt) => [opt.value, opt.label])), [wardOptions]);
+    const wardLabel = (wardCd: string | null) => (wardCd ? wardNameByCd.get(wardCd) ?? wardCd : "No Ward");
+
+    // 지금 배정하려는 입원 건 — 응급에서 온 건이면 희망 병동/격리 여부를 보여주고, 희망 병동을 목록 맨 위로 올림
+    const selectedAdmission = admissions.find((a) => a.admissionId === form.admissionId) ?? null;
+    const preferredWard = selectedAdmission?.wardPref ?? null;
+
+    // 빈 병상을 병동별로 묶음 (희망 병동 먼저, 나머지는 병동 코드 순) → 드롭다운에서 <optgroup>으로 병동 구분
+    const emptyBedsByWard = useMemo(() => {
+        const groups = new Map<string, typeof emptyBeds>();
+        emptyBeds.forEach((bed) => {
+            const key = bed.wardCd ?? "";
+            groups.set(key, [...(groups.get(key) ?? []), bed]);
+        });
+        return Array.from(groups.entries())
+            .map(([wardCd, wardBeds]) => ({
+                wardCd: wardCd || null,
+                beds: [...wardBeds].sort((a, b) => a.bedId.localeCompare(b.bedId)),
+            }))
+            .sort((a, b) => {
+                if (a.wardCd === preferredWard) return -1;
+                if (b.wardCd === preferredWard) return 1;
+                return (a.wardCd ?? "").localeCompare(b.wardCd ?? "");
+            });
+    }, [emptyBeds, preferredWard]);
+    const selectedBed = emptyBeds.find((bed) => bed.bedId === form.bedId) ?? null;
+    const preferredWardHasBed = !!preferredWard && emptyBeds.some((bed) => bed.wardCd === preferredWard);
+
     // 아직 퇴상 처리 안 된(releasedAt === null) 배정 건들의 admissionId만 뽑음
     // = "현재 이미 병상이 배정되어 있는 입원건" 목록
     const assignedAdmissionIds = useMemo( () => bedAssignments.filter((ba)=>ba.releasedAt === null).map((ba) => ba.admissionId), [bedAssignments]);
-    // 전체 입원건에서 위에서 뽑은 "이미 배정된 입원건"을 제외 → 한 입원건이 병상 두 개에 중복 배정되는 것을 방지
-    const availableAdmissions = useMemo(() => admissions.filter((admission) => !assignedAdmissionIds.includes(admission.admissionId)), [admissions, assignedAdmissionIds]);
+    // 병상을 새로 배정할 대상 = 입원요청(REQUESTED) 상태이면서 아직 병상이 없는 입원건
+    // - 이미 배정된 건 제외 → 한 입원건이 병상 두 개에 중복 배정되는 것을 방지
+    // - 퇴원신청/퇴원완료 건 제외 → 퇴원하면서 병상이 해제된 건이 "병상 없음"으로 다시 목록에 나오던 문제 방지
+    const availableAdmissions = useMemo(
+        () => admissions.filter(
+            (admission) => admission.status === "REQUESTED" && !assignedAdmissionIds.includes(admission.admissionId),
+        ),
+        [admissions, assignedAdmissionIds],
+    );
 
     // 등록 성공하면 목록 화면으로 돌려보냄
     // useEffect(() => {
@@ -76,7 +117,7 @@ const BedAssignmentRegisterForm = () => {
     <div className="mx-auto w-full max-w-lg p-6">
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <p className="text-sm text-slate-700">
-          Assignment complete: Room {assignedBed?.roomNo}, Bed {assignedBed?.bedNo}.
+          Assignment complete: {wardLabel(assignedBed?.wardCd ?? null)} · Room {assignedBed?.roomNo}, Bed {assignedBed?.bedNo}.
         </p>
         <div className="mt-4 flex gap-2">
           {admissionIdParam && (
@@ -110,16 +151,45 @@ const BedAssignmentRegisterForm = () => {
             {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
             <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                {/* 응급 입원요청 건이면 배정 전에 희망 병동/격리 여부를 확인할 수 있게 표시 */}
+                {selectedAdmission?.dispositionId && (
+                    <div className="space-y-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm">
+                        <p className="font-medium text-rose-800">Emergency Request</p>
+                        <p className="text-rose-700">
+                            Preferred Ward: {preferredWard ? wardLabel(preferredWard) : "-"}
+                            {preferredWard && !preferredWardHasBed && " (no empty bed — choose another ward)"}
+                        </p>
+                        {selectedAdmission.isolationYn === "Y" && (
+                            <p className="font-medium text-rose-700">Isolation required — assign an isolation / single room</p>
+                        )}
+                    </div>
+                )}
                 <div>
-                    <label htmlFor="bedId" className={LABEL}>Bed ID</label>
+                    <label htmlFor="bedId" className={LABEL}>Bed</label>
+                    {/* 병동별로 묶어서 표시 — 어느 병동의 병상에 배정하는지 바로 보이게 */}
                     <select id="bedId" name="bedId" value={form.bedId} onChange={onChange} required className={FIELD}>
                         <option value="">Select</option>
-                        {emptyBeds.map((bed) => (
-                            <option key={bed.bedId} value={bed.bedId}>
-                                Room {bed.roomNo}, Bed {bed.bedNo}
-                            </option>
+                        {emptyBedsByWard.map(({ wardCd, beds: wardBeds }) => (
+                            <optgroup
+                                key={wardCd ?? "none"}
+                                label={`${wardLabel(wardCd)}${wardCd && wardCd === preferredWard ? " (Preferred)" : ""}`}
+                            >
+                                {wardBeds.map((bed) => (
+                                    <option key={bed.bedId} value={bed.bedId}>
+                                        {wardLabel(bed.wardCd)} · Room {bed.roomNo}, Bed {bed.bedNo}
+                                        {bed.roomTypeCode ? ` · ${ROOM_TYPE_LABEL[bed.roomTypeCode] ?? bed.roomTypeCode}` : ""}
+                                    </option>
+                                ))}
+                            </optgroup>
                         ))}
                     </select>
+                    {selectedBed && (
+                        <p className="mt-1 text-xs text-slate-500">
+                            Ward: <span className="font-medium text-slate-700">{wardLabel(selectedBed.wardCd)}</span>
+                            {" · "}{selectedBed.bedId}
+                        </p>
+                    )}
+                    {emptyBeds.length === 0 && <p className="mt-1 text-xs text-rose-600">No empty beds available.</p>}
                 </div>
                 <div>
                     <label htmlFor="admissionId" className={LABEL}>Admission ID</label>

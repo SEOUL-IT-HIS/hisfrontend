@@ -1,4 +1,9 @@
-import { call, put, takeLatest } from "redux-saga/effects";
+import { call, put, select, takeLatest } from "redux-saga/effects";
+import {
+  searchBillingDetailRequest,
+  selectBillingDetailLastSearch,
+} from "@/features/billing/searchBillingDetail/slice";
+import type { SearchPatient } from "@/features/billing/searchBillingDetail/types";
 import {
   requestKakaoPayApproveApi,
   requestKakaoPayReadyApi,
@@ -25,6 +30,10 @@ function* paymentRequestSaga(action: PayloadAction<PaymentRequestPayload>) {
   try {
     yield call(requestPaymentApi, action.payload);
     yield put(paymentSuccess());
+
+    // 결제된 건은 수납대기(READY) 목록에서 빠져야 하므로 마지막 검색조건으로 목록을 다시 조회
+    const lastSearch: SearchPatient = yield select(selectBillingDetailLastSearch);
+    yield put(searchBillingDetailRequest(lastSearch));
   } catch (err) {
     const message = err instanceof Error ? err.message : "결제 처리에 실패했습니다.";
     yield put(paymentFailure(message));

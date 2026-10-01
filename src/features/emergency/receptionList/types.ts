@@ -11,6 +11,10 @@ export type ReceptionListItem = {
     ktasLevelCode: string | null;
     bedNo: string | null;
     zoneCode: string | null;
+    /** 접수 시 RCP가 남긴 메모. 없으면 null. */
+    memo: string | null;
+    /** 접수 시 입력된 주호소 원문(구조화 전). 없으면 null. */
+    chiefComplaintRaw: string | null;
 };
 
 export type ReceptionListState = {

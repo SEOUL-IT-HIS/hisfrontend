@@ -1,6 +1,10 @@
 "use client";
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { ASSESSMENT_TYPE_OPTIONS, RISK_LEVEL_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
+import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
+import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
+import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import {
     fetchRiskAssessmentDetailRequest,
     deleteRiskAssessmentRequest,
@@ -33,6 +37,8 @@ const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 const RiskAssessmentDetail = () => {
+    // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
+    const { nameById: nurseNameById } = useNurseOptions();
     const dispatch = useDispatch();
     const { patientRiskAssessmentId: idParam }: { patientRiskAssessmentId: string } = useParams();
     const patientRiskAssessmentId = idParam;
@@ -79,11 +85,11 @@ const RiskAssessmentDetail = () => {
             score: String(riskAssessment.score),
             riskLevelCd: riskAssessment.riskLevelCd,
             assessedAt: new Date(riskAssessment.assessedAt).toISOString().slice(0, 16),
-            assessorId: String(riskAssessment.assessorId),
+            assessorId: riskAssessment.assessorId ?? "",
         });
     }, [riskAssessment]);
 
-    const onEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setEditForm((prev) => ({ ...prev, [name]: value }));
     };
@@ -102,7 +108,7 @@ const RiskAssessmentDetail = () => {
             score: Number(editForm.score),
             riskLevelCd: editForm.riskLevelCd,
             assessedAt: new Date(editForm.assessedAt),
-            assessorId: Number(editForm.assessorId),
+            assessorId: editForm.assessorId, // 직원 ID(empId) 문자열 그대로
         }));
     };
 
@@ -144,7 +150,7 @@ const RiskAssessmentDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Assessment Type Code</span>
-                                <span className="text-slate-800">{riskAssessment.assessmentTypeCd}</span>
+                                <span className="text-slate-800">{codeLabel(ASSESSMENT_TYPE_OPTIONS, riskAssessment.assessmentTypeCd)}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Assessment Score</span>
@@ -156,7 +162,7 @@ const RiskAssessmentDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Assessor ID</span>
-                                <span className="text-slate-800">{riskAssessment.assessorId}</span>
+                                <span className="text-slate-800">{riskAssessment.assessorId ? nurseNameById.get(riskAssessment.assessorId) ?? riskAssessment.assessorId : "-"}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Created At</span>
@@ -172,24 +178,24 @@ const RiskAssessmentDetail = () => {
                     <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <p className="text-sm font-medium text-slate-800">Edit Risk Assessment</p>
                         <div>
-                            <label htmlFor="assessmentTypeCd" className={LABEL}>Assessment Type Code</label>
-                            <input type="text" id="assessmentTypeCd" name="assessmentTypeCd" value={editForm.assessmentTypeCd} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="assessmentTypeCd" className={LABEL}>Assessment Type</label>
+                            <CodeSelect id="assessmentTypeCd" name="assessmentTypeCd" value={editForm.assessmentTypeCd} options={ASSESSMENT_TYPE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
                             <label htmlFor="score" className={LABEL}>Assessment Score</label>
                             <input type="number" id="score" name="score" value={editForm.score} onChange={onEditChange} className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="riskLevelCd" className={LABEL}>Risk Level Code</label>
-                            <input type="text" id="riskLevelCd" name="riskLevelCd" value={editForm.riskLevelCd} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="riskLevelCd" className={LABEL}>Risk Level</label>
+                            <CodeSelect id="riskLevelCd" name="riskLevelCd" value={editForm.riskLevelCd} options={RISK_LEVEL_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
                             <label htmlFor="assessedAt" className={LABEL}>Assessment Date/Time</label>
                             <input type="datetime-local" id="assessedAt" name="assessedAt" value={editForm.assessedAt} onChange={onEditChange} className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="assessorId" className={LABEL}>Assessor ID</label>
-                            <input type="number" id="assessorId" name="assessorId" value={editForm.assessorId} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="assessorId" className={LABEL}>Assessor (Nurse)</label>
+                            <NurseSelect id="assessorId" name="assessorId" value={editForm.assessorId} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <button
                             onClick={handleUpdate}

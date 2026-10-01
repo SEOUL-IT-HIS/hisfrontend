@@ -1,6 +1,9 @@
 "use client";
 
-import { AppDispatch } from "@/store/store";
+import { AppDispatch, RootState } from "@/store/store";
+import { ASSESSMENT_TYPE_OPTIONS, RISK_LEVEL_OPTIONS } from "@/features/inpatient/nursingrecord/codes";
+import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
+import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,16 +19,20 @@ const RiskAssessmentRegisterForm = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error, success } = useSelector(selectRiskAssessmentCreateStatus);
 
+    // 기록자 기본값 = 로그인한 사용자(간호사). 다른 간호사로 바꿀 수 있음
+
+    const loginEmpId = useSelector((state: RootState) => state.auth.user?.empId ?? "");
+
     const [form, setForm] = useState({
         admissionId: presetAdmissionId,
         assessmentTypeCd: "",
         score: "",
         riskLevelCd: "",
         assessedAt: "",
-        assessorId: "",
+        assessorId: loginEmpId,
     });
 
-    const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setForm((prevForm) => ({ ...prevForm, [name]: value }));
     };
@@ -38,7 +45,7 @@ const RiskAssessmentRegisterForm = () => {
             score: Number(form.score),
             riskLevelCd: form.riskLevelCd,
             assessedAt: new Date(form.assessedAt),
-            assessorId: Number(form.assessorId),
+            assessorId: form.assessorId, // 직원 ID(empId) 문자열 그대로
         }));
     };
 
@@ -67,24 +74,24 @@ const RiskAssessmentRegisterForm = () => {
                     <input type="text" id="admissionId" name="admissionId" value={form.admissionId} onChange={onChange} required readOnly={!!presetAdmissionId} className={`${FIELD} ${presetAdmissionId ? "bg-slate-50 text-slate-500" : ""}`} />
                 </div>
                 <div>
-                    <label htmlFor="assessmentTypeCd" className={LABEL}>Assessment Type Code</label>
-                    <input type="text" id="assessmentTypeCd" name="assessmentTypeCd" value={form.assessmentTypeCd} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="assessmentTypeCd" className={LABEL}>Assessment Type</label>
+                    <CodeSelect id="assessmentTypeCd" name="assessmentTypeCd" value={form.assessmentTypeCd} options={ASSESSMENT_TYPE_OPTIONS} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
                     <label htmlFor="score" className={LABEL}>Assessment Score</label>
                     <input type="number" id="score" name="score" value={form.score} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="riskLevelCd" className={LABEL}>Risk Level Code</label>
-                    <input type="text" id="riskLevelCd" name="riskLevelCd" value={form.riskLevelCd} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="riskLevelCd" className={LABEL}>Risk Level</label>
+                    <CodeSelect id="riskLevelCd" name="riskLevelCd" value={form.riskLevelCd} options={RISK_LEVEL_OPTIONS} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
                     <label htmlFor="assessedAt" className={LABEL}>Assessment Date/Time</label>
                     <input type="datetime-local" id="assessedAt" name="assessedAt" value={form.assessedAt} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="assessorId" className={LABEL}>Assessor ID</label>
-                    <input type="number" id="assessorId" name="assessorId" value={form.assessorId} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="assessorId" className={LABEL}>Assessor (Nurse)</label>
+                    <NurseSelect id="assessorId" name="assessorId" value={form.assessorId} onChange={onChange} className={FIELD} />
                 </div>
                 <button
                     type="submit"

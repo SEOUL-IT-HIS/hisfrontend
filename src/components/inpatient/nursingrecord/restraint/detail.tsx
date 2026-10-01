@@ -1,6 +1,12 @@
 "use client";
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
+import StaffSelect from "@/components/inpatient/nursingrecord/StaffSelect";
+import { RESTRAINT_TYPE_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
+import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
+import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
+import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import {
     fetchRestraintDetailRequest,
     deleteRestraintRequest,
@@ -21,6 +27,10 @@ const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 const RestraintDetail = () => {
+    // 오더 의사 직원 ID(empId) → 의사 이름 (목록에 없는 예전 값은 그대로 표시)
+    const { nameById: doctorNameById } = useDoctorOptions();
+    // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
+    const { nameById: nurseNameById } = useNurseOptions();
     const dispatch = useDispatch();
     const { restraintId }: { restraintId: string } = useParams();
     const restraint = useSelector(selectRestraintDetail);
@@ -70,7 +80,7 @@ const RestraintDetail = () => {
         });
     }, [restraint]);
 
-    const onEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setEditForm((prev) => ({ ...prev, [name]: value }));
     };
@@ -124,7 +134,7 @@ const RestraintDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Restraint Type Code</span>
-                                <span className="text-slate-800">{restraint.restraintTypeCd}</span>
+                                <span className="text-slate-800">{codeLabel(RESTRAINT_TYPE_OPTIONS, restraint.restraintTypeCd)}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Applied At</span>
@@ -135,12 +145,12 @@ const RestraintDetail = () => {
                                 <span className="text-slate-800">{restraint.reason}</span>
                             </div>
                             <div className={INFO_ROW}>
-                                <span className="text-slate-500">Doctor Order ID</span>
-                                <span className="text-slate-800">{restraint.doctorOrderId}</span>
+                                <span className="text-slate-500">Ordering Doctor</span>
+                                <span className="text-slate-800">{restraint.doctorOrderId ? doctorNameById.get(restraint.doctorOrderId) ?? restraint.doctorOrderId : "-"}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Evaluator ID</span>
-                                <span className="text-slate-800">{restraint.evaluatorId}</span>
+                                <span className="text-slate-800">{restraint.evaluatorId ? nurseNameById.get(restraint.evaluatorId) ?? restraint.evaluatorId : "-"}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Created At</span>
@@ -156,8 +166,8 @@ const RestraintDetail = () => {
                     <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <p className="text-sm font-medium text-slate-800">Edit Restraint</p>
                         <div>
-                            <label htmlFor="restraintTypeCd" className={LABEL}>Restraint Type Code</label>
-                            <input type="text" id="restraintTypeCd" name="restraintTypeCd" value={editForm.restraintTypeCd} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="restraintTypeCd" className={LABEL}>Restraint Type</label>
+                            <CodeSelect id="restraintTypeCd" name="restraintTypeCd" value={editForm.restraintTypeCd} options={RESTRAINT_TYPE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
                             <label htmlFor="appliedAt" className={LABEL}>Applied At</label>
@@ -168,12 +178,12 @@ const RestraintDetail = () => {
                             <input type="text" id="reason" name="reason" value={editForm.reason} onChange={onEditChange} className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="doctorOrderId" className={LABEL}>Doctor Order ID</label>
-                            <input type="text" id="doctorOrderId" name="doctorOrderId" value={editForm.doctorOrderId} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="doctorOrderId" className={LABEL}>Ordering Doctor</label>
+                            <StaffSelect role="DOCTOR" id="doctorOrderId" name="doctorOrderId" value={editForm.doctorOrderId} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
-                            <label htmlFor="evaluatorId" className={LABEL}>Evaluator ID</label>
-                            <input type="text" id="evaluatorId" name="evaluatorId" value={editForm.evaluatorId} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="evaluatorId" className={LABEL}>Evaluator (Nurse)</label>
+                            <NurseSelect id="evaluatorId" name="evaluatorId" value={editForm.evaluatorId} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <button
                             onClick={handleUpdate}
