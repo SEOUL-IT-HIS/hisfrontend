@@ -1,6 +1,8 @@
 "use client";
 
 import { AppDispatch, RootState } from "@/store/store";
+import { MENTAL_STATUS_OPTIONS, YN_OPTIONS } from "@/features/inpatient/nursingrecord/codes";
+import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
 import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -74,8 +76,8 @@ const NursingAssessmentRegisterForm = () => {
                     <input type="text" id="admissionId" name="admissionId" value={form.admissionId} onChange={onChange} required readOnly={!!presetAdmissionId} className={`${FIELD} ${presetAdmissionId ? "bg-slate-50 text-slate-500" : ""}`} />
                 </div>
                 <div>
-                    <label htmlFor="allergyYn" className={LABEL}>Allergy Yn</label>
-                    <input type="text" id="allergyYn" name="allergyYn" value={form.allergyYn} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="allergyYn" className={LABEL}>Allergy</label>
+                    <CodeSelect id="allergyYn" name="allergyYn" value={form.allergyYn} options={YN_OPTIONS} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
                     <label htmlFor="allergyDetail" className={LABEL}>Allergy Detail</label>
@@ -86,8 +88,8 @@ const NursingAssessmentRegisterForm = () => {
                     <input type="text" id="pastMedicalHistory" name="pastMedicalHistory" value={form.pastMedicalHistory} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="mentalStatusCd" className={LABEL}>Mental Status Code</label>
-                    <input type="text" id="mentalStatusCd" name="mentalStatusCd" value={form.mentalStatusCd} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="mentalStatusCd" className={LABEL}>Mental Status</label>
+                    <CodeSelect id="mentalStatusCd" name="mentalStatusCd" value={form.mentalStatusCd} options={MENTAL_STATUS_OPTIONS} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
                     <label htmlFor="assessedAt" className={LABEL}>Assessed At</label>

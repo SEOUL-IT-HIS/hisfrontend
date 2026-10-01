@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { RESTRAINT_TYPE_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
 import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
@@ -100,7 +101,7 @@ const RestraintList = ({ embedded = false, admissionId = null }: RestraintListPr
                       </Link>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{restraint.admissionId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{restraint.restraintTypeCd}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{codeLabel(RESTRAINT_TYPE_OPTIONS, restraint.restraintTypeCd)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(restraint.appliedAt).toLocaleString()}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{restraint.reason}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{restraint.doctorOrderId}</td>

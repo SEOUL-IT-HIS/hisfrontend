@@ -1,6 +1,8 @@
 "use client";
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { RESTRAINT_TYPE_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
+import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
 import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import {
@@ -128,7 +130,7 @@ const RestraintDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Restraint Type Code</span>
-                                <span className="text-slate-800">{restraint.restraintTypeCd}</span>
+                                <span className="text-slate-800">{codeLabel(RESTRAINT_TYPE_OPTIONS, restraint.restraintTypeCd)}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Applied At</span>
@@ -160,8 +162,8 @@ const RestraintDetail = () => {
                     <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <p className="text-sm font-medium text-slate-800">Edit Restraint</p>
                         <div>
-                            <label htmlFor="restraintTypeCd" className={LABEL}>Restraint Type Code</label>
-                            <input type="text" id="restraintTypeCd" name="restraintTypeCd" value={editForm.restraintTypeCd} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="restraintTypeCd" className={LABEL}>Restraint Type</label>
+                            <CodeSelect id="restraintTypeCd" name="restraintTypeCd" value={editForm.restraintTypeCd} options={RESTRAINT_TYPE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
                             <label htmlFor="appliedAt" className={LABEL}>Applied At</label>

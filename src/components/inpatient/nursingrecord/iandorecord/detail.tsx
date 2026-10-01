@@ -1,6 +1,8 @@
 "use client";
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { ALL_IO_ROUTE_OPTIONS, IO_ROUTE_OPTIONS, IO_TYPE_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
+import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
 import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import {
@@ -132,11 +134,11 @@ const IandORecordDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">I/O Type Code</span>
-                                <span className="text-slate-800">{iandorecord.ioTypeCd}</span>
+                                <span className="text-slate-800">{codeLabel(IO_TYPE_OPTIONS, iandorecord.ioTypeCd)}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Route Code</span>
-                                <span className="text-slate-800">{iandorecord.routeCd}</span>
+                                <span className="text-slate-800">{codeLabel(ALL_IO_ROUTE_OPTIONS, iandorecord.routeCd)}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Amount (mL)</span>
@@ -164,12 +166,12 @@ const IandORecordDetail = () => {
                             <input type="datetime-local" id="recordedAt" name="recordedAt" value={editForm.recordedAt} onChange={onEditChange} className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="ioTypeCd" className={LABEL}>I/O Type Code</label>
-                            <input type="text" id="ioTypeCd" name="ioTypeCd" value={editForm.ioTypeCd} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="ioTypeCd" className={LABEL}>I/O Type</label>
+                            <CodeSelect id="ioTypeCd" name="ioTypeCd" value={editForm.ioTypeCd} options={IO_TYPE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
-                            <label htmlFor="routeCd" className={LABEL}>Route Code</label>
-                            <input type="text" id="routeCd" name="routeCd" value={editForm.routeCd} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="routeCd" className={LABEL}>Route</label>
+                            <CodeSelect id="routeCd" name="routeCd" value={editForm.routeCd} options={IO_ROUTE_OPTIONS[editForm.ioTypeCd] ?? ALL_IO_ROUTE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
                             <label htmlFor="amountMl" className={LABEL}>Amount (mL)</label>

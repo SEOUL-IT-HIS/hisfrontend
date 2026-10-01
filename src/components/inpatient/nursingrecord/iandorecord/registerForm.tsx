@@ -1,6 +1,8 @@
 "use client";
 
 import { AppDispatch, RootState } from "@/store/store";
+import { ALL_IO_ROUTE_OPTIONS, IO_ROUTE_OPTIONS, IO_TYPE_OPTIONS } from "@/features/inpatient/nursingrecord/codes";
+import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
 import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -76,12 +78,12 @@ const IandORecordRegisterForm = () => {
                     <input type="datetime-local" id="recordedAt" name="recordedAt" value={form.recordedAt} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="ioTypeCd" className={LABEL}>I/O Type Code</label>
-                    <input type="text" id="ioTypeCd" name="ioTypeCd" value={form.ioTypeCd} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="ioTypeCd" className={LABEL}>I/O Type</label>
+                    <CodeSelect id="ioTypeCd" name="ioTypeCd" value={form.ioTypeCd} options={IO_TYPE_OPTIONS} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="routeCd" className={LABEL}>Route Code</label>
-                    <input type="text" id="routeCd" name="routeCd" value={form.routeCd} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="routeCd" className={LABEL}>Route</label>
+                    <CodeSelect id="routeCd" name="routeCd" value={form.routeCd} options={IO_ROUTE_OPTIONS[form.ioTypeCd] ?? ALL_IO_ROUTE_OPTIONS} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
                     <label htmlFor="amountMl" className={LABEL}>Amount (mL)</label>

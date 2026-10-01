@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { ASSESSMENT_TYPE_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
 import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
@@ -112,7 +113,7 @@ const RiskAssessmentList = ({ embedded = false, admissionId = null }: RiskAssess
                       </Link>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{riskAssessment.admissionId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{riskAssessment.assessmentTypeCd}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{codeLabel(ASSESSMENT_TYPE_OPTIONS, riskAssessment.assessmentTypeCd)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{riskAssessment.score}</td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <span

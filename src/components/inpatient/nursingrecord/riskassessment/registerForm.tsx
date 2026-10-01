@@ -1,6 +1,8 @@
 "use client";
 
 import { AppDispatch, RootState } from "@/store/store";
+import { ASSESSMENT_TYPE_OPTIONS, RISK_LEVEL_OPTIONS } from "@/features/inpatient/nursingrecord/codes";
+import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
 import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -72,16 +74,16 @@ const RiskAssessmentRegisterForm = () => {
                     <input type="text" id="admissionId" name="admissionId" value={form.admissionId} onChange={onChange} required readOnly={!!presetAdmissionId} className={`${FIELD} ${presetAdmissionId ? "bg-slate-50 text-slate-500" : ""}`} />
                 </div>
                 <div>
-                    <label htmlFor="assessmentTypeCd" className={LABEL}>Assessment Type Code</label>
-                    <input type="text" id="assessmentTypeCd" name="assessmentTypeCd" value={form.assessmentTypeCd} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="assessmentTypeCd" className={LABEL}>Assessment Type</label>
+                    <CodeSelect id="assessmentTypeCd" name="assessmentTypeCd" value={form.assessmentTypeCd} options={ASSESSMENT_TYPE_OPTIONS} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
                     <label htmlFor="score" className={LABEL}>Assessment Score</label>
                     <input type="number" id="score" name="score" value={form.score} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="riskLevelCd" className={LABEL}>Risk Level Code</label>
-                    <input type="text" id="riskLevelCd" name="riskLevelCd" value={form.riskLevelCd} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="riskLevelCd" className={LABEL}>Risk Level</label>
+                    <CodeSelect id="riskLevelCd" name="riskLevelCd" value={form.riskLevelCd} options={RISK_LEVEL_OPTIONS} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
                     <label htmlFor="assessedAt" className={LABEL}>Assessment Date/Time</label>
