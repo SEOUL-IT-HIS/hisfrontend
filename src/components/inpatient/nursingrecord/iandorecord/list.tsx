@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import Link from "next/link";
@@ -16,6 +17,8 @@ type IandORecordListProps = {
 };
 
 const IandORecordList = ({ embedded = false, admissionId = null }: IandORecordListProps = {}) => {
+    // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
+    const { nameById: nurseNameById } = useNurseOptions();
   const dispatch = useDispatch<AppDispatch>();
   const iandorecords = useSelector(selectIandORecords);
   const listStatus = useSelector(selectIandORecordListStatus);
@@ -101,7 +104,7 @@ const IandORecordList = ({ embedded = false, admissionId = null }: IandORecordLi
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{iandorecord.ioTypeCd}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{iandorecord.routeCd}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{iandorecord.amountMl}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{iandorecord.recorderId}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{iandorecord.recorderId ? nurseNameById.get(iandorecord.recorderId) ?? iandorecord.recorderId : "-"}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(iandorecord.createdAt).toLocaleString()}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(iandorecord.updatedAt).toLocaleString()}</td>
                   </tr>

@@ -1,6 +1,8 @@
 "use client";
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
+import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import {
     fetchRiskAssessmentDetailRequest,
     deleteRiskAssessmentRequest,
@@ -33,6 +35,8 @@ const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 const RiskAssessmentDetail = () => {
+    // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
+    const { nameById: nurseNameById } = useNurseOptions();
     const dispatch = useDispatch();
     const { patientRiskAssessmentId: idParam }: { patientRiskAssessmentId: string } = useParams();
     const patientRiskAssessmentId = idParam;
@@ -79,11 +83,11 @@ const RiskAssessmentDetail = () => {
             score: String(riskAssessment.score),
             riskLevelCd: riskAssessment.riskLevelCd,
             assessedAt: new Date(riskAssessment.assessedAt).toISOString().slice(0, 16),
-            assessorId: String(riskAssessment.assessorId),
+            assessorId: riskAssessment.assessorId ?? "",
         });
     }, [riskAssessment]);
 
-    const onEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setEditForm((prev) => ({ ...prev, [name]: value }));
     };
@@ -102,7 +106,7 @@ const RiskAssessmentDetail = () => {
             score: Number(editForm.score),
             riskLevelCd: editForm.riskLevelCd,
             assessedAt: new Date(editForm.assessedAt),
-            assessorId: Number(editForm.assessorId),
+            assessorId: editForm.assessorId, // 직원 ID(empId) 문자열 그대로
         }));
     };
 
@@ -156,7 +160,7 @@ const RiskAssessmentDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Assessor ID</span>
-                                <span className="text-slate-800">{riskAssessment.assessorId}</span>
+                                <span className="text-slate-800">{riskAssessment.assessorId ? nurseNameById.get(riskAssessment.assessorId) ?? riskAssessment.assessorId : "-"}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Created At</span>
@@ -188,8 +192,8 @@ const RiskAssessmentDetail = () => {
                             <input type="datetime-local" id="assessedAt" name="assessedAt" value={editForm.assessedAt} onChange={onEditChange} className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="assessorId" className={LABEL}>Assessor ID</label>
-                            <input type="number" id="assessorId" name="assessorId" value={editForm.assessorId} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="assessorId" className={LABEL}>Assessor (Nurse)</label>
+                            <NurseSelect id="assessorId" name="assessorId" value={editForm.assessorId} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <button
                             onClick={handleUpdate}

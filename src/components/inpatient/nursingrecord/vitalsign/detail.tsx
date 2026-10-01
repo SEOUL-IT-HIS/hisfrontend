@@ -1,6 +1,7 @@
 "use client";
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { fetchVitalSignDetailRequest, deleteVitalSignRequest, updateVitalSignRequest, fetchVitalSignHistoryRequest } from "@/features/inpatient/nursingrecord/vitalsign/slice";
 import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice";
 import { RootState } from "@/store/store";
@@ -13,6 +14,8 @@ const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 const VitalSignDetail = () => {
+    // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
+    const { nameById: nurseNameById } = useNurseOptions();
     const dispatch = useDispatch();
     const { vitalSignId: vitalSignIdParam }: { vitalSignId: string } = useParams();
     const vitalSignId = vitalSignIdParam;
@@ -153,7 +156,7 @@ const VitalSignDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Recorded By</span>
-                                <span className="text-slate-800">{vitalSign.recorderId}</span>
+                                <span className="text-slate-800">{vitalSign.recorderId ? nurseNameById.get(vitalSign.recorderId) ?? vitalSign.recorderId : "-"}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Created At</span>

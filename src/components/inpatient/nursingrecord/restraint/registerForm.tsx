@@ -1,6 +1,7 @@
 "use client";
 
-import { AppDispatch } from "@/store/store";
+import { AppDispatch, RootState } from "@/store/store";
+import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,16 +17,20 @@ const RestraintRegisterForm = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error, success } = useSelector(selectRestraintCreateStatus);
 
+    // 기록자 기본값 = 로그인한 사용자(간호사). 다른 간호사로 바꿀 수 있음
+
+    const loginEmpId = useSelector((state: RootState) => state.auth.user?.empId ?? "");
+
     const [form, setForm] = useState({
         admissionId: presetAdmissionId,
         restraintTypeCd: "",
         appliedAt: "",
         reason: "",
         doctorOrderId: "",
-        evaluatorId: "",
+        evaluatorId: loginEmpId,
     });
 
-    const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setForm((prevForm) => ({ ...prevForm, [name]: value }));
     };
@@ -83,8 +88,8 @@ const RestraintRegisterForm = () => {
                     <input type="text" id="doctorOrderId" name="doctorOrderId" value={form.doctorOrderId} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="evaluatorId" className={LABEL}>Evaluator ID</label>
-                    <input type="text" id="evaluatorId" name="evaluatorId" value={form.evaluatorId} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="evaluatorId" className={LABEL}>Evaluator (Nurse)</label>
+                    <NurseSelect id="evaluatorId" name="evaluatorId" value={form.evaluatorId} onChange={onChange} className={FIELD} />
                 </div>
                 <button
                     type="submit"
