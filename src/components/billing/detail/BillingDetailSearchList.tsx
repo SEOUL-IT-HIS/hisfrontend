@@ -13,6 +13,11 @@ const STATUS_LABEL: Record<string, string> = {
     SUCCESS: "Paid",
 };
 
+const BILLING_TYPE_LABEL: Record<string, string> = {
+    OUTPATIENT: "Outpatient",
+    INPATIENT: "Inpatient",
+};
+
 const billingDetailSearchList = ({ patient, selected, onSelect }: BillingDetailSearchListProps) => {
     return (
         <tr
@@ -33,8 +38,14 @@ const billingDetailSearchList = ({ patient, selected, onSelect }: BillingDetailS
             </td>
             <td className="px-5 py-3.5 text-slate-600">{patient.birthDate}</td>
             <td className="px-5 py-3.5 text-slate-600">{patient.phoneNo}</td>
-            <td className="px-5 py-3.5 text-slate-600">{patient.address}</td>
-            <td className="px-5 py-3.5 text-slate-600">{patient.itemName}</td>
+            {/* 같은 환자의 여러 건(외래/입원 등)을 구분할 수 있도록 건별 정보를 표시 */}
+            <td className="px-5 py-3.5 text-slate-600">
+                {BILLING_TYPE_LABEL[patient.billingType] ?? patient.billingType}
+            </td>
+            <td className="px-5 py-3.5 text-right font-medium text-slate-800">
+                ₩{(patient.totalAmount ?? 0).toLocaleString()}
+            </td>
+            <td className="px-5 py-3.5 text-slate-600">{patient.createdAt}</td>
             <td className="px-5 py-3.5">
                 <span
                     className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${

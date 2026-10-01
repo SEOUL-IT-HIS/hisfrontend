@@ -6,10 +6,10 @@ import { AppDispatch, RootState } from "@/store/store";
 import { fetchBillingHistoryDetailRequest } from "@/features/billing/history/slice";
 import { Alert, DataTable, Panel } from "@/components/common";
 import type { DataTableColumn } from "@/components/common";
-import type { BillingHistoryItem } from "@/features/billing/history/types";
+import type { BillingHistoryDetailItem } from "@/features/billing/history/types";
 
 type BillingHistorySearchDetailProps = {
-    patientId: string | null;
+    billingId: string | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -34,46 +34,47 @@ const PAYMENT_METHOD_LABEL: Record<string, string> = {
 };
 
 function formatAmount(value: number): string {
-    return `₩${value.toLocaleString()}`;
+    return `₩${(value ?? 0).toLocaleString()}`;
 }
 
-const HISTORY_COLUMNS: DataTableColumn<BillingHistoryItem>[] = [
-    { key: "paymentAt", header: "Payment At", render: (row) => row.paymentAt || "-" },
+function formatAmountText(value: string): string {
+    const amount = Number(value);
+    return Number.isNaN(amount) ? value : `₩${amount.toLocaleString()}`;
+}
+
+// LocalDateTime이 "2026-10-01T09:11:33" 형태로 오므로 "2026-10-01 09:11"로 표시
+function formatDateTime(value: string): string {
+    return value ? value.replace("T", " ").slice(0, 16) : "-";
+}
+
+// 결제된 진료 항목 (결제 시 billing만 SUCCESS로 바뀌고 항목별 상태는 갱신되지 않아서 상태 컬럼은 두지 않음)
+const ITEM_COLUMNS: DataTableColumn<BillingHistoryDetailItem>[] = [
+    { key: "occurredAt", header: "Occurred At", render: (row) => formatDateTime(row.occurredAt) },
     {
         key: "billingType",
         header: "Type",
         render: (row) => BILLING_TYPE_LABEL[row.billingType] ?? row.billingType,
     },
+    { key: "feeCode", header: "Fee Code", render: (row) => row.feeCode },
+    { key: "itemName", header: "Item Name", render: (row) => row.itemName },
+    { key: "quantity", header: "Quantity", render: (row) => row.quantity, className: "text-right" },
     {
-        key: "paymentMethod",
-        header: "Method",
-        render: (row) => PAYMENT_METHOD_LABEL[row.paymentMethod] ?? row.paymentMethod ?? "-",
+        key: "unitPrice",
+        header: "Unit Price",
+        render: (row) => formatAmountText(row.unitPrice),
+        className: "text-right",
     },
     {
-        key: "paymentAmount",
+        key: "amount",
         header: "Amount",
         render: (row) => (
-            <span className="font-semibold text-slate-800">{formatAmount(row.paymentAmount)}</span>
+            <span className="font-semibold text-slate-800">{formatAmountText(row.amount)}</span>
         ),
         className: "text-right",
     },
-    { key: "receiptNo", header: "Receipt No", render: (row) => row.receiptNo || "-" },
-    {
-        key: "billingStatus",
-        header: "Status",
-        render: (row) => (
-            <span
-                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
-                    STATUS_TONE[row.billingStatus] ?? "bg-slate-100 text-slate-500 ring-slate-500/10"
-                }`}
-            >
-                {STATUS_LABEL[row.billingStatus] ?? row.billingStatus}
-            </span>
-        ),
-    },
 ];
 
-const BillingHistorySearchDetail = ({ patientId }: BillingHistorySearchDetailProps) => {
+const BillingHistorySearchDetail = ({ billingId }: BillingHistorySearchDetailProps) => {
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error, detail } = useSelector(
         (state: RootState) => ({
@@ -82,15 +83,15 @@ const BillingHistorySearchDetail = ({ patientId }: BillingHistorySearchDetailPro
             detail: state.billing.billingHistory.detail,
         }),
         shallowEqual,
-    ); // 진료비 상세조회 Redux State
+    ); // 수납이력 상세조회 Redux State
 
     useEffect(() => {
-        if (!patientId) return;
-        dispatch(fetchBillingHistoryDetailRequest(patientId));
-    }, [patientId, dispatch]);
+        if (!billingId) return;
+        dispatch(fetchBillingHistoryDetailRequest(billingId));
+    }, [billingId, dispatch]);
 
-    // 환자 미선택
-    if (patientId === null) {
+    // 수납 건 미선택
+    if (billingId === null) {
         return (
             <Panel dashed>
                 <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
@@ -98,7 +99,7 @@ const BillingHistorySearchDetail = ({ patientId }: BillingHistorySearchDetailPro
                         <span className="text-lg font-semibold">+</span>
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-slate-700">Select a patient</p>
+                        <p className="text-sm font-semibold text-slate-700">Select a billing record</p>
                         <p className="mt-1 text-xs leading-5 text-slate-400">
                             Click a row in the list on the left
                             <br />
@@ -114,14 +115,22 @@ const BillingHistorySearchDetail = ({ patientId }: BillingHistorySearchDetailPro
         <Panel>
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
                 <div className="min-w-0">
-                    <h2 className="truncate text-sm font-semibold text-slate-900">
-                        {detail[0]?.patientName ?? "Billing History"}
-                    </h2>
-                    <p className="mt-1 text-xs text-slate-400">Past billing and payment records for this patient</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="truncate text-sm font-semibold text-slate-900">
+                            {detail?.patientName ?? "Billing History"}
+                        </h2>
+                        {detail ? (
+                            <span
+                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
+                                    STATUS_TONE[detail.billingStatus] ?? "bg-slate-100 text-slate-500 ring-slate-500/10"
+                                }`}
+                            >
+                                {STATUS_LABEL[detail.billingStatus] ?? detail.billingStatus}
+                            </span>
+                        ) : null}
+                    </div>
+                    <p className="mt-1 text-xs text-slate-400">Payment information and billed items for this record</p>
                 </div>
-                <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white">
-                    {detail.length} records
-                </span>
             </div>
 
             {error ? (
@@ -131,18 +140,70 @@ const BillingHistorySearchDetail = ({ patientId }: BillingHistorySearchDetailPro
             ) : null}
 
             <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
-                <DataTable
-                    columns={HISTORY_COLUMNS}
-                    rows={detail}
-                    rowKey={(row) => row.billingId}
-                    loading={loading}
-                    loadingMessage="Loading billing history..."
-                    emptyMessage="No billing history available."
-                    minWidthClassName="min-w-[720px]"
-                />
+                {loading ? (
+                    <p className="py-16 text-center text-sm text-slate-400">Loading billing history...</p>
+                ) : detail == null ? (
+                    <p className="py-16 text-center text-sm text-slate-400">No billing history available.</p>
+                ) : (
+                    <>
+                        <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+                            <DetailField label="PatientId" value={detail.patientId} />
+                            <DetailField label="PatientName" value={detail.patientName} />
+                            <DetailField label="BirthDate" value={detail.birthDate} />
+                            <DetailField label="PhoneNo" value={detail.phoneNo} />
+                            <DetailField
+                                label="Type"
+                                value={BILLING_TYPE_LABEL[detail.billingType] ?? detail.billingType}
+                            />
+                            <DetailField
+                                label="Method"
+                                value={PAYMENT_METHOD_LABEL[detail.paymentMethod] ?? detail.paymentMethod ?? "-"}
+                            />
+                            <DetailField label="Payment At" value={formatDateTime(detail.paymentAt)} />
+                            <DetailField label="Receipt No" value={detail.receiptNo || "-"} />
+                            <DetailField label="Payment Amount" value={formatAmount(detail.paymentAmount)} emphasize />
+                        </dl>
+
+                        <div className="mt-6">
+                            <h3 className="mb-2 text-sm font-semibold text-slate-900">Billed Items</h3>
+                            <DataTable
+                                columns={ITEM_COLUMNS}
+                                rows={detail.items}
+                                rowKey={(row) => `${row.occurredAt}-${row.feeCode}-${row.quantity}-${row.unitPrice}-${row.amount}`}
+                                emptyMessage="No billed items."
+                                minWidthClassName="min-w-[720px]"
+                            />
+                        </div>
+                    </>
+                )}
             </div>
         </Panel>
     );
 };
+
+function DetailField({
+    label,
+    value,
+    emphasize = false,
+}: {
+    label: string;
+    value: string;
+    emphasize?: boolean;
+}) {
+    return (
+        <div className="rounded-xl bg-slate-50/80 px-4 py-3">
+            <dt className="text-xs font-medium text-slate-400">{label}</dt>
+            <dd
+                className={
+                    emphasize
+                        ? "mt-1 text-base font-semibold text-sky-700"
+                        : "mt-1 text-sm font-medium text-slate-800"
+                }
+            >
+                {value}
+            </dd>
+        </div>
+    );
+}
 
 export default BillingHistorySearchDetail;

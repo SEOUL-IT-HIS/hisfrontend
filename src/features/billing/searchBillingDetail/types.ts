@@ -9,10 +9,12 @@ export type SearchPatientResult = {
   address: string;
   phoneNo: string;
   birthDate: string;
-  itemName: string;
 
   billingId: string;
   billingStatus: string;
+  billingType: string;   // OUTPATIENT / INPATIENT
+  totalAmount: number;   // 결제 대기 항목 합계
+  createdAt: string;     // billing 생성일시 (yyyy-MM-dd HH:mm)
 }
 /** 진료비 상세조회 결과의 상세 항목(수납상세) 1행 */
 export type BillingDetailItem = {

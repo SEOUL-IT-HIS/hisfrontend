@@ -13,12 +13,8 @@ import type { NextConfig } from "next";
 // 내 PC 에서 다른 사람 백엔드를 부르려면 .env.local 에 그 주소를 적는다. (.env.local 은 git 제외)
 const adminApiOrigin =
 process.env.ADMIN_API_ORIGIN ?? "http://localhost:9191";
-//  process.env.ADMIN_API_ORIGIN ?? "http://192.168.1.128:9191";
-//  process.env.ADMIN_API_ORIGIN ?? "http://192.168.1.126:9191";
 const patientApiOrigin =
 process.env.PATIENT_API_ORIGIN ?? "http://localhost:8087";
-//  process.env.PATIENT_API_ORIGIN ?? "http://192.168.1.149:8087";
-//  process.env.PATIENT_API_ORIGIN ?? "http://192.168.1.126:8087";
 const labImagingApiOrigin =
   process.env.LABIMAGING_API_ORIGIN ?? "http://localhost:8085";
 const inpatientApiOrigin =
