@@ -67,6 +67,9 @@ const nextConfig: NextConfig = {
     "192.168.1.120",
     "192.168.1.105",
     "192.168.1.143",
+    // 원격 서버를 공인 주소/도메인으로 접속할 때 (http://seoulit.pe.kr:18080)
+    "seoulit.pe.kr",
+    "117.16.154.233",
   ],
   async rewrites() {
     return [
