@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { RESTRAINT_TYPE_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
 import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { useDispatch, useSelector } from "react-redux";
@@ -18,6 +19,8 @@ type RestraintListProps = {
 };
 
 const RestraintList = ({ embedded = false, admissionId = null }: RestraintListProps = {}) => {
+    // 오더 의사 직원 ID(empId) → 의사 이름 (목록에 없는 예전 값은 그대로 표시)
+    const { nameById: doctorNameById } = useDoctorOptions();
     // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
     const { nameById: nurseNameById } = useNurseOptions();
   const dispatch = useDispatch<AppDispatch>();
@@ -79,7 +82,7 @@ const RestraintList = ({ embedded = false, admissionId = null }: RestraintListPr
                 <th className="whitespace-nowrap px-4 py-3">Restraint Type Code</th>
                 <th className="whitespace-nowrap px-4 py-3">Applied At</th>
                 <th className="whitespace-nowrap px-4 py-3">Reason</th>
-                <th className="whitespace-nowrap px-4 py-3">Doctor Order ID</th>
+                <th className="whitespace-nowrap px-4 py-3">Ordering Doctor</th>
                 <th className="whitespace-nowrap px-4 py-3">Evaluator ID</th>
                 <th className="whitespace-nowrap px-4 py-3">Created At</th>
                 <th className="whitespace-nowrap px-4 py-3">Updated At</th>
@@ -104,7 +107,7 @@ const RestraintList = ({ embedded = false, admissionId = null }: RestraintListPr
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{codeLabel(RESTRAINT_TYPE_OPTIONS, restraint.restraintTypeCd)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(restraint.appliedAt).toLocaleString()}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{restraint.reason}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{restraint.doctorOrderId}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{restraint.doctorOrderId ? doctorNameById.get(restraint.doctorOrderId) ?? restraint.doctorOrderId : "-"}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{restraint.evaluatorId ? nurseNameById.get(restraint.evaluatorId) ?? restraint.evaluatorId : "-"}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(restraint.createdAt).toLocaleString()}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(restraint.updatedAt).toLocaleString()}</td>
