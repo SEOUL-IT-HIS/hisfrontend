@@ -14,6 +14,7 @@ const initialState: AdmissionState = {
     updateStatus: { ...initialStatus },
     deleteStatus: { ...initialStatus },
      changeStatusStatus: { ...initialStatus }, 
+     changeDoctorStatus: { ...initialStatus },
 };
 
 const AdmissionSlice = createSlice({
@@ -89,6 +90,22 @@ const AdmissionSlice = createSlice({
         changeStatusFailure(state, action: PayloadAction<string>) {
         state.changeStatusStatus = { ...initialStatus, error: action.payload };
         },
+        // 담당의(주치의) 지정/변경 — 성공하면 목록과 상세를 서버가 돌려준 값으로 갱신
+        changeDoctorRequest(state, action: PayloadAction<{ admissionId: string; doctorId: string }>) {
+            state.changeDoctorStatus = { ...initialStatus, loading: true };
+        },
+        changeDoctorSuccess(state, action: PayloadAction<AdmissionDTO>) {
+            const index = state.list.findIndex((admission) => admission.admissionId === action.payload.admissionId);
+            if (index !== -1) state.list[index] = action.payload;
+            if (state.detail?.admissionId === action.payload.admissionId) state.detail = action.payload;
+            state.changeDoctorStatus = { ...initialStatus, success: true };
+        },
+        changeDoctorFailure(state, action: PayloadAction<string>) {
+            state.changeDoctorStatus = { ...initialStatus, error: action.payload };
+        },
+        clearChangeDoctorStatus(state) {
+            state.changeDoctorStatus = { ...initialStatus };
+        },
     },
 });
 export const { fetchAdmissionsRequest, fetchAdmissionsSuccess, fetchAdmissionsFailure,
@@ -96,7 +113,8 @@ export const { fetchAdmissionsRequest, fetchAdmissionsSuccess, fetchAdmissionsFa
     createAdmissionRequest, createAdmissionSuccess, createAdmissionFailure,
     updateAdmissionRequest, updateAdmissionSuccess, updateAdmissionFailure,
     deleteAdmissionRequest, deleteAdmissionSuccess, deleteAdmissionFailure,
-    changeStatusRequest, changeStatusSuccess, changeStatusFailure } = AdmissionSlice.actions;
+    changeStatusRequest, changeStatusSuccess, changeStatusFailure,
+    changeDoctorRequest, changeDoctorSuccess, changeDoctorFailure, clearChangeDoctorStatus } = AdmissionSlice.actions;
 export default AdmissionSlice.reducer;
 
 // ----- Selector -----
@@ -119,3 +137,5 @@ export const selectAdmissionDeleteStatus = (state: AdmissionRoot) =>
   state.inpatient.admissiondischarge.deleteStatus;
 export const selectAdmissionChangeStatusStatus = (state: AdmissionRoot) =>
   state.inpatient.admissiondischarge.changeStatusStatus;
+export const selectAdmissionChangeDoctorStatus = (state: AdmissionRoot) =>
+  state.inpatient.admissiondischarge.changeDoctorStatus;

@@ -8,6 +8,7 @@ import {
   selectPrescriptions,
   selectPrescriptionListStatus,
 } from "@/features/inpatient/medicationmanagement/prescription/slice";
+import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 
 type PrescriptionListProps = {
   admissionId: string;
@@ -18,6 +19,8 @@ type PrescriptionListProps = {
 };
 
 const PrescriptionList = ({ admissionId, selectedPrescriptionId, onSelectPrescription, onRegisterClick }: PrescriptionListProps) => {
+  // 처방의사 ID(empId) → 의사 이름
+  const { nameById: doctorNameById } = useDoctorOptions();
   const dispatch = useDispatch<AppDispatch>();
   const prescriptions = useSelector(selectPrescriptions);
   const listStatus = useSelector(selectPrescriptionListStatus);
@@ -73,7 +76,7 @@ const PrescriptionList = ({ admissionId, selectedPrescriptionId, onSelectPrescri
                   <td className="whitespace-nowrap px-4 py-3 text-slate-600">
                     {prescription.prescribedAt ? new Date(prescription.prescribedAt).toLocaleString() : "-"}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{prescription.prescribedBy}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{prescription.prescribedBy ? doctorNameById.get(prescription.prescribedBy) ?? prescription.prescribedBy : "-"}</td>
                 </tr>
               ))}
             </tbody>

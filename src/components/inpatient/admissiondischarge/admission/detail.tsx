@@ -1,13 +1,14 @@
 "use client";
 
-import { fetchAdmissionDetailRequest, changeStatusRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { fetchAdmissionDetailRequest, changeStatusRequest, changeDoctorRequest, selectAdmissionChangeDoctorStatus } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchBedAssignmentsRequest, selectBedAssignments } from "@/features/inpatient/bedmanagement/bedassignment/slice";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
+import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 
 import { RootState } from "@/store/store";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 // 입원 상태(admission.status) → 배지 색상
@@ -37,6 +38,97 @@ type AdmissionDetailProps = {
   admissionId?: string;
   /** 목록 옆에 끼워 넣었을 때만 표시되는 "선택 해제" 버튼 */
   onClose?: () => void;
+};
+
+// 담당의(주치의) 표시 + 지정/변경
+// - 처방요청 시 이 값이 처방의사(prescribedBy)로 외래에 전달되므로, 비어 있으면 빨간색으로 강조
+// - 부모가 key={admissionId + doctorId}로 그려서, 저장이 끝나 값이 바뀌면 이 컴포넌트가 새로 그려지며 입력 상태가 초기화됨
+const DoctorRow = ({ admissionId, doctorId, editable }: { admissionId: string; doctorId: string | null; editable: boolean }) => {
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector(selectAdmissionChangeDoctorStatus);
+  // admin에 등록된 의사(역할이 의사인 직원) 목록 — 값은 empId, 화면에는 이름
+  const { doctors, nameById, loading: doctorsLoading } = useDoctorOptions();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(doctorId ?? "");
+  // 의사 목록을 못 불러오면(로그인 세션 문제, 의사 역할 미등록 등) 직접 입력으로 대체
+  const useManualInput = !doctorsLoading && doctors.length === 0;
+  const doctorLabel = doctorId ? nameById.get(doctorId) ?? doctorId : null; // 예전 값(D22 등)은 그대로 표시
+
+  const onSave = () => {
+    if (!value.trim()) return;
+    dispatch(changeDoctorRequest({ admissionId, doctorId: value.trim() }));
+  };
+
+  return (
+    <div className="border-b border-slate-100 px-4 py-3 text-sm">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-slate-500">Doctor ID</span>
+        {!editing && (
+          <span className="flex items-center gap-2">
+            {doctorLabel ? (
+              <span className="text-slate-800">{doctorLabel}</span>
+            ) : (
+              <span className="font-medium text-rose-600">Not assigned</span>
+            )}
+            {editable && (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="rounded-md border border-slate-200 px-2 py-0.5 text-xs text-slate-600 hover:bg-slate-50"
+              >
+                {doctorId ? "Change" : "Assign"}
+              </button>
+            )}
+          </span>
+        )}
+      </div>
+      {editing && (
+        <div className="mt-2 flex gap-2">
+          {useManualInput ? (
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="Doctor ID (doctor list unavailable)"
+              className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            />
+          ) : (
+            <select
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            >
+              <option value="">{doctorsLoading ? "Loading doctors..." : "Select doctor"}</option>
+              {doctors.map((d) => (
+                <option key={d.empId} value={d.empId}>
+                  {d.empName} ({d.empNo}{d.deptCode ? ` · ${d.deptCode}` : ""})
+                </option>
+              ))}
+            </select>
+          )}
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={loading || !value.trim()}
+            className="shrink-0 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+          >
+            {loading ? "Saving..." : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+      {editing && error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {!doctorId && !editing && editable && (
+        <p className="mt-1 text-xs text-rose-600">Assign an attending doctor before requesting prescriptions.</p>
+      )}
+    </div>
+  );
 };
 
 const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDetailProps = {}) => {
@@ -122,10 +214,12 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
                 <span className="text-slate-500">Patient ID</span>
                 <span className="text-slate-800">{admission.patientId}</span>
               </div>
-              <div className={INFO_ROW}>
-                <span className="text-slate-500">Doctor ID</span>
-                <span className="text-slate-800">{admission.doctorId}</span>
-              </div>
+              <DoctorRow
+                key={`${admission.admissionId}-${admission.doctorId ?? ""}`}
+                admissionId={admission.admissionId}
+                doctorId={admission.doctorId}
+                editable={admission.status !== "DISCHARGED"}
+              />
               <div className={INFO_ROW}>
                 <span className="text-slate-500">Created At</span>
                 <span className="text-slate-800">{admission.createdAt}</span>

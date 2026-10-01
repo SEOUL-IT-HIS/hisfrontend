@@ -10,7 +10,7 @@ export interface VitalSignDTO {
     bpSystolic: number;
     bpDiastolic: number;
     spo2: number;
-    recorderId: number;
+    recorderId: string; // 직원 ID(empId, 간호사)
     createdAt: Date;
     updatedAt: Date;
 }
@@ -26,7 +26,7 @@ export interface VitalSignHistoryDTO {
   bpSystolic: number;
   bpDiastolic: number;
   spo2: number;
-  recorderId: number;
+  recorderId: string; // 직원 ID(empId, 간호사)
   changeType: string;
   changedAt: string;
 }
@@ -38,7 +38,7 @@ export interface RiskAssessmentDTO {
      score: number;
      riskLevelCd: string;
      assessedAt: Date;
-     assessorId: number;
+     assessorId: string; // 직원 ID(empId, 간호사)
      createdAt: Date;
      updatedAt: Date;
 }
@@ -63,7 +63,7 @@ export interface NursingAssessmentDTO {
     pastMedicalHistory: string;
     mentalStatusCd: string;
     assessedAt: Date;
-    assessorId: number;
+    assessorId: string; // 직원 ID(empId, 간호사)
     createdAt: Date;
     updatedAt: Date;
 }
@@ -74,7 +74,7 @@ export interface IandORecordDTO {
     ioTypeCd: string;
     routeCd: string;
     amountMl: number;
-    recorderId: number;
+    recorderId: string; // 직원 ID(empId, 간호사)
     createdAt: Date;
     updatedAt: Date;
 }
