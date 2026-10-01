@@ -23,7 +23,7 @@ import ImageReadingDetail from "@/components/labimaging/imaginginterpretation/Im
 
 /**
  * 선택한 접수의 오더에 속한 촬영항목별 판독 상태 목록 + 상세(펼치기).
- * 대응 유스케이스: UC-IMG-04 영상판독처리 (Jira ZP2-23)
+ * 대응 유스케이스: UC-RD-01 영상판독처리 (Jira ZP2-23)
  *
  * ⚠ 판독 워크리스트 API(GET /image-readings/worklist)는 접수·오더 단위 조회가 아니다.
  *   "영상파일이 1건 이상 등록된 촬영항목 전체"를 응급 우선으로 내려준다(findOrCreate, ZP2-125).

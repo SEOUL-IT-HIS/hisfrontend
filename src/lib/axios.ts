@@ -92,7 +92,7 @@ apiClient.interceptors.response.use(
     const message =
       error.response?.data?.message ??
       error.message ??
-      "요청 처리 중 오류가 발생했습니다.";
+      "Something went wrong while processing the request.";
 
     return Promise.reject(new Error(String(message)));
   },

@@ -32,6 +32,8 @@ import {
   selectLastCreatedSpecimen,
 } from "@/features/labimaging/labspecimen/slice";
 import { selectLastSubmittedLabResult } from "@/features/labimaging/labresult/slice";
+import { selectLastSubmittedMicrobiologyResult } from "@/features/labimaging/microbiologyresult/slice";
+import { selectLastSubmittedPathologyResult } from "@/features/labimaging/pathologyresult/slice";
 import ReceptionExcludeDialog from "@/components/labimaging/common/ReceptionExcludeDialog";
 import WorklistProgress from "@/components/labimaging/laborder/WorklistProgress";
 import WorklistReceptionHeader from "@/components/labimaging/laborder/WorklistReceptionHeader";
@@ -54,9 +56,9 @@ import LabResultWorkPanel from "@/components/labimaging/labresult/LabResultWorkP
  *    기간이 지났다고 자동으로 숨기면, 실제로는 처리해야 하는데 누락된 건까지 같이 사라진다.
  * 4. 정렬은 접수일시 오름차순이다. 오래 대기한 건이 위, 새 오더는 아래에 붙는다. (서버가 정렬)
  *
- * ── 아직 없는 것
- * 적합성 판정·결과 등록 화면은 미구현이라 오른쪽 탭에서 비활성으로 표시된다.
- * 일정 등록은 기존 화면이 있어 링크로 연결한다. (다음 단계에서 이 패널 안으로 들여올 예정)
+ * ── 오른쪽 탭 (5차 기준 전부 활성)
+ * 일정 → 검체 → 적합성 판정 → 결과(일반·미생물·병리). 결과 탭 안에서 항목 유형별 패널로 나뉜다.
+ * (탭 enabled 플래그와 "not implemented" 안내는 새 단계를 추가할 때 쓰려고 남겨 둔 자리다)
  */
 
 /** 백엔드가 ISO 문자열로 준다. 초 단위는 화면에서 의미가 없어 분까지만 보여준다. */
@@ -112,6 +114,19 @@ export default function LabWorklist() {
   const lastAcceptedId = useSelector(selectLastAcceptedSpecimen)?.specimenId ?? null;
   // 결과가 등록·수정·확정되면 nextStep 이 바뀌므로 목록을 다시 부른다.
   const lastResultId = useSelector(selectLastSubmittedLabResult)?.labResultId ?? null;
+  /*
+   * 미생물 결과도 진행도(n/m)에 들어간다(5차 Phase 3). 미생물 패널은 별도 slice 라 위 lastResultId 가
+   * 바뀌지 않으므로 따로 구독한다. 등록·수정·확정 모두 잡으려고 ID 에 상태·갱신시각을 붙인다.
+   */
+  const lastMicrobiology = useSelector(selectLastSubmittedMicrobiologyResult);
+  const lastMicrobiologyKey = lastMicrobiology
+    ? `${lastMicrobiology.microbiologyResultId}:${lastMicrobiology.resultStatusCode}:${lastMicrobiology.updatedAt ?? ""}`
+    : null;
+  // 병리 결과도 진행도에 들어간다(5차 Phase 4). 미생물과 같은 이유로 따로 구독한다.
+  const lastPathology = useSelector(selectLastSubmittedPathologyResult);
+  const lastPathologyKey = lastPathology
+    ? `${lastPathology.pathologyResultId}:${lastPathology.resultStatusCode}:${lastPathology.updatedAt ?? ""}`
+    : null;
 
   /*
    * 목록을 다시 부르는 지점은 이 효과 하나로 모은다.
@@ -121,7 +136,7 @@ export default function LabWorklist() {
    */
   useEffect(() => {
     dispatch(fetchLabWorklistRequest(filter));
-  }, [dispatch, filter, lastScheduleId, lastSpecimenId, lastAcceptedId, lastResultId]);
+  }, [dispatch, filter, lastScheduleId, lastSpecimenId, lastAcceptedId, lastResultId, lastMicrobiologyKey, lastPathologyKey]);
 
   /*
    * 목록에 보이는 환자들의 이름을 한 번에 불러온다. (POST /api/patient/batch)

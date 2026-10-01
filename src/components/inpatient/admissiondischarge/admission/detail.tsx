@@ -2,11 +2,12 @@
 
 import { fetchAdmissionDetailRequest, changeStatusRequest } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchBedAssignmentsRequest, selectBedAssignments } from "@/features/inpatient/bedmanagement/bedassignment/slice";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 
 import { RootState } from "@/store/store";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 // 입원 상태(admission.status) → 배지 색상
@@ -59,6 +60,13 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
   // 있으면 이미 병상이 배정된 상태로 간주
   const hasActiveBedAssignment = bedAssignments.some(
     (ba) => ba.admissionId === admissionId && ba.releasedAt === null
+  );
+
+  // 응급 요청의 희망 병동(WARD_CD 코드값) → 병동명. 공통코드를 못 불러오면 코드값 그대로 표시
+  const { options: wardOptions } = useCommonCodeOptions("WARD_CD");
+  const wardNameByCd = useMemo(
+    () => new Map(wardOptions.map((opt) => [opt.value, opt.label])),
+    [wardOptions],
   );
 
   return (
@@ -129,6 +137,50 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
             </div>
           </div>
 
+          {/* 응급 입원요청 정보 카드 — 응급(Kafka)에서 들어온 건(dispositionId 있음)만 표시
+              병상 배정 전에 보고 판단하도록 Next Step 카드보다 위에 둠
+              (배정하면 그 병동/병상이 응급으로 바로 회신되므로, 격리·희망 병동을 먼저 확인해야 함) */}
+          {admission.dispositionId && (
+            <div className="overflow-hidden rounded-xl border border-rose-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-rose-100 bg-rose-50 px-4 py-3">
+                <span className="text-sm font-medium text-rose-800">Emergency Request</span>
+                {admission.isolationYn === "Y" && (
+                  <span className="inline-flex items-center rounded-full bg-rose-600 px-2.5 py-1 text-xs font-medium text-white">
+                    Isolation Required
+                  </span>
+                )}
+              </div>
+              <div>
+                <div className={INFO_ROW}>
+                  <span className="text-slate-500">Isolation</span>
+                  <span className={admission.isolationYn === "Y" ? "font-medium text-rose-700" : "text-slate-800"}>
+                    {admission.isolationYn === "Y" ? "Required" : "Not required"}
+                  </span>
+                </div>
+                <div className={INFO_ROW}>
+                  <span className="text-slate-500">Preferred Ward</span>
+                  <span className="text-slate-800">
+                    {admission.wardPref ? wardNameByCd.get(admission.wardPref) ?? admission.wardPref : "-"}
+                  </span>
+                </div>
+                <div className={INFO_ROW}>
+                  <span className="text-slate-500">Requested By</span>
+                  <span className="text-slate-800">{admission.requestedBy ?? "-"}</span>
+                </div>
+                <div className={INFO_ROW}>
+                  <span className="text-slate-500">ER Encounter ID</span>
+                  <span className="text-slate-800">{admission.encounterId ?? "-"}</span>
+                </div>
+                {admission.note && (
+                  <div className="border-b border-slate-100 px-4 py-3 text-sm last:border-b-0">
+                    <p className="mb-1 text-slate-500">Note</p>
+                    <p className="whitespace-pre-wrap text-slate-800">{admission.note}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* "다음 단계" 카드 — 이미 퇴원 완료된 건은 더 진행할 액션이 없으므로 카드 자체를 숨김 */}
           {admission.status !== "DISCHARGED" && (
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -164,6 +216,27 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
                     className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
                   >
                     Assign Bed
+                  </Link>
+                )}
+
+                {/* 입원 중(ADMITTED)인 환자만 처방 요청 화면으로 이동 — 퇴원신청 이후는 처방요청 대상이 아님
+                    admissionId를 넘겨 해당 환자가 미리 선택된 채 열림 */}
+                {admission.status === "ADMITTED" && (
+                  <Link
+                    href={`/inpatient/medicationmanagement?admissionId=${admissionId}`}
+                    className="inline-flex items-center rounded-lg border border-sky-300 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50"
+                  >
+                    Request Prescription
+                  </Link>
+                )}
+
+                {/* 입원 중(퇴원신청 포함)인 환자의 간호기록 화면으로 이동 — admissionId를 넘겨 해당 환자가 미리 선택된 채 열림 */}
+                {(admission.status === "ADMITTED" || admission.status === "DISCHARGE_REQUESTED") && (
+                  <Link
+                    href={`/inpatient/nursingrecord?admissionId=${admissionId}`}
+                    className="inline-flex items-center rounded-lg border border-sky-300 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50"
+                  >
+                    Nursing Records
                   </Link>
                 )}
               </div>

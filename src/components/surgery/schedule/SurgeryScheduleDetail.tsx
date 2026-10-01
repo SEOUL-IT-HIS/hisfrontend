@@ -26,8 +26,10 @@ import {
 import {
   fetchHistoryRequest,
   fetchSurgeryRequest,
+  assignSurgeonRequest,
   selectScheduleError,
   selectScheduleLoading,
+  selectScheduleSaving,
   selectSelectedSurgery,
   selectSurgeryHistory,
 } from "@/features/surgery/schedule/slice";
@@ -56,26 +58,11 @@ import {
  * 조작은 전부 수술 업무 화면 몫이다. 상태는 여기서 <b>읽기만</b> 한다 — 배정을 고칠 수
  * 있는지가 상태에 달려 있어(예약에서만 가능) 안 보여줄 수는 없다.</p>
  *
- * <h3>배정도 읽기만 한다</h3>
+ * <h3>배정 수정 범위</h3>
  *
- * <p>얼마 전까지 이 화면에서 수술실·집도의·마취의·간호사를 셀렉트로 바꿀 수 있었다.
- * 고르면 바로 개별 배정 API 로 날아갔다.</p>
- *
- * <p>그 기능을 없앴다. 이유는 두 가지다.</p>
- *
- * <p>첫째, <b>아무 흔적도 남지 않았다.</b> 개별 배정 API 는 이력을 기록하지 않아서
- * 수술실이 3번에서 5번으로 바뀌어도 아래 이력 표에는 아무것도 뜨지 않았다.
- * 같은 화면에 이력 표를 두고 그 표에 안 잡히는 변경 수단을 나란히 놓고 있었던 셈이다.</p>
- *
- * <p>둘째, <b>배정 승인 때 걸어 둔 검증이 무너졌다.</b> 마취를 시행하는 수술이라
- * 마취의를 필수로 받아 놓고는, 여기서 마취의를 '미배정'으로 되돌릴 수 있었다.</p>
- *
- * <p>이제 배정은 <b>승인하는 순간 한 번에 확정</b>되고(배정 대기 목록의 배정 폼),
- * 그 뒤로는 바꿀 수 없다. 백엔드도 SUR059 로 거절한다. 잘못 배정했으면 수술 업무에서
- * 취소하고 다시 요청받는다 — 그 경로는 사유가 남고 진료 쪽도 결과를 안다.</p>
- *
- * <p>그래서 이 화면은 지금 <b>전부 읽기 전용</b>이다. 배정 조합과 그 수술이 어떤 상태
- * 변화를 거쳐 왔는지를 보여주는 것이 하는 일의 전부다.</p>
+ * <p>예약 상태에서는 집도의 변경을 허용한다. 수술팀이 구두·메신저 등으로 변경 요청을
+ * 확인한 뒤 수정하며, 이 변경은 별도 이력으로 기록하지 않는다. 수술실·마취의·간호사
+ * 배정은 이 화면에서도 변경할 수 없다.</p>
  */
 
 type Props = { surgeryId: string };
@@ -99,13 +86,18 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
   const history = useSelector(selectSurgeryHistory);
   const rooms = useSelector(selectRooms);
   const loading = useSelector(selectScheduleLoading);
+  const saving = useSelector(selectScheduleSaving);
   const error = useSelector(selectScheduleError);
 
   // 직원 목록 — 이름을 보여주기 위해서만 받는다.
   //   수술 DB 에는 이름이 없고 식별자만 있어서(§21.9), 이것 없이는 화면에 숫자만 뜬다.
-  //   고르게 하려는 것이 아니다 — 배정은 여기서 바꿀 수 없다.
+  //   집도의 변경 시 이 목록에서 새 담당자를 선택한다.
   const [employees, setEmployees] = useState<Emp[]>([]);
   const [empError, setEmpError] = useState("");
+  const [surgeonDraft, setSurgeonDraft] = useState<{
+    currentSurgeonId: string;
+    selectedSurgeonId: string;
+  } | null>(null);
 
   // 환자도 같은 이유로 이름을 받아온다. surgery 가 아직 없으면 빈 배열이라 호출도 없다.
   const { names: patientNames } = usePatientNames(
@@ -155,6 +147,13 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
     const emp = employees.find((e) => String(e.empId) === id);
     return emp ? `${emp.empName} (${emp.empNo})` : id;
   };
+
+  const canChangeSurgeon = surgery.statusCd === SURGERY_STATUS.SCHEDULED;
+  const selectedSurgeonId =
+    surgeonDraft?.currentSurgeonId === surgery.surgeonId
+      ? surgeonDraft.selectedSurgeonId
+      : surgery.surgeonId;
+  const surgeonChanged = selectedSurgeonId !== surgery.surgeonId;
 
   const historyColumns: DataTableColumn<SurgeryStatusHistory>[] = [
     {
@@ -232,16 +231,12 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
         </dl>
       </Panel>
 
-      {/* ---- 배정 (읽기 전용) ---- */}
+      {/* ---- 배정 ---- */}
       <Panel className="p-5">
         <h2 className="mb-1 text-sm font-medium text-slate-700">Assignment</h2>
         <p className="mb-4 text-xs text-slate-500">
-          The assignment is fixed when the order is approved and cannot be changed
-          afterwards. To change it, go to{" "}
-          <Link href="/surgery/worklist" className="text-sky-600 underline">
-            Surgery worklist
-          </Link>
-          , cancel the surgery, and have it requested again.
+          The surgeon can be changed while the surgery is scheduled. Surgeon
+          changes are not recorded in the history.
         </p>
 
         <dl className="grid gap-x-6 gap-y-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
@@ -251,7 +246,47 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
           </div>
           <div>
             <dt className="text-slate-500">Surgeon</dt>
-            <dd className="text-slate-800">{empLabel(surgery.surgeonId)}</dd>
+            <dd className="mt-1 flex flex-wrap items-center gap-2">
+              <select
+                aria-label="Surgeon"
+                className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-800 disabled:bg-slate-100"
+                value={selectedSurgeonId}
+                onChange={(event) =>
+                  setSurgeonDraft({
+                    currentSurgeonId: surgery.surgeonId,
+                    selectedSurgeonId: event.target.value,
+                  })
+                }
+                disabled={!canChangeSurgeon || saving || Boolean(empError)}
+              >
+                {!employees.some((emp) => String(emp.empId) === selectedSurgeonId) ? (
+                  <option value={selectedSurgeonId}>
+                    {empLabel(selectedSurgeonId)}
+                  </option>
+                ) : null}
+                {employees.map((emp) => (
+                  <option key={emp.empId} value={String(emp.empId)}>
+                    {emp.empName} ({emp.empNo})
+                  </option>
+                ))}
+              </select>
+              {canChangeSurgeon ? (
+                <button
+                  type="button"
+                  className="rounded-md bg-sky-600 px-3 py-1.5 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={!surgeonChanged || saving || Boolean(empError)}
+                  onClick={() =>
+                    dispatch(
+                      assignSurgeonRequest(surgery.surgeryId, {
+                        surgeonId: selectedSurgeonId,
+                      }),
+                    )
+                  }
+                >
+                  {saving ? "Saving…" : "Update surgeon"}
+                </button>
+              ) : null}
+            </dd>
           </div>
           <div>
             <dt className="text-slate-500">Anesthesiologist</dt>

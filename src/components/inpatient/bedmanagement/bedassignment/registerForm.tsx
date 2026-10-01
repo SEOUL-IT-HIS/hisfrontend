@@ -60,8 +60,15 @@ const BedAssignmentRegisterForm = () => {
     // 아직 퇴상 처리 안 된(releasedAt === null) 배정 건들의 admissionId만 뽑음
     // = "현재 이미 병상이 배정되어 있는 입원건" 목록
     const assignedAdmissionIds = useMemo( () => bedAssignments.filter((ba)=>ba.releasedAt === null).map((ba) => ba.admissionId), [bedAssignments]);
-    // 전체 입원건에서 위에서 뽑은 "이미 배정된 입원건"을 제외 → 한 입원건이 병상 두 개에 중복 배정되는 것을 방지
-    const availableAdmissions = useMemo(() => admissions.filter((admission) => !assignedAdmissionIds.includes(admission.admissionId)), [admissions, assignedAdmissionIds]);
+    // 병상을 새로 배정할 대상 = 입원요청(REQUESTED) 상태이면서 아직 병상이 없는 입원건
+    // - 이미 배정된 건 제외 → 한 입원건이 병상 두 개에 중복 배정되는 것을 방지
+    // - 퇴원신청/퇴원완료 건 제외 → 퇴원하면서 병상이 해제된 건이 "병상 없음"으로 다시 목록에 나오던 문제 방지
+    const availableAdmissions = useMemo(
+        () => admissions.filter(
+            (admission) => admission.status === "REQUESTED" && !assignedAdmissionIds.includes(admission.admissionId),
+        ),
+        [admissions, assignedAdmissionIds],
+    );
 
     // 등록 성공하면 목록 화면으로 돌려보냄
     // useEffect(() => {

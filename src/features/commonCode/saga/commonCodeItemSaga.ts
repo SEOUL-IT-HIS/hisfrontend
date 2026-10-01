@@ -30,7 +30,7 @@ function* fetchCommonCodeItemSaga(action: ReturnType<typeof fetchCommonCodeItemR
     yield put(fetchCommonCodeItemSuccess(items));
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "공통코드 아이템 조회에 실패했습니다.";
+      error instanceof Error ? error.message : "Failed to load code items.";
     yield put(fetchCommonCodeItemFailure(message));
   }
 }
@@ -44,7 +44,7 @@ function* fetchCommonCodeItemRegisterSaga(
     yield put(fetchCommonCodeItemRegisterSuccess(newItem));
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "공통코드 아이템 등록에 실패했습니다.";
+      error instanceof Error ? error.message : "Failed to register the code item.";
     yield put(fetchCommonCodeItemRegisterFailure(message));
   }
 }
@@ -58,7 +58,7 @@ function* fetchCommonCodeItemUpdateSaga(
     yield put(fetchCommonCodeItemUpdateSuccess(updatedItem));
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "공통코드 아이템 수정에 실패했습니다.";
+      error instanceof Error ? error.message : "Failed to update the code item.";
     yield put(fetchCommonCodeItemUpdateFailure(message));
   }
 }

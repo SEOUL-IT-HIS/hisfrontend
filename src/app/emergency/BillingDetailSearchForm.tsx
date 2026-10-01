@@ -65,27 +65,28 @@ export default function BillingDetailSearchForm({
             ) : null}
 
             <div className="min-h-0 flex-1 overflow-auto">
-                <table className="w-full min-w-[640px] text-left text-sm">
+                <table className="w-full min-w-[760px] text-left text-sm">
                     <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/95 backdrop-blur">
                         <tr className="text-xs uppercase tracking-wide text-slate-400">
                             <th className="px-5 py-3 font-medium">Name</th>
                             <th className="px-5 py-3 font-medium">Birth Date</th>
                             <th className="px-5 py-3 font-medium">Phone</th>
-                            <th className="px-5 py-3 font-medium">Address</th>
-                            <th className="px-5 py-3 font-medium">Item</th>
+                            <th className="px-5 py-3 font-medium">Type</th>
+                            <th className="px-5 py-3 text-right font-medium">Amount</th>
+                            <th className="px-5 py-3 font-medium">Created At</th>
                             <th className="px-5 py-3 font-medium">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={6} className="px-5 py-20 text-center text-slate-400">
+                                <td colSpan={7} className="px-5 py-20 text-center text-slate-400">
                                     Loading...
                                 </td>
                             </tr>
                         ) : searchPatient.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="px-5 py-20 text-center text-slate-400">
+                                <td colSpan={7} className="px-5 py-20 text-center text-slate-400">
                                     No results found.
                                 </td>
                             </tr>

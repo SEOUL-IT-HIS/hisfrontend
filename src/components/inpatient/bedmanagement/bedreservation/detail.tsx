@@ -1,6 +1,6 @@
 "use client";
 
-import { fetchBedReservationDetailRequest,deleteBedReservationRequest } from "@/features/inpatient/bedmanagement/bedreservation/slice";
+import { fetchBedReservationDetailRequest, deleteBedReservationRequest, updateBedReservationRequest } from "@/features/inpatient/bedmanagement/bedreservation/slice";
 import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice";
 import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
@@ -12,13 +12,16 @@ const STATUS_BADGE: Record<string, string> = {
     REQUESTED: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
     RESERVED: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
     RELEASED: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
+    ASSIGNED: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
 };
 
-// 예약 상태 코드 → 화면에 보여줄 한글 라벨
+// 예약 상태 코드 → 화면에 보여줄 라벨
+// 흐름: REQUESTED(요청) → RESERVED(확정) → ASSIGNED(입원예정시각이 되어 병상배정으로 전환됨) / 중간에 취소되면 RELEASED
 const STATUS_LABEL: Record<string, string> = {
     REQUESTED: "Pending",
     RESERVED: "Reserved",
     RELEASED: "Released",
+    ASSIGNED: "Assigned",
 };
 
 const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
@@ -94,6 +97,21 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
     function handleDelete() {
         if (!bedReservationId) return;
         dispatch(deleteBedReservationRequest(bedReservationId));
+    }
+
+    // 예약 확정: REQUESTED → RESERVED
+    // 확정된(RESERVED) 예약만 입원예정시각이 되면 자동으로 병상배정으로 전환됨
+    // 백엔드는 기존 예약 수정 API(PUT)를 그대로 쓰고, 상태 변경 이력도 거기서 자동으로 남음
+    function handleConfirm() {
+        if (!bedReservation) return;
+        dispatch(updateBedReservationRequest({
+            bedReservationId: bedReservation.bedReservationId,
+            bedId: bedReservation.bedId,
+            patientId: bedReservation.patientId,
+            reserveAt: bedReservation.reserveAt,
+            expectedAdmissionAt: bedReservation.expectedAdmissionAt,
+            reservationStatusCd: "RESERVED",
+        }));
     }
 
     // 일정만 바꾸는 전용 액션이라 액션 생성자(action creator) 없이 type 문자열을 직접 dispatch
@@ -173,6 +191,24 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
                             </div>
                         </div>
                     </div>
+
+                    {/* 예약 확정 카드 — 요청(REQUESTED) 상태일 때만 노출 */}
+                    {bedReservation.reservationStatusCd === "REQUESTED" && (
+                        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <p className="mb-1 text-sm font-medium text-slate-800">Confirm Reservation</p>
+                            <p className="mb-3 text-xs text-slate-500">
+                                Once confirmed, the bed is assigned automatically at the expected admission time.
+                            </p>
+                            <button
+                                onClick={handleConfirm}
+                                disabled={updateStatus.loading}
+                                className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+                            >
+                                {updateStatus.loading ? "Confirming..." : "Confirm Reservation"}
+                            </button>
+                            {updateStatus.error && <p className="mt-2 text-sm text-red-600">{updateStatus.error}</p>}
+                        </div>
+                    )}
 
                     {/* 일정 변경 카드 — scheduleForm(로컬 입력값)을 수정하고 저장 시 handleUpdateSchedule 호출 */}
                     <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

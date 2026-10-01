@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { SearchBar, Input, DataTable, Pagination } from "@/components/common";
+import { SearchBar, Input, Select, DataTable, Pagination } from "@/components/common";
 import type { DataTableColumn } from "@/components/common/DataTable";
 import KtasLevelBadge from "@/components/emergency/receptionList/KtasLevelBadge";
 import {
@@ -13,6 +13,18 @@ import {
 import type { ReceptionListItem } from "@/features/emergency/receptionList/types";
 import { BED_ZONE_OPTIONS } from "@/features/emergency/resource/bed/types";
 import type { AppDispatch } from "@/store/store";
+import { selectDispositionByReceptionId } from "@/features/emergency/disposition/slice";
+import { selectAdmissionsByDisposition, selectTransfersByDisposition } from "@/features/emergency/disposition/followup/slice";
+
+/** 목록 상태 필터 — 저장 코드가 아니라 백엔드가 퇴실 처리 진행에 따라 계산하는 값 */
+const STATUS_OPTIONS = [
+    // 진료 중(기본): 퇴실 결정 전, 또는 입원/전원 후속 처리가 끝나기 전
+    { value: "IN_CARE", label: "In Care" },
+    // 퇴실 처리 완료
+    { value: "DONE", label: "Done" },
+    // 전체
+    { value: "ALL", label: "All" },
+];
 
 function zoneLabel(zoneCode: string): string {
     return BED_ZONE_OPTIONS.find((o) => o.value === zoneCode)?.label ?? zoneCode;
@@ -34,10 +46,17 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
 
     const [keyword, setKeyword] = useState("");
     const [page, setPage] = useState(1);
+    const [status, setStatus] = useState("IN_CARE");
+
+    // 선택한 환자의 퇴실 결정·입원 회신·전원 소견서가 바뀌면 목록 상태(진료 중/완료)도 다시 불러온다.
+    const disposition = useSelector(selectDispositionByReceptionId(activeReceptionNo ?? ""));
+    const admissions = useSelector(selectAdmissionsByDisposition(disposition?.id ?? ""));
+    const transfers = useSelector(selectTransfersByDisposition(disposition?.id ?? ""));
+    const followUpKey = `${disposition?.id ?? ""}|${admissions[0]?.requestStatusCode ?? ""}|${transfers.length}`;
 
     useEffect(() => {
-        dispatch(fetchReceptionListRequest());
-    }, [dispatch]);
+        dispatch(fetchReceptionListRequest(status === "ALL" ? undefined : status));
+    }, [dispatch, status, followUpKey]);
 
     // 백엔드가 조회 순서를 보장하지 않으므로(ORDER BY 없음), 접수번호 오름차순(먼저 접수한 환자 순)으로 직접 정렬한다.
     const sortedItems = [...items].sort((a, b) => a.receptionId.localeCompare(b.receptionId));
@@ -76,6 +95,12 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
                 onReset={() => { setKeyword(""); setPage(1); }}
                 resetLabel="Reset"
             >
+                <Select
+                    value={status}
+                    onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+                    options={STATUS_OPTIONS}
+                    className="max-w-[130px]"
+                />
                 <Input
                     // 환자명 검색
                     placeholder="Search patient name"
@@ -94,7 +119,7 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
                     isRowActive={(r) => r.receptionId === activeReceptionNo}
                     loading={loading}
                     // 오늘 접수된 응급 환자가 없습니다.
-                    emptyMessage="No emergency patients received today."
+                    emptyMessage={status === "DONE" ? "No discharged patients." : "No emergency patients in care."}
                     minWidthClassName="min-w-0"
                     className="!rounded-b-none !border-b-0 !shadow-none"
                 />

@@ -3,6 +3,7 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import {
   createConsent,
   fetchConsentsByImageOrderId,
+  withdrawConsent,
 } from "@/features/labimaging/imagingconsent/api";
 import {
   fetchConsentsRequest,
@@ -11,10 +12,15 @@ import {
   createConsentRequest,
   createConsentSuccess,
   createConsentFailure,
+  withdrawConsentRequest,
+  withdrawConsentSuccess,
+  withdrawConsentFailure,
 } from "@/features/labimaging/imagingconsent/slice";
 import type {
   ConsentCreateRequest,
   ConsentSummary,
+  ConsentWithdrawRequest,
+  ConsentWithdrawResult,
 } from "@/features/labimaging/imagingconsent/types";
 
 /**
@@ -54,7 +60,23 @@ function* createConsentSaga(action: PayloadAction<ConsentCreateRequest>) {
   }
 }
 
+/** 동의 철회 (5차 Phase 9-3) — 성공하면 같은 오더의 이력을 다시 불러온다 */
+function* withdrawConsentSaga(
+  action: PayloadAction<{ consentId: string; request: ConsentWithdrawRequest; imageOrderId: string }>,
+) {
+  const { consentId, request, imageOrderId } = action.payload;
+  try {
+    const result: ConsentWithdrawResult = yield call(withdrawConsent, consentId, request);
+    yield put(withdrawConsentSuccess({ consentId, code: result.code }));
+    yield put(fetchConsentsRequest(imageOrderId));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to withdraw consent.";
+    yield put(withdrawConsentFailure(message));
+  }
+}
+
 export default function* consentSaga() {
   yield takeLatest(fetchConsentsRequest.type, fetchConsentsSaga);
   yield takeLatest(createConsentRequest.type, createConsentSaga);
+  yield takeLatest(withdrawConsentRequest.type, withdrawConsentSaga);
 }

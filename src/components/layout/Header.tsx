@@ -58,7 +58,7 @@ export default function Header() {
         <Link
           href="/main"
           className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-white transition-colors hover:bg-sky-700"
-          aria-label="대문으로 이동"
+          aria-label="Go to home"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden>
             <path d="M12 5v14M5 12h14" />

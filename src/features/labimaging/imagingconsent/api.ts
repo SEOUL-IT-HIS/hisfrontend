@@ -3,6 +3,8 @@ import type { ApiResponse } from "@/features/labimaging/types";
 import type {
   ConsentCreateRequest,
   ConsentSummary,
+  ConsentWithdrawRequest,
+  ConsentWithdrawResult,
 } from "@/features/labimaging/imagingconsent/types";
 
 /**
@@ -35,6 +37,21 @@ export async function fetchConsentsByImageOrderId(
  *
  * ⚠ 같은 오더에 같은 유형의 철회 전 동의가 이미 있으면 400 + LAB031 로 실패한다.
  */
+/**
+ * POST /consents/{consentId}/withdrawal — 동의 철회 (5차 Phase 9-3)
+ * ⚠ 응답 코드까지 돌려준다. 이미 촬영된 항목이 있으면 서버가 LAB097 로 답하고, 화면은 "촬영 영상은 유지" 안내를 띄운다.
+ */
+export async function withdrawConsent(
+  consentId: string,
+  request: ConsentWithdrawRequest,
+): Promise<ConsentWithdrawResult> {
+  const { data } = await apiClient.post<ApiResponse<ConsentSummary>>(
+    `${CONSENT_PATH}/${encodeURIComponent(consentId)}/withdrawal`,
+    request,
+  );
+  return { consent: data.data, code: data.code };
+}
+
 export async function createConsent(
   request: ConsentCreateRequest,
 ): Promise<ConsentSummary> {

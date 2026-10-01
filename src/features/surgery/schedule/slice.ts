@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
+  AssignSurgeonRequest,
   CancelSurgeryRequest,
   ScheduleState,
   Surgery,
@@ -157,18 +158,16 @@ const scheduleSlice = createSlice({
       state.error = action.payload;
     },
 
-    /*
-      개별 배정(assignFieldRequest)과 스케줄 수정(updateSurgeryRequest)을 걷어냈다.
-
-      배정은 요청을 승인할 때 한 번에 확정되고 그 뒤로는 바꿀 수 없다. 백엔드가
-      개별 배정 PATCH 4종을 SUR059 로 거절하므로, 이 액션들은 눌러도 오류만
-      돌려주는 상태였다. 화면(SurgeryScheduleDetail)도 읽기 전용이 되어 아무도
-      dispatch 하지 않는다.
-
-      api.ts 의 assignSurgeryField·updateSurgerySchedule 도 함께 지웠다.
-    */
-
-    // ----- 배정 (요청접수 → 예약) -----
+    // ----- 예약 수술 집도의 변경 -----
+    assignSurgeonRequest: {
+      reducer(state) {
+        state.saving = true;
+        state.error = "";
+      },
+      prepare(surgeryId: string, request: AssignSurgeonRequest) {
+        return { payload: { surgeryId, request } };
+      },
+    },
 
     // ----- 상태 전이 (SL2-33 취소 / SL2-39 진행상태 / 시작·종료) -----
     /** 물리 삭제가 아니라 취소 상태 전이다(§21.6) */
@@ -242,6 +241,7 @@ export const {
   fetchHistorySuccess,
   fetchHistoryFailure,
   cancelSurgeryRequest,
+  assignSurgeonRequest,
   updateProgressRequest,
   startSurgeryRequest,
   endSurgeryRequest,

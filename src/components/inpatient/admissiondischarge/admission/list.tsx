@@ -11,7 +11,6 @@ import {
 import { fetchBedAssignmentsRequest, selectBedAssignments } from "@/features/inpatient/bedmanagement/bedassignment/slice"; // 병상배정 목록(다른 feature 슬라이스)
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice"; // 환자 목록(또 다른 feature 슬라이스, patient-service 쪽)
 import AdmissionDetail from "@/components/inpatient/admissiondischarge/admission/detail"; // 마스터-디테일의 "디테일" 쪽 컴포넌트
-import Link from "next/link"; // 페이지 이동용 링크 컴포넌트(a 태그의 Next.js 버전)
 const FILTERS = [
   { key: "all", label: "All" },
   { key: "needsAssignment", label: "Assignment Needed" },
@@ -126,13 +125,7 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
               </button>
             ))}
           </div>
-          {/* 등록 화면으로 이동하는 링크 — embedded 여부와 상관없이 항상 노출 */}
-          <Link
-            href="/inpatient/admissiondischarge/admission/create"
-            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-          >
-            Register Admission Request
-          </Link>
+          {/* 병동 직접 등록 폼은 제거함 — 입원요청은 응급에서 Kafka(emergency.admission.requested.v1)로만 들어옴 */}
         </div>
       </div>
 
@@ -174,7 +167,15 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
                       {patientNameById.get(admission.patientId) ?? "Looking up..."}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDeptId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionRoute}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                      {admission.admissionRoute}
+                      {/* 응급 요청 중 격리가 필요한 건은 목록에서도 바로 보이게 표시 (배정 전 확인용) */}
+                      {admission.isolationYn === "Y" && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-200">
+                          Isolation
+                        </span>
+                      )}
+                    </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDate}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.patientId}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.doctorId}</td>

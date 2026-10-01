@@ -73,6 +73,10 @@ const iandorecordSlice = createSlice({
         clearIandORecordState(state) {
             state.deleteStatus = { ...initialStatus };
         },
+        // 등록 성공 처리 후 createStatus를 초기화 — 안 하면 success=true가 남아서 등록 화면을 다시 열자마자 바로 이동해버림
+        resetIandORecordCreateStatus(state) {
+            state.createStatus = { ...initialStatus };
+        },
         
     },
 });
@@ -82,7 +86,7 @@ export const { fetchIandORecordsRequest, fetchIandORecordsSuccess, fetchIandORec
     createIandORecordRequest, createIandORecordSuccess, createIandORecordFailure,
     updateIandORecordRequest, updateIandORecordSuccess, updateIandORecordFailure,
     deleteIandORecordRequest, deleteIandORecordSuccess, deleteIandORecordFailure,
-    clearIandORecordState } = iandorecordSlice.actions;
+    clearIandORecordState, resetIandORecordCreateStatus } = iandorecordSlice.actions;
 export default iandorecordSlice.reducer;
 
 // ----- Selector -----

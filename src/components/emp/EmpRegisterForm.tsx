@@ -347,7 +347,13 @@ export default function EmpRegisterForm({
           ) : null}
         </FormField>
 
-        <FormActions onCancel={onClose} submitLabel="Register" loading={loading} />
+        <FormActions
+          onCancel={onClose}
+          submitLabel="Register"
+          loading={loading}
+          loadingLabel="Saving…"
+          cancelLabel="Cancel"
+        />
       </form>
     </div>
   );

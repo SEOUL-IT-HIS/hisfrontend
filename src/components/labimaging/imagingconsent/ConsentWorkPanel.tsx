@@ -11,6 +11,8 @@ import {
   Input,
   Select,
 } from "@/components/common";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import type { DataTableColumn } from "@/components/common";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveConsentMessage } from "@/features/labimaging/imagingconsent/messages";
@@ -23,9 +25,14 @@ import {
   selectConsents,
   selectConsentsError,
   selectConsentsLoading,
+  selectConsentWithdrawError,
+  selectConsentWithdrawing,
   selectLastCreatedConsent,
+  selectLastWithdrawCode,
   selectLoadedConsentOrderId,
+  withdrawConsentRequest,
 } from "@/features/labimaging/imagingconsent/slice";
+import ConsentWithdrawDialog from "@/components/labimaging/imagingconsent/ConsentWithdrawDialog";
 import {
   CONSENT_YN_OPTIONS,
   hasValidConsent,
@@ -43,7 +50,9 @@ import {
  * ⚠ 등록 후에도 폼이 남는다. 한 오더에 조영제 동의와 침습검사 동의를 각각 받는 경우가 있어
  *   유형만 바꿔 연속 등록할 수 있어야 한다. (같은 유형 중복은 서버가 LAB031 로 막는다)
  *
- * ⚠ 동의 철회는 1차 배포 범위 밖이다 (4차 이월). 이력의 철회 상태를 표시만 한다.
+ * ⚠ 동의 철회 (5차 Phase 9-3): 이력의 "동의함 + 미철회" 행에 철회 버튼 → 사유(CONSENT_WITHDRAW_CD) 선택.
+ *   촬영 후 철회도 허용한다(D14). 서버가 LAB097 로 답하면 "이미 촬영된 영상은 유지" 안내를 보여준다.
+ * ⚠ 거부 사유 (5차 Phase 9-2): 동의 여부를 Declined 로 고르면 사유 입력칸이 나온다(선택). 동의(Y)면 보내지 않는다.
  */
 
 const initialForm = {
@@ -53,6 +62,7 @@ const initialForm = {
   consentDt: "",
   signedByName: "",
   witnessId: "",
+  refusalNote: "",
 };
 
 type FormState = typeof initialForm;
@@ -83,6 +93,9 @@ export default function ConsentWorkPanel({
 }) {
   const dispatch = useDispatch<AppDispatch>();
 
+  /** 담당자는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
+
   const consents = useSelector(selectConsents);
   const listLoading = useSelector(selectConsentsLoading);
   const listError = useSelector(selectConsentsError);
@@ -90,9 +103,17 @@ export default function ConsentWorkPanel({
   const creating = useSelector(selectConsentCreating);
   const createError = useSelector(selectConsentCreateError);
   const lastCreated = useSelector(selectLastCreatedConsent);
+  const withdrawing = useSelector(selectConsentWithdrawing);
+  const withdrawError = useSelector(selectConsentWithdrawError);
+  const lastWithdrawCode = useSelector(selectLastWithdrawCode);
+
+  /** 철회 대상 동의 — null 이면 다이얼로그가 닫혀 있다 */
+  const [withdrawTarget, setWithdrawTarget] = useState<ConsentSummary | null>(null);
 
   // 동의서유형은 admin 공통코드다. (영상은 CONTRAST/INVASIVE 를 쓰고, 01~03 은 수술 쪽 값이다)
   const consentTypes = useCommonCodeOptions("CONSENT_TYPE_CD");
+  // 철회사유 표시용 (5차 Phase 9-3 — 기존 admin 그룹)
+  const withdrawReasons = useCommonCodeOptions("CONSENT_WITHDRAW_CD");
 
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -109,6 +130,18 @@ export default function ConsentWorkPanel({
     dispatch(fetchConsentsRequest(reception.imageOrderId));
   }, [dispatch, reception.imageOrderId]);
 
+  function handleWithdraw(withdrawnReasonCode: string) {
+    if (!withdrawTarget) return;
+    dispatch(
+      withdrawConsentRequest(
+        withdrawTarget.consentId,
+        { withdrawnReasonCode, withdrawnById: actorId },
+        reception.imageOrderId,
+      ),
+    );
+    setWithdrawTarget(null);
+  }
+
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -121,7 +154,7 @@ export default function ConsentWorkPanel({
       next.documentTemplateId = "Consent template ID is required.";
     if (!form.consentDt) next.consentDt = "Consent date is required.";
     if (!form.signedByName.trim()) next.signedByName = "Signer name is required.";
-    if (!form.witnessId.trim()) next.witnessId = "Witness ID is required.";
+    if (!signedIn) next.witnessId = "Sign in to record this action.";
     return next;
   }
 
@@ -140,7 +173,9 @@ export default function ConsentWorkPanel({
         consentYn: form.consentYn,
         consentDt: form.consentDt,
         signedByName: form.signedByName.trim(),
-        witnessId: form.witnessId.trim(),
+        witnessId: actorId,
+        // 거부일 때만 사유를 보낸다 — 동의 건에 사유가 붙으면 이력에서 오해를 부른다(서버도 버린다)
+        refusalNote: form.consentYn === "N" && form.refusalNote.trim() ? form.refusalNote.trim() : undefined,
       }),
     );
   }
@@ -148,6 +183,11 @@ export default function ConsentWorkPanel({
   /** 공통코드 값(CONTRAST)을 화면 문구(조영제사용동의)로 바꾼다. 못 찾으면 원본 값 그대로. */
   function consentTypeLabel(code: string) {
     return consentTypes.options.find((o) => o.value === code)?.label ?? code;
+  }
+
+  function withdrawReasonLabel(code?: string) {
+    if (!code) return "-";
+    return withdrawReasons.options.find((o) => o.value === code)?.label ?? code;
   }
 
   const columns: DataTableColumn<ConsentSummary>[] = [
@@ -167,7 +207,9 @@ export default function ConsentWorkPanel({
         c.consentYn === "Y" ? (
           <span className="text-emerald-600">Consented</span>
         ) : (
-          <span className="text-rose-600">Declined</span>
+          <span className="text-rose-600" title={c.refusalNote ?? ""}>
+            Declined{c.refusalNote ? ` — ${c.refusalNote}` : ""}
+          </span>
         ),
     },
     { key: "consentDt", header: "Consent Date", render: (c) => c.consentDt ?? "-" },
@@ -178,9 +220,19 @@ export default function ConsentWorkPanel({
       header: "Withdrawal",
       render: (c) =>
         c.withdrawnYn === "Y" ? (
-          <span className="text-rose-600" title={c.withdrawnReasonCode}>
-            Withdrawn ({formatDateTime(c.withdrawnAt)})
+          <span className="text-rose-600" title={withdrawReasonLabel(c.withdrawnReasonCode)}>
+            Withdrawn ({formatDateTime(c.withdrawnAt)}) · {withdrawReasonLabel(c.withdrawnReasonCode)}
           </span>
+        ) : c.consentYn === "Y" ? (
+          // 철회는 "했던 동의"만 대상이다 — 거부 기록에는 버튼이 없다(서버 LAB096)
+          <Button
+            variant="secondary"
+            className="h-8 px-3"
+            disabled={withdrawing || !signedIn}
+            onClick={() => setWithdrawTarget(c)}
+          >
+            Withdraw
+          </Button>
         ) : (
           <span className="text-slate-400">-</span>
         ),
@@ -274,15 +326,8 @@ export default function ConsentWorkPanel({
             ) : null}
           </FormField>
 
-          <FormField label="Witness ID" required>
-            <Input
-              name="witnessId"
-              value={form.witnessId}
-              onChange={handleChange}
-              maxLength={20}
-              disabled={creating}
-              placeholder="e.g. STF00021"
-            />
+          <FormField label="Witness" required>
+            <LoginActorInput name="witnessId" actorName={actorName} signedIn={signedIn} />
             {errors.witnessId ? (
               <span className="text-xs text-rose-500">{errors.witnessId}</span>
             ) : null}
@@ -293,6 +338,19 @@ export default function ConsentWorkPanel({
               양식 목록을 내려주는 API 가 아직 없어 임시로 직접 입력받는다.
               admin 에 양식 조회 API 가 생기면 Select 로 바꿀 것.
           */}
+          {form.consentYn === "N" ? (
+            <FormField label="Refusal Reason" hint="Optional — saved only for a declined consent">
+              <Input
+                name="refusalNote"
+                value={form.refusalNote}
+                onChange={handleChange}
+                maxLength={500}
+                disabled={creating}
+                placeholder="Why the patient declined"
+              />
+            </FormField>
+          ) : null}
+
           <FormField label="Consent Template ID" required>
             <Input
               name="documentTemplateId"
@@ -321,6 +379,10 @@ export default function ConsentWorkPanel({
           Consent History {loaded ? `(${consents.length})` : ""}
         </p>
         {listError ? <Alert>{resolveConsentMessage(listError)}</Alert> : null}
+        {withdrawError ? <Alert>{resolveConsentMessage(withdrawError)}</Alert> : null}
+        {lastWithdrawCode ? (
+          <Alert variant="success">{resolveConsentMessage(lastWithdrawCode)}</Alert>
+        ) : null}
         <DataTable
           columns={columns}
           rows={loaded ? consents : []}
@@ -332,6 +394,14 @@ export default function ConsentWorkPanel({
           emptyMessage="No consent registered yet."
         />
       </div>
+
+      <ConsentWithdrawDialog
+        open={withdrawTarget !== null}
+        consentLabel={withdrawTarget ? consentTypeLabel(withdrawTarget.consentTypeCode) : ""}
+        submitting={withdrawing}
+        onConfirm={handleWithdraw}
+        onCancel={() => setWithdrawTarget(null)}
+      />
     </div>
   );
 }

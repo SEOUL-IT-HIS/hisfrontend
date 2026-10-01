@@ -33,6 +33,7 @@
 import { call, put, select, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import {
+  assignSurgerySurgeon,
   cancelSurgerySchedule,
   endSurgery,
   getSurgerySchedule,
@@ -44,6 +45,7 @@ import {
   updateSurgeryProgress,
 } from "@/features/surgery/schedule/api";
 import {
+  assignSurgeonRequest,
   cancelSurgeryRequest,
   endSurgeryRequest,
   fetchSurgeriesFailure,
@@ -69,6 +71,7 @@ import {
   updateProgressRequest,
 } from "@/features/surgery/schedule/slice";
 import type {
+  AssignSurgeonRequest,
   CancelSurgeryRequest,
   Surgery,
   SurgeryListParams,
@@ -218,6 +221,28 @@ function* cancelSurgerySaga(
   }
 }
 
+function* assignSurgeonSaga(
+  action: PayloadAction<{
+    surgeryId: string;
+    request: AssignSurgeonRequest;
+  }>,
+) {
+  try {
+    const { surgeryId, request } = action.payload;
+    yield call(assignSurgerySurgeon, surgeryId, request);
+    yield put(surgeryMutationSuccess());
+    yield put(fetchSurgeryRequest(surgeryId));
+    yield put(fetchSurgeriesRequest());
+    yield* refreshWorklistSaga();
+  } catch (err) {
+    yield put(
+      surgeryMutationFailure(
+        getSurgeryErrorMessage(err, "Failed to update the surgeon."),
+      ),
+    );
+  }
+}
+
 function* updateProgressSaga(
   action: PayloadAction<{ surgeryId: string; request: UpdateProgressRequest }>,
 ) {
@@ -281,6 +306,7 @@ export default function* scheduleSaga() {
   yield takeLatest(fetchSurgeryRequest.type, fetchSurgerySaga);
   yield takeLatest(fetchHistoryRequest.type, fetchHistorySaga);
   yield takeLatest(cancelSurgeryRequest.type, cancelSurgerySaga);
+  yield takeLatest(assignSurgeonRequest.type, assignSurgeonSaga);
   yield takeLatest(updateProgressRequest.type, updateProgressSaga);
   yield takeLatest(startSurgeryRequest.type, startSurgerySaga);
   yield takeLatest(endSurgeryRequest.type, endSurgerySaga);

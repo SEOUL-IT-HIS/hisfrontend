@@ -19,6 +19,7 @@ import {
 } from "@/features/emergency/resource/bed/slice";
 import { BED_ZONE_OPTIONS } from "@/features/emergency/resource/bed/types";
 import { formatDateTime } from "@/features/emergency/utils";
+import { BED_STATUS } from "@/features/emergency/codes";
 
 type BedAssignmentPanelProps = {
   receptionNo: string;
@@ -70,7 +71,7 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
   }
 
   const emptyBedOptions = beds
-    .filter((bed) => bed.bedStatusCode === "EMPTY")
+    .filter((bed) => bed.bedStatusCode === BED_STATUS.EMPTY)
     .map((bed) => ({ value: bed.id, label: `${bed.bedNo} (${zoneLabel(bed.zoneCode)})` }));
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -141,7 +142,7 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
           {/* 전체 병상 현황 */}
           <div className="mb-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
             {beds.map((bed) => {
-              const empty = bed.bedStatusCode === "EMPTY";
+              const empty = bed.bedStatusCode === BED_STATUS.EMPTY;
               return (
                 <div
                   key={bed.id}

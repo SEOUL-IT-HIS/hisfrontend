@@ -1,5 +1,5 @@
 import { call, put, takeLatest } from "redux-saga/effects";
-import { searchBillingHistoryApi, fetchBillingHistoryByPatientApi } from "@/features/billing/history/api";
+import { searchBillingHistoryApi, fetchBillingHistoryDetailApi } from "@/features/billing/history/api";
 import {
   searchBillingHistoryRequest,
   searchBillingHistorySuccess,
@@ -9,7 +9,7 @@ import {
   fetchBillingHistoryDetailFailure,
 } from "./slice";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import type { SearchPatient, SearchPatientResult, BillingHistoryItem } from "./types";
+import type { SearchPatient, SearchPatientResult, BillingHistoryDetail } from "./types";
 
 function* searchBillingHistorySaga(action: PayloadAction<SearchPatient>) {
   try {
@@ -23,7 +23,7 @@ function* searchBillingHistorySaga(action: PayloadAction<SearchPatient>) {
 
 function* fetchBillingHistoryDetailSaga(action: PayloadAction<string>) {
   try {
-    const result: BillingHistoryItem[] = yield call(fetchBillingHistoryByPatientApi, action.payload);
+    const result: BillingHistoryDetail = yield call(fetchBillingHistoryDetailApi, action.payload);
     yield put(fetchBillingHistoryDetailSuccess(result));
   } catch (err) {
     const message = err instanceof Error ? err.message : "수납이력 상세 조회에 실패했습니다.";

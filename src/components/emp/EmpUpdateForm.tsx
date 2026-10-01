@@ -336,7 +336,13 @@ export default function EmpUpdateForm({
           ) : null}
         </FormField>
 
-        <FormActions onCancel={onClose} submitLabel="Save" loading={loading} />
+        <FormActions
+          onCancel={onClose}
+          submitLabel="Save"
+          loading={loading}
+          loadingLabel="Saving…"
+          cancelLabel="Cancel"
+        />
       </form>
     </div>
   );

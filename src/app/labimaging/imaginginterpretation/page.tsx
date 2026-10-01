@@ -10,8 +10,7 @@ import ImageReadingPage from "@/components/labimaging/imaginginterpretation/Imag
  * (ImageWorklist → ImageReadingWorkPanel). 이 페이지는 그 워크리스트를 거치지 않고 특정
  * 촬영항목의 판독으로 바로 들어오는 경로(예: 알림 링크)를 위한 것이다.
  *
- * ⚠ 사이드바 메뉴(admin MenuEntity.menu_url)에는 아직 등록돼 있지 않다.
- *   메뉴 등록은 admin 영역이라 별도 요청이 필요하다. (다른 labimaging 페이지와 동일)
+ * 사이드바 메뉴: admin MENU 테이블에 "Imaging Reading" 으로 등록돼 있다 (2026-09-29 확인).
  */
 export default function Page() {
   return (
