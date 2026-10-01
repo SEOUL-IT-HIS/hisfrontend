@@ -1,6 +1,8 @@
 "use client";
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { MENTAL_STATUS_OPTIONS, YN_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
+import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
 import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import {
@@ -131,7 +133,7 @@ const NursingAssessmentDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Allergy Yn</span>
-                                <span className="text-slate-800">{nursingAssessment.allergyYn}</span>
+                                <span className="text-slate-800">{codeLabel(YN_OPTIONS, nursingAssessment.allergyYn)}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Allergy Detail</span>
@@ -143,7 +145,7 @@ const NursingAssessmentDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Mental Status Code</span>
-                                <span className="text-slate-800">{nursingAssessment.mentalStatusCd}</span>
+                                <span className="text-slate-800">{codeLabel(MENTAL_STATUS_OPTIONS, nursingAssessment.mentalStatusCd)}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Assessed At</span>
@@ -167,8 +169,8 @@ const NursingAssessmentDetail = () => {
                     <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <p className="text-sm font-medium text-slate-800">Edit Nursing Assessment</p>
                         <div>
-                            <label htmlFor="allergyYn" className={LABEL}>Allergy Yn</label>
-                            <input type="text" id="allergyYn" name="allergyYn" value={editForm.allergyYn} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="allergyYn" className={LABEL}>Allergy</label>
+                            <CodeSelect id="allergyYn" name="allergyYn" value={editForm.allergyYn} options={YN_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
                             <label htmlFor="allergyDetail" className={LABEL}>Allergy Detail</label>
@@ -179,8 +181,8 @@ const NursingAssessmentDetail = () => {
                             <input type="text" id="pastMedicalHistory" name="pastMedicalHistory" value={editForm.pastMedicalHistory} onChange={onEditChange} className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="mentalStatusCd" className={LABEL}>Mental Status Code</label>
-                            <input type="text" id="mentalStatusCd" name="mentalStatusCd" value={editForm.mentalStatusCd} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="mentalStatusCd" className={LABEL}>Mental Status</label>
+                            <CodeSelect id="mentalStatusCd" name="mentalStatusCd" value={editForm.mentalStatusCd} options={MENTAL_STATUS_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
                             <label htmlFor="assessedAt" className={LABEL}>Assessed At</label>

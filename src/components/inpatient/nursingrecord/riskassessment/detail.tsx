@@ -1,6 +1,8 @@
 "use client";
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { ASSESSMENT_TYPE_OPTIONS, RISK_LEVEL_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
+import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
 import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import {
@@ -148,7 +150,7 @@ const RiskAssessmentDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Assessment Type Code</span>
-                                <span className="text-slate-800">{riskAssessment.assessmentTypeCd}</span>
+                                <span className="text-slate-800">{codeLabel(ASSESSMENT_TYPE_OPTIONS, riskAssessment.assessmentTypeCd)}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Assessment Score</span>
@@ -176,16 +178,16 @@ const RiskAssessmentDetail = () => {
                     <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <p className="text-sm font-medium text-slate-800">Edit Risk Assessment</p>
                         <div>
-                            <label htmlFor="assessmentTypeCd" className={LABEL}>Assessment Type Code</label>
-                            <input type="text" id="assessmentTypeCd" name="assessmentTypeCd" value={editForm.assessmentTypeCd} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="assessmentTypeCd" className={LABEL}>Assessment Type</label>
+                            <CodeSelect id="assessmentTypeCd" name="assessmentTypeCd" value={editForm.assessmentTypeCd} options={ASSESSMENT_TYPE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
                             <label htmlFor="score" className={LABEL}>Assessment Score</label>
                             <input type="number" id="score" name="score" value={editForm.score} onChange={onEditChange} className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="riskLevelCd" className={LABEL}>Risk Level Code</label>
-                            <input type="text" id="riskLevelCd" name="riskLevelCd" value={editForm.riskLevelCd} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="riskLevelCd" className={LABEL}>Risk Level</label>
+                            <CodeSelect id="riskLevelCd" name="riskLevelCd" value={editForm.riskLevelCd} options={RISK_LEVEL_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
                             <label htmlFor="assessedAt" className={LABEL}>Assessment Date/Time</label>

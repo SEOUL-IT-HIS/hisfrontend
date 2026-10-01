@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { MENTAL_STATUS_OPTIONS, YN_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
 import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
@@ -101,10 +102,10 @@ const NursingAssessmentList = ({ embedded = false, admissionId = null }: Nursing
                       </Link>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{nursingAssessment.admissionId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{nursingAssessment.allergyYn}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{codeLabel(YN_OPTIONS, nursingAssessment.allergyYn)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{nursingAssessment.allergyDetail}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{nursingAssessment.pastMedicalHistory}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{nursingAssessment.mentalStatusCd}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{codeLabel(MENTAL_STATUS_OPTIONS, nursingAssessment.mentalStatusCd)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(nursingAssessment.assessedAt).toLocaleString()}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{nursingAssessment.assessorId ? nurseNameById.get(nursingAssessment.assessorId) ?? nursingAssessment.assessorId : "-"}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(nursingAssessment.createdAt).toLocaleString()}</td>

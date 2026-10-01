@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { ALL_IO_ROUTE_OPTIONS, IO_ROUTE_OPTIONS, IO_TYPE_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
 import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
@@ -101,8 +102,8 @@ const IandORecordList = ({ embedded = false, admissionId = null }: IandORecordLi
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{iandorecord.admissionId}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(iandorecord.recordedAt).toLocaleString()}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{iandorecord.ioTypeCd}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{iandorecord.routeCd}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{codeLabel(IO_TYPE_OPTIONS, iandorecord.ioTypeCd)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{codeLabel(ALL_IO_ROUTE_OPTIONS, iandorecord.routeCd)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{iandorecord.amountMl}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{iandorecord.recorderId ? nurseNameById.get(iandorecord.recorderId) ?? iandorecord.recorderId : "-"}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(iandorecord.createdAt).toLocaleString()}</td>
