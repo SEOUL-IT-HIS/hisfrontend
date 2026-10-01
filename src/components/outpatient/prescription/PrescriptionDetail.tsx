@@ -77,7 +77,7 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
         };
     }, [dispatch, prescriptionId]);
 
-    // 검사 처방 항목만 추출 (prescriptionType 은 표시값이 아닌 실제 데이터 값이라 한글 그대로 비교)
+    // 검사 처방 항목만 추출 (prescriptionType 은 데이터 값이라 한글 그대로 비교)
     const labItems = prescription?.items?.filter((item) => item.prescriptionType === "검사") ?? [];
 
     // 처방 비활성화 (취소 사유는 간단하게 prompt로 받음)
