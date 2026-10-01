@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/store/store";
-import type { SearchPatient, SearchPatientResult, BillingHistoryItem } from "./types";
+import type { SearchPatient, SearchPatientResult, BillingHistoryDetail } from "./types";
 
 /**
  * billingHistory slice
@@ -17,8 +17,8 @@ type BillingHistoryState = {
   /** 검색(searchList 채우는) 요청 상태 */
   searchStatus: StatusState;
 
-  /** 선택한 환자의 수납이력 리스트 (한 환자가 여러 건일 수 있음) */
-  detail: BillingHistoryItem[];
+  /** 선택한 수납 건(billingId) 한 건의 결제 정보 + 진료 항목 */
+  detail: BillingHistoryDetail | null;
   /** 상세조회(detail 채우는) 요청 상태 */
   detailStatus: StatusState;
 };
@@ -27,7 +27,7 @@ const initialState: BillingHistoryState = {
   searchList: [],
   searchStatus: { ...initialStatus },
 
-  detail: [],
+  detail: null,
   detailStatus: { ...initialStatus },
 };
 
@@ -50,20 +50,25 @@ const billingHistorySlice = createSlice({
       state.searchStatus = { loading: false, error: action.payload };
     },
 
-    /** 환자별 수납이력 상세조회 시작 (검색 리스트에서 환자 선택 시 dispatch) */
+    /** 수납이력 상세조회 시작 (검색 리스트에서 수납 건 선택 시 dispatch, payload = billingId) */
     fetchBillingHistoryDetailRequest(state, _action: PayloadAction<string>) {
-      state.detail = [];
+      state.detail = null;
       state.detailStatus = { loading: true, error: "" };
     },
-    /** 환자별 수납이력 상세조회 성공 - 여러 건이라 리스트로 받음 */
-    fetchBillingHistoryDetailSuccess(state, action: PayloadAction<BillingHistoryItem[]>) {
+    /** 수납이력 상세조회 성공 */
+    fetchBillingHistoryDetailSuccess(state, action: PayloadAction<BillingHistoryDetail>) {
       state.detail = action.payload;
       state.detailStatus = { loading: false, error: "" };
     },
-    /** 환자별 수납이력 상세조회 실패 */
+    /** 수납이력 상세조회 실패 */
     fetchBillingHistoryDetailFailure(state, action: PayloadAction<string>) {
-      state.detail = [];
+      state.detail = null;
       state.detailStatus = { loading: false, error: action.payload };
+    },
+
+    /** 화면을 떠날 때 검색 결과/상세를 비움 - 안 하면 다시 들어왔을 때 이전 결과가 그대로 보임 */
+    resetBillingHistory() {
+      return initialState;
     },
   },
 });
@@ -75,6 +80,7 @@ export const {
   fetchBillingHistoryDetailRequest,
   fetchBillingHistoryDetailSuccess,
   fetchBillingHistoryDetailFailure,
+  resetBillingHistory,
 } = billingHistorySlice.actions;
 
 export default billingHistorySlice.reducer;

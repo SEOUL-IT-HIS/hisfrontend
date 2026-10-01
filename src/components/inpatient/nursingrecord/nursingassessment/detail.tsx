@@ -1,6 +1,10 @@
 "use client";
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { MENTAL_STATUS_OPTIONS, YN_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
+import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
+import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
+import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import {
     fetchNursingAssessmentDetailRequest,
     deleteNursingAssessmentRequest,
@@ -21,6 +25,8 @@ const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 const NursingAssessmentDetail = () => {
+    // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
+    const { nameById: nurseNameById } = useNurseOptions();
     const dispatch = useDispatch();
     const { nursingAssessmentId }: { nursingAssessmentId: string } = useParams();
     const nursingAssessment = useSelector(selectNursingAssessmentDetail);
@@ -68,11 +74,11 @@ const NursingAssessmentDetail = () => {
             pastMedicalHistory: nursingAssessment.pastMedicalHistory,
             mentalStatusCd: nursingAssessment.mentalStatusCd,
             assessedAt: new Date(nursingAssessment.assessedAt).toISOString().slice(0, 16),
-            assessorId: String(nursingAssessment.assessorId),
+            assessorId: nursingAssessment.assessorId ?? "",
         });
     }, [nursingAssessment]);
 
-    const onEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setEditForm((prev) => ({ ...prev, [name]: value }));
     };
@@ -92,7 +98,7 @@ const NursingAssessmentDetail = () => {
             pastMedicalHistory: editForm.pastMedicalHistory,
             mentalStatusCd: editForm.mentalStatusCd,
             assessedAt: new Date(editForm.assessedAt),
-            assessorId: Number(editForm.assessorId),
+            assessorId: editForm.assessorId, // 직원 ID(empId) 문자열 그대로
         }));
     };
 
@@ -127,7 +133,7 @@ const NursingAssessmentDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Allergy Yn</span>
-                                <span className="text-slate-800">{nursingAssessment.allergyYn}</span>
+                                <span className="text-slate-800">{codeLabel(YN_OPTIONS, nursingAssessment.allergyYn)}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Allergy Detail</span>
@@ -139,7 +145,7 @@ const NursingAssessmentDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Mental Status Code</span>
-                                <span className="text-slate-800">{nursingAssessment.mentalStatusCd}</span>
+                                <span className="text-slate-800">{codeLabel(MENTAL_STATUS_OPTIONS, nursingAssessment.mentalStatusCd)}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Assessed At</span>
@@ -147,7 +153,7 @@ const NursingAssessmentDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Assessor ID</span>
-                                <span className="text-slate-800">{nursingAssessment.assessorId}</span>
+                                <span className="text-slate-800">{nursingAssessment.assessorId ? nurseNameById.get(nursingAssessment.assessorId) ?? nursingAssessment.assessorId : "-"}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Created At</span>
@@ -163,8 +169,8 @@ const NursingAssessmentDetail = () => {
                     <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <p className="text-sm font-medium text-slate-800">Edit Nursing Assessment</p>
                         <div>
-                            <label htmlFor="allergyYn" className={LABEL}>Allergy Yn</label>
-                            <input type="text" id="allergyYn" name="allergyYn" value={editForm.allergyYn} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="allergyYn" className={LABEL}>Allergy</label>
+                            <CodeSelect id="allergyYn" name="allergyYn" value={editForm.allergyYn} options={YN_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
                             <label htmlFor="allergyDetail" className={LABEL}>Allergy Detail</label>
@@ -175,16 +181,16 @@ const NursingAssessmentDetail = () => {
                             <input type="text" id="pastMedicalHistory" name="pastMedicalHistory" value={editForm.pastMedicalHistory} onChange={onEditChange} className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="mentalStatusCd" className={LABEL}>Mental Status Code</label>
-                            <input type="text" id="mentalStatusCd" name="mentalStatusCd" value={editForm.mentalStatusCd} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="mentalStatusCd" className={LABEL}>Mental Status</label>
+                            <CodeSelect id="mentalStatusCd" name="mentalStatusCd" value={editForm.mentalStatusCd} options={MENTAL_STATUS_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <div>
                             <label htmlFor="assessedAt" className={LABEL}>Assessed At</label>
                             <input type="datetime-local" id="assessedAt" name="assessedAt" value={editForm.assessedAt} onChange={onEditChange} className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="assessorId" className={LABEL}>Assessor ID</label>
-                            <input type="number" id="assessorId" name="assessorId" value={editForm.assessorId} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="assessorId" className={LABEL}>Assessor (Nurse)</label>
+                            <NurseSelect id="assessorId" name="assessorId" value={editForm.assessorId} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <button
                             onClick={handleUpdate}

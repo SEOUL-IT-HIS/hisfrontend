@@ -109,7 +109,7 @@ const EncounterList = () => {
                     serviceType: "OP",
                     orderMethod: "EMR",
                     priorityCode: "03", // ADM 공통코드 ORDER_PRIORITY_CD 의 Routine
-                    timingCode: "ONCE",
+                    timingCode: "03", // ADM 공통코드 ORDER_TIMING_CD 의 Once
                     items: prescriptionItems,
                 },
             },
@@ -121,7 +121,7 @@ const EncounterList = () => {
         <div className="flex h-full min-h-0 flex-col gap-3 p-4">
             {/* 외래진료 통합 차트 */}
             <h1 className="px-1 text-2xl font-bold text-slate-800">Outpatient Care Chart</h1>
-            {/* 환자의 당일 외래 진료 기록을 작성하고, 처방 및 과거 진료 이력을 통합 조회할 수 있습니다. */}
+            {/* 당일 외래 진료 기록 작성, 처방 및 과거 진료 이력 통합 조회 */}
             <p className="px-1 text-sm text-slate-500">
                 Create today&apos;s outpatient medical records and view prescriptions and past visit history in one place.
             </p>
@@ -223,7 +223,7 @@ const EncounterList = () => {
                         </button>
                     </div>
 
-                    {/* 환자 정보 헤더 (환자가 선택되었고, "오늘 진료 작성" 탭일 때만 노출) */}
+                    {/* 환자 정보 헤더 ("오늘 진료 작성" 탭에서만 노출) */}
                     {selectedEncounter && activeTab === 'FORM' && (
                         <div className="mb-4 shrink-0 rounded-2xl border border-slate-200/80 bg-[var(--background)] p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                             <div className="flex items-baseline justify-between">
@@ -254,6 +254,7 @@ const EncounterList = () => {
                                     <label className="block text-sm font-semibold text-slate-700 mb-1">
                                         {/* 주호소 ( 내원 원인 ) */}
                                         Chief Complaint (Reason for Visit)
+                                        <span className="text-rose-500"> *</span>
                                     </label>
                                     <input
                                         type="text"
@@ -283,6 +284,7 @@ const EncounterList = () => {
                                     <label className="block text-sm font-semibold text-slate-700 mb-1">
                                         {/* 진단명 */}
                                         Diagnosis
+                                        <span className="text-rose-500"> *</span>
                                     </label>
                                     <textarea
                                         value={assessmentNote}
@@ -331,7 +333,7 @@ const EncounterList = () => {
                             <PrescriptionList />
                         </div>
                     ) : (
-                        /* 과거 진료기록 조회 탭 - 환자 선택 여부와 상관없이 바로 렌더링 */
+                        /* 과거 진료기록 조회 탭 (환자 선택과 무관) */
                         <div className="flex-1 overflow-y-auto">
                             <MedicalRecordList />
                         </div>

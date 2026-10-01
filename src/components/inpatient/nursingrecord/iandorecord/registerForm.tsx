@@ -1,6 +1,9 @@
 "use client";
 
-import { AppDispatch } from "@/store/store";
+import { AppDispatch, RootState } from "@/store/store";
+import { ALL_IO_ROUTE_OPTIONS, IO_ROUTE_OPTIONS, IO_TYPE_OPTIONS } from "@/features/inpatient/nursingrecord/codes";
+import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
+import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,16 +19,20 @@ const IandORecordRegisterForm = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error, success } = useSelector(selectIandORecordCreateStatus);
 
+    // 기록자 기본값 = 로그인한 사용자(간호사). 다른 간호사로 바꿀 수 있음
+
+    const loginEmpId = useSelector((state: RootState) => state.auth.user?.empId ?? "");
+
     const [form, setForm] = useState({
         admissionId: presetAdmissionId,
         recordedAt: "",
         ioTypeCd: "",
         routeCd: "",
         amountMl: "",
-        recorderId: "",
+        recorderId: loginEmpId,
     });
 
-    const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setForm((prevForm) => ({ ...prevForm, [name]: value }));
     };
@@ -38,7 +45,7 @@ const IandORecordRegisterForm = () => {
             ioTypeCd: form.ioTypeCd,
             routeCd: form.routeCd,
             amountMl: Number(form.amountMl),
-            recorderId: Number(form.recorderId),
+            recorderId: form.recorderId, // 직원 ID(empId) 문자열 그대로
         }));
     };
 
@@ -71,20 +78,20 @@ const IandORecordRegisterForm = () => {
                     <input type="datetime-local" id="recordedAt" name="recordedAt" value={form.recordedAt} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="ioTypeCd" className={LABEL}>I/O Type Code</label>
-                    <input type="text" id="ioTypeCd" name="ioTypeCd" value={form.ioTypeCd} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="ioTypeCd" className={LABEL}>I/O Type</label>
+                    <CodeSelect id="ioTypeCd" name="ioTypeCd" value={form.ioTypeCd} options={IO_TYPE_OPTIONS} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="routeCd" className={LABEL}>Route Code</label>
-                    <input type="text" id="routeCd" name="routeCd" value={form.routeCd} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="routeCd" className={LABEL}>Route</label>
+                    <CodeSelect id="routeCd" name="routeCd" value={form.routeCd} options={IO_ROUTE_OPTIONS[form.ioTypeCd] ?? ALL_IO_ROUTE_OPTIONS} onChange={onChange} className={FIELD} />
                 </div>
                 <div>
                     <label htmlFor="amountMl" className={LABEL}>Amount (mL)</label>
                     <input type="number" id="amountMl" name="amountMl" value={form.amountMl} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
-                    <label htmlFor="recorderId" className={LABEL}>Recorder ID</label>
-                    <input type="number" id="recorderId" name="recorderId" value={form.recorderId} onChange={onChange} required className={FIELD} />
+                    <label htmlFor="recorderId" className={LABEL}>Recorder (Nurse)</label>
+                    <NurseSelect id="recorderId" name="recorderId" value={form.recorderId} onChange={onChange} className={FIELD} />
                 </div>
                 <button
                     type="submit"

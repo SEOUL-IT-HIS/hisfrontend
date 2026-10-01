@@ -147,7 +147,8 @@ const PrescriptionRequestHome = () => {
                         Deselect
                       </button>
                     </div>
-                    <PrescriptionDetail prescriptionId={panel.prescriptionId} />
+                    {/* key: 다른 처방을 고르면 상세를 새로 그려서 취소 사유 입력값 등이 초기화되게 함 */}
+                    <PrescriptionDetail key={panel.prescriptionId} prescriptionId={panel.prescriptionId} />
                   </div>
                 )}
 

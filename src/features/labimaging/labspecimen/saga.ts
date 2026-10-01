@@ -3,6 +3,7 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import {
   acceptSpecimen,
   createSpecimen,
+  fetchAllowedSpecimenRules,
   fetchSpecimenByBarcode,
   fetchSpecimensByReceptionNo,
 } from "@/features/labimaging/labspecimen/api";
@@ -19,11 +20,15 @@ import {
   lookupSpecimenByBarcodeRequest,
   lookupSpecimenByBarcodeSuccess,
   lookupSpecimenByBarcodeFailure,
+  fetchAllowedSpecimenRulesRequest,
+  fetchAllowedSpecimenRulesSuccess,
+  fetchAllowedSpecimenRulesFailure,
 } from "@/features/labimaging/labspecimen/slice";
 import type {
   SpecimenAcceptanceRequest,
   SpecimenAcceptanceSummary,
   SpecimenCreateRequest,
+  SpecimenRule,
   SpecimenSummary,
 } from "@/features/labimaging/labspecimen/types";
 
@@ -115,9 +120,28 @@ function* lookupSpecimenByBarcodeSaga(action: PayloadAction<string>) {
   }
 }
 
+/**
+ * 이 접수의 오더 검사항목들이 허용하는 검체·검체용기 조합을 조회한다. (6차 2-1)
+ * 접수가 바뀔 때 검체 목록과 함께 다시 부른다 — 등록 폼의 선택지를 그 접수 기준으로 좁히기 위해서다.
+ */
+function* fetchAllowedSpecimenRulesSaga(action: PayloadAction<string>) {
+  try {
+    const rules: SpecimenRule[] = yield call(
+      fetchAllowedSpecimenRules,
+      action.payload,
+    );
+    yield put(fetchAllowedSpecimenRulesSuccess(rules));
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Failed to load allowed specimen combinations.";
+    yield put(fetchAllowedSpecimenRulesFailure(message));
+  }
+}
+
 export default function* labSpecimenSaga() {
   yield takeLatest(fetchSpecimensRequest.type, fetchSpecimensSaga);
   yield takeLatest(createSpecimenRequest.type, createSpecimenSaga);
   yield takeLatest(acceptSpecimenRequest.type, acceptSpecimenSaga);
   yield takeLatest(lookupSpecimenByBarcodeRequest.type, lookupSpecimenByBarcodeSaga);
+  yield takeLatest(fetchAllowedSpecimenRulesRequest.type, fetchAllowedSpecimenRulesSaga);
 }

@@ -1,6 +1,6 @@
 "use client";
 //** 결제 요청 컴포넌트 **/
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { kakaoPayReadyRequest, paymentRequest, resetPayment } from "@/features/billing/payment/slice";
 import type { PaymentMethodCode } from "@/features/billing/payment/types";
@@ -29,6 +29,15 @@ const PaymentRequest = ({ billingId, paymentAmount, open, onClose }: PaymentRequ
 
   // 라디오 버튼으로 선택한 결제수단. 아직 아무것도 안 골랐을 수 있어서 ""도 허용
   const [paymentMethodCode, setPaymentMethodCode] = useState<PaymentMethodCode | "">("");
+
+  // 모달이 열릴 때마다 redux에 남은 이전 결제 결과를 지움.
+  // handleClose를 거치지 않고 화면을 벗어난 경우(카카오페이 결제 후 복귀 등) success가 남아 있으면
+  // 다음 환자 결제창이 열리자마자 "결제 완료"가 보이고 Pay 버튼이 사라지는 문제가 있었음.
+  // (라디오 선택값은 컴포넌트 state라 handleClose에서 초기화됨)
+  useEffect(() => {
+    if (!open) return;
+    dispatch(resetPayment());
+  }, [open, dispatch]);
 
   // "Pay" 버튼을 눌렀을 때 실행됨
   const handlePayment = () => {

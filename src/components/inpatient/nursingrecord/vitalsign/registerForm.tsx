@@ -1,6 +1,7 @@
 "use client";
 
 import { AppDispatch, RootState } from "@/store/store";
+import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import { useDispatch, useSelector, shallowEqual } from "react-redux";
 import { isOutOfNormalRange,  VITAL_SIGN_NORMAL_RANGES } from "@/features/inpatient/nursingrecord/vitalsign/validation";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -22,6 +23,10 @@ const VitalSignRegisterForm = () => {
         success: state.inpatient.vitalsign.createStatus.success,
     }), shallowEqual);
 
+    // 기록자 기본값 = 로그인한 사용자(간호사). 다른 간호사로 바꿀 수 있음
+
+    const loginEmpId = useSelector((state: RootState) => state.auth.user?.empId ?? "");
+
     const [form, setForm] = useState({
         admissionId: presetAdmissionId,
         measuredAt: "",
@@ -31,10 +36,10 @@ const VitalSignRegisterForm = () => {
         bpSystolic: "",
         bpDiastolic: "",
         spo2: "",
-        recorderId: "",
+        recorderId: loginEmpId,
     });
 
-    const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setForm((prevForm) => ({ ...prevForm, [name]: value }));
     };
@@ -50,7 +55,7 @@ const VitalSignRegisterForm = () => {
             bpSystolic: Number(form.bpSystolic),
             bpDiastolic: Number(form.bpDiastolic),
             spo2: Number(form.spo2),
-            recorderId: Number(form.recorderId),
+            recorderId: form.recorderId, // 직원 ID(empId) 문자열 그대로
         }));
     };
 
@@ -138,8 +143,8 @@ const VitalSignRegisterForm = () => {
                     )}
                 </div>
                 <div>
-                    <label htmlFor="recorderId" className={LABEL}>Recorder ID</label>
-                    <input type="number" id="recorderId" name="recorderId" value={form.recorderId} onChange={onChange} min="0" required className={FIELD} />
+                    <label htmlFor="recorderId" className={LABEL}>Recorder (Nurse)</label>
+                    <NurseSelect id="recorderId" name="recorderId" value={form.recorderId} onChange={onChange} className={FIELD} />
                 </div>
                 <button
                     type="submit"

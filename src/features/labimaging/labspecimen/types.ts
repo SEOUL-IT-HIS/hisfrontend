@@ -12,14 +12,17 @@
  * ⚠ 공통코드가 아니라 서비스 내부 Enum 이라 admin 조회로는 못 가져온다.
  *   백엔드 enum 에 값이 추가되면 여기도 같이 추가해야 한다.
  *   (검체용기코드는 반대로 공통코드 SPECIMEN_CONTAINER_CD 라서 admin 에서 불러온다)
+ *
+ * ⚠ 6차(2026-09-30)에서 STOOL/SPUTUM 을 빼고 TISSUE/FLUID 를 추가했다 — 대변·객담을 쓰는
+ *   검사가 없고, 조직·체액 검체가 필요한 검사(병리·미생물 일부)가 새로 생겼기 때문이다.
  */
-export type SpecimenType = "BLOOD" | "URINE" | "STOOL" | "SPUTUM";
+export type SpecimenType = "BLOOD" | "URINE" | "TISSUE" | "FLUID";
 
 export const SPECIMEN_TYPE_LABELS: Record<SpecimenType, string> = {
   BLOOD: "Blood",
   URINE: "Urine",
-  STOOL: "Stool",
-  SPUTUM: "Sputum",
+  TISSUE: "Tissue",
+  FLUID: "Fluid",
 };
 
 export const SPECIMEN_TYPE_OPTIONS: ReadonlyArray<{
@@ -28,9 +31,23 @@ export const SPECIMEN_TYPE_OPTIONS: ReadonlyArray<{
 }> = [
   { value: "BLOOD", label: "Blood" },
   { value: "URINE", label: "Urine" },
-  { value: "STOOL", label: "Stool" },
-  { value: "SPUTUM", label: "Sputum" },
+  { value: "TISSUE", label: "Tissue" },
+  { value: "FLUID", label: "Fluid" },
 ];
+
+/**
+ * 검사별 허용 검체·검체용기 조합 — 백엔드 SpecimenRuleDto (6차 2-1).
+ * GET /api/lab-imaging/specimens/rules?receptionNo= 응답의 행 하나.
+ *
+ * ⚠ 이 목록이 비어 있는 건 "아무 조합이나 허용"을 뜻한다(규칙이 없는 검사 — 서버가 WARN 만 남기고
+ *   등록은 허용한다). 화면은 그때 검체종류·용기를 예전처럼 전부 보여준다.
+ */
+export interface SpecimenRule {
+  specimenType: SpecimenType;
+  specimenContainerCode: string;
+  /** 이 검사(들)에서 기본으로 고를 조합이면 "Y". 여러 검사가 섞이면 두 번째 이후는 참고용이다. */
+  defaultYn: "Y" | "N";
+}
 
 /** 적합상태 — 백엔드 labspecimen/entity/FitnessStatus enum 미러링. 미판정이면 값이 없다. */
 export type FitnessStatus = "FIT" | "UNFIT";
@@ -168,4 +185,9 @@ export interface SpecimenState {
    * 다른 접수의 검체여도 지운 뒤 담지 않는다 — 그 검체의 접수번호를 화면에 알려줘야 하기 때문이다.
    */
   barcodeLookupResult: SpecimenSummary | null;
+
+  /** 허용 검체·검체용기 조합 (6차 2-1) — 접수가 바뀌면 같이 다시 조회한다. */
+  allowedRules: SpecimenRule[];
+  allowedRulesLoading: boolean;
+  allowedRulesError: string;
 }
