@@ -8,10 +8,24 @@ import {
   createPrescriptionRequest,
   selectPrescriptionCreateStatus,
 } from "@/features/inpatient/medicationmanagement/prescription/slice";
-import type { PrescriptionItemDTO } from "@/features/inpatient/medicationmanagement/types";
+import {
+  PRESCRIPTION_TYPE_LAB,
+  PRESCRIPTION_TYPE_MEDICATION,
+  type PrescriptionItemCreateDTO,
+} from "@/features/inpatient/medicationmanagement/types";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 
 const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
+
+// 외래 처방코어가 알려준 예시값을 기본값으로 둠 — 나머지 코드값은 외래가 아직 검증하지 않아서 그대로 등록됨
+// (운영 코드값이 확정되면 드롭다운으로 바꿀 예정)
+const DEFAULT_HEADER = {
+  serviceType: "ADMISSION",
+  orderMethod: "EMR",
+  priorityCode: "ROUTINE",
+  timingCode: "01", // 공통코드 ORDER_TIMING_CD: 01 Scheduled / 02 As Needed (PRN) / 03 Once (외래 요청으로 숫자 코드 사용)
+};
 
 type ItemFormRow = {
   prescriptionType: string;
@@ -25,7 +39,7 @@ type ItemFormRow = {
 };
 
 const EMPTY_ITEM: ItemFormRow = {
-  prescriptionType: "",
+  prescriptionType: PRESCRIPTION_TYPE_LAB,
   itemCode: "",
   itemName: "",
   dosage: "",
@@ -45,27 +59,50 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess, onCancel }: Prescrip
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error, success } = useSelector(selectPrescriptionCreateStatus);
 
-  const [form, setForm] = useState({
-    serviceType: "",
-    orderMethod: "",
-    priorityCode: "",
-    timingCode: "",
-  });
+  const [form, setForm] = useState({ ...DEFAULT_HEADER });
   const [items, setItems] = useState<ItemFormRow[]>([{ ...EMPTY_ITEM }]);
+
+  // 외래 처방 화면과 같은 공통코드 사용 — 검사서비스가 알아듣는 코드 체계 (외래·검사서비스 확인 완료)
+  // 검사 항목: TEST_TYPE_CD 값(예: CBC → "02")이 itemCode, 이름이 itemName
+  // 약품 제형: DOSAGE_FORM_CD (TAB / IV / INJ)
+  const { options: labTestOptions, loading: labTestLoading } = useCommonCodeOptions("TEST_TYPE_CD");
+  const { options: dosageFormOptions } = useCommonCodeOptions("DOSAGE_FORM_CD");
+  // 투약 시점: ORDER_TIMING_CD (01 / 02 / 03) — 공통코드를 못 불러오면 등록된 값과 같은 기본 목록 사용
+  const { options: loadedTimingOptions } = useCommonCodeOptions("ORDER_TIMING_CD");
+  const timingOptions = loadedTimingOptions.length > 0
+    ? loadedTimingOptions
+    : [
+        { value: "01", label: "Scheduled" },
+        { value: "02", label: "As Needed (PRN)" },
+        { value: "03", label: "Once" },
+      ];
 
   // 폼을 열 때 이전 요청의 에러 메시지를 지움 (다른 환자 폼에 이전 에러가 남지 않도록)
   useEffect(() => {
     dispatch(clearPrescriptionState());
   }, [dispatch]);
 
-  const onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const onItemChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const onItemChange = (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [name]: value } : item)));
+    setItems((prev) => prev.map((item, i) => {
+      if (i !== index) return item;
+      // 종류(검사↔약품)를 바꾸면 코드 체계가 달라지므로 항목 값은 비우고 새로 고르게 함
+      if (name === "prescriptionType") return { ...EMPTY_ITEM, prescriptionType: value };
+      return { ...item, [name]: value };
+    }));
+  };
+
+  // 검사 항목 선택 — 공통코드 값은 itemCode, 이름은 itemName으로 같이 채움
+  const onLabTestChange = (index: number, code: string) => {
+    const option = labTestOptions.find((o) => o.value === code);
+    setItems((prev) => prev.map((item, i) => (
+      i === index ? { ...item, itemCode: code, itemName: option?.label ?? "" } : item
+    )));
   };
 
   const addItem = () => {
@@ -79,34 +116,27 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess, onCancel }: Prescrip
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const requestItems: PrescriptionItemDTO[] = items.map((item) => ({
-      itemId: "",
-      prescriptionId: "",
-      prescriptionType: item.prescriptionType,
-      itemCode: item.itemCode,
-      itemName: item.itemName,
-      dosage: Number(item.dosage) || 0,
-      frequency: item.frequency,
-      durationDays: item.durationDays,
-      detailInfo: item.detailInfo,
-      sendStatus: "",
-      sentAt: new Date(),
-      labOrderId: "",
-      rejectReason: "",
-      dosageFormCd: item.dosageFormCd,
-    }));
+    // 사용자가 입력한 값만 보냄 — 검사 항목은 용량/제형이 없으므로 약품일 때만 포함
+    const requestItems: PrescriptionItemCreateDTO[] = items.map((item) => {
+      const isMedication = item.prescriptionType === PRESCRIPTION_TYPE_MEDICATION;
+      return {
+        prescriptionType: item.prescriptionType,
+        itemCode: item.itemCode,
+        itemName: item.itemName,
+        frequency: item.frequency || undefined,
+        durationDays: item.durationDays || undefined,
+        detailInfo: item.detailInfo || undefined,
+        ...(isMedication && {
+          dosage: item.dosage ? Number(item.dosage) : undefined,
+          dosageFormCd: item.dosageFormCd || undefined,
+        }),
+      };
+    });
 
     dispatch(
       createPrescriptionRequest({
         admissionId,
-        request: {
-          patientId: "",
-          serviceType: form.serviceType,
-          orderMethod: form.orderMethod,
-          priorityCode: form.priorityCode,
-          timingCode: form.timingCode,
-          items: requestItems,
-        },
+        request: { ...form, items: requestItems },
       })
     );
   };
@@ -125,7 +155,9 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess, onCancel }: Prescrip
       <div className="mb-4 flex items-start justify-between">
         <div>
           <h2 className="text-sm font-semibold text-slate-800">New Prescription Request</h2>
-          <p className="mt-1 text-sm text-slate-500">Send a prescription request to the outpatient prescription core.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Registered in the outpatient prescription core, then sent to the lab / pharmacy automatically.
+          </p>
         </div>
         {onCancel && (
           <button
@@ -157,7 +189,13 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess, onCancel }: Prescrip
           </div>
           <div>
             <label htmlFor="timingCode" className={LABEL}>Timing Code</label>
-            <input type="text" id="timingCode" name="timingCode" value={form.timingCode} onChange={onFormChange} required className={FIELD} />
+            <select id="timingCode" name="timingCode" value={form.timingCode} onChange={onFormChange} required className={FIELD}>
+              {timingOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label} ({opt.value})
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -173,56 +211,97 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess, onCancel }: Prescrip
             </button>
           </div>
 
-          {items.map((item, index) => (
-            <div key={index} className="space-y-3 rounded-lg border border-slate-200 p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Item {index + 1}</p>
-                {items.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeItem(index)}
-                    className="text-xs font-medium text-rose-600 hover:underline"
-                  >
-                    Remove
-                  </button>
-                )}
+          {items.map((item, index) => {
+            const isMedication = item.prescriptionType === PRESCRIPTION_TYPE_MEDICATION;
+            return (
+              <div key={index} className="space-y-3 rounded-lg border border-slate-200 p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Item {index + 1}</p>
+                  {items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      className="text-xs font-medium text-rose-600 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={LABEL}>Prescription Type</label>
+                    {/* 값은 외래 규칙대로 한글("검사"/"약품")로 보냄 — 다른 값이면 외래 전송에서 걸러짐 */}
+                    <select name="prescriptionType" value={item.prescriptionType} onChange={(e) => onItemChange(index, e)} required className={FIELD}>
+                      <option value={PRESCRIPTION_TYPE_LAB}>Lab Test (검사)</option>
+                      <option value={PRESCRIPTION_TYPE_MEDICATION}>Medication (약품)</option>
+                    </select>
+                  </div>
+                  {isMedication ? (
+                    <>
+                      {/* 약품은 외래 약품 검색 API(약제서비스 경유) 사용 여부가 미확정이라 직접 입력 */}
+                      <div>
+                        <label className={LABEL}>Item Code</label>
+                        <input type="text" name="itemCode" value={item.itemCode} onChange={(e) => onItemChange(index, e)} required
+                          placeholder="e.g. 195700020" className={FIELD} />
+                      </div>
+                      <div className="col-span-2">
+                        <label className={LABEL}>Item Name</label>
+                        <input type="text" name="itemName" value={item.itemName} onChange={(e) => onItemChange(index, e)} required
+                          placeholder="e.g. 타이레놀정500mg" className={FIELD} />
+                      </div>
+                    </>
+                  ) : (
+                    <div>
+                      <label className={LABEL}>Lab Test</label>
+                      <select value={item.itemCode} onChange={(e) => onLabTestChange(index, e.target.value)} required className={FIELD}>
+                        <option value="">{labTestLoading ? "Loading..." : "Select"}</option>
+                        {labTestOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label} ({opt.value})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <div>
+                    <label className={LABEL}>Frequency</label>
+                    <input type="text" name="frequency" value={item.frequency} onChange={(e) => onItemChange(index, e)}
+                      placeholder={isMedication ? "e.g. TID" : "e.g. 1회"} className={FIELD} />
+                  </div>
+                  <div>
+                    <label className={LABEL}>Duration Days</label>
+                    <input type="text" name="durationDays" value={item.durationDays} onChange={(e) => onItemChange(index, e)}
+                      placeholder={isMedication ? "e.g. 3" : "e.g. 1"} className={FIELD} />
+                  </div>
+                  {/* 용량/제형은 약품에만 해당 */}
+                  {isMedication && (
+                    <>
+                      <div>
+                        <label className={LABEL}>Dosage</label>
+                        <input type="number" step="0.1" name="dosage" value={item.dosage} onChange={(e) => onItemChange(index, e)}
+                          placeholder="e.g. 1.0" className={FIELD} />
+                      </div>
+                      <div>
+                        <label className={LABEL}>Dosage Form Code</label>
+                        <select name="dosageFormCd" value={item.dosageFormCd} onChange={(e) => onItemChange(index, e)} className={FIELD}>
+                          <option value="">Select</option>
+                          {dosageFormOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label} ({opt.value})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  )}
+                  <div className="col-span-2">
+                    <label className={LABEL}>Detail Info</label>
+                    <input type="text" name="detailInfo" value={item.detailInfo} onChange={(e) => onItemChange(index, e)} className={FIELD} />
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={LABEL}>Prescription Type</label>
-                  <input type="text" name="prescriptionType" value={item.prescriptionType} onChange={(e) => onItemChange(index, e)} required className={FIELD} />
-                </div>
-                <div>
-                  <label className={LABEL}>Item Code</label>
-                  <input type="text" name="itemCode" value={item.itemCode} onChange={(e) => onItemChange(index, e)} required className={FIELD} />
-                </div>
-                <div>
-                  <label className={LABEL}>Item Name</label>
-                  <input type="text" name="itemName" value={item.itemName} onChange={(e) => onItemChange(index, e)} required className={FIELD} />
-                </div>
-                <div>
-                  <label className={LABEL}>Dosage</label>
-                  <input type="number" step="0.1" name="dosage" value={item.dosage} onChange={(e) => onItemChange(index, e)} className={FIELD} />
-                </div>
-                <div>
-                  <label className={LABEL}>Frequency</label>
-                  <input type="text" name="frequency" value={item.frequency} onChange={(e) => onItemChange(index, e)} className={FIELD} />
-                </div>
-                <div>
-                  <label className={LABEL}>Duration Days</label>
-                  <input type="text" name="durationDays" value={item.durationDays} onChange={(e) => onItemChange(index, e)} className={FIELD} />
-                </div>
-                <div>
-                  <label className={LABEL}>Dosage Form Code</label>
-                  <input type="text" name="dosageFormCd" value={item.dosageFormCd} onChange={(e) => onItemChange(index, e)} className={FIELD} />
-                </div>
-                <div className="col-span-2">
-                  <label className={LABEL}>Detail Info</label>
-                  <input type="text" name="detailInfo" value={item.detailInfo} onChange={(e) => onItemChange(index, e)} className={FIELD} />
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <button

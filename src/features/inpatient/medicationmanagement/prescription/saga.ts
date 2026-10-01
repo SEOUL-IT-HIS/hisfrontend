@@ -1,7 +1,7 @@
 import { all, call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { PrescriptionDTO, PrescriptionCreateDTO } from "../types";
-import { createPrescriptionApi, fetchPrescriptionDetailApi, fetchPrescriptionsByAdmissionApi } from "./api";
+import { cancelPrescriptionApi, createPrescriptionApi, fetchPrescriptionDetailApi, fetchPrescriptionsByAdmissionApi, retryDispatchApi } from "./api";
 
 function extractErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -38,10 +38,31 @@ function* createPrescriptionSaga(action: PayloadAction<{ admissionId: string; re
   }
 }
 
+function* retryDispatchSaga(action: PayloadAction<string>) {
+  try {
+    const prescription: PrescriptionDTO = yield call(retryDispatchApi, action.payload);
+    yield put({ type: "prescription/prescriptionActionSuccess", payload: prescription });
+  } catch (e: unknown) {
+    yield put({ type: "prescription/prescriptionActionFailure", payload: extractErrorMessage(e) });
+  }
+}
+
+function* cancelPrescriptionSaga(action: PayloadAction<{ prescriptionId: string; cancelReason: string }>) {
+  try {
+    const { prescriptionId, cancelReason } = action.payload;
+    const prescription: PrescriptionDTO = yield call(cancelPrescriptionApi, prescriptionId, cancelReason);
+    yield put({ type: "prescription/prescriptionActionSuccess", payload: prescription });
+  } catch (e: unknown) {
+    yield put({ type: "prescription/prescriptionActionFailure", payload: extractErrorMessage(e) });
+  }
+}
+
 export default function* prescriptionSaga() {
   yield all([
     takeLatest("prescription/fetchPrescriptionsRequest", fetchPrescriptionsSaga),
     takeLatest("prescription/fetchPrescriptionDetailRequest", fetchPrescriptionDetailSaga),
     takeLatest("prescription/createPrescriptionRequest", createPrescriptionSaga),
+    takeLatest("prescription/retryDispatchRequest", retryDispatchSaga),
+    takeLatest("prescription/cancelPrescriptionRequest", cancelPrescriptionSaga),
   ]);
 }
