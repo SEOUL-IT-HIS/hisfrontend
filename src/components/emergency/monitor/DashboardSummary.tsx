@@ -163,7 +163,7 @@ export default function DashboardSummary({
               <ul className="space-y-2 text-sm text-slate-600">
                 {dashboard.recentLosAlerts.map((alert) => (
                   <li key={alert.id} className="flex flex-wrap items-center gap-3">
-                    <span className="font-medium text-slate-700">{alert.receptionId}</span>
+                    <span className="font-medium text-slate-700">{alert.patientName ?? alert.receptionId}</span>
                     {/* 기준 */}
                     <span>Threshold {formatMinutes(alert.thresholdMinutes)}</span>
                     {/* 발생 */}

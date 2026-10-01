@@ -8,6 +8,8 @@ export interface AdmissionRequest {
   dispositionId: string;
   targetDeptCode: string | null;
   requestStatusCode: string;
+  /** 병동이 실제로 배정한 병동(WARD_CD 값). 병상 배정 완료 뒤에만 있고, 희망 병동과 다를 수 있다 */
+  assignedWardCode?: string | null;
   requestedAt: string;
 }
 

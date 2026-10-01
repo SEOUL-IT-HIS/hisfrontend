@@ -99,6 +99,8 @@ export default function AdmissionRequestPanel({ dispositionId, className = "" }:
           {/* 상태 · 요청 일시 */}
           {optionLabel(statusOptions, latest.requestStatusCode)} · Requested {formatDateTime(latest.requestedAt)}
           {latest.targetDeptCode ? ` · Dept ${optionLabel(deptOptions, latest.targetDeptCode)}` : ""}
+          {/* 배정된 병동 — 희망 병동이 아니라 병동의 BED_ASSIGNED 회신값 */}
+          {latest.assignedWardCode ? ` · Ward ${optionLabel(wardOptions, latest.assignedWardCode)}` : ""}
           {latest.requestStatusCode === ADMISSION_STATUS.REQUESTED ? (
             <p className="mt-1 text-xs">
               {/* 병동 회신을 기다리는 중입니다. */}

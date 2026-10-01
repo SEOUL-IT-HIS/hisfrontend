@@ -3,8 +3,8 @@
  * (kr.co.seoulit.his.emergencyservice.commoncode.dto.AdminCommonCodeItemDto 미러링)
  */
 export interface CommonCodeItem {
-  codeId: number;
-  groupId: number;
+  codeId: string;
+  groupId: string;
   codeValue: string;
   codeName: string;
   useYn: string;

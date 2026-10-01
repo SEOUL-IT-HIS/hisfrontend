@@ -58,8 +58,9 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
         dispatch(fetchReceptionListRequest(status === "ALL" ? undefined : status));
     }, [dispatch, status, followUpKey]);
 
-    // 백엔드가 조회 순서를 보장하지 않으므로(ORDER BY 없음), 접수번호 오름차순(먼저 접수한 환자 순)으로 직접 정렬한다.
-    const sortedItems = [...items].sort((a, b) => a.receptionId.localeCompare(b.receptionId));
+    // 백엔드가 접수 시각 오름차순(먼저 접수한 환자 먼저)으로 내려주므로 그 순서를 그대로 쓴다.
+    // (접수ID 는 UUID 라 정렬 기준으로 쓰면 접수 순서와 무관하게 뒤섞인다)
+    const sortedItems = items;
     // patientName은 환자서비스 배치조회 붙기 전까지 null일 수 있다(정상).
     // 검색어가 비어있으면(기본 상태) 이름 유무와 상관없이 전부 통과시켜야 한다 —
     // null?.includes("") 는 undefined 라 그냥 두면 검색 안 한 상태에서도 이름 없는 건이
