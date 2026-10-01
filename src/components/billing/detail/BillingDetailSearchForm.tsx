@@ -1,11 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { searchBillingDetailRequest } from "@/features/billing/searchBillingDetail/slice";
+import type { SearchPatientResult } from "@/features/billing/searchBillingDetail/types";
 import BillingDetailSearchList from "@/components/billing/detail/BillingDetailSearchList";
 import { Alert, Button, FormField, Input, Panel } from "@/components/common";
+
+type PatientGroup = {
+    patientId: string;
+    patientName: string;
+    birthDate: string;
+    phoneNo: string;
+    bills: SearchPatientResult[];
+};
+
+/** 검색 결과를 환자(patientId) 기준으로 묶는다 — 같은 환자가 미수납 건마다 한 줄씩 반복되는 걸 방지 */
+function groupByPatient(results: SearchPatientResult[]): PatientGroup[] {
+    const groups = new Map<string, PatientGroup>();
+    for (const result of results) {
+        const existing = groups.get(result.patientId);
+        if (existing) {
+            existing.bills.push(result);
+            continue;
+        }
+        groups.set(result.patientId, {
+            patientId: result.patientId,
+            patientName: result.patientName,
+            birthDate: result.birthDate,
+            phoneNo: result.phoneNo,
+            bills: [result],
+        });
+    }
+    return Array.from(groups.values());
+}
 
 type BillingDetailSearchFormProps = {
     selectedBillingId: string | null;
@@ -22,8 +51,17 @@ export default function BillingDetailSearchForm({
         (state: RootState) => state.billing.billingDetail,
     );
 
+    const patientGroups = useMemo(() => groupByPatient(searchPatient), [searchPatient]);
+
+    /** 미수납 건이 2개 이상인 환자 그룹의 펼침 상태. 선택된 건이 그 그룹 안에 있으면 항상 펼쳐서 보여준다 */
+    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
     const onSearch = () => {
         dispatch(searchBillingDetailRequest({ patientName }));// 환자명을 기준으로 진료비 상세 정보를 검색하는 액션을 디스패치합니다.
+    };
+
+    const toggleGroup = (patientId: string) => {
+        setOpenGroups((prev) => ({ ...prev, [patientId]: !prev[patientId] }));
     };
 
     return (
@@ -84,21 +122,74 @@ export default function BillingDetailSearchForm({
                                     Loading...
                                 </td>
                             </tr>
-                        ) : searchPatient.length === 0 ? (
+                        ) : patientGroups.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className="px-5 py-20 text-center text-slate-400">
                                     No results found.
                                 </td>
                             </tr>
                         ) : (
-                            searchPatient.map((patient) => (
-                                <BillingDetailSearchList
-                                    key={patient.billingId}
-                                    patient={patient}
-                                    selected={selectedBillingId === patient.billingId}
-                                    onSelect={onSelectPatient}
-                                />
-                            ))
+                            patientGroups.map((group) => {
+                                // 미수납 건이 1개뿐이면 지금까지와 동일하게 한 줄만 그린다
+                                if (group.bills.length === 1) {
+                                    const patient = group.bills[0];
+                                    return (
+                                        <BillingDetailSearchList
+                                            key={patient.billingId}
+                                            patient={patient}
+                                            selected={selectedBillingId === patient.billingId}
+                                            onSelect={onSelectPatient}
+                                        />
+                                    );
+                                }
+
+                                // 여러 건이면 이름 행을 한 번만 보여주고, 펼쳤을 때만 건별로 나열한다
+                                const hasSelected = group.bills.some((bill) => bill.billingId === selectedBillingId);
+                                const expanded = openGroups[group.patientId] ?? hasSelected;
+
+                                return (
+                                    <Fragment key={group.patientId}>
+                                        <tr
+                                            onClick={() => toggleGroup(group.patientId)}
+                                            className="cursor-pointer border-t border-slate-50 transition-colors hover:bg-slate-50"
+                                        >
+                                            <td className="px-5 py-3.5">
+                                                <span className="font-semibold text-slate-800">{group.patientName}</span>
+                                            </td>
+                                            <td className="px-5 py-3.5 text-slate-600">{group.birthDate}</td>
+                                            <td className="px-5 py-3.5 text-slate-600">{group.phoneNo}</td>
+                                            <td className="px-5 py-3.5" colSpan={3}>
+                                                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                                                    {group.bills.length} unpaid
+                                                </span>
+                                            </td>
+                                            <td className="px-5 py-3.5 text-right text-slate-400">
+                                                <svg
+                                                    viewBox="0 0 20 20"
+                                                    className={`ml-auto h-3.5 w-3.5 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="1.8"
+                                                    aria-hidden
+                                                >
+                                                    <path d="M5 7.5 10 12.5 15 7.5" />
+                                                </svg>
+                                            </td>
+                                        </tr>
+                                        {expanded
+                                            ? group.bills.map((patient) => (
+                                                  <BillingDetailSearchList
+                                                      key={patient.billingId}
+                                                      patient={patient}
+                                                      selected={selectedBillingId === patient.billingId}
+                                                      onSelect={onSelectPatient}
+                                                      nested
+                                                  />
+                                              ))
+                                            : null}
+                                    </Fragment>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>
