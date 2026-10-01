@@ -33,3 +33,9 @@ export const changeAdmissionStatusApi = async (admissionId: string, status: stri
   const { data } = await apiClient.patch<ApiResponse<AdmissionDTO>>(`/api/inpatient/admission/${admissionId}/status`, { status });
   return data.data;
 };
+
+// 담당의(주치의)만 지정/변경 — 처방요청 시 이 값이 처방의사로 외래에 전달됨
+export const changeAdmissionDoctorApi = async (admissionId: string, doctorId: string) => {
+  const { data } = await apiClient.patch<ApiResponse<AdmissionDTO>>(`/api/inpatient/admission/${admissionId}/doctor`, { doctorId });
+  return data.data;
+};
