@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { fetchVitalSignsRequest, selectVitalSignListStatus, selectVitalSigns } from "@/features/inpatient/nursingrecord/vitalsign/slice";
@@ -16,6 +17,8 @@ type VitalSignListProps = {
 };
 
 const VitalSignList = ({ embedded = false, admissionId = null }: VitalSignListProps = {}) => {
+    // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
+    const { nameById: nurseNameById } = useNurseOptions();
   const dispatch = useDispatch<AppDispatch>();
   const vitalSigns = useSelector(selectVitalSigns);
   const listStatus = useSelector(selectVitalSignListStatus);
@@ -93,7 +96,7 @@ const VitalSignList = ({ embedded = false, admissionId = null }: VitalSignListPr
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{vitalSign.respiration}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{vitalSign.bpSystolic}/{vitalSign.bpDiastolic}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{vitalSign.spo2}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{vitalSign.recorderId}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{vitalSign.recorderId ? nurseNameById.get(vitalSign.recorderId) ?? vitalSign.recorderId : "-"}</td>
                     <td className="whitespace-nowrap px-4 py-3 font-medium">
                       <Link href={`/inpatient/nursingrecord/vitalsign/${vitalSign.vitalSignId}`} className="text-sky-700 hover:underline">
                         {vitalSign.vitalSignId}

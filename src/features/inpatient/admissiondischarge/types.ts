@@ -38,6 +38,7 @@ export interface AdmissionState {
   updateStatus: Status;
   deleteStatus: Status;
    changeStatusStatus: Status;  
+  changeDoctorStatus: Status; // 담당의 지정/변경 처리 상태
 }
 // ----- bedmanagement 전용 -----
 

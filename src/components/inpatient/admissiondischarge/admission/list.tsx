@@ -11,6 +11,7 @@ import {
 import { fetchBedAssignmentsRequest, selectBedAssignments } from "@/features/inpatient/bedmanagement/bedassignment/slice"; // 병상배정 목록(다른 feature 슬라이스)
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice"; // 환자 목록(또 다른 feature 슬라이스, patient-service 쪽)
 import AdmissionDetail from "@/components/inpatient/admissiondischarge/admission/detail"; // 마스터-디테일의 "디테일" 쪽 컴포넌트
+import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 const FILTERS = [
   { key: "all", label: "All" },
   { key: "needsAssignment", label: "Assignment Needed" },
@@ -51,6 +52,8 @@ type AdmissionListProps = {
 // { embedded = false }: 구조분해 + 기본값. props를 아예 안 넘기고 <AdmissionList />로 불러도
 // 에러 안 나게 매개변수 자체에도 기본값(= {})을 줌
 const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
+  // 담당의 ID(empId) → 의사 이름 (admin 의사 목록). 목록에 없는 예전 값은 ID 그대로 표시
+  const { nameById: doctorNameById } = useDoctorOptions();
   const dispatch = useDispatch<AppDispatch>(); // 액션을 스토어(사가)로 보내는 함수
   const admissions = useSelector(selectAdmissions); // 입원 목록 배열 (초기엔 빈 배열)
   const listStatus = useSelector(selectAdmissionListStatus); // { loading, error }
@@ -178,7 +181,7 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDate}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.patientId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.doctorId}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.doctorId ? doctorNameById.get(admission.doctorId) ?? admission.doctorId : "-"}</td>
                     <td className="whitespace-nowrap px-4 py-3">
                       {/* STATUS_BADGE/LABEL에 없는 값이 오더라도(예상 못한 상태값) 깨지지 않게 기본 회색 스타일/원본 문자열로 대체 */}
                       <span

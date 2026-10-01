@@ -1,6 +1,8 @@
 "use client";
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
+import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import {
     fetchIandORecordDetailRequest,
     deleteIandORecordRequest,
@@ -21,6 +23,8 @@ const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 const IandORecordDetail = () => {
+    // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
+    const { nameById: nurseNameById } = useNurseOptions();
     const dispatch = useDispatch();
     const { intakeOutputId }: { intakeOutputId: string } = useParams();
     const iandorecord = useSelector(selectIandORecordDetail);
@@ -66,11 +70,11 @@ const IandORecordDetail = () => {
             ioTypeCd: iandorecord.ioTypeCd,
             routeCd: iandorecord.routeCd,
             amountMl: String(iandorecord.amountMl),
-            recorderId: String(iandorecord.recorderId),
+            recorderId: iandorecord.recorderId ?? "",
         });
     }, [iandorecord]);
 
-    const onEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setEditForm((prev) => ({ ...prev, [name]: value }));
     };
@@ -89,7 +93,7 @@ const IandORecordDetail = () => {
             ioTypeCd: editForm.ioTypeCd,
             routeCd: editForm.routeCd,
             amountMl: Number(editForm.amountMl),
-            recorderId: Number(editForm.recorderId),
+            recorderId: editForm.recorderId, // 직원 ID(empId) 문자열 그대로
         }));
     };
 
@@ -140,7 +144,7 @@ const IandORecordDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Recorder ID</span>
-                                <span className="text-slate-800">{iandorecord.recorderId}</span>
+                                <span className="text-slate-800">{iandorecord.recorderId ? nurseNameById.get(iandorecord.recorderId) ?? iandorecord.recorderId : "-"}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Created At</span>
@@ -172,8 +176,8 @@ const IandORecordDetail = () => {
                             <input type="number" id="amountMl" name="amountMl" value={editForm.amountMl} onChange={onEditChange} className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="recorderId" className={LABEL}>Recorder ID</label>
-                            <input type="number" id="recorderId" name="recorderId" value={editForm.recorderId} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="recorderId" className={LABEL}>Recorder (Nurse)</label>
+                            <NurseSelect id="recorderId" name="recorderId" value={editForm.recorderId} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <button
                             onClick={handleUpdate}

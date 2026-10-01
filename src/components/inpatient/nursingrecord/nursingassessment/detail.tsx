@@ -1,6 +1,8 @@
 "use client";
 
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
+import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
+import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import {
     fetchNursingAssessmentDetailRequest,
     deleteNursingAssessmentRequest,
@@ -21,6 +23,8 @@ const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 const NursingAssessmentDetail = () => {
+    // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
+    const { nameById: nurseNameById } = useNurseOptions();
     const dispatch = useDispatch();
     const { nursingAssessmentId }: { nursingAssessmentId: string } = useParams();
     const nursingAssessment = useSelector(selectNursingAssessmentDetail);
@@ -68,11 +72,11 @@ const NursingAssessmentDetail = () => {
             pastMedicalHistory: nursingAssessment.pastMedicalHistory,
             mentalStatusCd: nursingAssessment.mentalStatusCd,
             assessedAt: new Date(nursingAssessment.assessedAt).toISOString().slice(0, 16),
-            assessorId: String(nursingAssessment.assessorId),
+            assessorId: nursingAssessment.assessorId ?? "",
         });
     }, [nursingAssessment]);
 
-    const onEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const onEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setEditForm((prev) => ({ ...prev, [name]: value }));
     };
@@ -92,7 +96,7 @@ const NursingAssessmentDetail = () => {
             pastMedicalHistory: editForm.pastMedicalHistory,
             mentalStatusCd: editForm.mentalStatusCd,
             assessedAt: new Date(editForm.assessedAt),
-            assessorId: Number(editForm.assessorId),
+            assessorId: editForm.assessorId, // 직원 ID(empId) 문자열 그대로
         }));
     };
 
@@ -147,7 +151,7 @@ const NursingAssessmentDetail = () => {
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Assessor ID</span>
-                                <span className="text-slate-800">{nursingAssessment.assessorId}</span>
+                                <span className="text-slate-800">{nursingAssessment.assessorId ? nurseNameById.get(nursingAssessment.assessorId) ?? nursingAssessment.assessorId : "-"}</span>
                             </div>
                             <div className={INFO_ROW}>
                                 <span className="text-slate-500">Created At</span>
@@ -183,8 +187,8 @@ const NursingAssessmentDetail = () => {
                             <input type="datetime-local" id="assessedAt" name="assessedAt" value={editForm.assessedAt} onChange={onEditChange} className={FIELD} />
                         </div>
                         <div>
-                            <label htmlFor="assessorId" className={LABEL}>Assessor ID</label>
-                            <input type="number" id="assessorId" name="assessorId" value={editForm.assessorId} onChange={onEditChange} className={FIELD} />
+                            <label htmlFor="assessorId" className={LABEL}>Assessor (Nurse)</label>
+                            <NurseSelect id="assessorId" name="assessorId" value={editForm.assessorId} onChange={onEditChange} className={FIELD} required={false} />
                         </div>
                         <button
                             onClick={handleUpdate}
