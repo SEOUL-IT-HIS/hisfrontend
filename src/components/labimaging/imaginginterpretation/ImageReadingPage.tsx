@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import ImageReadingDetail from "@/components/labimaging/imaginginterpretation/ImageReadingDetail";
+import ImageReadingLookup from "@/components/labimaging/imaginginterpretation/ImageReadingLookup";
 
 /**
  * 판독 상세 단독 화면의 진입점.
@@ -17,21 +18,16 @@ import ImageReadingDetail from "@/components/labimaging/imaginginterpretation/Im
  *   쓰는 백엔드 API(GET /image-readings/{imageOrderItemId})가 촬영항목ID 기준
  *   findOrCreate 라, 판독 행이 아직 없는 항목도 이 값 하나로 들어올 수 있다.
  *   imageReadingId 는 판독 행이 생긴 뒤에야 존재해 이 경로의 열쇠로 쓸 수 없다.
+ *
+ * ⚠ 쿼리스트링이 없으면(사이드바 메뉴로 바로 들어온 경우 등) ImageReadingLookup 을 보여준다
+ *   (2026-10-01) — imageOrderItemId 를 몰라도 환자명으로 찾아 들어갈 수 있게 한 것이다.
  */
 export default function ImageReadingPage() {
   const searchParams = useSearchParams();
   const imageOrderItemId = searchParams.get("imageOrderItemId");
 
   if (!imageOrderItemId) {
-    return (
-      <p className="text-sm text-slate-400">
-        No imaging item specified. Open this page with{" "}
-        <code className="rounded bg-slate-100 px-1 py-0.5">
-          ?imageOrderItemId=&lt;id&gt;
-        </code>
-        , or use the Reading tab in the imaging worklist instead.
-      </p>
-    );
+    return <ImageReadingLookup />;
   }
 
   return (
