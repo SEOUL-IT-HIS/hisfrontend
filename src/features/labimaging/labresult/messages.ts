@@ -16,6 +16,10 @@ export const LAB_RESULT_MESSAGES = {
   LAB040: "A confirmed result cannot be modified.",
   LAB041: "This result has already been confirmed.",
   LAB066: "Specimen acceptance is not complete. Results cannot be registered yet.",
+  LAB099: "This result item does not belong to this test, or the test does not support result items.",
+  LAB100: "The same result item was entered more than once.",
+  LAB101: "The number of result items is out of the allowed range. (1-4)",
+  LAB102: "This test requires result items. Please enter them.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;
