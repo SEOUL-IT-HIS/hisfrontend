@@ -41,8 +41,6 @@ export type OrderStatusCode = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
 export type SurgeryOrder = {
   orderId: string;
   patientId: string;
-  /** 내원 식별자 — 청구 연동(SL2-72)에 쓰인다. 안 보내면 null */
-  visitId: string | null;
   surgeonId: string;
   /** 희망 수술일 yyyy-MM-dd. 확정일이 아니다 */
   requestedDt: string;
@@ -76,8 +74,6 @@ export type SurgeryOrder = {
  */
 export type CreateSurgeryOrderRequest = {
   patientId: string;
-  /** 청구 연동에 필요하다. 진료는 되도록 채워 보낸다 */
-  visitId?: string | null;
   surgeonId: string;
   /** yyyy-MM-dd */
   requestedDt: string;

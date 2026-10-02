@@ -223,8 +223,6 @@ export default function SurgeryAssignForm({
           <dd>{order.requestedDt}</dd>
           <dt className="text-slate-500">Type</dt>
           <dd>{order.emergencyYn === "Y" ? "Emergency" : "Routine"}</dd>
-          <dt className="text-slate-500">Visit ID</dt>
-          <dd>{order.visitId ?? "-"}</dd>
         </dl>
       </Panel>
 
