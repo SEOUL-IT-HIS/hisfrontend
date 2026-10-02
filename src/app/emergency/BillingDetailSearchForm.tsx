@@ -94,9 +94,9 @@ export default function BillingDetailSearchForm({
                             searchPatient.map((patient) => (
                                 <BillingDetailSearchList
                                     key={patient.billingId}
-                                    patient={patient}
+                                    group={{ ...patient, bills: [patient] }}
                                     selected={selectedBillingId === patient.billingId}
-                                    onSelect={onSelectPatient}
+                                    onSelect={() => onSelectPatient(patient.billingId)}
                                 />
                             ))
                         )}

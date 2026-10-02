@@ -1,6 +1,6 @@
 import { call, put, takeLatest } from "redux-saga/effects";
 import { searchPatientApi,
-         fetchBillingDetailApi,
+         fetchPatientBillingDetailApi,
          admissionBillingDetailApi,
          visitBillingDetailApi,
          updateBillingStatusApi
@@ -36,9 +36,10 @@ function* searchBillingDetailSaga(action: PayloadAction<SearchPatient>) {
   }
 }
 
+// payload는 patientId - 그 환자의 미수납 건 전체를 합산해서 가져옴
 function* fetchBillingDetailSaga(action: PayloadAction<string>) {
   try {
-    const result: BillingDetail = yield call(fetchBillingDetailApi, action.payload);
+    const result: BillingDetail = yield call(fetchPatientBillingDetailApi, action.payload);
     yield put(fetchBillingDetailSuccess(result));
   } catch (err) {
     const message = err instanceof Error ? err.message : "진료비 상세 조회에 실패했습니다.";

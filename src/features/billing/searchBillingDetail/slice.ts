@@ -71,7 +71,7 @@ const billingDetailSlice = createSlice({
       state.error = action.payload;
     },
 
-    /** 진료비 상세조회 단건(환자 상세정보) 조회 시작 */
+    /** 진료비 상세조회 시작 - payload는 patientId (그 환자의 미수납 건 전체 합산) */
     fetchBillingDetailRequest(state, _action: PayloadAction<string>) {
       state.detailStatus = { loading: true, error: "" };
     },
