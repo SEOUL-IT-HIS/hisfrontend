@@ -27,7 +27,15 @@ function upsert(state: OrderState, receptionId: string, order: Order) {
   const list = state.ordersByReceptionId[receptionId] ?? [];
   const index = list.findIndex((o) => o.orderId === order.orderId);
   if (index >= 0) {
-    list[index] = { ...list[index], ...order, encounterId: order.encounterId ?? list[index].encounterId };
+    const known = list[index];
+    list[index] = {
+      ...known,
+      ...order,
+      encounterId: order.encounterId ?? known.encounterId,
+      // 전송 상태 요약은 목록 응답에만 있다 — 단건 응답(null)이 목록에서 받은 값을 지우지 않게 한다
+      labSendStatus: order.labSendStatus ?? known.labSendStatus,
+      pharmacySendStatus: order.pharmacySendStatus ?? known.pharmacySendStatus,
+    };
   } else {
     list.unshift({ ...order, encounterId: order.encounterId ?? receptionId });
   }
@@ -121,6 +129,11 @@ const orderSlice = createSlice({
     },
     fetchOrderSuccess(state, action: PayloadAction<{ receptionId: string; order: Order }>) {
       state.busyOrderId = "";
+      upsert(state, action.payload.receptionId, action.payload.order);
+    },
+
+    /** 목록을 불러온 뒤 항목이 비어 있는 처방의 상세를 채운다(진행 표시·오류 표시 없이 조용히). */
+    loadOrderDetailSuccess(state, action: PayloadAction<{ receptionId: string; order: Order }>) {
       upsert(state, action.payload.receptionId, action.payload.order);
     },
 
@@ -226,6 +239,7 @@ export const {
   fetchOrdersFailure,
   fetchOrderRequest,
   fetchOrderSuccess,
+  loadOrderDetailSuccess,
   cancelOrderRequest,
   cancelOrderSuccess,
   searchLabItemsRequest,

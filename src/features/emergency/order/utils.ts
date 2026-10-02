@@ -36,9 +36,19 @@ export function mayHaveLab(order: Order): boolean {
   return includesItemType(order, ORDER_ITEM_TYPE.LAB) ?? order.labSendStatus != null;
 }
 
-/** 약품 항목이 있을 수 있는 처방인지(목록만 있을 때는 약제 전송 상태가 있으면 있다고 본다) */
+/**
+ * 약품 항목이 있는 처방인지. 처방코어 목록의 pharmacySendStatus 는 약품이 없는 검사 처방에도 PENDING 으로 내려오므로
+ * (검사 쪽 labSendStatus 는 검사 항목이 없으면 null) 그 값으로는 약품 유무를 알 수 없다 — 항목을 불러온 뒤에만 true 가 된다.
+ */
 export function mayHaveDrug(order: Order): boolean {
-  return includesItemType(order, ORDER_ITEM_TYPE.DRUG) ?? order.pharmacySendStatus != null;
+  return includesItemType(order, ORDER_ITEM_TYPE.DRUG) === true;
+}
+
+/** 화면에 보여줄 약제 전송 상태 — 약품 항목이 있을 때만(약품이 없는데 PENDING 이 보이는 것을 막는다). 이미 SENT/FAILED 면 항상 보인다. */
+export function visiblePharmacyState(order: Order): string | null {
+  const state = pharmacySendState(order);
+  if (state === "SENT" || state === "FAILED") return state;
+  return mayHaveDrug(order) ? state : null;
 }
 
 /** 처방ID 앞 8자 — 선택 목록에서 처방을 구분하는 용도 */

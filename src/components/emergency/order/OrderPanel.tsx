@@ -41,6 +41,7 @@ import {
   mayHaveDrug,
   mayHaveLab,
   pharmacySendState,
+  visiblePharmacyState,
 } from "@/features/emergency/order/utils";
 import {
   fetchAllCommonCodesRequest,
@@ -90,7 +91,8 @@ function statusStyle(status: string | null): string {
 function sendLabel(status: string | null): string | null {
   if (status === "SENT") return "Sent";
   if (status === "FAILED") return "Send failed";
-  if (status === "PENDING") return "Not sent yet";
+  // PENDING: 아직 보내지 않았거나, 보냈고 LAB·약제의 처리 결과를 기다리는 중(처방코어는 두 경우 모두 PENDING 으로 둔다)
+  if (status === "PENDING") return "Pending";
   if (status === "REQUESTED") return "Requested";
   return null;
 }
@@ -303,10 +305,12 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
             const busy = busyOrderId === order.orderId;
             const orderItems = order.items ?? [];
             const labState = labSendState(order);
-            const pharmacyState = pharmacySendState(order);
-            // 항목을 아직 모르는 목록 처방은 전송 상태가 있으면 해당 종류가 있다고 본다. 이미 전송했으면(SENT) 버튼을 감춘다.
+            const pharmacyState = visiblePharmacyState(order);
+            // 검사는 처방코어가 검사 항목이 없으면 labSendStatus 를 null 로 주므로 그걸로 판단하고,
+            // 약품은 항목을 불러온 뒤에만 판단한다(약제 전송 상태는 약품이 없어도 PENDING 으로 와서 믿을 수 없다).
+            // 이미 전송했으면(SENT) 버튼을 감춘다.
             const canSendLab = mayHaveLab(order) && labState !== "SENT";
-            const canSendPharmacy = mayHaveDrug(order) && pharmacyState !== "SENT";
+            const canSendPharmacy = mayHaveDrug(order) && pharmacySendState(order) !== "SENT";
             return (
               <li key={order.orderId} className="rounded-lg bg-slate-50 p-3 text-sm">
                 <div className="flex flex-wrap items-center gap-2">

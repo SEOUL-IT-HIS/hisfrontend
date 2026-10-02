@@ -1,4 +1,4 @@
-import { call, put, takeEvery, takeLatest } from "redux-saga/effects";
+import { all, call, put, takeEvery, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import {
   cancelOrder,
@@ -25,11 +25,13 @@ import {
   fetchOrdersRequest,
   fetchOrdersSuccess,
   fetchOrderSuccess,
+  loadOrderDetailSuccess,
   orderActionFailure,
   searchLabItemsFailure,
   searchLabItemsRequest,
   searchLabItemsSuccess,
 } from "@/features/emergency/order/slice";
+import { isOrderCancelled } from "@/features/emergency/order/utils";
 import type {
   LabItem,
   Order,
@@ -60,10 +62,31 @@ function* createOrderSaga(action: PayloadAction<OrderCreateRequest>) {
   }
 }
 
+/** 항목 상세를 조용히 불러온다. 실패해도 목록 표시에는 영향이 없다(null). */
+function* loadOrderDetail(orderId: string) {
+  try {
+    const order: Order = yield call(getOrder, orderId);
+    return order;
+  } catch {
+    return null;
+  }
+}
+
+/** 한 번에 상세를 불러올 처방 수의 상한 — 처방코어 호출이 한꺼번에 몰리지 않게 */
+const DETAIL_LOAD_LIMIT = 20;
+
 function* fetchOrdersSaga(action: PayloadAction<string>) {
   try {
     const orders: Order[] = yield call(getOrders, action.payload);
     yield put(fetchOrdersSuccess({ receptionId: action.payload, orders }));
+    // 목록은 가벼워서 항목이 없다 — 항목(검사·약품 이름)이 있어야 카드·처방 선택이 의미가 있고 전송 버튼도 정확해지므로 채워 둔다.
+    const needDetail = orders.filter((o) => !isOrderCancelled(o)).slice(0, DETAIL_LOAD_LIMIT);
+    if (needDetail.length > 0) {
+      const details: Array<Order | null> = yield all(needDetail.map((o) => call(loadOrderDetail, o.orderId)));
+      for (const detail of details) {
+        if (detail) yield put(loadOrderDetailSuccess({ receptionId: action.payload, order: detail }));
+      }
+    }
   } catch (err) {
     // 처방 목록 조회에 실패했습니다.
     yield put(fetchOrdersFailure({ receptionId: action.payload, message: errorMessage(err, "Failed to load orders.") }));
