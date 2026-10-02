@@ -9,10 +9,15 @@ import { CODE_GROUP, optionLabel, toCodeOptions } from "@/features/emergency/cod
 import {
   cancelOrderRequest,
   clearOrderErrors,
+  confirmVerbalRequest,
   createOrderRequest,
   dispatchOrderRequest,
   fetchOrderRequest,
   fetchOrdersRequest,
+  searchLabItemsRequest,
+  selectLabItems,
+  selectLabItemsError,
+  selectLabItemsLoading,
   selectOrderActionError,
   selectOrderBusyId,
   selectOrderListError,
@@ -26,6 +31,7 @@ import {
   ORDER_ITEM_TYPE_OPTIONS,
   ORDER_PRIORITY_FALLBACK_OPTIONS,
   ORDER_TIMING_FALLBACK_OPTIONS,
+  type LabItem,
   type Order,
   type OrderItem,
 } from "@/features/emergency/order/types";
@@ -68,6 +74,11 @@ const emptyItem = (): ItemForm => ({
 const initialForm = { prescribedBy: "", priorityCode: "01", timingCode: "03", verbal: false, dispatchNow: true };
 const initialCancel = { cancelReason: "", userId: "" };
 
+/** 구두처방을 확정한 처방인지 */
+function isVerbalConfirmed(order: Order): boolean {
+  return !!order.verbalConfirmedAt || !!order.verbalConfirmedBy;
+}
+
 /** 처방 상태 문구 — 처방코어가 돌려준 상태를 그대로 보여준다(예: ORDERED, CANCELLED) */
 function statusStyle(status: string | null): string {
   const value = (status ?? "").toUpperCase();
@@ -80,6 +91,7 @@ function sendLabel(status: string | null): string | null {
   if (status === "SENT") return "Sent";
   if (status === "FAILED") return "Send failed";
   if (status === "PENDING") return "Not sent yet";
+  if (status === "REQUESTED") return "Requested";
   return null;
 }
 
@@ -94,7 +106,8 @@ function sendStyle(status: string | null): string {
  * - 처방 원장은 처방코어가 소유한다. 응급은 호출만 하고 처방 내용을 응급 DB에 저장하지 않는다.
  * - 영상(방사선) 오더는 처방코어가 받지 않아 제외했다.
  * - 처방 수정은 없다 — 변경은 취소 후 재등록.
- * - 구두처방은 지금은 일반 처방으로 등록만 된다(처방코어가 구두 표시·확정을 지원하면 붙인다).
+ * - 구두처방: 등록 때 Verbal order 를 체크하면 구두(02)로 등록되고, 카드의 "Confirm Verbal Order"로 의사가 사후 확정한다.
+ * - 검사 항목은 "Find a lab test"로 처방코어 검사항목을 검색해 추가한다(직접 입력도 가능).
  * - 목록: 환자를 고르면 처방코어의 receptionId 목록 조회로 이 접수의 처방을 불러온다(다른 사람이 낸 처방, 새로고침·교대 뒤에도 보인다).
  *   목록은 가벼워서(항목 없음) 검사/약제 전송 상태만 오고, 항목은 "Load details"(단건 조회)로 본다.
  */
@@ -105,6 +118,9 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
   const submitError = useSelector(selectOrderSubmitError);
   const busyOrderId = useSelector(selectOrderBusyId);
   const actionError = useSelector(selectOrderActionError);
+  const labItems = useSelector(selectLabItems);
+  const labItemsLoading = useSelector(selectLabItemsLoading);
+  const labItemsError = useSelector(selectLabItemsError);
   const listStatus = useSelector(selectOrderListStatus(receptionNo));
   const listError = useSelector(selectOrderListError);
   const commonCodeLoaded = useSelector(selectCommonCodeLoaded);
@@ -114,6 +130,10 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
   const [form, setForm] = useState(initialForm);
   const [items, setItems] = useState<ItemForm[]>([emptyItem()]);
   const [lookupId, setLookupId] = useState("");
+  const [labQuery, setLabQuery] = useState("");
+  const [labSearched, setLabSearched] = useState(false);
+  const [verbalTarget, setVerbalTarget] = useState("");
+  const [verbalDoctor, setVerbalDoctor] = useState("");
   const [cancelTarget, setCancelTarget] = useState("");
   const [cancelForm, setCancelForm] = useState(initialCancel);
   const [lastCount, setLastCount] = useState(0);
@@ -134,6 +154,10 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
     setForm(initialForm);
     setItems([emptyItem()]);
     setLookupId("");
+    setLabQuery("");
+    setLabSearched(false);
+    setVerbalTarget("");
+    setVerbalDoctor("");
     setCancelTarget("");
     setCancelForm(initialCancel);
     setLastCount(orders.length);
@@ -211,6 +235,31 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
     setLookupId("");
   }
 
+  function handleLabSearch() {
+    dispatch(searchLabItemsRequest(labQuery.trim()));
+    setLabSearched(true);
+  }
+
+  /** 검색 결과의 검사 항목을 처방 항목에 추가한다(맨 앞의 빈 검사 항목 칸이 있으면 그 자리에 채운다). */
+  function handleAddLabItem(item: LabItem) {
+    setItems((prev) => {
+      if (prev.some((p) => p.prescriptionType === ORDER_ITEM_TYPE.LAB && p.itemCode === item.itemCode)) return prev;
+      const filled: ItemForm = { ...emptyItem(), prescriptionType: ORDER_ITEM_TYPE.LAB, itemCode: item.itemCode, itemName: item.itemName };
+      const emptyIndex = prev.findIndex(
+        (p) => p.prescriptionType === ORDER_ITEM_TYPE.LAB && !p.itemCode.trim() && !p.itemName.trim(),
+      );
+      if (emptyIndex >= 0) return prev.map((p, i) => (i === emptyIndex ? filled : p));
+      return [...prev, filled];
+    });
+  }
+
+  function handleVerbalConfirm(order: Order) {
+    if (!verbalDoctor.trim()) return;
+    dispatch(confirmVerbalRequest(order.orderId, verbalDoctor.trim()));
+    setVerbalTarget("");
+    setVerbalDoctor("");
+  }
+
   function handleCancel(order: Order) {
     if (!cancelForm.cancelReason.trim() || !cancelForm.userId.trim()) return;
     dispatch(
@@ -272,7 +321,20 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                   {order.timingCode ? (
                     <span className="text-xs text-slate-500">{optionLabel(timingOptions, order.timingCode)}</span>
                   ) : null}
-                  {order.verbalYn === "Y" ? <span className="text-xs text-amber-600">Verbal</span> : null}
+                  {order.orderMethodName ? (
+                    <span className="text-xs text-slate-500">{order.orderMethodName}</span>
+                  ) : null}
+                  {order.verbalYn === "Y" ? (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        isVerbalConfirmed(order) ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                      }`}
+                    >
+                      {isVerbalConfirmed(order)
+                        ? `Verbal · Confirmed${order.verbalConfirmedBy ? ` by ${order.verbalConfirmedBy}` : ""}`
+                        : "Verbal · Awaiting confirmation"}
+                    </span>
+                  ) : null}
                   {sendLabel(labState) ? (
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${sendStyle(labState)}`}>
                       Lab: {sendLabel(labState)}
@@ -327,7 +389,7 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                       <Button
                         variant="secondary"
                         disabled={busy}
-                        onClick={() => dispatch(dispatchOrderRequest(order.orderId, "LAB"))}
+                        onClick={() => dispatch(dispatchOrderRequest(order.orderId, "LAB", receptionNo))}
                       >
                         {labState === "FAILED" ? "Resend to Lab" : "Send to Lab"}
                       </Button>
@@ -336,7 +398,7 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                       <Button
                         variant="secondary"
                         disabled={busy}
-                        onClick={() => dispatch(dispatchOrderRequest(order.orderId, "PHARMACY"))}
+                        onClick={() => dispatch(dispatchOrderRequest(order.orderId, "PHARMACY", receptionNo))}
                       >
                         {pharmacyState === "FAILED" ? "Resend to Pharmacy" : "Send to Pharmacy"}
                       </Button>
@@ -349,12 +411,32 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                       {/* 항목·결과 상세 보기 */}
                       Load details
                     </Button>
+                    {order.verbalYn === "Y" && !isVerbalConfirmed(order) ? (
+                      <Button
+                        variant="secondary"
+                        disabled={busy}
+                        onClick={() => setVerbalTarget(verbalTarget === order.orderId ? "" : order.orderId)}
+                      >
+                        Confirm Verbal Order
+                      </Button>
+                    ) : null}
                     <Button
                       variant="ghost"
                       disabled={busy}
                       onClick={() => setCancelTarget(cancelTarget === order.orderId ? "" : order.orderId)}
                     >
                       Cancel Order
+                    </Button>
+                  </div>
+                ) : null}
+
+                {verbalTarget === order.orderId && !cancelled ? (
+                  <div className="mt-2 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
+                    <FormField label="Confirmed By (Doctor ID)" required className="w-[220px]">
+                      <Input value={verbalDoctor} onChange={(e) => setVerbalDoctor(e.target.value)} maxLength={36} />
+                    </FormField>
+                    <Button disabled={busy || !verbalDoctor.trim()} onClick={() => handleVerbalConfirm(order)}>
+                      Confirm
                     </Button>
                   </div>
                 ) : null}
@@ -433,6 +515,49 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
         </FormField>
       </div>
 
+      {/* 검사항목 검색 — 결과를 누르면 처방 항목으로 추가된다(코드·이름을 직접 입력해도 된다) */}
+      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <FormField label="Find a lab test" hint="Search by name or code. Leave empty to list all." className="w-[320px]">
+            <Input
+              value={labQuery}
+              onChange={(e) => setLabQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleLabSearch();
+              }}
+              placeholder="e.g. CBC"
+              disabled={submitting}
+            />
+          </FormField>
+          <Button variant="secondary" onClick={handleLabSearch} disabled={submitting || labItemsLoading}>
+            {labItemsLoading ? "Searching..." : "Search"}
+          </Button>
+        </div>
+        {labItemsError ? <Alert variant="error">{resolveEmergencyMessage(labItemsError)}</Alert> : null}
+        {labSearched && !labItemsLoading && !labItemsError ? (
+          labItems.length === 0 ? (
+            <p className="mt-2 text-xs text-slate-400">No lab tests found.</p>
+          ) : (
+            <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto">
+              {labItems.map((item) => (
+                <li key={item.itemCode} className="flex items-center justify-between gap-2 rounded-md bg-white px-3 py-1.5 text-sm">
+                  <span className="text-slate-800">
+                    {item.itemName} <span className="text-xs text-slate-400">({item.itemCode})</span>
+                    <span className="text-xs text-slate-500">
+                      {item.testClassification ? ` · ${item.testClassification}` : ""}
+                      {item.specimenTypes && item.specimenTypes.length > 0 ? ` · ${item.specimenTypes.join("/")}` : ""}
+                    </span>
+                  </span>
+                  <Button variant="secondary" onClick={() => handleAddLabItem(item)} disabled={submitting}>
+                    Add
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )
+        ) : null}
+      </div>
+
       <div className="mt-3 space-y-3">
         {items.map((item, index) => {
           const isDrug = item.prescriptionType === ORDER_ITEM_TYPE.DRUG;
@@ -486,8 +611,8 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
       <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-700">
         <label className="flex items-center gap-2">
           <input type="checkbox" name="verbal" checked={form.verbal} onChange={handleFormChange} disabled={submitting} />
-          {/* 구두처방 — 지금은 일반 처방으로 등록됩니다 */}
-          Verbal order <span className="text-xs text-slate-400">(registered as an ordinary order for now)</span>
+          {/* 구두처방 — 등록 뒤 의사가 사후 확정해야 합니다 */}
+          Verbal order <span className="text-xs text-slate-400">(the physician confirms it afterwards)</span>
         </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" name="dispatchNow" checked={form.dispatchNow} onChange={handleFormChange} disabled={submitting} />

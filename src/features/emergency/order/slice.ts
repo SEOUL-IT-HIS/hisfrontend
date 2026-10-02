@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
+  LabItem,
   Order,
   OrderCancelRequest,
   OrderCreateRequest,
@@ -12,6 +13,9 @@ const initialState: OrderState = {
   ordersByReceptionId: {},
   listStatusByReception: {},
   listError: "",
+  labItems: [],
+  labItemsLoading: false,
+  labItemsError: "",
   submitting: false,
   submitError: "",
   busyOrderId: "",
@@ -43,7 +47,10 @@ function mergeServerOrders(state: OrderState, receptionId: string, serverOrders:
       ...server,
       encounterId: server.encounterId ?? receptionId,
       items: server.items && server.items.length > 0 ? server.items : (known?.items ?? null),
+      orderMethodName: server.orderMethodName ?? known?.orderMethodName ?? null,
       verbalYn: server.verbalYn ?? known?.verbalYn ?? null,
+      verbalConfirmedAt: server.verbalConfirmedAt ?? known?.verbalConfirmedAt ?? null,
+      verbalConfirmedBy: server.verbalConfirmedBy ?? known?.verbalConfirmedBy ?? null,
       labDispatchStatus: known?.labDispatchStatus ?? null,
       pharmacyDispatchStatus: known?.pharmacyDispatchStatus ?? null,
     };
@@ -135,25 +142,67 @@ const orderSlice = createSlice({
       });
     },
 
-    dispatchOrderRequest: {
-      reducer(state, action: PayloadAction<{ orderId: string; target: "LAB" | "PHARMACY" }>) {
+    /** 검사항목 검색(처방 등록의 검사 항목 선택). name 이 비면 전체 */
+    searchLabItemsRequest: {
+      reducer(state) {
+        state.labItemsLoading = true;
+        state.labItemsError = "";
+      },
+      prepare(name: string) {
+        return { payload: name };
+      },
+    },
+    searchLabItemsSuccess(state, action: PayloadAction<LabItem[]>) {
+      state.labItemsLoading = false;
+      state.labItems = action.payload;
+    },
+    searchLabItemsFailure(state, action: PayloadAction<string>) {
+      state.labItemsLoading = false;
+      state.labItemsError = action.payload;
+    },
+
+    /** 구두처방 사후 확정 */
+    confirmVerbalRequest: {
+      reducer(state, action: PayloadAction<{ orderId: string; confirmedBy: string }>) {
         state.busyOrderId = action.payload.orderId;
         state.actionError = "";
       },
-      prepare(orderId: string, target: "LAB" | "PHARMACY") {
-        return { payload: { orderId, target } };
+      prepare(orderId: string, confirmedBy: string) {
+        return { payload: { orderId, confirmedBy } };
+      },
+    },
+    confirmVerbalSuccess(state, action: PayloadAction<Order>) {
+      state.busyOrderId = "";
+      patchOrder(state, action.payload.orderId, {
+        verbalYn: "Y",
+        verbalConfirmedAt: action.payload.verbalConfirmedAt ?? null,
+        verbalConfirmedBy: action.payload.verbalConfirmedBy ?? null,
+        ...(action.payload.status ? { status: action.payload.status } : {}),
+      });
+    },
+
+    dispatchOrderRequest: {
+      reducer(state, action: PayloadAction<{ orderId: string; target: "LAB" | "PHARMACY"; receptionId: string }>) {
+        state.busyOrderId = action.payload.orderId;
+        state.actionError = "";
+      },
+      prepare(orderId: string, target: "LAB" | "PHARMACY", receptionId: string) {
+        return { payload: { orderId, target, receptionId } };
       },
     },
     dispatchOrderSuccess(state, action: PayloadAction<OrderDispatch>) {
       state.busyOrderId = "";
-      // 전송이 성공하면 처방코어 상태도 SENT 로 본다(목록을 다시 불러오면 실제 값으로 바뀐다)
-      patchOrder(
-        state,
-        action.payload.orderId,
-        action.payload.target === "LAB"
-          ? { labDispatchStatus: action.payload.status, labSendStatus: action.payload.status }
-          : { pharmacyDispatchStatus: action.payload.status, pharmacySendStatus: action.payload.status },
-      );
+      // 전송 호출이 받아들여져도 처방코어가 검사·약제로 실제로 넘겼는지는 별개라(FAILED 로 남을 수 있다),
+      // 백엔드가 호출 직후 다시 읽은 실제 상태(SENT/FAILED/PENDING)만 반영한다. REQUESTED(못 읽음)는 목록 새로고침에 맡긴다.
+      if (["SENT", "FAILED", "PENDING"].includes(action.payload.status)) {
+        patchOrder(
+          state,
+          action.payload.orderId,
+          action.payload.target === "LAB"
+            ? { labDispatchStatus: action.payload.status, labSendStatus: action.payload.status }
+            : { pharmacyDispatchStatus: action.payload.status, pharmacySendStatus: action.payload.status },
+        );
+      }
     },
 
     /** 조회·취소·전송 실패. 전송이 실패하면 그 처방에 FAILED 를 표시해 다시 시도할 수 있게 한다. */
@@ -179,6 +228,11 @@ export const {
   fetchOrderSuccess,
   cancelOrderRequest,
   cancelOrderSuccess,
+  searchLabItemsRequest,
+  searchLabItemsSuccess,
+  searchLabItemsFailure,
+  confirmVerbalRequest,
+  confirmVerbalSuccess,
   dispatchOrderRequest,
   dispatchOrderSuccess,
   orderActionFailure,
@@ -196,6 +250,9 @@ export const selectOrdersByReception = (receptionId: string) => (state: OrderRoo
   state.emergency.order.ordersByReceptionId[receptionId] ?? NO_ORDERS;
 export const selectOrderListStatus = (receptionId: string) => (state: OrderRoot) =>
   state.emergency.order.listStatusByReception[receptionId];
+export const selectLabItems = (state: OrderRoot) => state.emergency.order.labItems;
+export const selectLabItemsLoading = (state: OrderRoot) => state.emergency.order.labItemsLoading;
+export const selectLabItemsError = (state: OrderRoot) => state.emergency.order.labItemsError;
 export const selectOrderListError = (state: OrderRoot) => state.emergency.order.listError;
 export const selectOrderSubmitting = (state: OrderRoot) => state.emergency.order.submitting;
 export const selectOrderSubmitError = (state: OrderRoot) => state.emergency.order.submitError;
