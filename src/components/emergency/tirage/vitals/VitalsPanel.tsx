@@ -151,27 +151,29 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
           <DischargedNotice receptionNo={receptionNo} />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {/* 수축기혈압 */}
+            {/* 수축기혈압 — 정상범위 참고용 placeholder (90~140) */}
             <FormField label="Systolic BP">
-              <Input type="number" name="systolicBp" value={form.systolicBp} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="systolicBp" value={form.systolicBp} onChange={handleChange} disabled={submitting} placeholder="90-140" />
             </FormField>
-            {/* 맥박 */}
+            {/* 맥박 (60~100) */}
             <FormField label="Heart Rate">
-              <Input type="number" name="heartRate" value={form.heartRate} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="heartRate" value={form.heartRate} onChange={handleChange} disabled={submitting} placeholder="60-100" />
             </FormField>
-            {/* 호흡수 */}
+            {/* 호흡수 (12~20) */}
             <FormField label="Resp Rate">
-              <Input type="number" name="respRate" value={form.respRate} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="respRate" value={form.respRate} onChange={handleChange} disabled={submitting} placeholder="12-20" />
             </FormField>
-            {/* 체온 */}
+            {/* 체온 (36.5~37.5) */}
             <FormField label="Temp">
-              <Input type="number" step="0.1" name="temperature" value={form.temperature} onChange={handleChange} disabled={submitting} />
+              <Input type="number" step="0.1" name="temperature" value={form.temperature} onChange={handleChange} disabled={submitting} placeholder="36.5-37.5" />
             </FormField>
+            {/* SpO2 (95~100) */}
             <FormField label="SpO2">
-              <Input type="number" name="spo2" value={form.spo2} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="spo2" value={form.spo2} onChange={handleChange} disabled={submitting} placeholder="95-100" />
             </FormField>
+            {/* GCS (3~15, 15 정상) */}
             <FormField label="GCS">
-              <Input type="number" name="gcs" value={form.gcs} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="gcs" value={form.gcs} onChange={handleChange} disabled={submitting} placeholder="15" />
             </FormField>
             {/* 측정자ID */}
             <FormField label="Measured By ID" className="sm:col-span-3">
