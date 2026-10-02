@@ -3,6 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import { selectIsDischarged } from "@/features/emergency/disposition/slice";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import { CODE_GROUP, optionLabel, toCodeOptions } from "@/features/emergency/codes";
@@ -115,6 +117,7 @@ function sendStyle(status: string | null): string {
  */
 export default function OrderPanel({ receptionNo, className = "" }: OrderPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const discharged = useSelector(selectIsDischarged(receptionNo));
   const orders = useSelector(selectOrdersByReception(receptionNo));
   const submitting = useSelector(selectOrderSubmitting);
   const submitError = useSelector(selectOrderSubmitError);
@@ -181,8 +184,10 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
   const timingOptions = toCodeOptions(timingCodes, ORDER_TIMING_FALLBACK_OPTIONS);
 
   const itemsValid = items.every((item) => !!item.itemCode.trim() && !!item.itemName.trim());
+  // 퇴실 처리가 끝난 환자에게는 새 처방을 등록하지 않는다(기존 처방의 취소·전송·구두 확정은 가능)
   const canSubmit =
     !!receptionNo &&
+    !discharged &&
     !submitting &&
     !!form.prescribedBy.trim() &&
     !!form.priorityCode &&
@@ -502,6 +507,7 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
       </div>
 
       <h4 className="mb-2 text-sm font-semibold text-slate-700">New Order</h4>
+      <DischargedNotice receptionNo={receptionNo} />
       {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
       <div className="flex flex-wrap gap-3">

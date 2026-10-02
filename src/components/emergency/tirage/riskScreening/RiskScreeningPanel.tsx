@@ -3,6 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import { selectIsDischarged } from "@/features/emergency/disposition/slice";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
@@ -55,6 +57,7 @@ const SCREEN_TOOL_GUIDE: Record<string, string> = {
  */
 export default function RiskScreeningPanel({ receptionNo, className = "" }: RiskScreeningPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const discharged = useSelector(selectIsDischarged(receptionNo));
   const items = useSelector(selectRiskScreeningItems);
   const loading = useSelector(selectRiskScreeningLoading);
   const error = useSelector(selectRiskScreeningError);
@@ -225,6 +228,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
           )}
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
+          <DischargedNotice receptionNo={receptionNo} />
           {localError ? <Alert variant="error">{localError}</Alert> : null}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
@@ -319,7 +323,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
           ) : null}
 
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.screenType || !receptionNo}>
+            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.screenType || !receptionNo || discharged}>
               {/* 저장 중... / 스크리닝 결과 등록 */}
               {submitting ? "Saving..." : "Register Screening Result"}
             </Button>

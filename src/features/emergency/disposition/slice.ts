@@ -74,6 +74,9 @@ type DispositionRoot = { emergency: { disposition: DispositionState } };
 
 export const selectDispositionByReceptionId = (receptionNo: string) => (state: DispositionRoot) =>
   state.emergency.disposition.byReceptionId[receptionNo] ?? null;
+/** 퇴실 처리가 끝난(DONE) 환자인지 — 최신 퇴실 결정이 알려준 단계 기준(결정이 없으면 false) */
+export const selectIsDischarged = (receptionNo: string) => (state: DispositionRoot) =>
+  state.emergency.disposition.byReceptionId[receptionNo]?.stage === "DONE";
 export const selectDispositionSubmitting = (state: DispositionRoot) => state.emergency.disposition.submitting;
 export const selectDispositionSubmitError = (state: DispositionRoot) => state.emergency.disposition.submitError;
 export const selectDispositionLoading = (state: DispositionRoot) => state.emergency.disposition.loading;

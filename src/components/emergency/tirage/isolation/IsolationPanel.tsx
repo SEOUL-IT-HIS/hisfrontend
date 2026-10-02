@@ -3,6 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import { selectIsDischarged } from "@/features/emergency/disposition/slice";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
@@ -32,6 +34,7 @@ const initialForm = { isolationTypeCode: "", requiredYn: "Y" as "Y" | "N", decid
  */
 export default function IsolationPanel({ receptionNo, className = "" }: IsolationPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const discharged = useSelector(selectIsDischarged(receptionNo));
   const items = useSelector(selectIsolationItems);
   const loading = useSelector(selectIsolationLoading);
   const error = useSelector(selectIsolationError);
@@ -139,6 +142,7 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
           </p>
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
+          <DischargedNotice receptionNo={receptionNo} />
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {/* 격리 유형 */}
@@ -170,7 +174,7 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
             </FormField>
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleRegister} disabled={submitting || !form.isolationTypeCode || !receptionNo}>
+            <Button type="button" onClick={handleRegister} disabled={submitting || !form.isolationTypeCode || !receptionNo || discharged}>
               {/* 저장 중... / 격리 등록 */}
               {submitting ? "Saving..." : "Register Isolation"}
             </Button>

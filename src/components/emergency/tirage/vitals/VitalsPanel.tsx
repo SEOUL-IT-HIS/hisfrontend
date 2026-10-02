@@ -3,6 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import { selectIsDischarged } from "@/features/emergency/disposition/slice";
 import { Alert, Button, FormField, Input } from "@/components/common";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
@@ -38,6 +40,7 @@ const initialForm = {
  */
 export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const discharged = useSelector(selectIsDischarged(receptionNo));
   const items = useSelector(selectVitalsItems);
   const loading = useSelector(selectVitalsLoading);
   const error = useSelector(selectVitalsError);
@@ -145,6 +148,7 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
           ) : null}
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
+          <DischargedNotice receptionNo={receptionNo} />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {/* 수축기혈압 */}
@@ -175,7 +179,7 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
             </FormField>
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleSubmit} disabled={submitting || !hasAnyValue || !receptionNo}>
+            <Button type="button" onClick={handleSubmit} disabled={submitting || !hasAnyValue || !receptionNo || discharged}>
               {/* 저장 중... / 활력징후 등록 */}
               {submitting ? "Saving..." : "Register Vital Signs"}
             </Button>

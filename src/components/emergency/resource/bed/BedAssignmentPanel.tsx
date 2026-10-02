@@ -3,6 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import { selectIsDischarged } from "@/features/emergency/disposition/slice";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
@@ -44,6 +46,7 @@ function zoneLabel(zoneCode: string): string {
  */
 export default function BedAssignmentPanel({ receptionNo, className = "" }: BedAssignmentPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const discharged = useSelector(selectIsDischarged(receptionNo));
   const beds = useSelector(selectBeds);
   const loading = useSelector(selectBedsLoading);
   const error = useSelector(selectBedsError);
@@ -167,6 +170,7 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
           </div>
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
+          <DischargedNotice receptionNo={receptionNo} />
 
           <div className="flex flex-wrap gap-3">
             {/* 병상 */}
@@ -187,7 +191,7 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
             </FormField>
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleAssign} disabled={submitting || !form.bedId || !receptionNo}>
+            <Button type="button" onClick={handleAssign} disabled={submitting || !form.bedId || !receptionNo || discharged}>
               {/* 배정 중... / 병상 배정 */}
               {submitting ? "Assigning..." : "Assign Bed"}
             </Button>

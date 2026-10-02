@@ -3,6 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import { selectIsDischarged } from "@/features/emergency/disposition/slice";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
@@ -38,6 +40,7 @@ const initialForm = { ktasScore: "", reason: "", assessedById: "" };
  */
 export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const discharged = useSelector(selectIsDischarged(receptionNo));
   const items = useSelector(selectKtasItems);
   const loading = useSelector(selectKtasLoading);
   const error = useSelector(selectKtasError);
@@ -163,6 +166,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
           ) : null}
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
+          <DischargedNotice receptionNo={receptionNo} />
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {/* 변경 등급 / 최초 등급 */}
@@ -193,7 +197,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
             </FormField>
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.ktasScore || !receptionNo}>
+            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.ktasScore || !receptionNo || discharged}>
               {/* 저장 중... / 재평가 저장 / 최초 분류 등록 */}
               {submitting ? "Saving..." : hasInitial ? "Save Reassessment" : "Register Initial Level"}
             </Button>
