@@ -21,6 +21,8 @@ const KakaoPayReturn = () => {
   const { loading, error, success } = useSelector((state: RootState) => state.billing.billingPayment);
 
   const billingId = searchParams.get("billingId");
+  // 여러 건을 묶어 결제한 경우 백엔드가 approval_url 에 쉼표로 이어서 붙여줌
+  const billingIds = searchParams.get("billingIds")?.split(",").filter(Boolean);
   const pgToken = searchParams.get("pg_token");
 
   // React StrictMode(개발 모드)는 마운트 시 effect를 두 번 실행하므로, ref 없이 그냥 dispatch하면
@@ -31,7 +33,7 @@ const KakaoPayReturn = () => {
     if (!billingId || !pgToken) return;
     if (approveRequested.current) return;
     approveRequested.current = true;
-    dispatch(kakaoPayApproveRequest({ billingId, pgToken })); 
+    dispatch(kakaoPayApproveRequest({ billingId, billingIds, pgToken }));
     // billingId/pgToken은 콜백 진입 시 한 번만 붙는 값이라 최초 마운트 시 1회만 실행
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
