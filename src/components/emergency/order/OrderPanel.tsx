@@ -12,8 +12,11 @@ import {
   createOrderRequest,
   dispatchOrderRequest,
   fetchOrderRequest,
+  fetchOrdersRequest,
   selectOrderActionError,
   selectOrderBusyId,
+  selectOrderListError,
+  selectOrderListStatus,
   selectOrdersByReception,
   selectOrderSubmitError,
   selectOrderSubmitting,
@@ -26,6 +29,13 @@ import {
   type Order,
   type OrderItem,
 } from "@/features/emergency/order/types";
+import {
+  isOrderCancelled,
+  labSendState,
+  mayHaveDrug,
+  mayHaveLab,
+  pharmacySendState,
+} from "@/features/emergency/order/utils";
 import {
   fetchAllCommonCodesRequest,
   selectCommonCodeLoaded,
@@ -65,10 +75,18 @@ function statusStyle(status: string | null): string {
   return "bg-sky-50 text-sky-700";
 }
 
-function dispatchLabel(status: string | null): string | null {
+/** 처방코어 전송 상태 → 화면 문구 */
+function sendLabel(status: string | null): string | null {
   if (status === "SENT") return "Sent";
   if (status === "FAILED") return "Send failed";
+  if (status === "PENDING") return "Not sent yet";
   return null;
+}
+
+function sendStyle(status: string | null): string {
+  if (status === "FAILED") return "bg-rose-50 text-rose-700";
+  if (status === "SENT") return "bg-emerald-50 text-emerald-700";
+  return "bg-amber-50 text-amber-700";
 }
 
 /**
@@ -77,7 +95,8 @@ function dispatchLabel(status: string | null): string | null {
  * - 영상(방사선) 오더는 처방코어가 받지 않아 제외했다.
  * - 처방 수정은 없다 — 변경은 취소 후 재등록.
  * - 구두처방은 지금은 일반 처방으로 등록만 된다(처방코어가 구두 표시·확정을 지원하면 붙인다).
- * - 목록: 처방코어의 receptionId 목록 조회가 나오기 전까지는 이 화면에서 등록했거나 처방ID로 불러온 처방만 보인다.
+ * - 목록: 환자를 고르면 처방코어의 receptionId 목록 조회로 이 접수의 처방을 불러온다(다른 사람이 낸 처방, 새로고침·교대 뒤에도 보인다).
+ *   목록은 가벼워서(항목 없음) 검사/약제 전송 상태만 오고, 항목은 "Load details"(단건 조회)로 본다.
  */
 export default function OrderPanel({ receptionNo, className = "" }: OrderPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
@@ -86,6 +105,8 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
   const submitError = useSelector(selectOrderSubmitError);
   const busyOrderId = useSelector(selectOrderBusyId);
   const actionError = useSelector(selectOrderActionError);
+  const listStatus = useSelector(selectOrderListStatus(receptionNo));
+  const listError = useSelector(selectOrderListError);
   const commonCodeLoaded = useSelector(selectCommonCodeLoaded);
   const priorityCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.ORDER_PRIORITY));
   const timingCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.ORDER_TIMING));
@@ -101,6 +122,11 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
   useEffect(() => {
     if (!commonCodeLoaded) dispatch(fetchAllCommonCodesRequest());
   }, [dispatch, commonCodeLoaded]);
+
+  // 환자를 고르면 그 접수의 처방 목록을 불러온다.
+  useEffect(() => {
+    if (receptionNo) dispatch(fetchOrdersRequest(receptionNo));
+  }, [dispatch, receptionNo]);
 
   // 환자를 바꾸면 입력 중이던 값과 이전 오류를 지운다.
   if (receptionNo !== lastReceptionNo) {
@@ -197,32 +223,41 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
     setCancelForm(initialCancel);
   }
 
-  function isCancelled(order: Order): boolean {
-    return !!order.cancelledAt || /^(CANCEL|DEACTIV)/i.test(order.status ?? "");
-  }
-
   return (
     <section className={`rounded-xl border border-slate-200 bg-white p-4 ${className}`}>
       {/* 처방 (검사·약품) */}
-      <h3 className="mb-1 text-sm font-semibold text-slate-800">Orders (Lab Tests · Drugs)</h3>
+      <div className="mb-1 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-slate-800">Orders (Lab Tests · Drugs)</h3>
+        <Button
+          variant="secondary"
+          disabled={!receptionNo || listStatus === "loading"}
+          onClick={() => dispatch(fetchOrdersRequest(receptionNo))}
+        >
+          {listStatus === "loading" ? "Loading..." : "Refresh List"}
+        </Button>
+      </div>
       <p className="mb-3 text-xs text-slate-400">
         {/* 처방 원장은 처방코어가 소유합니다. 영상 오더는 지원하지 않고, 수정은 취소 후 재등록입니다. */}
         Orders are kept in the order core. Imaging orders are not supported. To change an order, cancel it and register a new one.
       </p>
 
+      {listStatus === "error" && listError ? (
+        <Alert variant="error">{resolveEmergencyMessage(listError)}</Alert>
+      ) : null}
       {actionError ? <Alert variant="error">{resolveEmergencyMessage(actionError)}</Alert> : null}
 
       {/* 처방 목록 */}
       {orders.length > 0 ? (
         <ul className="mb-4 space-y-2">
           {orders.map((order) => {
-            const cancelled = isCancelled(order);
+            const cancelled = isOrderCancelled(order);
             const busy = busyOrderId === order.orderId;
             const orderItems = order.items ?? [];
-            const hasLab = orderItems.some((item) => item.prescriptionType === ORDER_ITEM_TYPE.LAB);
-            const hasDrug = orderItems.some((item) => item.prescriptionType === ORDER_ITEM_TYPE.DRUG);
-            const labState = dispatchLabel(order.labDispatchStatus);
-            const pharmacyState = dispatchLabel(order.pharmacyDispatchStatus);
+            const labState = labSendState(order);
+            const pharmacyState = pharmacySendState(order);
+            // 항목을 아직 모르는 목록 처방은 전송 상태가 있으면 해당 종류가 있다고 본다. 이미 전송했으면(SENT) 버튼을 감춘다.
+            const canSendLab = mayHaveLab(order) && labState !== "SENT";
+            const canSendPharmacy = mayHaveDrug(order) && pharmacyState !== "SENT";
             return (
               <li key={order.orderId} className="rounded-lg bg-slate-50 p-3 text-sm">
                 <div className="flex flex-wrap items-center gap-2">
@@ -238,6 +273,16 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                     <span className="text-xs text-slate-500">{optionLabel(timingOptions, order.timingCode)}</span>
                   ) : null}
                   {order.verbalYn === "Y" ? <span className="text-xs text-amber-600">Verbal</span> : null}
+                  {sendLabel(labState) ? (
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${sendStyle(labState)}`}>
+                      Lab: {sendLabel(labState)}
+                    </span>
+                  ) : null}
+                  {sendLabel(pharmacyState) ? (
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${sendStyle(pharmacyState)}`}>
+                      Pharmacy: {sendLabel(pharmacyState)}
+                    </span>
+                  ) : null}
                   <span className="ml-auto text-xs text-slate-400">
                     {/* 처방ID */}
                     Order ID: <span className="select-all font-mono">{order.orderId}</span>
@@ -272,29 +317,28 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                 <p className="mt-1 text-xs text-slate-400">
                   {order.prescribedBy ?? "-"}
                   {order.prescribedAt ? ` · ${formatDateTime(order.prescribedAt)}` : ""}
-                  {labState ? ` · Lab: ${labState}` : ""}
-                  {pharmacyState ? ` · Pharmacy: ${pharmacyState}` : ""}
                   {cancelled && order.cancelReason ? ` · Cancelled: ${order.cancelReason}` : ""}
+                  {orderItems.length === 0 ? " · Items not loaded (use Load details)" : ""}
                 </p>
 
                 {!cancelled ? (
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    {hasLab ? (
+                    {canSendLab ? (
                       <Button
                         variant="secondary"
                         disabled={busy}
                         onClick={() => dispatch(dispatchOrderRequest(order.orderId, "LAB"))}
                       >
-                        {order.labDispatchStatus === "FAILED" ? "Resend to Lab" : "Send to Lab"}
+                        {labState === "FAILED" ? "Resend to Lab" : "Send to Lab"}
                       </Button>
                     ) : null}
-                    {hasDrug ? (
+                    {canSendPharmacy ? (
                       <Button
                         variant="secondary"
                         disabled={busy}
                         onClick={() => dispatch(dispatchOrderRequest(order.orderId, "PHARMACY"))}
                       >
-                        {order.pharmacyDispatchStatus === "FAILED" ? "Resend to Pharmacy" : "Send to Pharmacy"}
+                        {pharmacyState === "FAILED" ? "Resend to Pharmacy" : "Send to Pharmacy"}
                       </Button>
                     ) : null}
                     <Button
@@ -302,7 +346,8 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                       disabled={busy}
                       onClick={() => dispatch(fetchOrderRequest(receptionNo, order.orderId))}
                     >
-                      Refresh
+                      {/* 항목·결과 상세 보기 */}
+                      Load details
                     </Button>
                     <Button
                       variant="ghost"
@@ -344,13 +389,17 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
           })}
         </ul>
       ) : (
-        // 이 화면에서 등록했거나 불러온 처방이 없습니다.
+        // 이 접수에 등록된 처방이 없습니다.
         <p className="mb-4 rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-400">
-          {receptionNo ? "No orders registered or loaded in this screen yet." : "Select a patient first."}
+          {!receptionNo
+            ? "Select a patient first."
+            : listStatus === "loading"
+              ? "Loading orders..."
+              : "No orders for this patient yet."}
         </p>
       )}
 
-      {/* 처방ID로 불러오기 (처방코어의 접수별 목록 조회가 나오기 전까지 쓰는 방법) */}
+      {/* 처방ID로 불러오기 (다른 접수에서 만든 처방 등 목록에 없는 처방을 직접 확인할 때) */}
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <FormField label="Load an existing order by ID" className="w-[420px]">
           <Input

@@ -1,6 +1,13 @@
 import { call, put, takeEvery, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import { cancelOrder, createOrder, dispatchLab, dispatchPharmacy, getOrder } from "@/features/emergency/order/api";
+import {
+  cancelOrder,
+  createOrder,
+  dispatchLab,
+  dispatchPharmacy,
+  getOrder,
+  getOrders,
+} from "@/features/emergency/order/api";
 import {
   cancelOrderRequest,
   cancelOrderSuccess,
@@ -10,6 +17,9 @@ import {
   dispatchOrderRequest,
   dispatchOrderSuccess,
   fetchOrderRequest,
+  fetchOrdersFailure,
+  fetchOrdersRequest,
+  fetchOrdersSuccess,
   fetchOrderSuccess,
   orderActionFailure,
 } from "@/features/emergency/order/slice";
@@ -37,6 +47,16 @@ function* createOrderSaga(action: PayloadAction<OrderCreateRequest>) {
   } catch (err) {
     // 처방 등록에 실패했습니다.
     yield put(createOrderFailure(errorMessage(err, "Failed to register the order.")));
+  }
+}
+
+function* fetchOrdersSaga(action: PayloadAction<string>) {
+  try {
+    const orders: Order[] = yield call(getOrders, action.payload);
+    yield put(fetchOrdersSuccess({ receptionId: action.payload, orders }));
+  } catch (err) {
+    // 처방 목록 조회에 실패했습니다.
+    yield put(fetchOrdersFailure({ receptionId: action.payload, message: errorMessage(err, "Failed to load orders.") }));
   }
 }
 
@@ -75,6 +95,7 @@ function* dispatchOrderSaga(action: PayloadAction<{ orderId: string; target: "LA
 
 export default function* orderSaga() {
   yield takeLatest(createOrderRequest.type, createOrderSaga);
+  yield takeLatest(fetchOrdersRequest.type, fetchOrdersSaga);
   yield takeLatest(fetchOrderRequest.type, fetchOrderSaga);
   // 취소·전송은 처방마다 따로 진행될 수 있어서 takeEvery
   yield takeEvery(cancelOrderRequest.type, cancelOrderSaga);

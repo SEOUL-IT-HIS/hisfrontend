@@ -15,6 +15,12 @@ export async function createOrder(request: OrderCreateRequest): Promise<Order> {
   return data.data;
 }
 
+/** 접수의 처방 목록을 조회한다(최근 처방 먼저). items 가 없는 가벼운 목록이고 검사/약제 전송 상태 요약이 들어 있다. */
+export async function getOrders(receptionId: string): Promise<Order[]> {
+  const { data } = await apiClient.get<ApiResponse<Order[]>>(ORDERS_PATH, { params: { encounterId: receptionId } });
+  return data.data;
+}
+
 /** 처방 한 건을 조회한다(처방ID = 처방코어 prescriptionId). 검사 전송 상태·결과는 items 에 들어 있다. */
 export async function getOrder(orderId: string): Promise<Order> {
   const { data } = await apiClient.get<ApiResponse<Order>>(`${ORDERS_PATH}/${orderId}`);

@@ -41,6 +41,9 @@ export interface Order {
   cancelledAt: string | null;
   cancelReason: string | null;
   items: OrderItem[] | null;
+  /** 처방코어가 알려주는 전송 상태(목록·조회): 검사는 항목 요약, 약제는 처방 단위. PENDING / SENT / FAILED. 검사 항목이 없으면 labSendStatus 는 null */
+  labSendStatus: string | null;
+  pharmacySendStatus: string | null;
   /** 등록 때 dispatchNow=true 인 경우만: SENT / FAILED / NOT_APPLICABLE */
   labDispatchStatus: string | null;
   pharmacyDispatchStatus: string | null;
@@ -88,12 +91,17 @@ export const ORDER_ITEM_TYPE_OPTIONS: ReadonlyArray<{ value: string; label: stri
   { value: ORDER_ITEM_TYPE.DRUG, label: "Drug" },
 ];
 
+export type OrderListStatus = "loading" | "loaded" | "error";
+
 export interface OrderState {
   /**
-   * 접수ID별 처방. 처방코어의 receptionId 목록 조회 API 가 나오기 전까지는
-   * 이 화면에서 등록했거나 처방ID로 직접 불러온 처방만 담긴다(새로고침하면 사라진다).
+   * 접수ID별 처방. 처방코어의 receptionId 목록 조회(items 없는 가벼운 목록)로 채우고,
+   * 이 화면에서 등록했거나 단건 조회로 불러온 처방의 항목·전송 결과는 목록을 다시 불러와도 유지한다.
    */
   ordersByReceptionId: Record<string, Order[]>;
+  /** 접수별 목록 조회 상태(loading/loaded/error). 아직 안 불러왔으면 키가 없다 */
+  listStatusByReception: Record<string, OrderListStatus>;
+  listError: string;
   submitting: boolean;
   submitError: string;
   /** 취소·전송·조회를 진행 중인 처방ID (없으면 "") */

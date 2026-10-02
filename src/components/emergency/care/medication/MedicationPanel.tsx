@@ -21,6 +21,8 @@ import {
   selectCommonCodeLoaded,
   selectCommonCodesByGroup,
 } from "@/features/emergency/commonCode/slice";
+import OrderSelect from "@/components/emergency/order/OrderSelect";
+import { ORDER_ITEM_TYPE } from "@/features/emergency/order/types";
 import { formatDateTime } from "@/features/emergency/utils";
 
 type MedicationPanelProps = { receptionNo: string; className?: string };
@@ -37,7 +39,8 @@ const initialForm = {
 
 /**
  * 약물 투여 기록(MAR) 패널 (UC-CARE-04, Jira UD2-19)
- * - 처방 원장은 GR2 — 응급은 투여 사실만 기록하고 GR2 처방 ID(orderId)를 필수로 참조한다.
+ * - 처방 원장은 처방코어 — 응급은 투여 사실만 기록하고 처방 ID(orderId)를 필수로 참조한다.
+ *   처방 ID 는 이 환자의 처방 목록(Order 탭)에서 고른다(직접 입력도 가능).
  * - 투여경로는 admin 기존 그룹 ADMIN_ROUTE_CD(없으면 폴백).
  */
 export default function MedicationPanel({ receptionNo, className = "" }: MedicationPanelProps) {
@@ -134,10 +137,15 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
           <div className="flex flex-wrap gap-3">
-            {/* 처방 ID (GR2) */}
-            <FormField label="Order ID" required hint="Prescription ID from the order core (GR2)." className="w-[300px]">
-              <Input name="orderId" value={form.orderId} onChange={handleChange} disabled={submitting} maxLength={36} />
-            </FormField>
+            {/* 처방 선택 — 이 환자의 처방(Order 탭)에서 고른다. 처방 ID 는 처방코어 prescriptionId */}
+            <OrderSelect
+              receptionNo={receptionNo}
+              value={form.orderId}
+              onChange={(orderId) => setForm((prev) => ({ ...prev, orderId }))}
+              itemType={ORDER_ITEM_TYPE.DRUG}
+              disabled={submitting}
+              className="w-[420px]"
+            />
             {/* 처방 항목 ID */}
             <FormField label="Order Item ID" className="w-[300px]">
               <Input
