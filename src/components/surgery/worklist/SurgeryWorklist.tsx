@@ -25,7 +25,10 @@ import {
   fetchChecklistRequest,
   selectChecklistItems,
 } from "@/features/surgery/checklist/slice";
-import { usePatientNames } from "@/features/surgery/common/usePatientNames";
+import {
+  getPatientDisplayName,
+  usePatientNames,
+} from "@/features/surgery/common/usePatientNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   SURGERY_STATUS,
@@ -262,8 +265,8 @@ export default function SurgeryWorklist() {
         예전에는 UUID 를 그대로 띄웠는데, 사람이 알아볼 수 없는 값이라 목록으로서
         의미가 없었다. 이름은 patient-service 에 매번 물어본다.
 
-        못 불러오면 ID 로 되돌아간다 — 이름은 표시용이라, patient-service 가 죽어도
-        수술 업무는 계속돼야 한다.
+        못 불러오면 안내 문구를 표시한다 — 이름은 표시용이라, patient-service 가
+        죽어도 수술 업무는 계속돼야 한다.
       */
       render: (s) => (
         <button
@@ -280,7 +283,7 @@ export default function SurgeryWorklist() {
               : "text-left font-medium text-slate-700 hover:text-sky-600"
           }
         >
-          {patientNames[s.patientId] ?? s.patientId}
+          {getPatientDisplayName(s.patientId, patientNames)}
         </button>
       ),
     },
@@ -423,7 +426,7 @@ export default function SurgeryWorklist() {
                   </span>
                 </p>
                 <p className="text-xs text-slate-500">
-                  Patient {patientNames[selected.patientId] ?? selected.patientId}{" "}
+                  Patient {getPatientDisplayName(selected.patientId, patientNames)}{" "}
                   · {selected.surgeryDt}
                   {selected.roomCode ? ` · ${selected.roomCode}` : ""}
                 </p>
