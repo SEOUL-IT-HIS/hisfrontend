@@ -14,6 +14,8 @@ export const EMERGENCY_MESSAGES = {
   EMG_CONFLICT: "This request conflicts with the current state.",
   // 서버 내부 오류가 발생했습니다.
   EMG_INTERNAL_ERROR: "An internal server error occurred.",
+  // 연계 서비스(처방코어 등)가 응답하지 않거나 오류를 돌려줬습니다.
+  EMG_UPSTREAM_ERROR: "The order service is not responding. Please try again later.",
 } as const;
 
 export type EmergencyMessageCode = keyof typeof EMERGENCY_MESSAGES;
