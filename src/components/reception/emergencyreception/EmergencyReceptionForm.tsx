@@ -9,6 +9,12 @@ import {
   selectEmergencyRegisterError,
   selectEmergencyRegisterSuccessCount,
 } from "@/features/reception/emergencyreception/slice";
+import { checkActiveEmergencyReception } from "@/features/reception/emergencyreception/api";
+import type {
+  ActiveEmergencyReception,
+  EmergencyReceptionRequest,
+} from "@/features/reception/emergencyreception/types";
+import DuplicateActiveReceptionModal from "./DuplicateActiveReceptionModal";
 import type { PatientSearchItem } from "@/features/reception/patientmanagement/types";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { AppDispatch } from "@/store/store";
@@ -82,6 +88,21 @@ function EmergencyReceptionFormFields({
   const [consciousness, setConsciousness] = useState("");
   const [memo, setMemo] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
+  /** 중복접수 사전확인 호출 중인지 — 이 동안 제출 버튼을 "Checking…" 으로 바꾼다 */
+  const [activeCheckLoading, setActiveCheckLoading] = useState(false);
+  /** 경고 모달에 떠 있는, 아직 실제로 등록하지 않은 요청. null 이면 모달이 닫힌 상태. */
+  const [pendingRequest, setPendingRequest] = useState<EmergencyReceptionRequest | null>(null);
+  const [duplicateReceptions, setDuplicateReceptions] = useState<ActiveEmergencyReception[]>([]);
+
+  function handleContinueDespiteDuplicate() {
+    if (!pendingRequest) return;
+    dispatch(registerEmergencyReceptionRequest(pendingRequest));
+    setPendingRequest(null);
+  }
+
+  function handleCancelDuplicateWarning() {
+    setPendingRequest(null);
+  }
 
   function handleReset() {
     setDeptId("");
@@ -95,7 +116,7 @@ function EmergencyReceptionFormFields({
     onClearPatient();
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     const nextErrors: FieldErrors = {};
@@ -108,18 +129,34 @@ function EmergencyReceptionFormFields({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0 || !selectedPatient) return;
 
-    dispatch(
-      registerEmergencyReceptionRequest({
-        patientId: selectedPatient.patientId,
-        deptId,
-        doctorId,
-        memo: memo.trim(),
-        ktasLevel: Number(ktasLevel),
-        visitMethod,
-        chiefComplaint: chiefComplaint.trim(),
-        consciousness,
-      }),
-    );
+    const request: EmergencyReceptionRequest = {
+      patientId: selectedPatient.patientId,
+      deptId,
+      doctorId,
+      memo: memo.trim(),
+      ktasLevel: Number(ktasLevel),
+      visitMethod,
+      chiefComplaint: chiefComplaint.trim(),
+      consciousness,
+    };
+
+    // 등록 전에 같은 환자의 진행 중(미퇴실) 응급접수가 있는지 먼저 확인한다.
+    // 이 확인 자체가 실패해도(reception-service 장애 등) 경고 없이 그대로 등록을 진행한다(fail-open).
+    setActiveCheckLoading(true);
+    try {
+      const result = await checkActiveEmergencyReception(selectedPatient.patientId);
+      if (result.hasActiveReception) {
+        setDuplicateReceptions(result.activeReceptions);
+        setPendingRequest(request);
+        return;
+      }
+    } catch {
+      // fail-open: 확인에 실패해도 경고 없이 그대로 등록을 진행한다.
+    } finally {
+      setActiveCheckLoading(false);
+    }
+
+    dispatch(registerEmergencyReceptionRequest(request));
   }
 
   return (
@@ -257,10 +294,17 @@ function EmergencyReceptionFormFields({
           onCancel={handleReset}
           cancelLabel="Reset"
           submitLabel="Register Emergency Reception"
-          loadingLabel="Registering…"
-          loading={registerLoading}
+          loadingLabel={activeCheckLoading ? "Checking…" : "Registering…"}
+          loading={registerLoading || activeCheckLoading}
         />
       </form>
+
+      <DuplicateActiveReceptionModal
+        open={pendingRequest !== null}
+        activeReceptions={duplicateReceptions}
+        onContinue={handleContinueDespiteDuplicate}
+        onCancel={handleCancelDuplicateWarning}
+      />
     </div>
   );
 }

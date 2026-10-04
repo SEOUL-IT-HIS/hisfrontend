@@ -10,8 +10,9 @@ import { fetchPatientNames } from "@/features/surgery/common/api";
  * (features/commonCode 의 {@code useCommonCodeOptions} 와 같은 자리, 같은 모양).</p>
  *
  * <p><b>환자명은 표시 전용이다. 없다고 해서 업무가 막히면 안 된다.</b>
- * patient-service 가 죽어도 목록·배정·기록은 그대로 되고 이름 자리만 비워 둔다.
- * 그래서 실패를 예외로 올리지 않고 {@code error} 문자열로만 남긴다.</p>
+ * patient-service 가 죽어도 목록·배정·기록은 그대로 동작한다. 이름을 불러오지
+ * 못했을 때는 화면에 UUID 대신 안내 문구를 표시하고, 실패는 {@code error} 문자열로
+ * 남긴다.</p>
  *
  * <p><b>한글 이름이 그대로 보이는 것은 §12.4 위반이 아니다</b> — 그 조항이 영어를
  * 요구하는 것은 화면이 만들어 내는 문자열(라벨·버튼·안내문)이고, 인명 같은 고유명사
@@ -19,7 +20,7 @@ import { fetchPatientNames } from "@/features/surgery/common/api";
  *
  * @example
  *   const { names } = usePatientNames(rows.map((r) => r.patientId));
- *   names[row.patientId] ?? row.patientId
+ *   getPatientDisplayName(row.patientId, names)
  */
 export function usePatientNames(patientIds: string[]) {
   const [names, setNames] = useState<Record<string, string>>({});
@@ -44,7 +45,7 @@ export function usePatientNames(patientIds: string[]) {
         setNames(await fetchPatientNames(key.split(",")));
         setError("");
       } catch (e) {
-        // 이름을 못 불러와도 화면은 계속 동작해야 한다. 이름 자리만 ID 로 남는다.
+        // 이름을 못 불러와도 화면은 계속 동작해야 한다.
         setError(e instanceof Error ? e.message : "Failed to load patient names.");
       } finally {
         setLoading(false);
@@ -54,4 +55,12 @@ export function usePatientNames(patientIds: string[]) {
   }, [key]);
 
   return { names, loading, error };
+}
+
+/** 환자 이름을 표시하되, 조회 전·실패·미등록 상태에서 내부 UUID를 노출하지 않는다. */
+export function getPatientDisplayName(
+  patientId: string | null | undefined,
+  names: Record<string, string>,
+): string {
+  return (patientId && names[patientId]?.trim()) || "Patient name unavailable";
 }

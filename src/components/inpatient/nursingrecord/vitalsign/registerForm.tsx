@@ -6,6 +6,7 @@ import { useDispatch, useSelector, shallowEqual } from "react-redux";
 import { isOutOfNormalRange,  VITAL_SIGN_NORMAL_RANGES } from "@/features/inpatient/nursingrecord/vitalsign/validation";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useDayEnd } from "@/features/inpatient/dateLimits";
 import { createVitalSignRequest, resetVitalSignCreateStatus } from "@/features/inpatient/nursingrecord/vitalsign/slice";
 
 const LABEL = "mb-1 block text-sm font-medium text-slate-700";
@@ -13,6 +14,8 @@ const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus
 const WARNING = "mt-1 text-xs text-red-600";
 
 const VitalSignRegisterForm = () => {
+    // 기록 시각은 미래일 수 없음 — 화면은 오늘까지만 선택, 시각과 입원일 하한은 서버가 검증
+    const maxRecordAt = useDayEnd();
     const router = useRouter();
     // 간호기록 홈에서 환자를 선택하고 들어오면 ?admissionId=가 붙어 옴 → 입원 ID 자동 입력 + 수정 불가
     const presetAdmissionId = useSearchParams().get("admissionId") ?? "";
@@ -85,7 +88,7 @@ const VitalSignRegisterForm = () => {
                 </div>
                 <div>
                     <label htmlFor="measuredAt" className={LABEL}>Measured At</label>
-                    <input type="datetime-local" id="measuredAt" name="measuredAt" value={form.measuredAt} onChange={onChange} required className={FIELD} />
+                    <input type="datetime-local" id="measuredAt" name="measuredAt" max={maxRecordAt} value={form.measuredAt} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
                     <label htmlFor="temperature" className={LABEL}>Temperature (°C)</label>

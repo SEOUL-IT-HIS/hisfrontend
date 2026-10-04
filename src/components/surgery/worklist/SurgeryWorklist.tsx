@@ -12,20 +12,24 @@ import {
   Pagination,
   Panel,
   Select,
-  StatusBadge,
   type DataTableColumn,
 } from "@/components/common";
 import AnesthesiaRecordPanel from "@/components/surgery/anesthesia/AnesthesiaRecordPanel";
 import ChecklistPanel from "@/components/surgery/checklist/ChecklistPanel";
 import ConsentPanel from "@/components/surgery/consent/ConsentPanel";
 import OperativeRecordPanel from "@/components/surgery/operativeRecord/OperativeRecordPanel";
+import PlannedItemsPanel from "@/components/surgery/planneditem/PlannedItemsPanel";
 import { useSearchParams } from "next/navigation";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import {
   fetchChecklistRequest,
   selectChecklistItems,
 } from "@/features/surgery/checklist/slice";
-import { usePatientNames } from "@/features/surgery/common/usePatientNames";
+import {
+  getPatientDisplayName,
+  usePatientNames,
+} from "@/features/surgery/common/usePatientNames";
+import { useEmpNames } from "@/features/emp/hooks/useEmpNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   SURGERY_STATUS,
@@ -87,11 +91,12 @@ import {
  * "어디서 하는 거였지"를 다시 묻게 된다. 상태는 전부 여기, 배정은 전부 저기로 갈랐다.</p>
  */
 
-type Tab = "consent" | "checklist" | "anesthesia" | "record";
+type Tab = "consent" | "checklist" | "plannedItems" | "anesthesia" | "record";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "consent", label: "Consent" },
   { key: "checklist", label: "Checklist" },
+  { key: "plannedItems", label: "Planned items" },
   { key: "anesthesia", label: "Anesthesia" },
   { key: "record", label: "Operative record" },
 ];
@@ -245,6 +250,7 @@ export default function SurgeryWorklist() {
 
   // 지금 보이는 행들의 환자명. rows 가 바뀔 때만 다시 부른다(훅 안에서 키로 거른다).
   const { names: patientNames } = usePatientNames(rows.map((s) => s.patientId));
+  const { names: employeeNames } = useEmpNames();
 
   const columns: DataTableColumn<Surgery>[] = [
     {
@@ -262,8 +268,8 @@ export default function SurgeryWorklist() {
         예전에는 UUID 를 그대로 띄웠는데, 사람이 알아볼 수 없는 값이라 목록으로서
         의미가 없었다. 이름은 patient-service 에 매번 물어본다.
 
-        못 불러오면 ID 로 되돌아간다 — 이름은 표시용이라, patient-service 가 죽어도
-        수술 업무는 계속돼야 한다.
+        못 불러오면 안내 문구를 표시한다 — 이름은 표시용이라, patient-service 가
+        죽어도 수술 업무는 계속돼야 한다.
       */
       render: (s) => (
         <button
@@ -280,7 +286,7 @@ export default function SurgeryWorklist() {
               : "text-left font-medium text-slate-700 hover:text-sky-600"
           }
         >
-          {patientNames[s.patientId] ?? s.patientId}
+          {getPatientDisplayName(s.patientId, patientNames)}
         </button>
       ),
     },
@@ -295,20 +301,9 @@ export default function SurgeryWorklist() {
       render: (s) => s.roomCode ?? "-",
     },
     {
-      key: "statusCd",
-      header: "Status",
-      // StatusBadge 는 Y/N 전용이라(사용·미사용) 상태 라벨에는 맞지 않는다.
-      // 응급 여부만 Y/N 이라 배지를 쓰고, 상태는 글자로 둔다.
-      render: (s) => (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-600">
-            {STATUS_LABEL[s.statusCd ?? ""] ?? s.statusCd}
-          </span>
-          {s.emergencyYn === "Y" ? (
-            <StatusBadge value="Y" activeLabel="Emergency" />
-          ) : null}
-        </div>
-      ),
+      key: "surgeonId",
+      header: "Surgeon",
+      render: (s) => employeeNames[s.surgeonId]?.trim() || "Surgeon name unavailable",
     },
   ];
 
@@ -317,7 +312,7 @@ export default function SurgeryWorklist() {
       {/* ---- 왼쪽: 수술 목록 ---- */}
       <div className="flex min-h-0 w-[52%] min-w-[480px] flex-col gap-3">
         {/*
-          검색 조건 (SL2-312·314 기록지 조회 / SL2-333·334 간호기록 조회)
+          수술실과 날짜 조건으로 수술 목록을 좁힌다.
 
           수술실과 날짜만 받는다. 환자·집도의 칸이 있었지만 식별자(UUID)로만 찾을 수
           있었고, 그 식별자는 화면 어디에도 나오지 않아 입력할 방법이 없었다.
@@ -423,7 +418,7 @@ export default function SurgeryWorklist() {
                   </span>
                 </p>
                 <p className="text-xs text-slate-500">
-                  Patient {patientNames[selected.patientId] ?? selected.patientId}{" "}
+                  Patient {getPatientDisplayName(selected.patientId, patientNames)}{" "}
                   · {selected.surgeryDt}
                   {selected.roomCode ? ` · ${selected.roomCode}` : ""}
                 </p>
@@ -493,7 +488,7 @@ export default function SurgeryWorklist() {
               </p>
             ) : null}
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {TABS.map((t) => (
                 <Button
                   key={t.key}
@@ -517,6 +512,12 @@ export default function SurgeryWorklist() {
               ) : null}
               {tab === "checklist" ? (
                 <ChecklistPanel key={selected.surgeryId} surgeryId={selected.surgeryId} />
+              ) : null}
+              {tab === "plannedItems" ? (
+                <PlannedItemsPanel
+                  key={selected.surgeryId}
+                  surgeryId={selected.surgeryId}
+                />
               ) : null}
               {tab === "anesthesia" ? (
                 <AnesthesiaRecordPanel

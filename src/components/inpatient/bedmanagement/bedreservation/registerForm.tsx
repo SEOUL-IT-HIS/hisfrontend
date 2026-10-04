@@ -4,6 +4,7 @@ import { AppDispatch, RootState } from "@/store/store";
 import { useDispatch, useSelector, shallowEqual } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { MAX_RESERVATION_DAYS, useDayEnd, useDayStart } from "@/features/inpatient/dateLimits";
 import { createBedReservationRequest } from "@/features/inpatient/bedmanagement/bedreservation/slice";
 import { fetchBedRequest, selectBed } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
@@ -12,6 +13,10 @@ const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 const BedReservationRegisterForm = () => {
+    // 예약일시는 미래 불가(오늘까지), 입원 예정일은 오늘 ~ 30일 후 (서버 검증과 같은 기준)
+    const maxReserveAt = useDayEnd();
+    const minExpectedAdmissionAt = useDayStart();
+    const maxExpectedAdmissionAt = useDayEnd(MAX_RESERVATION_DAYS);
     const router = useRouter();
     const dispatch = useDispatch<AppDispatch>();
     const searchParams = useSearchParams();
@@ -98,11 +103,11 @@ const BedReservationRegisterForm = () => {
                 </div>
                 <div>
                     <label htmlFor="reserveAt" className={LABEL}>Reserved At</label>
-                    <input type="datetime-local" id="reserveAt" name="reserveAt" value={form.reserveAt} onChange={onChange} required className={FIELD} />
+                    <input type="datetime-local" id="reserveAt" name="reserveAt" max={maxReserveAt} value={form.reserveAt} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
                     <label htmlFor="expectedAdmissionAt" className={LABEL}>Expected Admission At</label>
-                    <input type="datetime-local" id="expectedAdmissionAt" name="expectedAdmissionAt" value={form.expectedAdmissionAt} onChange={onChange} required className={FIELD} />
+                    <input type="datetime-local" id="expectedAdmissionAt" name="expectedAdmissionAt" min={minExpectedAdmissionAt} max={maxExpectedAdmissionAt} value={form.expectedAdmissionAt} onChange={onChange} required className={FIELD} />
                 </div>
                 <button
                     type="submit"

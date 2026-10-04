@@ -17,7 +17,10 @@ import {
 } from "@/components/common";
 import SurgeryAssignForm from "@/components/surgery/schedule/SurgeryAssignForm";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
-import { usePatientNames } from "@/features/surgery/common/usePatientNames";
+import {
+  getPatientDisplayName,
+  usePatientNames,
+} from "@/features/surgery/common/usePatientNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   fetchOrdersRequest,
@@ -131,7 +134,7 @@ export default function SurgeryRequestList() {
     {
       key: "patientId",
       header: "Patient",
-      render: (o) => patientNames[o.patientId] ?? o.patientId,
+      render: (o) => getPatientDisplayName(o.patientId, patientNames),
     },
     {
       key: "actions",
@@ -212,7 +215,10 @@ export default function SurgeryRequestList() {
         >
           <p className="text-sm text-slate-700">
             Rejecting {rejectTarget?.surgeryName ?? "No surgery name"} (patient{" "}
-            {rejectTarget ? (patientNames[rejectTarget.patientId] ?? rejectTarget.patientId) : ""}).
+            {rejectTarget
+              ? getPatientDisplayName(rejectTarget.patientId, patientNames)
+              : ""}
+            ).
           </p>
 
           <FormField
