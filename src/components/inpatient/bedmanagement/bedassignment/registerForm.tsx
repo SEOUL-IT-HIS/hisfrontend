@@ -3,7 +3,7 @@
 import { AppDispatch, RootState } from "@/store/store";
 import { useDispatch, useSelector, shallowEqual } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useSyncExternalStore } from "react";
 import { createBedAssignmentRequest } from "@/features/inpatient/bedmanagement/bedassignment/slice";
 import { fetchBedRequest, selectBed } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
@@ -15,6 +15,16 @@ const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus
 
 // 병실 유형 코드(bed.roomTypeCode) → 표시 라벨 (입원료 매핑과 같은 기준: 01 1인실 / 02 다인실)
 const ROOM_TYPE_LABEL: Record<string, string> = { "01": "Single", "02": "Multi" };
+
+// 배정일시 입력 하한 = 오늘 00:00 (datetime-local 형식 "YYYY-MM-DDTHH:mm", 브라우저 로컬 시간 기준)
+// 날짜(일) 기준으로만 막음 — 오늘 아침에 배정한 것을 지금 입력하는 경우는 허용 (서버 검증과 같은 기준)
+const todayStartLocal = () => {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T00:00`;
+};
+// 구독할 외부 변화가 없으므로 아무것도 하지 않음 (useSyncExternalStore용)
+const noopSubscribe = () => () => {};
 
 const BedAssignmentRegisterForm = () => {
     const router = useRouter();
@@ -39,6 +49,10 @@ const BedAssignmentRegisterForm = () => {
         assignedAt: "",
         releasedAt: "",
     });
+
+    // 배정일시 하한은 브라우저에서만 계산 (서버 렌더에서는 undefined)
+    // — 서버(UTC)와 브라우저(KST)의 "오늘"이 달라 생기는 hydration 불일치 방지
+    const minAssignedAt = useSyncExternalStore(noopSubscribe, todayStartLocal, () => undefined);
 
     // 모든 입력 필드가 공유하는 change 핸들러 — name 속성으로 어떤 필드인지 구분해서 그 값만 갱신
     const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -209,7 +223,8 @@ const BedAssignmentRegisterForm = () => {
                 </div>
                 <div>
                     <label htmlFor="assignedAt" className={LABEL}>Assigned At</label>
-                    <input type="datetime-local" id="assignedAt" name="assignedAt" value={form.assignedAt} onChange={onChange} required className={FIELD} />
+                    {/* min: 오늘 이전 날짜는 달력에서 선택 불가, 직접 입력해도 제출 시 브라우저가 막음 (서버에서도 한 번 더 검증) */}
+                    <input type="datetime-local" id="assignedAt" name="assignedAt" value={form.assignedAt} onChange={onChange} min={minAssignedAt} required className={FIELD} />
                 </div>
                 <button
                     type="submit"
