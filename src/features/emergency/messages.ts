@@ -8,6 +8,8 @@
 export const EMERGENCY_MESSAGES = {
   // 요청 값이 올바르지 않습니다.
   EMG_BAD_REQUEST: "The request value is invalid.",
+  // 로그인이 필요합니다.
+  EMG_UNAUTHENTICATED: "Please sign in to continue.",
   // 조회하려는 대상을 찾을 수 없습니다.
   EMG_NOT_FOUND: "The requested item could not be found.",
   // 현재 상태와 충돌하는 요청입니다.
