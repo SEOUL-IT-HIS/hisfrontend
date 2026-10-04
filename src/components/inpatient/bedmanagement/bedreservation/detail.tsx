@@ -5,6 +5,7 @@ import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice
 import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { MAX_RESERVATION_DAYS, useDayEnd, useDayStart } from "@/features/inpatient/dateLimits";
 import { useDispatch, useSelector } from "react-redux";
 
 // 예약 상태 코드(reservationStatusCd) → 배지 색상
@@ -36,6 +37,10 @@ type BedReservationDetailProps = {
 };
 
 const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose }: BedReservationDetailProps = {}) => {
+    // 일정 변경도 등록과 같은 날짜 제한 (예약일시는 오늘까지, 입원 예정일은 오늘 ~ 30일 후)
+    const maxReserveAt = useDayEnd();
+    const minExpectedAdmissionAt = useDayStart();
+    const maxExpectedAdmissionAt = useDayEnd(MAX_RESERVATION_DAYS);
     const dispatch = useDispatch();
     // 목록 옆에 끼워 넣을 때는 prop으로, 단독 라우트(/bedreservation/[id])로 열렸을 때는 URL 파라미터로 id를 받음
     const routeParams = useParams() as { bedReservationId?: string };
@@ -219,6 +224,7 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
                                 type="datetime-local"
                                 id="reserveAt"
                                 name="reserveAt"
+                                max={maxReserveAt}
                                 value={scheduleForm.reserveAt}
                                 onChange={onScheduleChange}
                                 className={FIELD}
@@ -230,6 +236,8 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
                                 type="datetime-local"
                                 id="expectedAdmissionAt"
                                 name="expectedAdmissionAt"
+                                min={minExpectedAdmissionAt}
+                                max={maxExpectedAdmissionAt}
                                 value={scheduleForm.expectedAdmissionAt}
                                 onChange={onScheduleChange}
                                 className={FIELD}
