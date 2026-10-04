@@ -8,12 +8,16 @@
 export const EMERGENCY_MESSAGES = {
   // 요청 값이 올바르지 않습니다.
   EMG_BAD_REQUEST: "The request value is invalid.",
+  // 로그인이 필요합니다.
+  EMG_UNAUTHENTICATED: "Please sign in to continue.",
   // 조회하려는 대상을 찾을 수 없습니다.
   EMG_NOT_FOUND: "The requested item could not be found.",
   // 현재 상태와 충돌하는 요청입니다.
   EMG_CONFLICT: "This request conflicts with the current state.",
   // 서버 내부 오류가 발생했습니다.
   EMG_INTERNAL_ERROR: "An internal server error occurred.",
+  // 연계 서비스(처방코어 등)가 응답하지 않거나 오류를 돌려줬습니다.
+  EMG_UPSTREAM_ERROR: "The order service is not responding. Please try again later.",
 } as const;
 
 export type EmergencyMessageCode = keyof typeof EMERGENCY_MESSAGES;

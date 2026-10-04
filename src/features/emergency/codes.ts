@@ -30,6 +30,9 @@ export const CODE_GROUP = {
   /** admin 에 이미 있는 그룹(진료과·병동) — 입원요청에서 씀 */
   DEPT: "DEPT_CD",
   WARD: "WARD_CD",
+  /** 처방코어(OPD)가 쓰는 admin 그룹 — 응급 처방 등록에서 씀 */
+  ORDER_PRIORITY: "ORDER_PRIORITY_CD",
+  ORDER_TIMING: "ORDER_TIMING_CD",
 } as const;
 
 export const BED_STATUS = {

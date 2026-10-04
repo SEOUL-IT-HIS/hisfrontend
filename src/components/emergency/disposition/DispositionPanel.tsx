@@ -3,7 +3,9 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField, Select } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createDispositionRequest,
@@ -54,6 +56,8 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
   const dispositionTypeCodes = useSelector(selectCommonCodesByGroup(DISPOSITION_TYPE_GROUP_CODE));
 
   const [form, setForm] = useState(initialForm);
+  // 퇴실 결정자는 의사 — 직접 안 고르면 로그인한 사람이 의사일 때 그 사람이다
+  const decidedById = useActorId(form.decidedById, "DOCTOR");
   const [lastReceptionNo, setLastReceptionNo] = useState(receptionNo);
   // 결정 변경 폼을 열었는지
   const [changing, setChanging] = useState(false);
@@ -110,12 +114,12 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
   }
 
   function handleSubmit() {
-    if (!form.dispositionType || !receptionNo) return;
+    if (!form.dispositionType || !decidedById || !receptionNo) return;
     dispatch(
       createDispositionRequest({
         encounterId: receptionNo,
         dispositionType: form.dispositionType,
-        decidedById: form.decidedById || undefined,
+        decidedById,
       }),
     );
   }
@@ -160,16 +164,16 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
                 disabled={submitting}
               />
             </FormField>
-            {/* 결정자ID */}
-            <FormField label="Decided By ID" className="w-[180px]">
-              <Input
-                name="decidedById"
-                value={form.decidedById}
-                onChange={handleChange}
-                disabled={submitting}
-                maxLength={36}
-              />
-            </FormField>
+            {/* 결정자(의사) */}
+            <ActorField
+              label="Decided By"
+              role="DOCTOR"
+              required
+              value={form.decidedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, decidedById: empId }))}
+              disabled={submitting}
+              className="w-[220px]"
+            />
           </div>
           <div className="mt-3 flex justify-end gap-2">
             {changing ? (
@@ -181,7 +185,7 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
             <Button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || !form.dispositionType || !receptionNo}
+              disabled={submitting || !form.dispositionType || !decidedById || !receptionNo}
             >
               {/* 등록 중... / 퇴실 결정 변경 / 퇴실 결정 등록 */}
               {submitting ? "Saving..." : changing ? "Change Disposition" : "Register Disposition"}

@@ -3,7 +3,11 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import { selectIsDischarged } from "@/features/emergency/disposition/slice";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createKtasRequest,
@@ -38,6 +42,7 @@ const initialForm = { ktasScore: "", reason: "", assessedById: "" };
  */
 export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const discharged = useSelector(selectIsDischarged(receptionNo));
   const items = useSelector(selectKtasItems);
   const loading = useSelector(selectKtasLoading);
   const error = useSelector(selectKtasError);
@@ -48,6 +53,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
+  const assessedById = useActorId(form.assessedById);
 
   useEffect(() => {
     if (receptionNo) {
@@ -88,7 +94,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
   }
 
   function handleSubmit() {
-    if (!form.ktasScore) return;
+    if (!form.ktasScore || !assessedById) return;
     if (!hasInitial) {
       dispatch(
         createKtasRequest({
@@ -96,7 +102,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
           ktasScore: form.ktasScore,
           assessmentTypeCode: ASSESSMENT_TYPE.INITIAL,
           reason: form.reason || undefined,
-          assessedById: form.assessedById || undefined,
+          assessedById,
         }),
       );
     } else if (latest) {
@@ -104,7 +110,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
         reassessKtasRequest(latest.id, {
           ktasScore: form.ktasScore,
           reason: form.reason || undefined,
-          assessedById: form.assessedById || undefined,
+          assessedById,
         }),
       );
     }
@@ -163,6 +169,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
           ) : null}
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
+          <DischargedNotice receptionNo={receptionNo} />
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {/* 변경 등급 / 최초 등급 */}
@@ -181,19 +188,17 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
             <FormField label="Reason">
               <Input name="reason" value={form.reason} onChange={handleChange} disabled={submitting} maxLength={200} />
             </FormField>
-            {/* 분류자ID */}
-            <FormField label="Classified By ID">
-              <Input
-                name="assessedById"
-                value={form.assessedById}
-                onChange={handleChange}
-                disabled={submitting}
-                maxLength={36}
-              />
-            </FormField>
+            {/* 분류자 */}
+            <ActorField
+              label="Classified By"
+              required
+              value={form.assessedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, assessedById: empId }))}
+              disabled={submitting}
+            />
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.ktasScore || !receptionNo}>
+            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.ktasScore || !assessedById || !receptionNo || discharged}>
               {/* 저장 중... / 재평가 저장 / 최초 분류 등록 */}
               {submitting ? "Saving..." : hasInitial ? "Save Reassessment" : "Register Initial Level"}
             </Button>

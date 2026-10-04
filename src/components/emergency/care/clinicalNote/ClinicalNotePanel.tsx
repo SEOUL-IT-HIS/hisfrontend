@@ -3,7 +3,10 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField, Select } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import StaffName from "@/components/emergency/common/StaffName";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createClinicalNoteRequest,
@@ -41,6 +44,7 @@ export default function ClinicalNotePanel({ receptionNo, className = "" }: Clini
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
+  const recordedById = useActorId(form.recordedById);
 
   useEffect(() => {
     if (receptionNo) {
@@ -61,13 +65,13 @@ export default function ClinicalNotePanel({ receptionNo, className = "" }: Clini
   }
 
   function handleSubmit() {
-    if (!form.noteTypeCode || !form.content.trim() || !form.recordedById.trim()) return;
+    if (!form.noteTypeCode || !form.content.trim() || !recordedById) return;
     dispatch(
       createClinicalNoteRequest({
         encounterId: receptionNo,
         noteTypeCode: form.noteTypeCode,
         content: form.content.trim(),
-        recordedById: form.recordedById.trim(),
+        recordedById,
       }),
     );
   }
@@ -89,7 +93,7 @@ export default function ClinicalNotePanel({ receptionNo, className = "" }: Clini
                   <p className="text-xs font-medium text-sky-600">{noteTypeLabel(item.noteTypeCode)}</p>
                   <p className="whitespace-pre-wrap text-slate-800">{item.content}</p>
                   <p className="mt-1 text-xs text-slate-400">
-                    {item.recordedById} · {formatDateTime(item.recordedAt)}
+                    <StaffName empId={item.recordedById} /> · {formatDateTime(item.recordedAt)}
                     {item.signedAt ? ` · Signed (${formatDateTime(item.signedAt)})` : ""}
                   </p>
                 </li>
@@ -122,15 +126,20 @@ export default function ClinicalNotePanel({ receptionNo, className = "" }: Clini
               className="w-full min-h-[80px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
             />
           </FormField>
-          <FormField label="Recorded By ID" required className="mt-3 max-w-[220px]">
-            <Input name="recordedById" value={form.recordedById} onChange={handleChange} disabled={submitting} maxLength={36} />
-          </FormField>
+          <ActorField
+            label="Recorded By"
+            required
+            value={form.recordedById}
+            onChange={(empId) => setForm((prev) => ({ ...prev, recordedById: empId }))}
+            disabled={submitting}
+            className="mt-3 max-w-[220px]"
+          />
 
           <div className="mt-3 flex justify-end">
             <Button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || !form.noteTypeCode || !form.content.trim() || !form.recordedById.trim() || !receptionNo}
+              disabled={submitting || !form.noteTypeCode || !form.content.trim() || !recordedById || !receptionNo}
             >
               {submitting ? "Saving..." : "Register Clinical Note"}
             </Button>

@@ -4,6 +4,9 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import StaffName from "@/components/emergency/common/StaffName";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import { CODE_GROUP, optionLabel, toCodeOptions } from "@/features/emergency/codes";
 import {
@@ -53,6 +56,7 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
   const [outcomeCode, setOutcomeCode] = useState("");
   const [lastCount, setLastCount] = useState(0);
   const [lastReceptionNo, setLastReceptionNo] = useState(receptionNo);
+  const recordedById = useActorId(draft.recordedById);
 
   useEffect(() => {
     if (receptionNo) dispatch(fetchCprRequest(receptionNo));
@@ -83,7 +87,7 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
 
   const eventTypeOptions = toCodeOptions(eventTypeCodes, CPR_EVENT_TYPE_FALLBACK_OPTIONS);
   const outcomeOptions = toCodeOptions(outcomeCodes, CPR_OUTCOME_FALLBACK_OPTIONS);
-  const canAdd = !!draft.eventTypeCode && !!draft.recordedById.trim();
+  const canAdd = !!draft.eventTypeCode && !!recordedById;
   const canSubmit = !!receptionNo && !submitting && events.length > 0;
 
   function handleDraftChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -100,7 +104,7 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
         detail: draft.detail.trim() || undefined,
         // datetime-local 값(초 없음)을 ISO 로컬 일시로 맞춘다. 비우면 서버가 현재 시각으로 기록한다.
         eventAt: draft.eventAt ? `${draft.eventAt}:00` : undefined,
-        recordedById: draft.recordedById.trim(),
+        recordedById,
       },
     ]);
     // 기록자는 이어서 입력하기 편하게 남겨둔다.
@@ -139,7 +143,9 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
                         <span className="w-28 shrink-0 text-xs text-slate-400">{formatDateTime(t.eventAt)}</span>
                         <span className="font-medium">{optionLabel(eventTypeOptions, t.eventTypeCode)}</span>
                         {t.detail ? <span className="text-slate-500">{t.detail}</span> : null}
-                        <span className="text-xs text-slate-400">({t.recordedById})</span>
+                        <span className="text-xs text-slate-400">
+                          (<StaffName empId={t.recordedById} />)
+                        </span>
                       </li>
                     ))}
                   </ol>
@@ -160,7 +166,7 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
                 <li key={`${ev.eventTypeCode}-${idx}`} className="flex items-center gap-2">
                   <span>
                     {idx + 1}. {optionLabel(eventTypeOptions, ev.eventTypeCode)}
-                    {ev.detail ? ` — ${ev.detail}` : ""} ({ev.recordedById})
+                    {ev.detail ? ` — ${ev.detail}` : ""} (<StaffName empId={ev.recordedById} />)
                   </span>
                   <button
                     type="button"
@@ -201,16 +207,15 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
                 disabled={submitting}
               />
             </FormField>
-            {/* 기록자ID */}
-            <FormField label="Recorded By ID" required className="w-[180px]">
-              <Input
-                name="recordedById"
-                value={draft.recordedById}
-                onChange={handleDraftChange}
-                disabled={submitting}
-                maxLength={36}
-              />
-            </FormField>
+            {/* 기록자 */}
+            <ActorField
+              label="Recorded By"
+              required
+              value={draft.recordedById}
+              onChange={(empId) => setDraft((prev) => ({ ...prev, recordedById: empId }))}
+              disabled={submitting}
+              className="w-[220px]"
+            />
           </div>
           <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
             <Button type="button" onClick={handleAdd} disabled={!canAdd || submitting}>
