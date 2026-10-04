@@ -6,6 +6,8 @@ import type { AppDispatch } from "@/store/store";
 import DischargedNotice from "@/components/emergency/common/DischargedNotice";
 import { selectIsDischarged } from "@/features/emergency/disposition/slice";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import { useActorId, useLoginUser } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   assignBedRequest,
@@ -57,6 +59,9 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
   const [form, setForm] = useState(initialForm);
   const [releaseForm, setReleaseForm] = useState(initialReleaseForm);
   const [lastReceptionNo, setLastReceptionNo] = useState(receptionNo);
+  const { signedIn } = useLoginUser();
+  const assignedById = useActorId(form.assignedById);
+  const releasedById = useActorId(releaseForm.releasedById);
 
   useEffect(() => {
     dispatch(fetchBedsRequest());
@@ -93,7 +98,7 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
       assignBedRequest({
         encounterId: receptionNo,
         bedId: form.bedId,
-        assignedById: form.assignedById || undefined,
+        assignedById: assignedById || undefined,
       }),
     );
   }
@@ -103,8 +108,8 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
   }
 
   function handleRelease() {
-    if (!currentAssignment || !releaseForm.releasedById) return;
-    dispatch(releaseBedRequest(currentAssignment.id, { releasedById: releaseForm.releasedById }));
+    if (!currentAssignment || !releasedById) return;
+    dispatch(releaseBedRequest(currentAssignment.id, { releasedById }));
   }
 
   return (
@@ -126,21 +131,23 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
                 Assigned bed: {currentAssignment.bedNo} ({zoneLabel(currentAssignment.zoneCode)}) ·{" "}
                 {formatDateTime(currentAssignment.assignedAt)}
               </span>
-              {/* 해제자ID */}
-              <Input
-                value={releaseForm.releasedById}
-                onChange={handleReleaseChange}
-                placeholder="Released By ID"
-                disabled={submitting}
-                maxLength={36}
-                className="w-[160px]"
-              />
+              {/* 해제자 — 로그인한 사용자가 해제한다. 로그인 정보가 없는 환경에서만 ID 를 직접 입력한다 */}
+              {!signedIn ? (
+                <Input
+                  value={releaseForm.releasedById}
+                  onChange={handleReleaseChange}
+                  placeholder="Released By (staff ID)"
+                  disabled={submitting}
+                  maxLength={36}
+                  className="w-[160px]"
+                />
+              ) : null}
               {/* 해제 중... / 해제 */}
               <Button
                 type="button"
                 variant="secondary"
                 onClick={handleRelease}
-                disabled={submitting || !releaseForm.releasedById}
+                disabled={submitting || !releasedById}
               >
                 {submitting ? "Releasing..." : "Release"}
               </Button>
@@ -185,10 +192,14 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
                 disabled={submitting || emptyBedOptions.length === 0}
               />
             </FormField>
-            {/* 배정자ID */}
-            <FormField label="Assigned By ID" className="w-[180px]">
-              <Input name="assignedById" value={form.assignedById} onChange={handleChange} disabled={submitting} maxLength={36} />
-            </FormField>
+            {/* 배정자 */}
+            <ActorField
+              label="Assigned By"
+              value={form.assignedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, assignedById: empId }))}
+              disabled={submitting}
+              className="w-[220px]"
+            />
           </div>
           <div className="mt-3 flex justify-end">
             <Button type="button" onClick={handleAssign} disabled={submitting || !form.bedId || !receptionNo || discharged}>

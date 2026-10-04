@@ -6,6 +6,8 @@ import type { AppDispatch } from "@/store/store";
 import DischargedNotice from "@/components/emergency/common/DischargedNotice";
 import { selectIsDischarged } from "@/features/emergency/disposition/slice";
 import { Alert, Button, FormField, Input } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createVitalsRequest,
@@ -48,6 +50,7 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
   const submitError = useSelector(selectVitalsSubmitError);
 
   const [form, setForm] = useState(initialForm);
+  const measuredById = useActorId(form.measuredById);
   const [lastCount, setLastCount] = useState(0);
 
   useEffect(() => {
@@ -84,7 +87,7 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
     dispatch(
       createVitalsRequest({
         encounterId: receptionNo,
-        measuredById: form.measuredById || undefined,
+        measuredById: measuredById || undefined,
         vitals: [
           {
             systolicBp: toNumber(form.systolicBp),
@@ -175,10 +178,14 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
             <FormField label="GCS">
               <Input type="number" name="gcs" value={form.gcs} onChange={handleChange} disabled={submitting} placeholder="15" />
             </FormField>
-            {/* 측정자ID */}
-            <FormField label="Measured By ID" className="sm:col-span-3">
-              <Input name="measuredById" value={form.measuredById} onChange={handleChange} disabled={submitting} maxLength={36} />
-            </FormField>
+            {/* 측정자 */}
+            <ActorField
+              label="Measured By"
+              value={form.measuredById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, measuredById: empId }))}
+              disabled={submitting}
+              className="sm:col-span-3"
+            />
           </div>
           <div className="mt-3 flex justify-end">
             <Button type="button" onClick={handleSubmit} disabled={submitting || !hasAnyValue || !receptionNo || discharged}>

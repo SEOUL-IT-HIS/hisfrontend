@@ -6,6 +6,8 @@ import type { AppDispatch } from "@/store/store";
 import DischargedNotice from "@/components/emergency/common/DischargedNotice";
 import { selectIsDischarged } from "@/features/emergency/disposition/slice";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createRiskScreeningRequest,
@@ -66,6 +68,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
   const vitalsItems = useSelector(selectVitalsItems);
 
   const [form, setForm] = useState(initialForm);
+  const screenedById = useActorId(form.screenedById);
   const [lastCount, setLastCount] = useState(0);
   const [localError, setLocalError] = useState("");
   const [fastChecks, setFastChecks] = useState(initialFastChecks);
@@ -178,7 +181,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
         screenType: form.screenType,
         score: form.score.trim() ? Number(form.score) : undefined,
         resultCode: form.resultCode ? form.resultCode : undefined,
-        screenedById: form.screenedById || undefined,
+        screenedById: screenedById || undefined,
       }),
     );
   }
@@ -260,10 +263,13 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
                 disabled={submitting}
               />
             </FormField>
-            {/* 시행자ID */}
-            <FormField label="Screened By ID">
-              <Input name="screenedById" value={form.screenedById} onChange={handleChange} disabled={submitting} maxLength={36} />
-            </FormField>
+            {/* 시행자 */}
+            <ActorField
+              label="Screened By"
+              value={form.screenedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, screenedById: empId }))}
+              disabled={submitting}
+            />
           </div>
 
           {form.screenType ? (

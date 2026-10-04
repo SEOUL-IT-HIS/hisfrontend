@@ -24,6 +24,23 @@ export interface OrderItem {
   itemId?: string | null;
   sendStatus?: string | null;
   labOrderId?: string | null;
+  /** LAB 이 검사 전송을 거절한 사유(예: 유효하지 않은 환자ID, 이미 접수된 오더) */
+  rejectReason?: string | null;
+  /** 검사 결과 — 처방코어가 받아 둔 값을 열 때마다 읽어 온다(응급 DB에 저장하지 않는다). 결과가 아직 없으면 비어 있다 */
+  resultReportedAt?: string | null;
+  resultDetails?: LabResultDetail[] | null;
+}
+
+/** 검사 결과 한 줄 */
+export interface LabResultDetail {
+  seq?: number | null;
+  detailCode?: string | null;
+  detailName?: string | null;
+  resultValue?: string | null;
+  resultUnit?: string | null;
+  referenceRange?: string | null;
+  /** L(낮음) / H(높음) / N(정상) 등 LAB 이 준 값 */
+  abnormalFlag?: string | null;
 }
 
 export interface Order {

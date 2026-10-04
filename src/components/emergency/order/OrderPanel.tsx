@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import ActorField from "@/components/emergency/common/ActorField";
 import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import StaffName from "@/components/emergency/common/StaffName";
+import { useActorId } from "@/features/emergency/common/staff";
 import { selectIsDischarged } from "@/features/emergency/disposition/slice";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
@@ -38,7 +41,14 @@ import {
   type OrderItem,
 } from "@/features/emergency/order/types";
 import {
+  abnormalFlagLabel,
+  awaitingLabResult,
   isOrderCancelled,
+  labItemHasResult,
+  labItemReceived,
+  labRejectedItems,
+  labResultExpected,
+  LAB_NO_RESULT_ITEM_CODES,
   labSendState,
   mayHaveDrug,
   mayHaveLab,
@@ -73,6 +83,10 @@ const emptyItem = (): ItemForm => ({
   frequency: "",
   durationDays: "",
 });
+
+/** 검사 결과를 기다리는 동안 자동으로 다시 불러오는 간격과 최대 횟수(30초 × 20회 = 10분) */
+const RESULT_POLL_INTERVAL_MS = 30000;
+const RESULT_POLL_MAX = 20;
 
 const initialForm = { prescribedBy: "", priorityCode: "01", timingCode: "03", verbal: false, dispatchNow: true };
 const initialCancel = { cancelReason: "", userId: "" };
@@ -136,13 +150,16 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
   const [items, setItems] = useState<ItemForm[]>([emptyItem()]);
   const [lookupId, setLookupId] = useState("");
   const [labQuery, setLabQuery] = useState("");
-  const [labSearched, setLabSearched] = useState(false);
   const [verbalTarget, setVerbalTarget] = useState("");
   const [verbalDoctor, setVerbalDoctor] = useState("");
   const [cancelTarget, setCancelTarget] = useState("");
   const [cancelForm, setCancelForm] = useState(initialCancel);
   const [lastCount, setLastCount] = useState(0);
   const [lastReceptionNo, setLastReceptionNo] = useState(receptionNo);
+  // 처방의·구두 확정자는 의사 — 직접 안 고르면 로그인한 사람이 의사일 때 그 사람이다. 취소자는 로그인한 사용자다.
+  const prescribedBy = useActorId(form.prescribedBy, "DOCTOR");
+  const confirmedBy = useActorId(verbalDoctor, "DOCTOR");
+  const cancelledBy = useActorId(cancelForm.userId);
 
   useEffect(() => {
     if (!commonCodeLoaded) dispatch(fetchAllCommonCodesRequest());
@@ -153,6 +170,31 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
     if (receptionNo) dispatch(fetchOrdersRequest(receptionNo));
   }, [dispatch, receptionNo]);
 
+  // LAB 이 받았지만 결과가 아직 안 온 검사가 있으면 30초마다 목록(항목·결과 포함)을 다시 불러온다. 결과가 오면 멈춘다.
+  // 처방코어가 일부 결과(미생물·병리)를 반영하지 않아 결과가 끝내 안 올 수 있으므로 10분(20회)까지만 자동으로 다시 불러온다.
+  // 그 뒤에는 Refresh List / Refresh 로 직접 확인한다.
+  const awaitingResult = orders.some(awaitingLabResult);
+  useEffect(() => {
+    if (!receptionNo || !awaitingResult) return;
+    let polls = 0;
+    const timer = setInterval(() => {
+      if (++polls > RESULT_POLL_MAX) {
+        clearInterval(timer);
+        return;
+      }
+      dispatch(fetchOrdersRequest(receptionNo));
+    }, RESULT_POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [dispatch, receptionNo, awaitingResult]);
+
+  // 검사항목은 처방코어의 목록에서 고르는 값이라(코드를 외워서 입력할 수 없다) 화면이 열리면 전체 목록을 한 번 불러와 둔다.
+  const labItemsRequested = useRef(false);
+  useEffect(() => {
+    if (!receptionNo || labItemsRequested.current) return;
+    labItemsRequested.current = true;
+    dispatch(searchLabItemsRequest(""));
+  }, [dispatch, receptionNo]);
+
   // 환자를 바꾸면 입력 중이던 값과 이전 오류를 지운다.
   if (receptionNo !== lastReceptionNo) {
     setLastReceptionNo(receptionNo);
@@ -160,7 +202,6 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
     setItems([emptyItem()]);
     setLookupId("");
     setLabQuery("");
-    setLabSearched(false);
     setVerbalTarget("");
     setVerbalDoctor("");
     setCancelTarget("");
@@ -183,13 +224,20 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
   const priorityOptions = toCodeOptions(priorityCodes, ORDER_PRIORITY_FALLBACK_OPTIONS);
   const timingOptions = toCodeOptions(timingCodes, ORDER_TIMING_FALLBACK_OPTIONS);
 
+  // 입력한 글자로 이름·코드를 걸러서 보여준다(대소문자 구분 없음).
+  const labFilter = labQuery.trim().toLowerCase();
+  const shownLabItems = labItems.filter(
+    (item) =>
+      !labFilter || item.itemName.toLowerCase().includes(labFilter) || item.itemCode.toLowerCase().includes(labFilter),
+  );
+
   const itemsValid = items.every((item) => !!item.itemCode.trim() && !!item.itemName.trim());
   // 퇴실 처리가 끝난 환자에게는 새 처방을 등록하지 않는다(기존 처방의 취소·전송·구두 확정은 가능)
   const canSubmit =
     !!receptionNo &&
     !discharged &&
     !submitting &&
-    !!form.prescribedBy.trim() &&
+    !!prescribedBy &&
     !!form.priorityCode &&
     !!form.timingCode &&
     items.length > 0 &&
@@ -225,7 +273,7 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
     dispatch(
       createOrderRequest({
         encounterId: receptionNo,
-        prescribedBy: form.prescribedBy.trim(),
+        prescribedBy,
         priorityCode: form.priorityCode,
         timingCode: form.timingCode,
         verbalYn: form.verbal ? "Y" : "N",
@@ -242,9 +290,9 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
     setLookupId("");
   }
 
-  function handleLabSearch() {
-    dispatch(searchLabItemsRequest(labQuery.trim()));
-    setLabSearched(true);
+  /** 처방코어의 검사항목 전체 목록을 다시 불러온다(입력칸은 이 목록을 걸러서 보여줄 뿐이다). */
+  function handleLabReload() {
+    dispatch(searchLabItemsRequest(""));
   }
 
   /** 검색 결과의 검사 항목을 처방 항목에 추가한다(맨 앞의 빈 검사 항목 칸이 있으면 그 자리에 채운다). */
@@ -261,18 +309,18 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
   }
 
   function handleVerbalConfirm(order: Order) {
-    if (!verbalDoctor.trim()) return;
-    dispatch(confirmVerbalRequest(order.orderId, verbalDoctor.trim()));
+    if (!confirmedBy) return;
+    dispatch(confirmVerbalRequest(order.orderId, confirmedBy));
     setVerbalTarget("");
     setVerbalDoctor("");
   }
 
   function handleCancel(order: Order) {
-    if (!cancelForm.cancelReason.trim() || !cancelForm.userId.trim()) return;
+    if (!cancelForm.cancelReason.trim() || !cancelledBy) return;
     dispatch(
       cancelOrderRequest(order.orderId, {
         cancelReason: cancelForm.cancelReason.trim(),
-        userId: cancelForm.userId.trim(),
+        userId: cancelledBy,
       }),
     );
     setCancelTarget("");
@@ -315,6 +363,7 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
             // 약품은 항목을 불러온 뒤에만 판단한다(약제 전송 상태는 약품이 없어도 PENDING 으로 와서 믿을 수 없다).
             // 이미 전송했으면(SENT) 버튼을 감춘다.
             const canSendLab = mayHaveLab(order) && labState !== "SENT";
+            const rejectedByLab = labRejectedItems(order).length > 0;
             const canSendPharmacy = mayHaveDrug(order) && pharmacySendState(order) !== "SENT";
             return (
               <li key={order.orderId} className="rounded-lg bg-slate-50 p-3 text-sm">
@@ -339,9 +388,19 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                         isVerbalConfirmed(order) ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
                       }`}
                     >
-                      {isVerbalConfirmed(order)
-                        ? `Verbal · Confirmed${order.verbalConfirmedBy ? ` by ${order.verbalConfirmedBy}` : ""}`
-                        : "Verbal · Awaiting confirmation"}
+                      {isVerbalConfirmed(order) ? (
+                        <>
+                          Verbal · Confirmed
+                          {order.verbalConfirmedBy ? (
+                            <>
+                              {" "}
+                              by <StaffName empId={order.verbalConfirmedBy} />
+                            </>
+                          ) : null}
+                        </>
+                      ) : (
+                        "Verbal · Awaiting confirmation"
+                      )}
                     </span>
                   ) : null}
                   {sendLabel(labState) ? (
@@ -378,7 +437,69 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                           </span>
                         ) : null}
                         {item.sendStatus ? (
-                          <span className="text-xs text-slate-400"> · Status: {item.sendStatus}</span>
+                          <span className="text-xs text-slate-400">
+                            {" "}
+                            · Status: {labItemReceived(item) ? "SENT" : item.sendStatus}
+                          </span>
+                        ) : null}
+                        {item.rejectReason && !labItemReceived(item) ? (
+                          // LAB 이 거절한 이유(예: 유효하지 않은 환자ID) — 다시 보내기 전에 원인을 먼저 고쳐야 한다
+                          <span className="block pl-6 text-xs text-rose-600">Rejected by Lab: {item.rejectReason}</span>
+                        ) : null}
+                        {labItemHasResult(item) ? (
+                          // 검사 결과 — 처방코어가 LAB 결과를 받아 둔 값을 열 때마다 읽어 온다(응급 DB에 저장하지 않는다)
+                          <div className="mt-1 ml-6 rounded-md border border-slate-200 bg-white p-2 text-xs">
+                            <p className="mb-1 font-medium text-slate-600">
+                              Lab Results
+                              {item.resultReportedAt ? ` · Reported ${formatDateTime(item.resultReportedAt)}` : ""}
+                            </p>
+                            <table className="w-full text-left">
+                              <thead className="text-slate-400">
+                                <tr>
+                                  <th className="pr-3 font-normal">Test</th>
+                                  <th className="pr-3 font-normal">Value</th>
+                                  <th className="pr-3 font-normal">Reference</th>
+                                  <th className="font-normal">Flag</th>
+                                </tr>
+                              </thead>
+                              <tbody className="text-slate-700">
+                                {(item.resultDetails ?? []).map((detail, detailIndex) => {
+                                  const flag = abnormalFlagLabel(detail.abnormalFlag);
+                                  return (
+                                    <tr key={`${detail.detailCode ?? ""}-${detailIndex}`}>
+                                      <td className="pr-3">{detail.detailName ?? item.itemName}</td>
+                                      <td className="pr-3">
+                                        {detail.resultValue ?? "-"}
+                                        {detail.resultUnit ? ` ${detail.resultUnit}` : ""}
+                                      </td>
+                                      <td className="pr-3">{detail.referenceRange ?? "-"}</td>
+                                      <td>
+                                        <span
+                                          className={`rounded-full px-2 py-0.5 ${
+                                            flag.tone === "low"
+                                              ? "bg-sky-50 text-sky-700"
+                                              : flag.tone === "high"
+                                                ? "bg-rose-50 text-rose-700"
+                                                : flag.tone === "normal"
+                                                  ? "bg-emerald-50 text-emerald-700"
+                                                  : "bg-amber-50 text-amber-700"
+                                          }`}
+                                        >
+                                          {flag.text}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : labItemReceived(item) && item.prescriptionType === ORDER_ITEM_TYPE.LAB ? (
+                          <span className="block pl-6 text-xs text-slate-400">
+                            {labResultExpected(item)
+                              ? "Waiting for the lab result... (use Refresh to check again)"
+                              : "Results of this test are not shown in the ER (culture / pathology)."}
+                          </span>
                         ) : null}
                       </li>
                     ))}
@@ -386,10 +507,11 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                 ) : null}
 
                 <p className="mt-1 text-xs text-slate-400">
-                  {order.prescribedBy ?? "-"}
+                  <StaffName empId={order.prescribedBy} />
                   {order.prescribedAt ? ` · ${formatDateTime(order.prescribedAt)}` : ""}
                   {cancelled && order.cancelReason ? ` · Cancelled: ${order.cancelReason}` : ""}
-                  {orderItems.length === 0 ? " · Items not loaded (use Load details)" : ""}
+                  {orderItems.length === 0 ? " · Items not loaded (use Refresh)" : ""}
+                  {rejectedByLab ? " · Fix the reason above before sending again" : ""}
                 </p>
 
                 {!cancelled ? (
@@ -417,8 +539,8 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                       disabled={busy}
                       onClick={() => dispatch(fetchOrderRequest(receptionNo, order.orderId))}
                     >
-                      {/* 항목·결과 상세 보기 */}
-                      Load details
+                      {/* 이 처방을 처방코어에서 다시 불러온다(항목·전송 상태) */}
+                      Refresh
                     </Button>
                     {order.verbalYn === "Y" && !isVerbalConfirmed(order) ? (
                       <Button
@@ -441,10 +563,15 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
 
                 {verbalTarget === order.orderId && !cancelled ? (
                   <div className="mt-2 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
-                    <FormField label="Confirmed By (Doctor ID)" required className="w-[220px]">
-                      <Input value={verbalDoctor} onChange={(e) => setVerbalDoctor(e.target.value)} maxLength={36} />
-                    </FormField>
-                    <Button disabled={busy || !verbalDoctor.trim()} onClick={() => handleVerbalConfirm(order)}>
+                    <ActorField
+                      label="Confirmed By (Doctor)"
+                      role="DOCTOR"
+                      required
+                      value={verbalDoctor}
+                      onChange={setVerbalDoctor}
+                      className="w-[220px]"
+                    />
+                    <Button disabled={busy || !confirmedBy} onClick={() => handleVerbalConfirm(order)}>
                       Confirm
                     </Button>
                   </div>
@@ -459,16 +586,16 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                         maxLength={200}
                       />
                     </FormField>
-                    <FormField label="Cancelled By ID" required className="w-[180px]">
-                      <Input
-                        value={cancelForm.userId}
-                        onChange={(e) => setCancelForm((prev) => ({ ...prev, userId: e.target.value }))}
-                        maxLength={36}
-                      />
-                    </FormField>
+                    <ActorField
+                      label="Cancelled By"
+                      required
+                      value={cancelForm.userId}
+                      onChange={(empId) => setCancelForm((prev) => ({ ...prev, userId: empId }))}
+                      className="w-[220px]"
+                    />
                     <Button
                       variant="danger"
-                      disabled={busy || !cancelForm.cancelReason.trim() || !cancelForm.userId.trim()}
+                      disabled={busy || !cancelForm.cancelReason.trim() || !cancelledBy}
                       onClick={() => handleCancel(order)}
                     >
                       Confirm Cancel
@@ -511,10 +638,16 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
       {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
       <div className="flex flex-wrap gap-3">
-        {/* 처방의 ID */}
-        <FormField label="Prescribed By ID" required className="w-[180px]">
-          <Input name="prescribedBy" value={form.prescribedBy} onChange={handleFormChange} disabled={submitting} maxLength={36} />
-        </FormField>
+        {/* 처방의(의사) — 구두처방은 간호사가 로그인해 의사 대신 입력하는 경우가 많아 의사를 직접 고른다 */}
+        <ActorField
+          label="Prescribed By"
+          role="DOCTOR"
+          required
+          value={form.prescribedBy}
+          onChange={(empId) => setForm((prev) => ({ ...prev, prescribedBy: empId }))}
+          disabled={submitting}
+          className="w-[220px]"
+        />
         {/* 우선순위 */}
         <FormField label="Priority" required className="w-[160px]">
           <Select name="priorityCode" value={form.priorityCode} onChange={handleFormChange} options={priorityOptions} disabled={submitting} />
@@ -525,31 +658,34 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
         </FormField>
       </div>
 
-      {/* 검사항목 검색 — 결과를 누르면 처방 항목으로 추가된다(코드·이름을 직접 입력해도 된다) */}
+      {/* 검사항목 — 처방코어의 목록에서 고른다. 글자를 입력하면 이름·코드로 걸러진다(코드·이름을 직접 입력해도 된다) */}
       <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
         <div className="flex flex-wrap items-end gap-3">
-          <FormField label="Find a lab test" hint="Search by name or code. Leave empty to list all." className="w-[320px]">
+          <FormField
+            label="Lab tests"
+            hint="Pick a test from the list and press Add. Type to filter by name or code."
+            className="w-[320px]"
+          >
             <Input
               value={labQuery}
               onChange={(e) => setLabQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleLabSearch();
-              }}
-              placeholder="e.g. CBC"
+              placeholder="Filter (e.g. CBC)"
               disabled={submitting}
             />
           </FormField>
-          <Button variant="secondary" onClick={handleLabSearch} disabled={submitting || labItemsLoading}>
-            {labItemsLoading ? "Searching..." : "Search"}
+          <Button variant="secondary" onClick={handleLabReload} disabled={submitting || labItemsLoading}>
+            {labItemsLoading ? "Loading..." : "Reload list"}
           </Button>
         </div>
         {labItemsError ? <Alert variant="error">{resolveEmergencyMessage(labItemsError)}</Alert> : null}
-        {labSearched && !labItemsLoading && !labItemsError ? (
+        {!labItemsLoading && !labItemsError ? (
           labItems.length === 0 ? (
-            <p className="mt-2 text-xs text-slate-400">No lab tests found.</p>
+            <p className="mt-2 text-xs text-slate-400">No lab tests available.</p>
+          ) : shownLabItems.length === 0 ? (
+            <p className="mt-2 text-xs text-slate-400">No lab tests match the filter.</p>
           ) : (
             <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto">
-              {labItems.map((item) => (
+              {shownLabItems.map((item) => (
                 <li key={item.itemCode} className="flex items-center justify-between gap-2 rounded-md bg-white px-3 py-1.5 text-sm">
                   <span className="text-slate-800">
                     {item.itemName} <span className="text-xs text-slate-400">({item.itemCode})</span>
@@ -557,6 +693,9 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                       {item.testClassification ? ` · ${item.testClassification}` : ""}
                       {item.specimenTypes && item.specimenTypes.length > 0 ? ` · ${item.specimenTypes.join("/")}` : ""}
                     </span>
+                    {LAB_NO_RESULT_ITEM_CODES.includes(item.itemCode) ? (
+                      <span className="text-xs text-amber-600"> · No result in ER</span>
+                    ) : null}
                   </span>
                   <Button variant="secondary" onClick={() => handleAddLabItem(item)} disabled={submitting}>
                     Add

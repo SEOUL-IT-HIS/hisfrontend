@@ -4,6 +4,9 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import StaffName from "@/components/emergency/common/StaffName";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createConsentRequest,
@@ -66,6 +69,7 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
   const byCodes = useSelector(selectCommonCodesByGroup(CONSENT_BY_GROUP_CODE));
 
   const [form, setForm] = useState(initialForm);
+  const recordedById = useActorId(form.recordedById);
   const [lastReceptionNo, setLastReceptionNo] = useState(receptionNo);
   const [lastCount, setLastCount] = useState(0);
 
@@ -121,7 +125,7 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
     !!form.consentTypeCode &&
     !!form.consentStatusCode &&
     !!form.consentedByCode &&
-    !!form.recordedById.trim() &&
+    !!recordedById &&
     (!guardianSelected || !!form.consenterName.trim()) &&
     (!deferredSelected || !!form.reason.trim());
 
@@ -142,7 +146,7 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
         reason: form.reason.trim() || undefined,
         // datetime-local 값(초 없음)을 ISO 로컬 일시로 맞춘다. 비우면 서버가 현재 시각으로 기록한다.
         receivedAt: form.receivedAt ? `${form.receivedAt}:00` : undefined,
-        recordedById: form.recordedById.trim(),
+        recordedById,
       }),
     );
   }
@@ -177,7 +181,7 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
                   {item.reason ? <p className="whitespace-pre-wrap text-slate-600">{item.reason}</p> : null}
                   <p className="mt-1 text-xs text-slate-400">
                     {/* 수령 / 기록자 */}
-                    Received {formatDateTime(item.receivedAt)} · Recorded by {item.recordedById}
+                    Received {formatDateTime(item.receivedAt)} · Recorded by <StaffName empId={item.recordedById} />
                   </p>
                 </li>
               ))}
@@ -248,16 +252,15 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
                 disabled={submitting}
               />
             </FormField>
-            {/* 기록자ID */}
-            <FormField label="Recorded By ID" required className="w-[180px]">
-              <Input
-                name="recordedById"
-                value={form.recordedById}
-                onChange={handleChange}
-                disabled={submitting}
-                maxLength={36}
-              />
-            </FormField>
+            {/* 기록자 */}
+            <ActorField
+              label="Recorded By"
+              required
+              value={form.recordedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, recordedById: empId }))}
+              disabled={submitting}
+              className="w-[220px]"
+            />
           </div>
 
           {/* 사유 (유예일 때 필수) */}

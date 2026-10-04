@@ -5,7 +5,9 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import DischargedNotice from "@/components/emergency/common/DischargedNotice";
 import { selectIsDischarged } from "@/features/emergency/disposition/slice";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField, Select } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createIsolationRequest,
@@ -43,6 +45,8 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
+  // 격리 결정자는 의사 — 직접 안 고르면 로그인한 사람이 의사일 때 그 사람이다
+  const decidedById = useActorId(form.decidedById, "DOCTOR");
 
   useEffect(() => {
     if (receptionNo) {
@@ -62,13 +66,13 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
   }
 
   function handleRegister() {
-    if (!form.isolationTypeCode) return;
+    if (!form.isolationTypeCode || !decidedById) return;
     dispatch(
       createIsolationRequest({
         encounterId: receptionNo,
         isolationTypeCode: form.isolationTypeCode,
         requiredYn: form.requiredYn,
-        decidedById: form.decidedById || undefined,
+        decidedById,
       }),
     );
     setForm(initialForm);
@@ -168,13 +172,18 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
                 disabled={submitting}
               />
             </FormField>
-            {/* 결정자ID */}
-            <FormField label="Decided By ID">
-              <Input name="decidedById" value={form.decidedById} onChange={handleChange} disabled={submitting} maxLength={36} />
-            </FormField>
+            {/* 결정자(의사) */}
+            <ActorField
+              label="Decided By"
+              role="DOCTOR"
+              required
+              value={form.decidedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, decidedById: empId }))}
+              disabled={submitting}
+            />
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleRegister} disabled={submitting || !form.isolationTypeCode || !receptionNo || discharged}>
+            <Button type="button" onClick={handleRegister} disabled={submitting || !form.isolationTypeCode || !decidedById || !receptionNo || discharged}>
               {/* 저장 중... / 격리 등록 */}
               {submitting ? "Saving..." : "Register Isolation"}
             </Button>

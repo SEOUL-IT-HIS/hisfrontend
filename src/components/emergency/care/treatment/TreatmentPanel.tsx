@@ -3,7 +3,10 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField, Select } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import StaffName from "@/components/emergency/common/StaffName";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import { CODE_GROUP, optionLabel, toCodeOptions } from "@/features/emergency/codes";
 import {
@@ -46,6 +49,7 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
+  const performedById = useActorId(form.performedById);
 
   useEffect(() => {
     if (receptionNo) dispatch(fetchTreatmentsRequest(receptionNo));
@@ -69,7 +73,7 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
     !submitting &&
     !!form.orderId.trim() &&
     !!form.treatmentCode &&
-    !!form.performedById.trim();
+    !!performedById;
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -84,7 +88,7 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
         orderId: form.orderId.trim(),
         treatmentCode: form.treatmentCode,
         description: form.description.trim() || undefined,
-        performedById: form.performedById.trim(),
+        performedById,
       }),
     );
   }
@@ -108,7 +112,7 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
                   <p className="text-xs font-medium text-sky-600">{optionLabel(typeOptions, item.treatmentTypeCode)}</p>
                   {item.description ? <p className="whitespace-pre-wrap text-slate-800">{item.description}</p> : null}
                   <p className="mt-1 text-xs text-slate-400">
-                    {formatDateTime(item.performedAt)} · {item.performedById} · Order {item.orderId}
+                    {formatDateTime(item.performedAt)} · <StaffName empId={item.performedById} /> · Order {item.orderId}
                   </p>
                 </li>
               ))}
@@ -140,16 +144,15 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
                 disabled={submitting}
               />
             </FormField>
-            {/* 시행자ID */}
-            <FormField label="Performed By ID" required className="w-[180px]">
-              <Input
-                name="performedById"
-                value={form.performedById}
-                onChange={handleChange}
-                disabled={submitting}
-                maxLength={36}
-              />
-            </FormField>
+            {/* 시행자 */}
+            <ActorField
+              label="Performed By"
+              required
+              value={form.performedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, performedById: empId }))}
+              disabled={submitting}
+              className="w-[220px]"
+            />
           </div>
           {/* 처치 내용 */}
           <FormField label="Description" className="mt-3">

@@ -4,6 +4,9 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import StaffName from "@/components/emergency/common/StaffName";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import { CODE_GROUP, optionLabel, toCodeOptions } from "@/features/emergency/codes";
 import {
@@ -62,6 +65,7 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
   const [manualDrug, setManualDrug] = useState(false);
+  const administeredById = useActorId(form.administeredById);
 
   useEffect(() => {
     if (receptionNo) dispatch(fetchMedicationsRequest(receptionNo));
@@ -124,7 +128,7 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
     !!form.dose.trim() &&
     !!form.routeCode &&
     !!form.administeredAt &&
-    !!form.administeredById.trim();
+    !!administeredById;
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -141,7 +145,7 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
         drugCode: form.drugCode.trim(),
         dose: form.dose.trim(),
         routeCode: form.routeCode,
-        administeredById: form.administeredById.trim(),
+        administeredById,
         // datetime-local 값(초 없음)을 ISO 로컬 일시로 맞춘다.
         administeredAt: `${form.administeredAt}:00`,
       }),
@@ -168,7 +172,7 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
                     {item.drugCode} · {item.dose} · {optionLabel(routeOptions, item.routeCode)}
                   </p>
                   <p className="mt-1 text-xs text-slate-400">
-                    {formatDateTime(item.administeredAt)} · {item.administeredById} · Order {item.orderId}
+                    {formatDateTime(item.administeredAt)} · <StaffName empId={item.administeredById} /> · Order {item.orderId}
                   </p>
                 </li>
               ))}
@@ -241,16 +245,15 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
                 disabled={submitting}
               />
             </FormField>
-            {/* 투여자ID */}
-            <FormField label="Administered By ID" required className="w-[180px]">
-              <Input
-                name="administeredById"
-                value={form.administeredById}
-                onChange={handleChange}
-                disabled={submitting}
-                maxLength={36}
-              />
-            </FormField>
+            {/* 투여자 */}
+            <ActorField
+              label="Administered By"
+              required
+              value={form.administeredById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, administeredById: empId }))}
+              disabled={submitting}
+              className="w-[220px]"
+            />
           </div>
           <div className="mt-3 flex justify-end">
             <Button type="button" onClick={handleSubmit} disabled={!canSubmit}>

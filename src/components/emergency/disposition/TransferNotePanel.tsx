@@ -3,7 +3,10 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField, Select } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import StaffName from "@/components/emergency/common/StaffName";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import { CODE_GROUP, optionLabel, toCodeOptions } from "@/features/emergency/codes";
 import {
@@ -42,6 +45,8 @@ export default function TransferNotePanel({ dispositionId, className = "" }: Tra
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
+  // 소견서 작성자는 의사 — 직접 안 고르면 로그인한 사람이 의사일 때 그 사람이다
+  const writtenById = useActorId(form.writtenById, "DOCTOR");
 
   useEffect(() => {
     if (dispositionId) dispatch(fetchTransfersRequest(dispositionId));
@@ -60,7 +65,7 @@ export default function TransferNotePanel({ dispositionId, className = "" }: Tra
 
   const hospitalOptions = toCodeOptions(hospitalCodes, TRANSFER_HOSPITAL_FALLBACK_OPTIONS);
   const canSubmit =
-    !submitting && !!form.targetHospitalCode && !!form.content.trim() && !!form.writtenById.trim();
+    !submitting && !!form.targetHospitalCode && !!form.content.trim() && !!writtenById;
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -73,7 +78,7 @@ export default function TransferNotePanel({ dispositionId, className = "" }: Tra
       createTransferNoteAction(dispositionId, {
         targetHospitalCode: form.targetHospitalCode,
         content: form.content.trim(),
-        writtenById: form.writtenById.trim(),
+        writtenById,
       }),
     );
   }
@@ -95,7 +100,7 @@ export default function TransferNotePanel({ dispositionId, className = "" }: Tra
               </p>
               <p className="whitespace-pre-wrap text-slate-800">{item.content}</p>
               <p className="mt-1 text-xs text-slate-400">
-                {item.writtenById} · {formatDateTime(item.writtenAt)}
+                <StaffName empId={item.writtenById} /> · {formatDateTime(item.writtenAt)}
               </p>
             </li>
           ))}
@@ -119,10 +124,16 @@ export default function TransferNotePanel({ dispositionId, className = "" }: Tra
             disabled={submitting}
           />
         </FormField>
-        {/* 작성자ID */}
-        <FormField label="Written By ID" required className="w-[180px]">
-          <Input name="writtenById" value={form.writtenById} onChange={handleChange} disabled={submitting} maxLength={36} />
-        </FormField>
+        {/* 작성자(의사) */}
+        <ActorField
+          label="Written By"
+          role="DOCTOR"
+          required
+          value={form.writtenById}
+          onChange={(empId) => setForm((prev) => ({ ...prev, writtenById: empId }))}
+          disabled={submitting}
+          className="w-[220px]"
+        />
       </div>
       {/* 소견 내용 */}
       <FormField label="Note Content" required hint="Diagnosis, treatment given in the ER, reason for transfer." className="mt-3">
