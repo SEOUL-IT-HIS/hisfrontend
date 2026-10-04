@@ -7,12 +7,15 @@ import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useDayEnd } from "@/features/inpatient/dateLimits";
 import { createNursingAssessmentRequest, resetNursingAssessmentCreateStatus, selectNursingAssessmentCreateStatus } from "@/features/inpatient/nursingrecord/nursingassessment/slice";
 
 const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 const NursingAssessmentRegisterForm = () => {
+    // 기록 시각은 미래일 수 없음 — 화면은 오늘까지만 선택, 시각과 입원일 하한은 서버가 검증
+    const maxRecordAt = useDayEnd();
     const router = useRouter();
     // 간호기록 홈에서 환자를 선택하고 들어오면 ?admissionId=가 붙어 옴 → 입원 ID 자동 입력 + 수정 불가
     const presetAdmissionId = useSearchParams().get("admissionId") ?? "";
@@ -93,7 +96,7 @@ const NursingAssessmentRegisterForm = () => {
                 </div>
                 <div>
                     <label htmlFor="assessedAt" className={LABEL}>Assessed At</label>
-                    <input type="datetime-local" id="assessedAt" name="assessedAt" value={form.assessedAt} onChange={onChange} required className={FIELD} />
+                    <input type="datetime-local" id="assessedAt" name="assessedAt" max={maxRecordAt} value={form.assessedAt} onChange={onChange} required className={FIELD} />
                 </div>
                 <div>
                     <label htmlFor="assessorId" className={LABEL}>Assessor (Nurse)</label>

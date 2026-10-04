@@ -18,6 +18,7 @@ import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice
 import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useDayEnd } from "@/features/inpatient/dateLimits";
 import { useDispatch, useSelector } from "react-redux";
 
 const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
@@ -25,6 +26,8 @@ const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 const IandORecordDetail = () => {
+    // 기록 시각은 미래일 수 없음 — 화면은 오늘까지만 선택, 시각과 입원일 하한은 서버가 검증
+    const maxRecordAt = useDayEnd();
     // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
     const { nameById: nurseNameById } = useNurseOptions();
     const dispatch = useDispatch();
@@ -163,7 +166,7 @@ const IandORecordDetail = () => {
                         <p className="text-sm font-medium text-slate-800">Edit I&O Record</p>
                         <div>
                             <label htmlFor="recordedAt" className={LABEL}>Recorded At</label>
-                            <input type="datetime-local" id="recordedAt" name="recordedAt" value={editForm.recordedAt} onChange={onEditChange} className={FIELD} />
+                            <input type="datetime-local" id="recordedAt" name="recordedAt" max={maxRecordAt} value={editForm.recordedAt} onChange={onEditChange} className={FIELD} />
                         </div>
                         <div>
                             <label htmlFor="ioTypeCd" className={LABEL}>I/O Type</label>
