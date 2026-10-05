@@ -40,7 +40,7 @@ export default function IssuanceRegisterForm() {
           </FormField>
           <FormField label="Issue Qty" required>
             <Input
-              type="text"
+              type="number"
               placeholder="Issue Qty"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
