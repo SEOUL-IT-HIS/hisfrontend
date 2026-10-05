@@ -14,8 +14,8 @@ import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeO
 const LABEL = "mb-1 block text-sm font-medium text-slate-700";
 const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
-// 병실 유형 코드(bed.roomTypeCode) → 표시 라벨 (입원료 매핑과 같은 기준: 01 1인실 / 02 다인실)
-const ROOM_TYPE_LABEL: Record<string, string> = { "01": "Single", "02": "Multi" };
+// 병실 유형 코드(bed.roomTypeCode) → 표시 라벨 (admin ROOM_TYPE_CD: 01 1인실 / 02 다인실 / 03 격리실 / 04 특실)
+const ROOM_TYPE_LABEL: Record<string, string> = { "01": "Single", "02": "Multi", "03": "Isolation", "04": "VIP" };
 
 const BedAssignmentRegisterForm = () => {
     const router = useRouter();

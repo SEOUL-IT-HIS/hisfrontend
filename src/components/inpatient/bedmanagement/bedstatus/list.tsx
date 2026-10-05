@@ -74,6 +74,12 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
     [wardCodes],
   );
   const wardLabel = (wardCd: string | null) => (wardCd ? wardNameByCd.get(wardCd) ?? wardCd : "-");
+  // 필터 드롭다운에는 실제 병상이 있는 병동만 표시 — 공통코드에는 ICU·응급 관찰실처럼 병상이 없는 병동도 있어서
+  // 고르면 항상 빈 화면이 되던 문제 방지 (병상이 추가되면 자동으로 목록에 나타남)
+  const wardsWithBeds = useMemo(() => {
+    const wardCdsWithBeds = new Set(bedAssignments.map((bed) => bed.wardCd).filter(Boolean));
+    return wardCodes.filter((ward) => wardCdsWithBeds.has(ward.codeValue));
+  }, [wardCodes, bedAssignments]);
   // list(테이블 한 줄씩) / room(병실별로 묶어서) 두 가지 보기 모드
   const [viewMode, setViewMode] = useState<"list" | "room">("list");
   // useMemo를 쓰면 searchStatus/searchWard가 바뀔 때만 필터링이 다시 계산됨. 아니면 매 렌더링마다 filter가 실행되어 성능 저하 가능
@@ -133,7 +139,7 @@ const BedStatusList = ({ embedded = false }: BedStatusListProps = {}) => {
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
           >
             <option value="">All Wards</option>
-            {wardCodes.map((ward) => (
+            {wardsWithBeds.map((ward) => (
               <option key={ward.codeId} value={ward.codeValue}>
                 {ward.codeName}
               </option>
