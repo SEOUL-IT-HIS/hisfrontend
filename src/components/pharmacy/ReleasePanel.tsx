@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   cancelReleaseRequest,
@@ -8,14 +8,8 @@ import {
 } from "@/features/pharmacy/slice";
 import type { RootState } from "@/store/store";
 import { Button, FormField, Input, Panel, Select } from "@/components/common";
-import type { SelectOption } from "@/components/common";
 import type { ReleaseInfo } from "@/features/pharmacy/types";
-
-const RECIPIENT_TYPE_OPTIONS: SelectOption[] = [
-  { value: "PATIENT", label: "Patient" },
-  { value: "GUARDIAN", label: "Guardian" },
-  { value: "WARD", label: "Ward" },
-];
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 
 type ReleasePanelProps = {
   prescriptionLinkId: string;
@@ -34,6 +28,13 @@ export default function ReleasePanel({ prescriptionLinkId, release }: ReleasePan
   const error = useSelector((state: RootState) => state.pharmacy.releaseError);
   const [recipientTypeCd, setRecipientTypeCd] = useState("");
   const [cancelReason, setCancelReason] = useState("");
+
+  // ADM 공통코드 PHM_RECIPIENT_TYPE(01=환자/02=보호자/03=병동)을 그대로 가져와 드롭다운을 채운다.
+  const { options: recipientTypeOptions } = useCommonCodeOptions("PHM_RECIPIENT_TYPE");
+  const recipientTypeLabelByCd = useMemo(
+    () => new Map(recipientTypeOptions.map((opt) => [opt.value, opt.label])),
+    [recipientTypeOptions]
+  );
 
   const handleRelease = () => {
     if (!recipientTypeCd) return;
@@ -61,7 +62,7 @@ export default function ReleasePanel({ prescriptionLinkId, release }: ReleasePan
           <>
             <FormField label="Recipient Type" required>
               <Select
-                options={RECIPIENT_TYPE_OPTIONS}
+                options={recipientTypeOptions}
                 placeholder="Select recipient type"
                 value={recipientTypeCd}
                 onChange={(e) => setRecipientTypeCd(e.target.value)}
@@ -78,7 +79,11 @@ export default function ReleasePanel({ prescriptionLinkId, release }: ReleasePan
         {release && release.releaseStatusCd === "RELEASED" && (
           <>
             <p className="text-sm text-slate-700">
-              Released to <span className="font-semibold">{release.recipientTypeCd}</span>.
+              Released to{" "}
+              <span className="font-semibold">
+                {recipientTypeLabelByCd.get(release.recipientTypeCd) ?? release.recipientTypeCd}
+              </span>
+              .
             </p>
             <FormField label="Cancel Release Reason" required>
               <Input
