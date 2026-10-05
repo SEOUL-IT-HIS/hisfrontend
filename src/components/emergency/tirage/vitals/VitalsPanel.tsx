@@ -50,7 +50,8 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
   const submitError = useSelector(selectVitalsSubmitError);
 
   const [form, setForm] = useState(initialForm);
-  const measuredById = useActorId(form.measuredById);
+  // 측정자는 기본이 로그인한 사람이고, 실제로 측정한 사람이 다르면 고른다
+  const measuredById = useActorId(form.measuredById, "STAFF");
   const [lastCount, setLastCount] = useState(0);
 
   useEffect(() => {
@@ -181,6 +182,7 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
             {/* 측정자 */}
             <ActorField
               label="Measured By"
+              role="STAFF"
               value={form.measuredById}
               onChange={(empId) => setForm((prev) => ({ ...prev, measuredById: empId }))}
               disabled={submitting}

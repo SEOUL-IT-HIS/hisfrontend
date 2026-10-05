@@ -6,16 +6,30 @@ import type { RootState } from "@/store/store";
 import { fetchEmpApi } from "@/features/emp/api/empApi";
 import { fetchRoleListApi } from "@/features/emp/api/roleApi";
 
+export type StaffRole = "DOCTOR" | "NURSE";
+
 /** 직원 한 명 (admin 직원 목록에서 필요한 값만) */
 export interface StaffOption {
   empId: string;
   empName: string;
   empNo: string;
+  /** admin 부서 코드(DEPT_CD). 부서가 등록되지 않은 직원은 null */
+  deptCode: string | null;
+  role: StaffRole;
 }
+
+/**
+ * 처리자 칸의 종류
+ * - DOCTOR: 의사를 골라서 지정한다(처방의·퇴실/격리 결정·구두 확정·전원소견서)
+ * - STAFF : 의사·간호사 중에서 고른다. 기본은 로그인한 사람(처치 시행자·투약 투여자·활력징후 측정자·스크리닝 시행자)
+ */
+export type ActorKind = "DOCTOR" | "STAFF";
 
 interface StaffData {
   /** 재직 중인 의사 */
   doctors: StaffOption[];
+  /** 재직 중인 간호사 */
+  nurses: StaffOption[];
   /** 직원 ID → 이름 (퇴사자 포함 — 예전 기록의 처리자 이름을 보여주려고) */
   nameById: Map<string, string>;
 }
@@ -30,6 +44,10 @@ function isDoctorRole(roleCode: string, roleName: string): boolean {
   return roleCode.toUpperCase() === "DOCTOR" || roleName.includes("의사") || roleName.toLowerCase().includes("doctor");
 }
 
+function isNurseRole(roleCode: string, roleName: string): boolean {
+  return roleCode.toUpperCase() === "NURSE" || roleName.includes("간호") || roleName.toLowerCase().includes("nurse");
+}
+
 function loadStaff(): Promise<StaffData> {
   if (cached && Date.now() - cached.at < cached.ttl) return cached.promise;
 
@@ -37,14 +55,21 @@ function loadStaff(): Promise<StaffData> {
     at: Date.now(),
     ttl: SUCCESS_TTL_MS,
     promise: Promise.all([fetchRoleListApi(), fetchEmpApi()]).then(([roles, emps]): StaffData => {
-      const doctorRoleIds = new Set(
-        roles.filter((r) => r.useYn !== "N" && isDoctorRole(r.roleCode ?? "", r.roleName ?? "")).map((r) => r.roleId),
-      );
-      const doctors = emps
-        .filter((e) => !e.retireDate && (e.roleIds ?? []).some((id) => doctorRoleIds.has(id)))
-        .map((e) => ({ empId: e.empId, empName: e.empName, empNo: e.empNo }))
-        .sort((a, b) => a.empName.localeCompare(b.empName));
-      return { doctors, nameById: new Map(emps.map((e) => [e.empId, e.empName])) };
+      const activeRoles = roles.filter((r) => r.useYn !== "N");
+      const doctorRoleIds = new Set(activeRoles.filter((r) => isDoctorRole(r.roleCode ?? "", r.roleName ?? "")).map((r) => r.roleId));
+      const nurseRoleIds = new Set(activeRoles.filter((r) => isNurseRole(r.roleCode ?? "", r.roleName ?? "")).map((r) => r.roleId));
+
+      const doctors: StaffOption[] = [];
+      const nurses: StaffOption[] = [];
+      for (const e of emps) {
+        if (e.retireDate) continue;
+        const roleIds = e.roleIds ?? [];
+        const base = { empId: e.empId, empName: e.empName, empNo: e.empNo, deptCode: e.deptCode || null };
+        if (roleIds.some((id) => doctorRoleIds.has(id))) doctors.push({ ...base, role: "DOCTOR" });
+        else if (roleIds.some((id) => nurseRoleIds.has(id))) nurses.push({ ...base, role: "NURSE" });
+      }
+      const byName = (a: StaffOption, b: StaffOption) => a.empName.localeCompare(b.empName);
+      return { doctors: doctors.sort(byName), nurses: nurses.sort(byName), nameById: new Map(emps.map((e) => [e.empId, e.empName])) };
     }),
   };
   cached = entry;
@@ -56,8 +81,8 @@ function loadStaff(): Promise<StaffData> {
 }
 
 /**
- * admin 직원 목록 — 의사 드롭다운과 처리자 이름 표시에 쓴다.
- * enabled=false 면 불러오지 않는다. 목록을 못 받으면 doctors 는 비어 있고 failed=true (화면은 직접 입력으로 대체).
+ * admin 직원 목록 — 의사·간호사 드롭다운과 처리자 이름 표시에 쓴다.
+ * enabled=false 면 불러오지 않는다. 목록을 못 받으면 doctors·nurses 는 비어 있고 failed=true (화면은 대체 입력으로 넘어간다).
  */
 export function useStaff(enabled = true) {
   const [state, setState] = useState<{ data: StaffData | null; failed: boolean }>({ data: null, failed: false });
@@ -79,6 +104,7 @@ export function useStaff(enabled = true) {
 
   return {
     doctors: state.data?.doctors ?? [],
+    nurses: state.data?.nurses ?? [],
     nameById: state.data?.nameById ?? new Map<string, string>(),
     loading: enabled && !state.data && !state.failed,
     failed: state.failed,
@@ -94,16 +120,20 @@ export function useLoginUser() {
 
 /**
  * 기록·처리에 실제로 보낼 처리자 ID.
- * - 기본(role 없음): 로그인한 사용자. 로그인 정보가 없는 환경(단독 실행 등)에서만 직접 입력한 값(typed)을 쓴다.
- * - role="DOCTOR": 드롭다운에서 고른 의사(typed). 아직 안 골랐고 로그인한 사람이 의사면 그 사람이 기본이다.
+ * - 기본(kind 없음): 로그인한 사용자. 로그인 정보가 없는 환경(단독 실행 등)에서만 직접 입력한 값(typed)을 쓴다.
+ * - "DOCTOR": 드롭다운에서 고른 의사(typed). 아직 안 골랐고 로그인한 사람이 의사면 그 사람이 기본이다.
+ * - "STAFF" : 고른 직원(typed). 아직 안 골랐으면 로그인한 사람이 기본이다(의사·간호사 여부와 상관없이).
  */
-export function useActorId(typed: string, role?: "DOCTOR"): string {
+export function useActorId(typed: string, kind?: ActorKind): string {
   const login = useLoginUser();
-  const { doctors } = useStaff(role === "DOCTOR");
+  const { doctors } = useStaff(kind === "DOCTOR");
   const value = typed.trim();
-  if (role === "DOCTOR") {
+  if (kind === "DOCTOR") {
     if (value) return value;
     return login.signedIn && doctors.some((d) => d.empId === login.empId) ? login.empId : "";
+  }
+  if (kind === "STAFF") {
+    return value || (login.signedIn ? login.empId : "");
   }
   return login.signedIn ? login.empId : value;
 }

@@ -11,6 +11,14 @@ export const ORDER_ITEM_TYPE = {
 
 export type OrderItemType = (typeof ORDER_ITEM_TYPE)[keyof typeof ORDER_ITEM_TYPE];
 
+/**
+ * 약제(PHM) 전송을 화면에서 쓰는지. 약제 서비스가 이번 범위에서 빠져 false 다 —
+ * 전송해도 받는 곳이 없는데 처방코어는 SENT 로 표시해서 약제로 넘어간 것처럼 보인다.
+ * 약제 서비스가 돌아오면 백엔드 app.order.pharmacy-enabled 와 함께 true 로 바꾼다.
+ * 약품 처방 등록과 투약(MAR) 기록은 이 값과 상관없이 그대로 쓴다.
+ */
+export const PHARMACY_DISPATCH_ENABLED = false;
+
 export interface OrderItem {
   prescriptionType: string;
   itemCode: string;

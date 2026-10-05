@@ -37,6 +37,8 @@ const IandORecordDetail = () => {
     const deleteStatus = useSelector(selectIandORecordDeleteStatus);
     const { loading, error } = useSelector(selectIandORecordDetailStatus);
     const admission = useSelector((state: RootState) => state.inpatient.admissiondischarge.detail);
+    // 퇴원 완료된 입원 건의 기록은 조회만 (서버에서도 등록·수정·삭제를 거절함)
+    const readOnly = admission?.admissionId === iandorecord?.admissionId && admission?.status === "DISCHARGED";
     const patientDetail = useSelector((state: RootState) => state.patient.patientDetail);
 
     const [editForm, setEditForm] = useState({
@@ -162,49 +164,58 @@ const IandORecordDetail = () => {
                         </div>
                     </div>
 
-                    <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p className="text-sm font-medium text-slate-800">Edit I&O Record</p>
-                        <div>
-                            <label htmlFor="recordedAt" className={LABEL}>Recorded At</label>
-                            <input type="datetime-local" id="recordedAt" name="recordedAt" max={maxRecordAt} value={editForm.recordedAt} onChange={onEditChange} className={FIELD} />
-                        </div>
-                        <div>
-                            <label htmlFor="ioTypeCd" className={LABEL}>I/O Type</label>
-                            <CodeSelect id="ioTypeCd" name="ioTypeCd" value={editForm.ioTypeCd} options={IO_TYPE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
-                        </div>
-                        <div>
-                            <label htmlFor="routeCd" className={LABEL}>Route</label>
-                            <CodeSelect id="routeCd" name="routeCd" value={editForm.routeCd} options={IO_ROUTE_OPTIONS[editForm.ioTypeCd] ?? ALL_IO_ROUTE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
-                        </div>
-                        <div>
-                            <label htmlFor="amountMl" className={LABEL}>Amount (mL)</label>
-                            <input type="number" id="amountMl" name="amountMl" value={editForm.amountMl} onChange={onEditChange} className={FIELD} />
-                        </div>
-                        <div>
-                            <label htmlFor="recorderId" className={LABEL}>Recorder (Nurse)</label>
-                            <NurseSelect id="recorderId" name="recorderId" value={editForm.recorderId} onChange={onEditChange} className={FIELD} required={false} />
-                        </div>
-                        <button
-                            onClick={handleUpdate}
-                            disabled={updateStatus.loading}
-                            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
-                        >
-                            {updateStatus.loading ? "Updating..." : "Update"}
-                        </button>
-                        {updateStatus.error && <p className="text-sm text-red-600">{updateStatus.error}</p>}
-                        {updateStatus.success && <p className="text-sm text-emerald-600">Update completed</p>}
-                    </div>
+                    {readOnly && (
+                      <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                        This admission is discharged. Nursing records can be viewed but not edited or deleted.
+                      </p>
+                    )}
+                    {!readOnly && (
+                      <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                          <p className="text-sm font-medium text-slate-800">Edit I&O Record</p>
+                          <div>
+                              <label htmlFor="recordedAt" className={LABEL}>Recorded At</label>
+                              <input type="datetime-local" id="recordedAt" name="recordedAt" max={maxRecordAt} value={editForm.recordedAt} onChange={onEditChange} className={FIELD} />
+                          </div>
+                          <div>
+                              <label htmlFor="ioTypeCd" className={LABEL}>I/O Type</label>
+                              <CodeSelect id="ioTypeCd" name="ioTypeCd" value={editForm.ioTypeCd} options={IO_TYPE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
+                          </div>
+                          <div>
+                              <label htmlFor="routeCd" className={LABEL}>Route</label>
+                              <CodeSelect id="routeCd" name="routeCd" value={editForm.routeCd} options={IO_ROUTE_OPTIONS[editForm.ioTypeCd] ?? ALL_IO_ROUTE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
+                          </div>
+                          <div>
+                              <label htmlFor="amountMl" className={LABEL}>Amount (mL)</label>
+                              <input type="number" id="amountMl" name="amountMl" value={editForm.amountMl} onChange={onEditChange} className={FIELD} />
+                          </div>
+                          <div>
+                              <label htmlFor="recorderId" className={LABEL}>Recorder (Nurse)</label>
+                              <NurseSelect id="recorderId" name="recorderId" value={editForm.recorderId} onChange={onEditChange} className={FIELD} required={false} />
+                          </div>
+                          <button
+                              onClick={handleUpdate}
+                              disabled={updateStatus.loading}
+                              className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+                          >
+                              {updateStatus.loading ? "Updating..." : "Update"}
+                          </button>
+                          {updateStatus.error && <p className="text-sm text-red-600">{updateStatus.error}</p>}
+                          {updateStatus.success && <p className="text-sm text-emerald-600">Update completed</p>}
+                      </div>
+                    )}
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <button
-                            onClick={handleDelete}
-                            disabled={deleteStatus.loading}
-                            className="inline-flex items-center rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
-                        >
-                            {deleteStatus.loading ? "Deleting..." : "Delete"}
-                        </button>
-                        {deleteStatus.error && <p className="mt-2 text-sm text-red-600">{deleteStatus.error}</p>}
-                    </div>
+                    {!readOnly && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                          <button
+                              onClick={handleDelete}
+                              disabled={deleteStatus.loading}
+                              className="inline-flex items-center rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
+                          >
+                              {deleteStatus.loading ? "Deleting..." : "Delete"}
+                          </button>
+                          {deleteStatus.error && <p className="mt-2 text-sm text-red-600">{deleteStatus.error}</p>}
+                      </div>
+                    )}
                 </div>
             )}
         </div>
