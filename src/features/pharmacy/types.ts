@@ -138,6 +138,8 @@ export interface PrescriptionListItem {
   physicianId: string;
   departmentId: string;
   createdAt: string;
+  /** 처방전 처리 상태 — RECEIVED(접수) / DISPENSED(조제완료) / REJECTED(조제거절) */
+  status: string;
 }
 
 export interface PrescriptionItem {
@@ -148,7 +150,15 @@ export interface PrescriptionItem {
 }
 
 export interface PrescriptionDetail extends PrescriptionListItem {
+  /** 거절 사유. REJECTED 상태일 때만 값이 있다. */
+  rejectReason: string | null;
   items: PrescriptionItem[];
+}
+
+/** 조제거절 — PATCH /api/pharmacy/prescriptions/{id}/reject */
+export interface PrescriptionRejectRequest {
+  prescriptionLinkId: string;
+  reason: string;
 }
 
 export interface PharmacyState {
@@ -182,6 +192,9 @@ export interface PharmacyState {
   prescriptionDetail: PrescriptionDetail | null;
   prescriptionDetailLoading: boolean;
   prescriptionDetailError: string | null;
+
+  prescriptionActionLoading: boolean;
+  prescriptionActionError: string | null;
 
   disposalLoading: boolean;
   disposalError: string | null;

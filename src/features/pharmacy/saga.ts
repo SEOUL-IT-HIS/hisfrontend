@@ -5,6 +5,7 @@ import {
   createIssuance,
   createMedication,
   createReceipt,
+  dispensePrescription,
   getInventoryList,
   getIssuanceList,
   getMedicationList,
@@ -12,9 +13,13 @@ import {
   getPrescriptionList,
   getReceiptList,
   importMedicationsFromPublicApi,
+  rejectPrescription,
 } from "./api";
 import { PHM_MESSAGES } from "./messages";
 import {
+  dispensePrescriptionFailure,
+  dispensePrescriptionRequest,
+  dispensePrescriptionSuccess,
   fetchInventoryListFailure,
   fetchInventoryListRequest,
   fetchInventoryListSuccess,
@@ -48,12 +53,16 @@ import {
   registerReceiptFailure,
   registerReceiptRequest,
   registerReceiptSuccess,
+  rejectPrescriptionFailure,
+  rejectPrescriptionRequest,
+  rejectPrescriptionSuccess,
 } from "./slice";
 import type {
   DisposalRegisterRequest,
   IssuanceRegisterRequest,
   Medication,
   MedicationRegisterForm,
+  PrescriptionRejectRequest,
   ReceiptRegisterRequest,
 } from "./types";
 
@@ -171,6 +180,27 @@ function* fetchPrescriptionDetailSaga(action: PayloadAction<string>) {
   }
 }
 
+// ----- 조제완료/조제거절 (HL2-18) -----
+function* dispensePrescriptionSaga(action: PayloadAction<string>) {
+  try {
+    yield call(dispensePrescription, action.payload);
+    yield put(dispensePrescriptionSuccess());
+  } catch (error) {
+    yield put(dispensePrescriptionFailure(resolveErrorMessage(error)));
+  }
+}
+
+function* rejectPrescriptionSaga(
+  action: PayloadAction<PrescriptionRejectRequest>
+) {
+  try {
+    yield call(rejectPrescription, action.payload);
+    yield put(rejectPrescriptionSuccess(action.payload.reason));
+  } catch (error) {
+    yield put(rejectPrescriptionFailure(resolveErrorMessage(error)));
+  }
+}
+
 // ----- 약품 폐기 관리 (HL2-10) -----
 function* registerDisposalSaga(action: PayloadAction<DisposalRegisterRequest>) {
   try {
@@ -198,5 +228,7 @@ export default function* pharmacySaga() {
     fetchPrescriptionDetailRequest.type,
     fetchPrescriptionDetailSaga
   );
+  yield takeLatest(dispensePrescriptionRequest.type, dispensePrescriptionSaga);
+  yield takeLatest(rejectPrescriptionRequest.type, rejectPrescriptionSaga);
   yield takeLatest(registerDisposalRequest.type, registerDisposalSaga);
 }

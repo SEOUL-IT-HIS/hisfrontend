@@ -10,6 +10,7 @@ import type {
   PageResponse,
   PrescriptionDetail,
   PrescriptionListItem,
+  PrescriptionRejectRequest,
   ReceiptDto,
   ReceiptRegisterRequest,
 } from "./types";
@@ -123,6 +124,27 @@ export async function getPrescriptionDetail(
 ): Promise<ApiResponse<PrescriptionDetail>> {
   const response = await apiClient.get<ApiResponse<PrescriptionDetail>>(
     `/api/pharmacy/prescriptions/${prescriptionLinkId}`
+  );
+  return response.data;
+}
+
+/** 조제완료 (HL2-18) */
+export async function dispensePrescription(
+  prescriptionLinkId: string
+): Promise<ApiResponse<void>> {
+  const response = await apiClient.patch<ApiResponse<void>>(
+    `/api/pharmacy/prescriptions/${prescriptionLinkId}/dispense`
+  );
+  return response.data;
+}
+
+/** 조제거절 (HL2-18) */
+export async function rejectPrescription(
+  request: PrescriptionRejectRequest
+): Promise<ApiResponse<void>> {
+  const response = await apiClient.patch<ApiResponse<void>>(
+    `/api/pharmacy/prescriptions/${request.prescriptionLinkId}/reject`,
+    { reason: request.reason }
   );
   return response.data;
 }

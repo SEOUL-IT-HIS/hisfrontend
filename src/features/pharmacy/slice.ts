@@ -9,6 +9,7 @@ import type {
   PharmacyState,
   PrescriptionDetail,
   PrescriptionListItem,
+  PrescriptionRejectRequest,
   ReceiptDto,
   ReceiptRegisterRequest,
 } from "./types";
@@ -44,6 +45,9 @@ const initialState: PharmacyState = {
   prescriptionDetail: null,
   prescriptionDetailLoading: false,
   prescriptionDetailError: null,
+
+  prescriptionActionLoading: false,
+  prescriptionActionError: null,
 
   disposalLoading: false,
   disposalError: null,
@@ -183,6 +187,8 @@ const pharmacySlice = createSlice({
     fetchPrescriptionDetailRequest(state, _action: PayloadAction<string>) {
       state.prescriptionDetailLoading = true;
       state.prescriptionDetailError = null;
+      // 다른 처방전 상세로 이동했을 때 이전 처방전의 조제완료/거절 에러가 남아 보이지 않도록 비운다.
+      state.prescriptionActionError = null;
     },
     fetchPrescriptionDetailSuccess(
       state,
@@ -194,6 +200,40 @@ const pharmacySlice = createSlice({
     fetchPrescriptionDetailFailure(state, action: PayloadAction<string>) {
       state.prescriptionDetailLoading = false;
       state.prescriptionDetailError = action.payload;
+    },
+
+    // ----- 조제완료/조제거절 (HL2-18) -----
+    dispensePrescriptionRequest(state, _action: PayloadAction<string>) {
+      state.prescriptionActionLoading = true;
+      state.prescriptionActionError = null;
+    },
+    dispensePrescriptionSuccess(state) {
+      state.prescriptionActionLoading = false;
+      if (state.prescriptionDetail) {
+        state.prescriptionDetail.status = "DISPENSED";
+      }
+    },
+    dispensePrescriptionFailure(state, action: PayloadAction<string>) {
+      state.prescriptionActionLoading = false;
+      state.prescriptionActionError = action.payload;
+    },
+    rejectPrescriptionRequest(
+      state,
+      _action: PayloadAction<PrescriptionRejectRequest>
+    ) {
+      state.prescriptionActionLoading = true;
+      state.prescriptionActionError = null;
+    },
+    rejectPrescriptionSuccess(state, action: PayloadAction<string>) {
+      state.prescriptionActionLoading = false;
+      if (state.prescriptionDetail) {
+        state.prescriptionDetail.status = "REJECTED";
+        state.prescriptionDetail.rejectReason = action.payload;
+      }
+    },
+    rejectPrescriptionFailure(state, action: PayloadAction<string>) {
+      state.prescriptionActionLoading = false;
+      state.prescriptionActionError = action.payload;
     },
 
     // ----- 약품 폐기 관리 (HL2-10) -----
@@ -250,6 +290,13 @@ export const {
   fetchPrescriptionDetailRequest,
   fetchPrescriptionDetailSuccess,
   fetchPrescriptionDetailFailure,
+
+  dispensePrescriptionRequest,
+  dispensePrescriptionSuccess,
+  dispensePrescriptionFailure,
+  rejectPrescriptionRequest,
+  rejectPrescriptionSuccess,
+  rejectPrescriptionFailure,
 
   registerDisposalRequest,
   registerDisposalSuccess,
