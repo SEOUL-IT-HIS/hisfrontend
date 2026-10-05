@@ -3,6 +3,8 @@ export interface AdmissionDTO{
     patientId: string;
     doctorId: string;
     admissionDate: string;
+    /** 퇴원 확정 시각 — 퇴원 전이면 null */
+    dischargedAt?: string | null;
     admissionRoute: string;
     admissionDeptId: string;
     status: string;
