@@ -15,6 +15,10 @@ export const LAB_ORDER_MESSAGES = {
   LAB025: "Reception has been restored to the worklist.",
   LAB026: "This reception is not excluded, so it cannot be restored.",
   LAB017: "Invalid code value.",
+  LAB110: "Staff member not found, or no longer active.",
+  LAB111: "This staff member is not a doctor.",
+  LAB112: "Unable to verify staff information right now.",
+  LAB113: "The same item was entered more than once.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;

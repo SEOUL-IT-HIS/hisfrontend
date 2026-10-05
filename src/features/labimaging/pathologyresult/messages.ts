@@ -19,6 +19,9 @@ export const PATHOLOGY_RESULT_MESSAGES = {
   LAB085: "A pathology result is already registered for this test item.",
   LAB086: "There is no attachment.",
   LAB087: "Attachment type not allowed. Use JPG, PNG, or PDF.",
+  LAB109: "The file is too large.",
+  LAB110: "Staff member not found, or no longer active.",
+  LAB112: "Unable to verify staff information right now.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;

@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, Panel } from "@/components/common";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
+import { formatPhysician, formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import {
@@ -64,6 +65,7 @@ export default function LabReceptionDetail() {
   const { names: patientNames } = usePatientNames(
     reception?.patientId ? [reception.patientId] : [],
   );
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
 
   useEffect(() => {
     if (receptionNo) dispatch(fetchLabReceptionByNoRequest(receptionNo));
@@ -77,30 +79,35 @@ export default function LabReceptionDetail() {
     .map((code) => toCodeLabel(testTypes.options, code))
     .join(", ");
 
-  const rows: Array<[string, string]> = [
+  // physicianId(처방의 empId) → 이름. physicianId 가 없는 수동 접수 건은 physicianNo 로 대체한다.
+  const physicianDisplay = formatPhysician(reception, staffNameById, staffLoading);
+  // receivedById(접수자 empId) → 이름. (직원ID 화면 노출 정리, 2026-10-05)
+  const receivedByDisplay = formatStaffName(reception.receivedById, staffNameById, staffLoading);
+
+  const rows: Array<[string, string, string?]> = [
     ["Reception No.", reception.receptionNo],
     ["Order No.", reception.labOrderNo],
     ["Treatment Type", toCodeLabel(treatTypes.options, reception.treatTypeCode)],
     ["Urgency", reception.urgencyYn === "Y" ? "Urgent" : "Routine"],
     // 환자번호는 화면에서 쓰지 않기로 해서 이름만 둔다. (2026-08-25)
     ["Patient Name", patientNames[reception.patientId] || "Unknown"],
-    ["Physician No.", reception.physicianNo || "-"],
+    ["Physician", physicianDisplay.text, physicianDisplay.title],
     ["Test Items", labItems || "-"],
     ["Received At", formatDateTime(reception.receivedAt)],
     ["Scheduled Test", reception.scheduledAt ? formatDateTime(reception.scheduledAt) : "Not scheduled"],
     ["Order Status", toStatusLabel(ORDER_STATUS_LABELS, reception.orderStatusCode)],
     ["Reception Status", toStatusLabel(RECEPTION_STATUS_LABELS, reception.receptionStatusCode)],
-    ["Received By", reception.receivedById],
+    ["Received By", receivedByDisplay.text, receivedByDisplay.title],
   ];
 
   return (
     <div className="space-y-4">
       <Panel>
         <dl className="divide-y divide-slate-100">
-          {rows.map(([label, value]) => (
+          {rows.map(([label, value, title]) => (
             <div key={label} className="flex px-4 py-2.5 text-sm">
               <dt className="w-32 shrink-0 text-slate-400">{label}</dt>
-              <dd className="text-slate-700">{value}</dd>
+              <dd className="text-slate-700" title={title}>{value}</dd>
             </div>
           ))}
         </dl>

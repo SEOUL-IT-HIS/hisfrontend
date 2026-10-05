@@ -10,6 +10,7 @@ export const INTERFACE_SEND_LOG_MESSAGES = {
   LAB090: "Resend has been requested.",
   LAB091: "Kafka is disabled, so the message cannot be resent.",
   LAB092: "This entry cannot be resent. (already sent / no payload to publish)",
+  LAB114: "The search period is invalid. (start date is after end date)",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;

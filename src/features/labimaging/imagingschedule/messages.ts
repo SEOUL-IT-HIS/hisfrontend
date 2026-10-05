@@ -6,6 +6,9 @@ export const IMAGE_SCHEDULE_MESSAGES = {
   LAB016: "There is no existing imaging schedule to reschedule.",
   LAB017: "Invalid code value.",
   LAB046: "An imaging schedule already exists. Use Reschedule instead.",
+  LAB110: "Staff member not found, or no longer active.",
+  LAB112: "Unable to verify staff information right now.",
+  LAB116: "Cannot schedule a date in the past.",
   LAB999: "An error occurred while processing the request.",
 } as const;
 

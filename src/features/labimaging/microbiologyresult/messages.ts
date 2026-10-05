@@ -20,6 +20,8 @@ export const MICROBIOLOGY_RESULT_MESSAGES = {
   LAB076: "Results can only be registered for specimens assessed as fit.",
   LAB077: "Organism and susceptibility can only be entered for a positive culture.",
   LAB078: "The same antibiotic was entered more than once.",
+  LAB110: "Staff member not found, or no longer active.",
+  LAB112: "Unable to verify staff information right now.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;

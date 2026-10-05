@@ -6,6 +6,7 @@ import type { AppDispatch } from "@/store/store";
 import {
   Alert,
   Button,
+  ConfirmDialog,
   DataTable,
   FormField,
   Input,
@@ -13,8 +14,10 @@ import {
 } from "@/components/common";
 import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
 import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
+import { formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
 import type { DataTableColumn } from "@/components/common";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
+import { isUuid, todayInputValue } from "@/features/labimaging/common/validation";
 import { resolveConsentMessage } from "@/features/labimaging/imagingconsent/messages";
 import {
   createConsentRequest,
@@ -114,9 +117,13 @@ export default function ConsentWorkPanel({
   const consentTypes = useCommonCodeOptions("CONSENT_TYPE_CD");
   // 철회사유 표시용 (5차 Phase 9-3 — 기존 admin 그룹)
   const withdrawReasons = useCommonCodeOptions("CONSENT_WITHDRAW_CD");
+  // witnessId(확인자 empId) → 이름 표시용. (직원ID 화면 노출 정리, 2026-10-05)
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
 
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
+  /** 제출 전 확인창(04번 지시서 Phase 4-3) — true 면 등록 내용을 보여주고 한 번 더 확인받는다. */
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   /*
    * 선택한 오더가 바뀌면 이전 오더의 이력/결과를 비우고 새로 불러온다.
@@ -150,12 +157,28 @@ export default function ConsentWorkPanel({
   function validate(): FieldErrors {
     const next: FieldErrors = {};
     if (!form.consentTypeCode) next.consentTypeCode = "Consent type is required.";
-    if (!form.documentTemplateId.trim())
+    if (!form.documentTemplateId.trim()) {
       next.documentTemplateId = "Consent template ID is required.";
-    if (!form.consentDt) next.consentDt = "Consent date is required.";
+    } else if (!isUuid(form.documentTemplateId.trim())) {
+      // 서버(LAB115)와 같은 기준. (04번 지시서 Phase 3-C)
+      next.documentTemplateId = "Consent template ID must be a valid UUID.";
+    }
+    if (!form.consentDt) {
+      next.consentDt = "Consent date is required.";
+    } else if (form.consentDt > todayInputValue()) {
+      // 서버(LAB107)와 같은 기준 — 미래 날짜는 입력할 수 없다. (04번 지시서 Phase 3-B)
+      next.consentDt = "Future dates are not allowed.";
+    }
     if (!form.signedByName.trim()) next.signedByName = "Signer name is required.";
     if (!signedIn) next.witnessId = "Sign in to record this action.";
     return next;
+  }
+
+  /** 제출 직전 확인창에 보여줄 요약. (04번 지시서 Phase 4-3) */
+  function confirmMessage(): string {
+    const typeLabel = consentTypeLabel(form.consentTypeCode);
+    const decision = form.consentYn === "Y" ? "Consented" : "Declined";
+    return `Register ${typeLabel} — ${decision}, signed by ${form.signedByName.trim()} on ${form.consentDt}?`;
   }
 
   function handleSubmit(e: SubmitEvent) {
@@ -163,7 +186,11 @@ export default function ConsentWorkPanel({
     const nextErrors = validate();
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
+    setConfirmOpen(true);
+  }
 
+  function handleConfirmSubmit() {
+    setConfirmOpen(false);
     dispatch(
       createConsentRequest({
         imageOrderId: reception.imageOrderId,
@@ -214,7 +241,14 @@ export default function ConsentWorkPanel({
     },
     { key: "consentDt", header: "Consent Date", render: (c) => c.consentDt ?? "-" },
     { key: "signedByName", header: "Signer", render: (c) => c.signedByName },
-    { key: "witnessId", header: "Witness", render: (c) => c.witnessId },
+    {
+      key: "witnessId",
+      header: "Witness",
+      render: (c) => {
+        const display = formatStaffName(c.witnessId, staffNameById, staffLoading);
+        return <span title={display.title}>{display.text}</span>;
+      },
+    },
     {
       key: "withdrawnYn",
       header: "Withdrawal",
@@ -304,6 +338,7 @@ export default function ConsentWorkPanel({
               type="date"
               name="consentDt"
               value={form.consentDt}
+              max={todayInputValue()}
               onChange={handleChange}
               disabled={creating}
             />
@@ -401,6 +436,18 @@ export default function ConsentWorkPanel({
         submitting={withdrawing}
         onConfirm={handleWithdraw}
         onCancel={() => setWithdrawTarget(null)}
+      />
+
+      {/* 제출 전 확인창 — 동의 유형·동의/거부·서명자·일자를 다시 보여준다. (04번 지시서 Phase 4-3) */}
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Confirm Consent Registration"
+        message={confirmMessage()}
+        confirmLabel="Register"
+        cancelLabel="Cancel"
+        submitting={creating}
+        onConfirm={handleConfirmSubmit}
+        onCancel={() => setConfirmOpen(false)}
       />
     </div>
   );
