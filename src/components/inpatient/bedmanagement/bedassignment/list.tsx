@@ -15,13 +15,10 @@ import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import { fetchBedRequest, selectBed } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import BedAssignmentDetail from "@/components/inpatient/bedmanagement/bedassignment/detail";
-import { useDayStart } from "@/features/inpatient/dateLimits";
+import { formatDateTime, useDayStart } from "@/features/inpatient/dateLimits";
 
 // 기본 보기: 배정 중 + 최근 7일 안에 퇴상된 건 (그보다 오래된 이력은 "전체 이력 보기"로)
 const RECENT_RELEASE_DAYS = 7;
-
-// "2026-10-01T09:54:29.288676" → "2026-10-01 09:54"
-const formatDateTime = (value: string | null) => (value ? value.replace("T", " ").slice(0, 16) : "-");
 
 type BedAssignmentListProps = {
   /** 병상관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
