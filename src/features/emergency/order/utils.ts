@@ -1,4 +1,10 @@
-import { ORDER_ITEM_TYPE, type Order, type OrderItem, type OrderItemType } from "@/features/emergency/order/types";
+import {
+  ORDER_ITEM_TYPE,
+  PHARMACY_DISPATCH_ENABLED,
+  type Order,
+  type OrderItem,
+  type OrderItemType,
+} from "@/features/emergency/order/types";
 
 /** 취소된 처방인지 — 취소 시각이 있거나 처방코어 상태가 CANCEL 또는 DEACTIV 로 시작한다. */
 export function isOrderCancelled(order: Order): boolean {
@@ -74,6 +80,7 @@ export function mayHaveDrug(order: Order): boolean {
 
 /** 화면에 보여줄 약제 전송 상태 — 약품 항목이 있을 때만(약품이 없는데 PENDING 이 보이는 것을 막는다). 이미 SENT/FAILED 면 항상 보인다. */
 export function visiblePharmacyState(order: Order): string | null {
+  if (!PHARMACY_DISPATCH_ENABLED) return null;
   const state = pharmacySendState(order);
   if (state === "SENT" || state === "FAILED") return state;
   return mayHaveDrug(order) ? state : null;

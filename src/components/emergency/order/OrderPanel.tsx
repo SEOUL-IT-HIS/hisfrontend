@@ -34,6 +34,7 @@ import {
 import {
   ORDER_ITEM_TYPE,
   ORDER_ITEM_TYPE_OPTIONS,
+  PHARMACY_DISPATCH_ENABLED,
   ORDER_PRIORITY_FALLBACK_OPTIONS,
   ORDER_TIMING_FALLBACK_OPTIONS,
   type LabItem,
@@ -55,6 +56,7 @@ import {
   pharmacySendState,
   visiblePharmacyState,
 } from "@/features/emergency/order/utils";
+import { COMMON_ER_DRUGS, DOSAGE_FORM_FALLBACK_OPTIONS, type CommonDrug } from "@/features/emergency/order/commonDrugs";
 import {
   fetchAllCommonCodesRequest,
   selectCommonCodeLoaded,
@@ -144,11 +146,11 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
   const listError = useSelector(selectOrderListError);
   const commonCodeLoaded = useSelector(selectCommonCodeLoaded);
   const priorityCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.ORDER_PRIORITY));
+  const dosageFormCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.DOSAGE_FORM));
   const timingCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.ORDER_TIMING));
 
   const [form, setForm] = useState(initialForm);
   const [items, setItems] = useState<ItemForm[]>([emptyItem()]);
-  const [lookupId, setLookupId] = useState("");
   const [labQuery, setLabQuery] = useState("");
   const [verbalTarget, setVerbalTarget] = useState("");
   const [verbalDoctor, setVerbalDoctor] = useState("");
@@ -200,7 +202,6 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
     setLastReceptionNo(receptionNo);
     setForm(initialForm);
     setItems([emptyItem()]);
-    setLookupId("");
     setLabQuery("");
     setVerbalTarget("");
     setVerbalDoctor("");
@@ -223,6 +224,7 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
 
   const priorityOptions = toCodeOptions(priorityCodes, ORDER_PRIORITY_FALLBACK_OPTIONS);
   const timingOptions = toCodeOptions(timingCodes, ORDER_TIMING_FALLBACK_OPTIONS);
+  const dosageFormOptions = toCodeOptions(dosageFormCodes, DOSAGE_FORM_FALLBACK_OPTIONS);
 
   // 입력한 글자로 이름·코드를 걸러서 보여준다(대소문자 구분 없음).
   const labFilter = labQuery.trim().toLowerCase();
@@ -283,16 +285,28 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
     );
   }
 
-  function handleLookup() {
-    const id = lookupId.trim();
-    if (!id || !receptionNo) return;
-    dispatch(fetchOrderRequest(receptionNo, id));
-    setLookupId("");
-  }
-
   /** 처방코어의 검사항목 전체 목록을 다시 불러온다(입력칸은 이 목록을 걸러서 보여줄 뿐이다). */
   function handleLabReload() {
     dispatch(searchLabItemsRequest(""));
+  }
+
+  /** 자주 쓰는 약을 처방 항목에 추가한다(맨 앞의 빈 항목 칸이 있으면 그 자리에 채운다). 같은 약이 이미 있으면 다시 넣지 않는다. */
+  function handleAddCommonDrug(drug: CommonDrug) {
+    setItems((prev) => {
+      if (prev.some((p) => p.prescriptionType === ORDER_ITEM_TYPE.DRUG && p.itemCode === drug.itemCode)) return prev;
+      const filled: ItemForm = {
+        prescriptionType: ORDER_ITEM_TYPE.DRUG,
+        itemCode: drug.itemCode,
+        itemName: drug.itemName,
+        dosage: drug.dosage,
+        dosageFormCd: drug.dosageFormCd,
+        frequency: drug.frequency,
+        durationDays: drug.durationDays,
+      };
+      const emptyIndex = prev.findIndex((p) => !p.itemCode.trim() && !p.itemName.trim());
+      if (emptyIndex >= 0) return prev.map((p, i) => (i === emptyIndex ? filled : p));
+      return [...prev, filled];
+    });
   }
 
   /** 검색 결과의 검사 항목을 처방 항목에 추가한다(맨 앞의 빈 검사 항목 칸이 있으면 그 자리에 채운다). */
@@ -364,7 +378,7 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
             // 이미 전송했으면(SENT) 버튼을 감춘다.
             const canSendLab = mayHaveLab(order) && labState !== "SENT";
             const rejectedByLab = labRejectedItems(order).length > 0;
-            const canSendPharmacy = mayHaveDrug(order) && pharmacySendState(order) !== "SENT";
+            const canSendPharmacy = PHARMACY_DISPATCH_ENABLED && mayHaveDrug(order) && pharmacySendState(order) !== "SENT";
             return (
               <li key={order.orderId} className="rounded-lg bg-slate-50 p-3 text-sm">
                 <div className="flex flex-wrap items-center gap-2">
@@ -431,7 +445,7 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                           <span className="text-xs text-slate-500">
                             {" "}
                             · {item.dosage}
-                            {item.dosageFormCd ? ` ${item.dosageFormCd}` : ""}
+                            {item.dosageFormCd ? ` ${optionLabel(dosageFormOptions, item.dosageFormCd)}` : ""}
                             {item.frequency ? ` ${item.frequency}` : ""}
                             {item.durationDays ? ` · ${item.durationDays}d` : ""}
                           </span>
@@ -617,22 +631,6 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
         </p>
       )}
 
-      {/* 처방ID로 불러오기 (다른 접수에서 만든 처방 등 목록에 없는 처방을 직접 확인할 때) */}
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <FormField label="Load an existing order by ID" className="w-[420px]">
-          <Input
-            value={lookupId}
-            onChange={(e) => setLookupId(e.target.value)}
-            placeholder="Order ID (36 characters)"
-            disabled={!receptionNo}
-            maxLength={36}
-          />
-        </FormField>
-        <Button variant="secondary" onClick={handleLookup} disabled={!receptionNo || !lookupId.trim() || !!busyOrderId}>
-          Load
-        </Button>
-      </div>
-
       <h4 className="mb-2 text-sm font-semibold text-slate-700">New Order</h4>
       <DischargedNotice receptionNo={receptionNo} />
       {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
@@ -707,6 +705,30 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
         ) : null}
       </div>
 
+      {/* 자주 쓰는 약 — 약품 검색이 안 되는 동안 고르는 임시 목록(견본 코드, 처방코어는 약품 코드를 검증하지 않는다) */}
+      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <p className="text-sm font-semibold text-slate-700">Common ER drugs</p>
+        <p className="text-xs text-slate-400">
+          Quick-entry list with sample codes (not from a drug master). Check the dosage, frequency and days before registering.
+        </p>
+        <ul className="mt-2 space-y-1">
+          {COMMON_ER_DRUGS.map((drug) => (
+            <li key={drug.itemCode} className="flex items-center justify-between gap-2 rounded-md bg-white px-3 py-1.5 text-sm">
+              <span className="text-slate-800">
+                {drug.itemName} <span className="text-xs text-slate-400">({drug.itemCode})</span>
+                <span className="text-xs text-slate-500">
+                  {" · "}
+                  {optionLabel(dosageFormOptions, drug.dosageFormCd)} · {drug.purpose}
+                </span>
+              </span>
+              <Button variant="secondary" onClick={() => handleAddCommonDrug(drug)} disabled={submitting}>
+                Add
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <div className="mt-3 space-y-3">
         {items.map((item, index) => {
           const isDrug = item.prescriptionType === ORDER_ITEM_TYPE.DRUG;
@@ -741,8 +763,15 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                   <FormField label="Dosage" className="w-[110px]">
                     <Input name="dosage" value={item.dosage} onChange={(e) => handleItemChange(index, e)} disabled={submitting} inputMode="decimal" />
                   </FormField>
-                  <FormField label="Form" className="w-[110px]">
-                    <Input name="dosageFormCd" value={item.dosageFormCd} onChange={(e) => handleItemChange(index, e)} disabled={submitting} placeholder="TAB" maxLength={20} />
+                  <FormField label="Form" className="w-[170px]">
+                    <Select
+                      name="dosageFormCd"
+                      value={item.dosageFormCd}
+                      onChange={(e) => handleItemChange(index, e)}
+                      options={dosageFormOptions}
+                      placeholder="Select"
+                      disabled={submitting}
+                    />
                   </FormField>
                   <FormField label="Frequency" className="w-[120px]">
                     <Input name="frequency" value={item.frequency} onChange={(e) => handleItemChange(index, e)} disabled={submitting} placeholder="TID" maxLength={20} />
@@ -765,8 +794,8 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
         </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" name="dispatchNow" checked={form.dispatchNow} onChange={handleFormChange} disabled={submitting} />
-          {/* 등록 직후 검사·약제로 전송 */}
-          Send to Lab / Pharmacy right away
+          {/* 등록 직후 검사(·약제)로 전송 — 약제 서비스가 빠져 있는 동안은 검사만 */}
+          {PHARMACY_DISPATCH_ENABLED ? "Send to Lab / Pharmacy right away" : "Send to Lab right away"}
         </label>
       </div>
 
