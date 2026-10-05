@@ -16,6 +16,8 @@ const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus
 
 // 병실 유형 코드(bed.roomTypeCode) → 표시 라벨 (admin ROOM_TYPE_CD: 01 1인실 / 02 다인실 / 03 격리실 / 04 특실)
 const ROOM_TYPE_LABEL: Record<string, string> = { "01": "Single", "02": "Multi", "03": "Isolation", "04": "VIP" };
+// 격리 환자에게 허용하는 병실 유형 — 서버(BedAssignmentServiceImpl)와 같은 기준
+const ISOLATION_ALLOWED_ROOM_TYPES = ["01", "03", "04"];
 
 const BedAssignmentRegisterForm = () => {
     const router = useRouter();
@@ -64,17 +66,27 @@ const BedAssignmentRegisterForm = () => {
         dispatch(fetchAdmissionsRequest());
         dispatch(fetchBedAssignmentsRequest());
     }, [dispatch]);
+    // 지금 배정하려는 입원 건 — 응급에서 온 건이면 희망 병동/격리 여부를 보여주고, 희망 병동을 목록 맨 위로 올림
+    const selectedAdmission = admissions.find((a) => a.admissionId === form.admissionId) ?? null;
+    const preferredWard = selectedAdmission?.wardPref ?? null;
+    const isolationRequired = selectedAdmission?.isolationYn === "Y";
+
     // 병상ID 드롭다운엔 EMPTY(빈 병상)만 노출 — 이미 사용중/예약된 병상은 선택 못 하게 막음
-    const emptyBeds = useMemo(() => beds.filter((bed) => bed.bedStatus === "EMPTY"), [beds]);
+    // 격리 환자면 1인실 · 격리실 · 특실만 (다인실은 다른 환자와 같은 방이라 불가 — 서버에서도 거절함)
+    const emptyBeds = useMemo(
+        () =>
+            beds.filter(
+                (bed) =>
+                    bed.bedStatus === "EMPTY" &&
+                    (!isolationRequired || ISOLATION_ALLOWED_ROOM_TYPES.includes(bed.roomTypeCode ?? "")),
+            ),
+        [beds, isolationRequired],
+    );
 
     // 병동 코드(WARD_CD) → 병동명. 공통코드를 못 불러오면 코드값 그대로 표시
     const { options: wardOptions } = useCommonCodeOptions("WARD_CD");
     const wardNameByCd = useMemo(() => new Map(wardOptions.map((opt) => [opt.value, opt.label])), [wardOptions]);
     const wardLabel = (wardCd: string | null) => (wardCd ? wardNameByCd.get(wardCd) ?? wardCd : "No Ward");
-
-    // 지금 배정하려는 입원 건 — 응급에서 온 건이면 희망 병동/격리 여부를 보여주고, 희망 병동을 목록 맨 위로 올림
-    const selectedAdmission = admissions.find((a) => a.admissionId === form.admissionId) ?? null;
-    const preferredWard = selectedAdmission?.wardPref ?? null;
 
     // 빈 병상을 병동별로 묶음 (희망 병동 먼저, 나머지는 병동 코드 순) → 드롭다운에서 <optgroup>으로 병동 구분
     const emptyBedsByWard = useMemo(() => {
@@ -166,7 +178,7 @@ const BedAssignmentRegisterForm = () => {
                             {preferredWard && !preferredWardHasBed && " (no empty bed — choose another ward)"}
                         </p>
                         {selectedAdmission.isolationYn === "Y" && (
-                            <p className="font-medium text-rose-700">Isolation required — assign an isolation / single room</p>
+                            <p className="font-medium text-rose-700">Isolation required — only single, isolation, and VIP rooms are listed</p>
                         )}
                     </div>
                 )}
