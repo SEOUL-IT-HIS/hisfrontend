@@ -15,9 +15,11 @@ type IandORecordListProps = {
   embedded?: boolean;
   /** 간호기록 홈에서 선택한 입원 건 — 있으면 그 입원 건 기록만 보여주고, 없으면(단독 목록 페이지) 전체 */
   admissionId?: string | null;
+  /** 퇴원 완료된 입원 건이면 true — 기록 조회만 하고 등록 버튼은 숨김 */
+  readOnly?: boolean;
 };
 
-const IandORecordList = ({ embedded = false, admissionId = null }: IandORecordListProps = {}) => {
+const IandORecordList = ({ embedded = false, admissionId = null, readOnly = false }: IandORecordListProps = {}) => {
     // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
     const { nameById: nurseNameById } = useNurseOptions();
   const dispatch = useDispatch<AppDispatch>();
@@ -57,12 +59,14 @@ const IandORecordList = ({ embedded = false, admissionId = null }: IandORecordLi
             <p className="mt-1 text-sm text-slate-500">Intake/output records by patient.</p>
           </div>
         )}
-        <Link
-          href={`/inpatient/nursingrecord/iandorecord/create${admissionId ? `?admissionId=${admissionId}` : ""}`}
-          className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-        >
-          Register I&O Record
-        </Link>
+        {!readOnly && (
+          <Link
+            href={`/inpatient/nursingrecord/iandorecord/create${admissionId ? `?admissionId=${admissionId}` : ""}`}
+            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
+          >
+            Register I&O Record
+          </Link>
+        )}
       </div>
 
       {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}

@@ -37,6 +37,8 @@ const NursingAssessmentDetail = () => {
     const deleteStatus = useSelector(selectNursingAssessmentDeleteStatus);
     const { loading, error } = useSelector(selectNursingAssessmentDetailStatus);
     const admission = useSelector((state: RootState) => state.inpatient.admissiondischarge.detail);
+    // 퇴원 완료된 입원 건의 기록은 조회만 (서버에서도 등록·수정·삭제를 거절함)
+    const readOnly = admission?.admissionId === nursingAssessment?.admissionId && admission?.status === "DISCHARGED";
     const patientDetail = useSelector((state: RootState) => state.patient.patientDetail);
 
     const [editForm, setEditForm] = useState({
@@ -169,53 +171,62 @@ const NursingAssessmentDetail = () => {
                         </div>
                     </div>
 
-                    <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p className="text-sm font-medium text-slate-800">Edit Nursing Assessment</p>
-                        <div>
-                            <label htmlFor="allergyYn" className={LABEL}>Allergy</label>
-                            <CodeSelect id="allergyYn" name="allergyYn" value={editForm.allergyYn} options={YN_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
-                        </div>
-                        <div>
-                            <label htmlFor="allergyDetail" className={LABEL}>Allergy Detail</label>
-                            <input type="text" id="allergyDetail" name="allergyDetail" value={editForm.allergyDetail} onChange={onEditChange} className={FIELD} />
-                        </div>
-                        <div>
-                            <label htmlFor="pastMedicalHistory" className={LABEL}>Past Medical History</label>
-                            <input type="text" id="pastMedicalHistory" name="pastMedicalHistory" value={editForm.pastMedicalHistory} onChange={onEditChange} className={FIELD} />
-                        </div>
-                        <div>
-                            <label htmlFor="mentalStatusCd" className={LABEL}>Mental Status</label>
-                            <CodeSelect id="mentalStatusCd" name="mentalStatusCd" value={editForm.mentalStatusCd} options={MENTAL_STATUS_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
-                        </div>
-                        <div>
-                            <label htmlFor="assessedAt" className={LABEL}>Assessed At</label>
-                            <input type="datetime-local" id="assessedAt" name="assessedAt" max={maxRecordAt} value={editForm.assessedAt} onChange={onEditChange} className={FIELD} />
-                        </div>
-                        <div>
-                            <label htmlFor="assessorId" className={LABEL}>Assessor (Nurse)</label>
-                            <NurseSelect id="assessorId" name="assessorId" value={editForm.assessorId} onChange={onEditChange} className={FIELD} required={false} />
-                        </div>
-                        <button
-                            onClick={handleUpdate}
-                            disabled={updateStatus.loading}
-                            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
-                        >
-                            {updateStatus.loading ? "Updating..." : "Update"}
-                        </button>
-                        {updateStatus.error && <p className="text-sm text-red-600">{updateStatus.error}</p>}
-                        {updateStatus.success && <p className="text-sm text-emerald-600">Update completed</p>}
-                    </div>
+                    {readOnly && (
+                      <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                        This admission is discharged. Nursing records can be viewed but not edited or deleted.
+                      </p>
+                    )}
+                    {!readOnly && (
+                      <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                          <p className="text-sm font-medium text-slate-800">Edit Nursing Assessment</p>
+                          <div>
+                              <label htmlFor="allergyYn" className={LABEL}>Allergy</label>
+                              <CodeSelect id="allergyYn" name="allergyYn" value={editForm.allergyYn} options={YN_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
+                          </div>
+                          <div>
+                              <label htmlFor="allergyDetail" className={LABEL}>Allergy Detail</label>
+                              <input type="text" id="allergyDetail" name="allergyDetail" value={editForm.allergyDetail} onChange={onEditChange} className={FIELD} />
+                          </div>
+                          <div>
+                              <label htmlFor="pastMedicalHistory" className={LABEL}>Past Medical History</label>
+                              <input type="text" id="pastMedicalHistory" name="pastMedicalHistory" value={editForm.pastMedicalHistory} onChange={onEditChange} className={FIELD} />
+                          </div>
+                          <div>
+                              <label htmlFor="mentalStatusCd" className={LABEL}>Mental Status</label>
+                              <CodeSelect id="mentalStatusCd" name="mentalStatusCd" value={editForm.mentalStatusCd} options={MENTAL_STATUS_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
+                          </div>
+                          <div>
+                              <label htmlFor="assessedAt" className={LABEL}>Assessed At</label>
+                              <input type="datetime-local" id="assessedAt" name="assessedAt" max={maxRecordAt} value={editForm.assessedAt} onChange={onEditChange} className={FIELD} />
+                          </div>
+                          <div>
+                              <label htmlFor="assessorId" className={LABEL}>Assessor (Nurse)</label>
+                              <NurseSelect id="assessorId" name="assessorId" value={editForm.assessorId} onChange={onEditChange} className={FIELD} required={false} />
+                          </div>
+                          <button
+                              onClick={handleUpdate}
+                              disabled={updateStatus.loading}
+                              className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+                          >
+                              {updateStatus.loading ? "Updating..." : "Update"}
+                          </button>
+                          {updateStatus.error && <p className="text-sm text-red-600">{updateStatus.error}</p>}
+                          {updateStatus.success && <p className="text-sm text-emerald-600">Update completed</p>}
+                      </div>
+                    )}
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <button
-                            onClick={handleDelete}
-                            disabled={deleteStatus.loading}
-                            className="inline-flex items-center rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
-                        >
-                            {deleteStatus.loading ? "Deleting..." : "Delete"}
-                        </button>
-                        {deleteStatus.error && <p className="mt-2 text-sm text-red-600">{deleteStatus.error}</p>}
-                    </div>
+                    {!readOnly && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                          <button
+                              onClick={handleDelete}
+                              disabled={deleteStatus.loading}
+                              className="inline-flex items-center rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
+                          >
+                              {deleteStatus.loading ? "Deleting..." : "Delete"}
+                          </button>
+                          {deleteStatus.error && <p className="mt-2 text-sm text-red-600">{deleteStatus.error}</p>}
+                      </div>
+                    )}
                 </div>
             )}
         </div>
