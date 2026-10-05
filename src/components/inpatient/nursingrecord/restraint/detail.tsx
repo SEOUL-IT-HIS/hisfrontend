@@ -41,6 +41,8 @@ const RestraintDetail = () => {
     const deleteStatus = useSelector(selectRestraintDeleteStatus);
     const { loading, error } = useSelector(selectRestraintDetailStatus);
     const admission = useSelector((state: RootState) => state.inpatient.admissiondischarge.detail);
+    // 퇴원 완료된 입원 건의 기록은 조회만 (서버에서도 등록·수정·삭제를 거절함)
+    const readOnly = admission?.admissionId === restraint?.admissionId && admission?.status === "DISCHARGED";
     const patientDetail = useSelector((state: RootState) => state.patient.patientDetail);
 
     const [editForm, setEditForm] = useState({
@@ -166,49 +168,58 @@ const RestraintDetail = () => {
                         </div>
                     </div>
 
-                    <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p className="text-sm font-medium text-slate-800">Edit Restraint</p>
-                        <div>
-                            <label htmlFor="restraintTypeCd" className={LABEL}>Restraint Type</label>
-                            <CodeSelect id="restraintTypeCd" name="restraintTypeCd" value={editForm.restraintTypeCd} options={RESTRAINT_TYPE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
-                        </div>
-                        <div>
-                            <label htmlFor="appliedAt" className={LABEL}>Applied At</label>
-                            <input type="datetime-local" id="appliedAt" name="appliedAt" max={maxRecordAt} value={editForm.appliedAt} onChange={onEditChange} className={FIELD} />
-                        </div>
-                        <div>
-                            <label htmlFor="reason" className={LABEL}>Reason</label>
-                            <input type="text" id="reason" name="reason" value={editForm.reason} onChange={onEditChange} className={FIELD} />
-                        </div>
-                        <div>
-                            <label htmlFor="doctorOrderId" className={LABEL}>Ordering Doctor</label>
-                            <StaffSelect role="DOCTOR" id="doctorOrderId" name="doctorOrderId" value={editForm.doctorOrderId} onChange={onEditChange} className={FIELD} required={false} />
-                        </div>
-                        <div>
-                            <label htmlFor="evaluatorId" className={LABEL}>Evaluator (Nurse)</label>
-                            <NurseSelect id="evaluatorId" name="evaluatorId" value={editForm.evaluatorId} onChange={onEditChange} className={FIELD} required={false} />
-                        </div>
-                        <button
-                            onClick={handleUpdate}
-                            disabled={updateStatus.loading}
-                            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
-                        >
-                            {updateStatus.loading ? "Updating..." : "Update"}
-                        </button>
-                        {updateStatus.error && <p className="text-sm text-red-600">{updateStatus.error}</p>}
-                        {updateStatus.success && <p className="text-sm text-emerald-600">Update completed</p>}
-                    </div>
+                    {readOnly && (
+                      <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                        This admission is discharged. Nursing records can be viewed but not edited or deleted.
+                      </p>
+                    )}
+                    {!readOnly && (
+                      <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                          <p className="text-sm font-medium text-slate-800">Edit Restraint</p>
+                          <div>
+                              <label htmlFor="restraintTypeCd" className={LABEL}>Restraint Type</label>
+                              <CodeSelect id="restraintTypeCd" name="restraintTypeCd" value={editForm.restraintTypeCd} options={RESTRAINT_TYPE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
+                          </div>
+                          <div>
+                              <label htmlFor="appliedAt" className={LABEL}>Applied At</label>
+                              <input type="datetime-local" id="appliedAt" name="appliedAt" max={maxRecordAt} value={editForm.appliedAt} onChange={onEditChange} className={FIELD} />
+                          </div>
+                          <div>
+                              <label htmlFor="reason" className={LABEL}>Reason</label>
+                              <input type="text" id="reason" name="reason" value={editForm.reason} onChange={onEditChange} className={FIELD} />
+                          </div>
+                          <div>
+                              <label htmlFor="doctorOrderId" className={LABEL}>Ordering Doctor</label>
+                              <StaffSelect role="DOCTOR" id="doctorOrderId" name="doctorOrderId" value={editForm.doctorOrderId} onChange={onEditChange} className={FIELD} required={false} />
+                          </div>
+                          <div>
+                              <label htmlFor="evaluatorId" className={LABEL}>Evaluator (Nurse)</label>
+                              <NurseSelect id="evaluatorId" name="evaluatorId" value={editForm.evaluatorId} onChange={onEditChange} className={FIELD} required={false} />
+                          </div>
+                          <button
+                              onClick={handleUpdate}
+                              disabled={updateStatus.loading}
+                              className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+                          >
+                              {updateStatus.loading ? "Updating..." : "Update"}
+                          </button>
+                          {updateStatus.error && <p className="text-sm text-red-600">{updateStatus.error}</p>}
+                          {updateStatus.success && <p className="text-sm text-emerald-600">Update completed</p>}
+                      </div>
+                    )}
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <button
-                            onClick={handleDelete}
-                            disabled={deleteStatus.loading}
-                            className="inline-flex items-center rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
-                        >
-                            {deleteStatus.loading ? "Deleting..." : "Delete"}
-                        </button>
-                        {deleteStatus.error && <p className="mt-2 text-sm text-red-600">{deleteStatus.error}</p>}
-                    </div>
+                    {!readOnly && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                          <button
+                              onClick={handleDelete}
+                              disabled={deleteStatus.loading}
+                              className="inline-flex items-center rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
+                          >
+                              {deleteStatus.loading ? "Deleting..." : "Delete"}
+                          </button>
+                          {deleteStatus.error && <p className="mt-2 text-sm text-red-600">{deleteStatus.error}</p>}
+                      </div>
+                    )}
                 </div>
             )}
         </div>

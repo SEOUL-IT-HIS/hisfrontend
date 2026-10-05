@@ -4,6 +4,7 @@ import { fetchAdmissionDetailRequest, changeStatusRequest, changeDoctorRequest, 
 import { fetchBedAssignmentsRequest, selectBedAssignments } from "@/features/inpatient/bedmanagement/bedassignment/slice";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
+import { useDepartmentNames } from "@/features/commonCode/hooks/useDepartmentNames";
 
 import { RootState } from "@/store/store";
 import Link from "next/link";
@@ -33,6 +34,10 @@ const STATUS_LABEL: Record<string, string> = {
 
 const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
 
+// 진료과 코드(DEPT_CD) → 진료과명. 공통코드를 못 불러오면 코드값 그대로 표시
+const toDeptLabel = (deptNames: Record<string, string>, deptCode: string | null) =>
+  deptCode ? deptNames[deptCode] ?? deptCode : "No Department";
+
 type AdmissionDetailProps = {
   /** 목록 옆에 끼워 넣을 때 라우트 파라미터 대신 직접 전달 */
   admissionId?: string;
@@ -48,11 +53,34 @@ const DoctorRow = ({ admissionId, doctorId, editable }: { admissionId: string; d
   const { loading, error } = useSelector(selectAdmissionChangeDoctorStatus);
   // admin에 등록된 의사(역할이 의사인 직원) 목록 — 값은 empId, 화면에는 이름
   const { doctors, nameById, loading: doctorsLoading } = useDoctorOptions();
+  const { names: deptNames } = useDepartmentNames();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(doctorId ?? "");
   // 의사 목록을 못 불러오면(로그인 세션 문제, 의사 역할 미등록 등) 직접 입력으로 대체
   const useManualInput = !doctorsLoading && doctors.length === 0;
-  const doctorLabel = doctorId ? nameById.get(doctorId) ?? doctorId : null; // 예전 값(D22 등)은 그대로 표시
+  // 지정된 담당의 표시 — 이름 옆에 진료과 (목록에 없는 예전 값 D22 등은 그대로 표시)
+  const assignedDoctor = doctors.find((d) => d.empId === doctorId);
+  const doctorLabel = !doctorId
+    ? null
+    : assignedDoctor
+      ? `${assignedDoctor.empName} (${toDeptLabel(deptNames, assignedDoctor.deptCode)})`
+      : nameById.get(doctorId) ?? doctorId;
+
+  // 의사를 진료과별로 묶음 (진료과명 순, 진료과 없는 의사는 맨 뒤) → 드롭다운에서 <optgroup>으로 구분
+  const doctorsByDept = useMemo(() => {
+    const groups = new Map<string, typeof doctors>();
+    doctors.forEach((d) => {
+      const key = d.deptCode ?? "";
+      groups.set(key, [...(groups.get(key) ?? []), d]);
+    });
+    return Array.from(groups.entries())
+      .map(([deptCode, list]) => ({ deptCode: deptCode || null, doctors: list }))
+      .sort((a, b) => {
+        if (!a.deptCode) return 1;
+        if (!b.deptCode) return -1;
+        return toDeptLabel(deptNames, a.deptCode).localeCompare(toDeptLabel(deptNames, b.deptCode));
+      });
+  }, [doctors, deptNames]);
 
   const onSave = () => {
     if (!value.trim()) return;
@@ -99,10 +127,14 @@ const DoctorRow = ({ admissionId, doctorId, editable }: { admissionId: string; d
               className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
             >
               <option value="">{doctorsLoading ? "Loading doctors..." : "Select doctor"}</option>
-              {doctors.map((d) => (
-                <option key={d.empId} value={d.empId}>
-                  {d.empName} ({d.empNo}{d.deptCode ? ` · ${d.deptCode}` : ""})
-                </option>
+              {doctorsByDept.map(({ deptCode, doctors: deptDoctors }) => (
+                <optgroup key={deptCode ?? "none"} label={toDeptLabel(deptNames, deptCode)}>
+                  {deptDoctors.map((d) => (
+                    <option key={d.empId} value={d.empId}>
+                      {d.empName} · {toDeptLabel(deptNames, d.deptCode)} ({d.empNo})
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           )}
