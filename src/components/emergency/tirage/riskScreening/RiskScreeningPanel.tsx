@@ -68,7 +68,8 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
   const vitalsItems = useSelector(selectVitalsItems);
 
   const [form, setForm] = useState(initialForm);
-  const screenedById = useActorId(form.screenedById);
+  // 시행자는 기본이 로그인한 사람이고, 실제로 시행한 사람이 다르면 고른다
+  const screenedById = useActorId(form.screenedById, "STAFF");
   const [lastCount, setLastCount] = useState(0);
   const [localError, setLocalError] = useState("");
   const [fastChecks, setFastChecks] = useState(initialFastChecks);
@@ -266,6 +267,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
             {/* 시행자 */}
             <ActorField
               label="Screened By"
+              role="STAFF"
               value={form.screenedById}
               onChange={(empId) => setForm((prev) => ({ ...prev, screenedById: empId }))}
               disabled={submitting}
