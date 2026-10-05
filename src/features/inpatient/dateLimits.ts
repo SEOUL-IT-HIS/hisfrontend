@@ -29,3 +29,6 @@ export const useDayStart = (daysFromToday = 0) =>
 /** 오늘(+n일) 23:59 — max 값 */
 export const useDayEnd = (daysFromToday = 0) =>
     useSyncExternalStore(noopSubscribe, () => formatDay(daysFromToday, "23:59"), () => undefined);
+
+/** 서버 날짜 문자열을 목록 표시용으로 — "2026-10-01T09:54:29.288676" → "2026-10-01 09:54", 없으면 "-" */
+export const formatDateTime = (value: string | null | undefined) => (value ? value.replace("T", " ").slice(0, 16) : "-");

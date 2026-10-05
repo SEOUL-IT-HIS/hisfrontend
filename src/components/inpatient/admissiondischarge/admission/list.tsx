@@ -12,6 +12,12 @@ import { fetchBedAssignmentsRequest, selectBedAssignments } from "@/features/inp
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice"; // 환자 목록(또 다른 feature 슬라이스, patient-service 쪽)
 import AdmissionDetail from "@/components/inpatient/admissiondischarge/admission/detail"; // 마스터-디테일의 "디테일" 쪽 컴포넌트
 import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
+import { useDepartmentNames } from "@/features/commonCode/hooks/useDepartmentNames";
+import { formatDateTime, useDayStart } from "@/features/inpatient/dateLimits";
+
+// "All" 탭에는 진행 중 입원 + 최근 7일 안에 퇴원한 건만 (전체 퇴원 이력은 "Discharged" 탭)
+const RECENT_DISCHARGE_DAYS = 7;
+
 const FILTERS = [
   { key: "all", label: "All" },
   { key: "needsAssignment", label: "Assignment Needed" },
@@ -54,6 +60,10 @@ type AdmissionListProps = {
 const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
   // 담당의 ID(empId) → 의사 이름 (admin 의사 목록). 목록에 없는 예전 값은 ID 그대로 표시
   const { nameById: doctorNameById } = useDoctorOptions();
+  // 진료과 코드(DEPT_CD) → 진료과명. 공통코드를 못 불러오면 코드값 그대로 표시
+  const { names: deptNames } = useDepartmentNames();
+  // 최근 퇴원 기준 시각 "7일 전 00:00" (브라우저 시간, 서버 렌더에서는 undefined → 전체 표시)
+  const dischargeCutoff = useDayStart(-RECENT_DISCHARGE_DAYS);
   const dispatch = useDispatch<AppDispatch>(); // 액션을 스토어(사가)로 보내는 함수
   const admissions = useSelector(selectAdmissions); // 입원 목록 배열 (초기엔 빈 배열)
   const listStatus = useSelector(selectAdmissionListStatus); // { loading, error }
@@ -80,6 +90,14 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
   const isBedAssigned = (admissionId: string) => // 입원건별 배정 여부를 판단합니다.
     bedAssignments.some((ba) => ba.admissionId === admissionId && ba.releasedAt === null); // 아직 퇴상 처리 안 된(releasedAt === null) 배정이 있으면 배정 완료로 간주
 
+  // 배정했다가 퇴상된 기록만 있는 입원건 — 퇴원 후 "Unassigned"(배정 안 됨)와 구분해서 "Released"로 표시
+  const hasReleasedAssignment = (admissionId: string) =>
+    bedAssignments.some((ba) => ba.admissionId === admissionId && ba.releasedAt !== null);
+
+  // 최근 7일 안에 퇴원했는지 — 퇴원일이 없는 예전 퇴원 건은 "Discharged" 탭에서만 보임
+  const isRecentDischarge = (dischargedAt: string | null | undefined) =>
+    !dischargeCutoff || (!!dischargedAt && dischargedAt >= dischargeCutoff); // ISO 문자열이라 문자열 비교로 시각 비교
+
    const visibleAdmissions = useMemo(() => {
   switch (filterKey) {
     case "needsAssignment":
@@ -91,11 +109,19 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
     case "dischargeRequested":
       return admissions.filter((a) => a.status === "DISCHARGE_REQUESTED");
     case "discharged":
-      return admissions.filter((a) => a.status === "DISCHARGED");
+      // 전체 퇴원 이력 — 최근 퇴원 순
+      return admissions
+        .filter((a) => a.status === "DISCHARGED")
+        .sort((a, b) => (b.dischargedAt ?? "").localeCompare(a.dischargedAt ?? ""));
     default:
-      return admissions;
+      return admissions.filter((a) => a.status !== "DISCHARGED" || isRecentDischarge(a.dischargedAt));
   }
-}, [admissions, bedAssignments, filterKey]);
+  // 위 판별 함수(isBedAssigned · isRecentDischarge)는 bedAssignments · dischargeCutoff만 쓰므로 그 둘을 의존성에 넣음
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [admissions, bedAssignments, filterKey, dischargeCutoff]);
+  const hiddenDischargeCount =
+    filterKey === "all" ? admissions.filter((a) => a.status === "DISCHARGED").length -
+      visibleAdmissions.filter((a) => a.status === "DISCHARGED").length : 0;
 
 
 
@@ -128,6 +154,11 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
               </button>
             ))}
           </div>
+          {hiddenDischargeCount > 0 && (
+            <span className="text-xs text-slate-400">
+              {hiddenDischargeCount} discharges older than {RECENT_DISCHARGE_DAYS} days → Discharged tab
+            </span>
+          )}
           {/* 병동 직접 등록 폼은 제거함 — 입원요청은 응급에서 Kafka(emergency.admission.requested.v1)로만 들어옴 */}
         </div>
       </div>
@@ -145,9 +176,10 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
                 <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
                   <th className="whitespace-nowrap px-4 py-3">Admission ID</th>
                   <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
-                  <th className="whitespace-nowrap px-4 py-3">Admission Dept ID</th>
+                  <th className="whitespace-nowrap px-4 py-3">Admission Dept</th>
                   <th className="whitespace-nowrap px-4 py-3">Admission Route</th>
                   <th className="whitespace-nowrap px-4 py-3">Admission Date</th>
+                  <th className="whitespace-nowrap px-4 py-3">Discharge Date</th>
                   <th className="whitespace-nowrap px-4 py-3">Patient ID</th>
                   <th className="whitespace-nowrap px-4 py-3">Doctor ID</th>
                   <th className="whitespace-nowrap px-4 py-3">Status</th>
@@ -169,7 +201,9 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
                       {/* patientId로 Map 조회 → 이름이 아직 없으면(patients 로딩 전) "조회중..." 표시 */}
                       {patientNameById.get(admission.patientId) ?? "Looking up..."}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDeptId}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                      {admission.admissionDeptId ? deptNames[admission.admissionDeptId] ?? admission.admissionDeptId : "-"}
+                    </td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">
                       {admission.admissionRoute}
                       {/* 응급 요청 중 격리가 필요한 건은 목록에서도 바로 보이게 표시 (배정 전 확인용) */}
@@ -179,7 +213,8 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
                         </span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDate}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDateTime(admission.admissionDate)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDateTime(admission.dischargedAt)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.patientId}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.doctorId ? doctorNameById.get(admission.doctorId) ?? admission.doctorId : "-"}</td>
                     <td className="whitespace-nowrap px-4 py-3">
@@ -197,6 +232,10 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
                       {isBedAssigned(admission.admissionId) ? (
                         <span className="inline-flex items-center whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
                           Assigned
+                        </span>
+                      ) : hasReleasedAssignment(admission.admissionId) ? (
+                        <span className="inline-flex items-center whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
+                          Released
                         </span>
                       ) : admission.status === "ADMITTED" ? (
                         <span className="inline-flex items-center whitespace-nowrap rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-200">

@@ -15,6 +15,10 @@ import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import { fetchBedRequest, selectBed } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import BedAssignmentDetail from "@/components/inpatient/bedmanagement/bedassignment/detail";
+import { formatDateTime, useDayStart } from "@/features/inpatient/dateLimits";
+
+// 기본 보기: 배정 중 + 최근 7일 안에 퇴상된 건 (그보다 오래된 이력은 "전체 이력 보기"로)
+const RECENT_RELEASE_DAYS = 7;
 
 type BedAssignmentListProps = {
   /** 병상관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
@@ -68,6 +72,24 @@ const wardNameByCd = useMemo(
   [wardOptions],
 );
 
+  // 퇴상 이력 기간 필터 — 기준 시각은 "7일 전 00:00" (브라우저 시간, 서버 렌더에서는 undefined → 전체 표시)
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const releaseCutoff = useDayStart(-RECENT_RELEASE_DAYS);
+  const visibleAssignments = useMemo(() => {
+    const isRecent = (releasedAt: string | null) =>
+      releasedAt === null || !releaseCutoff || releasedAt >= releaseCutoff; // ISO 문자열이라 문자열 비교로 시각 비교
+    return bedAssignments
+      .filter((a) => showAllHistory || isRecent(a.releasedAt) || a.assignmentId === selectedId)
+      // 배정 중인 건 먼저(최근 배정 순), 그다음 퇴상 건(최근 퇴상 순)
+      .sort((a, b) => {
+        if ((a.releasedAt === null) !== (b.releasedAt === null)) return a.releasedAt === null ? -1 : 1;
+        return a.releasedAt === null
+          ? b.assignedAt.localeCompare(a.assignedAt)
+          : (b.releasedAt ?? "").localeCompare(a.releasedAt ?? "");
+      });
+  }, [bedAssignments, showAllHistory, releaseCutoff, selectedId]);
+  const hiddenCount = bedAssignments.length - visibleAssignments.length;
+
   // 지금 구조: bedAssignments/admissions/patients 세 가지를 각각 따로 fetch하고,
   // 위 두 Map으로 프론트에서 조립함(client-side join).
   // - bedAssignments + admissions → 백엔드가 JOIN 쿼리 하나로 합쳐주면 fetch 1번으로 줄일 수 있음
@@ -91,12 +113,26 @@ const wardNameByCd = useMemo(
           <p className="mt-1 text-sm text-slate-500">A record of bed assignments and releases to date.</p>
         </div>
         )}
-        <Link
-          href="/inpatient/bedmanagement/bedassignment/create"
-          className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-        >
-          Register Assignment
-        </Link>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-1.5 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={showAllHistory}
+              onChange={(e) => setShowAllHistory(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            Show all history
+            {!showAllHistory && hiddenCount > 0 && (
+              <span className="text-xs text-slate-400">({hiddenCount} older releases hidden)</span>
+            )}
+          </label>
+          <Link
+            href="/inpatient/bedmanagement/bedassignment/create"
+            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
+          >
+            Register Assignment
+          </Link>
+        </div>
       </div>
 
       {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
@@ -119,7 +155,7 @@ const wardNameByCd = useMemo(
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {bedAssignments.map((bedAssignment) => {
+                {visibleAssignments.map((bedAssignment) => {
                   const isActive = bedAssignment.releasedAt === null;
                   const wardCd = wardCdByBedId.get(bedAssignment.bedId);
                   return (
@@ -141,8 +177,8 @@ const wardNameByCd = useMemo(
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bedAssignment.bedId}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bedAssignment.admissionId}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bedAssignment.assignedAt}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bedAssignment.releasedAt ?? "-"}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDateTime(bedAssignment.assignedAt)}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDateTime(bedAssignment.releasedAt)}</td>
                       <td className="whitespace-nowrap px-4 py-3">
                         <span
                           className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
@@ -159,8 +195,12 @@ const wardNameByCd = useMemo(
                 })}
               </tbody>
             </table>
-            {bedAssignments.length === 0 && (
-              <p className="px-4 py-6 text-center text-sm text-slate-500">No assignment data available.</p>
+            {visibleAssignments.length === 0 && (
+              <p className="px-4 py-6 text-center text-sm text-slate-500">
+                {bedAssignments.length === 0
+                  ? "No assignment data available."
+                  : `No current assignments or releases in the last ${RECENT_RELEASE_DAYS} days.`}
+              </p>
             )}
           </div>
 

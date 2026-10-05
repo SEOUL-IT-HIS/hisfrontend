@@ -32,6 +32,7 @@ const RECORDABLE_STATUSES = ["ADMITTED", "DISCHARGE_REQUESTED"];
 const STATUS_LABEL: Record<string, string> = {
   ADMITTED: "Admitted",
   DISCHARGE_REQUESTED: "Discharge Requested",
+  DISCHARGED: "Discharged · Read only",
 };
 
 /**
@@ -54,6 +55,8 @@ const NursingRecordHome = () => {
     TABS.some((tab) => tab.key === tabParam) ? (tabParam as TabKey) : "vitalsign",
   );
   const [selectedAdmissionId, setSelectedAdmissionId] = useState<string | null>(searchParams.get("admissionId"));
+  // 퇴원 완료 환자도 목록에 보이기 — 간호기록은 보존 의무가 있는 의료 기록이라 퇴원 후에도 조회는 가능해야 함 (작성은 불가)
+  const [showDischarged, setShowDischarged] = useState(false);
 
   useEffect(() => {
     dispatch(fetchAdmissionsRequest());
@@ -68,10 +71,15 @@ const NursingRecordHome = () => {
     patientNameById.get(patientId) ?? (patientListLoading ? "Loading..." : "Unknown");
 
   const recordableAdmissions = useMemo(
-    () => admissions.filter((a) => RECORDABLE_STATUSES.includes(a.status)),
-    [admissions],
+    () =>
+      admissions.filter(
+        (a) => RECORDABLE_STATUSES.includes(a.status) || (showDischarged && a.status === "DISCHARGED"),
+      ),
+    [admissions, showDischarged],
   );
   const selectedAdmission = admissions.find((a) => a.admissionId === selectedAdmissionId) ?? null;
+  // 퇴원 완료된 입원 건은 조회만 — 탭 목록의 등록 버튼을 숨김 (서버에서도 작성을 거절함)
+  const readOnly = selectedAdmission?.status === "DISCHARGED";
 
   return (
     <div className="mx-auto w-full max-w-[1800px] p-6">
@@ -83,8 +91,17 @@ const NursingRecordHome = () => {
       <div className="flex items-start gap-4">
         {/* 왼쪽: 입원 중인 환자 목록 */}
         <div className="w-72 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 bg-slate-50 px-4 py-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-            Admitted Patients
+          <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Admitted Patients</span>
+            <label className="flex items-center gap-1.5 text-xs text-slate-500">
+              <input
+                type="checkbox"
+                checked={showDischarged}
+                onChange={(e) => setShowDischarged(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-slate-300"
+              />
+              Show discharged
+            </label>
           </div>
           {admissionListStatus.loading && <p className="px-4 py-6 text-sm text-slate-500">Loading...</p>}
           {admissionListStatus.error && <p className="px-4 py-6 text-sm text-red-600">{admissionListStatus.error}</p>}
@@ -99,7 +116,9 @@ const NursingRecordHome = () => {
                       selectedAdmissionId === admission.admissionId ? "bg-sky-50" : ""
                     }`}
                   >
-                    <span className="font-medium text-slate-800">{patientLabel(admission.patientId)}</span>
+                    <span className={`font-medium ${admission.status === "DISCHARGED" ? "text-slate-500" : "text-slate-800"}`}>
+                      {patientLabel(admission.patientId)}
+                    </span>
                     <span className="text-xs text-slate-500">
                       {admission.admissionId} · {STATUS_LABEL[admission.status] ?? admission.status}
                     </span>
@@ -148,11 +167,11 @@ const NursingRecordHome = () => {
               </div>
 
               {/* 모든 탭 목록에 선택한 입원 건을 넘겨서 그 환자 기록만 표시 */}
-              {activeTab === "vitalsign" && <VitalSignList embedded admissionId={selectedAdmissionId} />}
-              {activeTab === "riskassessment" && <RiskAssessmentList embedded admissionId={selectedAdmissionId} />}
-              {activeTab === "restraint" && <RestraintList embedded admissionId={selectedAdmissionId} />}
-              {activeTab === "nursingassessment" && <NursingAssessmentList embedded admissionId={selectedAdmissionId} />}
-              {activeTab === "iandorecord" && <IandORecordList embedded admissionId={selectedAdmissionId} />}
+              {activeTab === "vitalsign" && <VitalSignList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
+              {activeTab === "riskassessment" && <RiskAssessmentList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
+              {activeTab === "restraint" && <RestraintList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
+              {activeTab === "nursingassessment" && <NursingAssessmentList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
+              {activeTab === "iandorecord" && <IandORecordList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
             </>
           )}
         </div>

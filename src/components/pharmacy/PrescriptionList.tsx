@@ -70,6 +70,7 @@ export default function PrescriptionList() {
         render: (row) => departmentNames[row.departmentId] ?? row.departmentId,
       },
       { key: "createdAt", header: "Created At", render: (row) => row.createdAt },
+      { key: "status", header: "Status", render: (row) => row.status },
     ],
     [patientNames, empNames, departmentNames]
   );

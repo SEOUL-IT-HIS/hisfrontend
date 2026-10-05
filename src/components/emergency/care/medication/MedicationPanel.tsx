@@ -65,7 +65,8 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
   const [manualDrug, setManualDrug] = useState(false);
-  const administeredById = useActorId(form.administeredById);
+  // 투여자는 기본이 로그인한 사람이고, 실제로 투여한 사람이 다르면 고른다
+  const administeredById = useActorId(form.administeredById, "STAFF");
 
   useEffect(() => {
     if (receptionNo) dispatch(fetchMedicationsRequest(receptionNo));
@@ -248,6 +249,7 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
             {/* 투여자 */}
             <ActorField
               label="Administered By"
+              role="STAFF"
               required
               value={form.administeredById}
               onChange={(empId) => setForm((prev) => ({ ...prev, administeredById: empId }))}

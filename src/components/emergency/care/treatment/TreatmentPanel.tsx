@@ -49,7 +49,8 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
-  const performedById = useActorId(form.performedById);
+  // 시행자는 기본이 로그인한 사람이고, 실제로 시행한 사람이 다르면(의사가 시술하고 간호사가 기록 등) 고른다
+  const performedById = useActorId(form.performedById, "STAFF");
 
   useEffect(() => {
     if (receptionNo) dispatch(fetchTreatmentsRequest(receptionNo));
@@ -147,6 +148,7 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
             {/* 시행자 */}
             <ActorField
               label="Performed By"
+              role="STAFF"
               required
               value={form.performedById}
               onChange={(empId) => setForm((prev) => ({ ...prev, performedById: empId }))}
