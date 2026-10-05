@@ -1,11 +1,20 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { call, put, takeLatest } from "redux-saga/effects";
 import {
+  cancelDispensePrescription,
+  cancelRelease,
+  createControlledDrugDisposal,
+  createControlledDrugIssuance,
+  createControlledDrugReceipt,
   createDisposal,
   createIssuance,
   createMedication,
+  createMedicationReturn,
   createReceipt,
+  createRelease,
+  createReturnedDisposal,
   dispensePrescription,
+  getControlledDrugRecords,
   getInventoryList,
   getIssuanceList,
   getMedicationList,
@@ -17,9 +26,18 @@ import {
 } from "./api";
 import { PHM_MESSAGES } from "./messages";
 import {
+  cancelDispensePrescriptionFailure,
+  cancelDispensePrescriptionRequest,
+  cancelDispensePrescriptionSuccess,
+  cancelReleaseFailure,
+  cancelReleaseRequest,
+  cancelReleaseSuccess,
   dispensePrescriptionFailure,
   dispensePrescriptionRequest,
   dispensePrescriptionSuccess,
+  fetchControlledDrugRecordsFailure,
+  fetchControlledDrugRecordsRequest,
+  fetchControlledDrugRecordsSuccess,
   fetchInventoryListFailure,
   fetchInventoryListRequest,
   fetchInventoryListSuccess,
@@ -41,6 +59,11 @@ import {
   importMedicationsFailure,
   importMedicationsRequest,
   importMedicationsSuccess,
+  registerControlledDrugDisposalRequest,
+  registerControlledDrugFailure,
+  registerControlledDrugIssuanceRequest,
+  registerControlledDrugReceiptRequest,
+  registerControlledDrugSuccess,
   registerDisposalFailure,
   registerDisposalRequest,
   registerDisposalSuccess,
@@ -49,21 +72,38 @@ import {
   registerIssuanceSuccess,
   registerMedicationFailure,
   registerMedicationRequest,
+  registerMedicationReturnFailure,
+  registerMedicationReturnRequest,
+  registerMedicationReturnSuccess,
   registerMedicationSuccess,
   registerReceiptFailure,
   registerReceiptRequest,
   registerReceiptSuccess,
+  registerReleaseFailure,
+  registerReleaseRequest,
+  registerReleaseSuccess,
+  registerReturnedDisposalFailure,
+  registerReturnedDisposalRequest,
+  registerReturnedDisposalSuccess,
   rejectPrescriptionFailure,
   rejectPrescriptionRequest,
   rejectPrescriptionSuccess,
 } from "./slice";
 import type {
+  ControlledDrugDisposalRequest,
+  ControlledDrugIssuanceRequest,
+  ControlledDrugReceiptRequest,
+  DispensingCancelRequest,
   DisposalRegisterRequest,
   IssuanceRegisterRequest,
   Medication,
   MedicationRegisterForm,
+  MedicationReturnRegisterRequest,
   PrescriptionRejectRequest,
   ReceiptRegisterRequest,
+  ReleaseCancelRequest,
+  ReleaseRegisterRequest,
+  ReturnedDisposalRegisterRequest,
 } from "./types";
 
 function resolveErrorMessage(error: unknown): string {
@@ -201,6 +241,20 @@ function* rejectPrescriptionSaga(
   }
 }
 
+// ----- 조제취소 (HL2-18) -----
+function* cancelDispensePrescriptionSaga(
+  action: PayloadAction<DispensingCancelRequest>
+) {
+  try {
+    yield call(cancelDispensePrescription, action.payload);
+    yield put(cancelDispensePrescriptionSuccess());
+    // 조제취소 후에는 조제항목별 dispensingItemId/불출 정보가 전부 비워지므로 다시 불러온다.
+    yield put(fetchPrescriptionDetailRequest(action.payload.prescriptionLinkId));
+  } catch (error) {
+    yield put(cancelDispensePrescriptionFailure(resolveErrorMessage(error)));
+  }
+}
+
 // ----- 약품 폐기 관리 (HL2-10) -----
 function* registerDisposalSaga(action: PayloadAction<DisposalRegisterRequest>) {
   try {
@@ -208,6 +262,99 @@ function* registerDisposalSaga(action: PayloadAction<DisposalRegisterRequest>) {
     yield put(registerDisposalSuccess());
   } catch (error) {
     yield put(registerDisposalFailure(resolveErrorMessage(error)));
+  }
+}
+
+// ----- 불출/불출취소 (HL2-20, HL2-21) -----
+function* registerReleaseSaga(action: PayloadAction<ReleaseRegisterRequest>) {
+  try {
+    yield call(createRelease, action.payload);
+    yield put(registerReleaseSuccess());
+    yield put(fetchPrescriptionDetailRequest(action.payload.prescriptionLinkId));
+  } catch (error) {
+    yield put(registerReleaseFailure(resolveErrorMessage(error)));
+  }
+}
+
+function* cancelReleaseSaga(action: PayloadAction<ReleaseCancelRequest>) {
+  try {
+    yield call(cancelRelease, action.payload);
+    yield put(cancelReleaseSuccess());
+    yield put(fetchPrescriptionDetailRequest(action.payload.prescriptionLinkId));
+  } catch (error) {
+    yield put(cancelReleaseFailure(resolveErrorMessage(error)));
+  }
+}
+
+// ----- 반납/반납약품폐기 (HL2-22, HL2-23) -----
+function* registerMedicationReturnSaga(
+  action: PayloadAction<MedicationReturnRegisterRequest>
+) {
+  try {
+    const response: Awaited<ReturnType<typeof createMedicationReturn>> =
+      yield call(createMedicationReturn, action.payload);
+    yield put(registerMedicationReturnSuccess(response.data.medicationReturnItemId));
+    yield put(fetchPrescriptionDetailRequest(action.payload.prescriptionLinkId));
+  } catch (error) {
+    yield put(registerMedicationReturnFailure(resolveErrorMessage(error)));
+  }
+}
+
+function* registerReturnedDisposalSaga(
+  action: PayloadAction<ReturnedDisposalRegisterRequest>
+) {
+  try {
+    yield call(createReturnedDisposal, action.payload);
+    yield put(registerReturnedDisposalSuccess());
+    yield put(fetchPrescriptionDetailRequest(action.payload.prescriptionLinkId));
+  } catch (error) {
+    yield put(registerReturnedDisposalFailure(resolveErrorMessage(error)));
+  }
+}
+
+// ----- 특수약품(마약류) 관리 (HL2-11~16) -----
+function* registerControlledDrugReceiptSaga(
+  action: PayloadAction<ControlledDrugReceiptRequest>
+) {
+  try {
+    yield call(createControlledDrugReceipt, action.payload);
+    yield put(registerControlledDrugSuccess());
+  } catch (error) {
+    yield put(registerControlledDrugFailure(resolveErrorMessage(error)));
+  }
+}
+
+function* registerControlledDrugIssuanceSaga(
+  action: PayloadAction<ControlledDrugIssuanceRequest>
+) {
+  try {
+    yield call(createControlledDrugIssuance, action.payload);
+    yield put(registerControlledDrugSuccess());
+  } catch (error) {
+    yield put(registerControlledDrugFailure(resolveErrorMessage(error)));
+  }
+}
+
+function* registerControlledDrugDisposalSaga(
+  action: PayloadAction<ControlledDrugDisposalRequest>
+) {
+  try {
+    yield call(createControlledDrugDisposal, action.payload);
+    yield put(registerControlledDrugSuccess());
+  } catch (error) {
+    yield put(registerControlledDrugFailure(resolveErrorMessage(error)));
+  }
+}
+
+function* fetchControlledDrugRecordsSaga(
+  action: PayloadAction<string | undefined>
+) {
+  try {
+    const response: Awaited<ReturnType<typeof getControlledDrugRecords>> =
+      yield call(getControlledDrugRecords, action.payload);
+    yield put(fetchControlledDrugRecordsSuccess(response.data));
+  } catch (error) {
+    yield put(fetchControlledDrugRecordsFailure(resolveErrorMessage(error)));
   }
 }
 
@@ -230,5 +377,35 @@ export default function* pharmacySaga() {
   );
   yield takeLatest(dispensePrescriptionRequest.type, dispensePrescriptionSaga);
   yield takeLatest(rejectPrescriptionRequest.type, rejectPrescriptionSaga);
+  yield takeLatest(
+    cancelDispensePrescriptionRequest.type,
+    cancelDispensePrescriptionSaga
+  );
   yield takeLatest(registerDisposalRequest.type, registerDisposalSaga);
+  yield takeLatest(registerReleaseRequest.type, registerReleaseSaga);
+  yield takeLatest(cancelReleaseRequest.type, cancelReleaseSaga);
+  yield takeLatest(
+    registerMedicationReturnRequest.type,
+    registerMedicationReturnSaga
+  );
+  yield takeLatest(
+    registerReturnedDisposalRequest.type,
+    registerReturnedDisposalSaga
+  );
+  yield takeLatest(
+    registerControlledDrugReceiptRequest.type,
+    registerControlledDrugReceiptSaga
+  );
+  yield takeLatest(
+    registerControlledDrugIssuanceRequest.type,
+    registerControlledDrugIssuanceSaga
+  );
+  yield takeLatest(
+    registerControlledDrugDisposalRequest.type,
+    registerControlledDrugDisposalSaga
+  );
+  yield takeLatest(
+    fetchControlledDrugRecordsRequest.type,
+    fetchControlledDrugRecordsSaga
+  );
 }
