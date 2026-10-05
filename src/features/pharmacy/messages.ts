@@ -7,4 +7,6 @@ export const PHM_MESSAGES = {
   PHM006: 'Inventory not found.',
   PHM007: 'This receipt item is already registered.',
   PHM008: 'Insufficient stock.',
+  PHM009: 'Invalid dosage form code.',
+  PHM010: 'This prescription has already been processed.',
 } as const;
