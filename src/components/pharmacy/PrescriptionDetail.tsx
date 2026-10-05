@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "next/navigation";
 import {
+  cancelDispensePrescriptionRequest,
   dispensePrescriptionRequest,
   fetchPrescriptionDetailRequest,
   rejectPrescriptionRequest,
@@ -22,12 +23,39 @@ import type { PrescriptionItem } from "@/features/pharmacy/types";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { useEmpNames } from "@/features/emp/hooks/useEmpNames";
 import { useDepartmentNames } from "@/features/commonCode/hooks/useDepartmentNames";
+import ReleasePanel from "./ReleasePanel";
+import ReturnCell from "./ReturnCell";
 
-const itemColumns: DataTableColumn<PrescriptionItem>[] = [
-  { key: "medicationId", header: "Medication ID", render: (row) => row.medicationId },
-  { key: "dosageQty", header: "Dosage", render: (row) => row.dosageQty },
-  { key: "dosageFormCd", header: "Dosage Form Code", render: (row) => row.dosageFormCd },
-];
+function makeItemColumns(
+  prescriptionLinkId: string | undefined,
+  releaseStatusCd: string | null | undefined
+): DataTableColumn<PrescriptionItem>[] {
+  return [
+    { key: "medicationId", header: "Medication ID", render: (row) => row.medicationId },
+    { key: "dosageQty", header: "Dosage", render: (row) => row.dosageQty },
+    { key: "dosageFormCd", header: "Dosage Form Code", render: (row) => row.dosageFormCd },
+    {
+      key: "dispensedQty",
+      header: "Dispensed Qty",
+      render: (row) => row.dispensedQty ?? "-",
+    },
+    {
+      // 불출(RELEASED)된 건만 반납을 받을 수 있다 — 아직 환자에게 전달 안 됐으면 반납 자체가 성립 안 함.
+      key: "return",
+      header: "Return",
+      render: (row) =>
+        row.dispensingItemId && releaseStatusCd === "RELEASED" && prescriptionLinkId ? (
+          <ReturnCell
+            dispensingItemId={row.dispensingItemId}
+            dispensedQty={row.dispensedQty ?? 0}
+            prescriptionLinkId={prescriptionLinkId}
+          />
+        ) : (
+          <span className="text-xs text-slate-300">-</span>
+        ),
+    },
+  ];
+}
 
 export default function PrescriptionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -71,6 +99,18 @@ export default function PrescriptionDetail() {
         reason: rejectReason.trim(),
       })
     );
+  };
+
+  const [cancelReason, setCancelReason] = useState("");
+  const handleCancelDispense = () => {
+    if (!id || !cancelReason.trim()) return;
+    dispatch(
+      cancelDispensePrescriptionRequest({
+        prescriptionLinkId: id,
+        reason: cancelReason.trim(),
+      })
+    );
+    setCancelReason("");
   };
 
   return (
@@ -148,11 +188,40 @@ export default function PrescriptionDetail() {
               </div>
             </Panel>
           )}
+
+          {/* 조제취소는 조제완료(DISPENSED) 상태에서만 가능하다. 재고가 그대로 복구되고 RECEIVED로 돌아간다. */}
+          {detail.status === "DISPENSED" && (
+            <Panel className="p-5">
+              <div className="flex flex-col gap-4">
+                <FormField label="Cancel Dispense Reason" required>
+                  <Input
+                    type="text"
+                    placeholder="Cancel Dispense Reason"
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                  />
+                </FormField>
+                <div className="flex justify-end">
+                  <Button
+                    variant="danger"
+                    onClick={handleCancelDispense}
+                    disabled={actionLoading || !cancelReason.trim()}
+                  >
+                    Cancel Dispense
+                  </Button>
+                </div>
+              </div>
+            </Panel>
+          )}
           {actionError && <p className="text-sm text-rose-500">{actionError}</p>}
+
+          {detail.status === "DISPENSED" && id && (
+            <ReleasePanel prescriptionLinkId={id} release={detail.release} />
+          )}
 
           <Panel className="min-h-0 flex-1 p-4">
             <DataTable
-              columns={itemColumns}
+              columns={makeItemColumns(id, detail.release?.releaseStatusCd)}
               rows={detail.items}
               rowKey={(row) => row.prescriptionItemLinkId}
               emptyMessage="No prescription items."
