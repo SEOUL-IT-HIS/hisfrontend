@@ -35,9 +35,25 @@ import PatientContactPanel from "./PatientContactPanel";
 
 type PatientDetailFormProps = {
   patientId: string;
+  returnTo?: string;
 };
 
 const formatDateTime = (value: string) => value.replace("T", " ").slice(0, 19);
+
+function getPatientListReturnTo(value: string | null) {
+  if (!value) return "/reception/patientmanagement";
+
+  try {
+    const url = new URL(value, "http://localhost");
+    if (url.origin === "http://localhost" && url.pathname === "/reception/patientmanagement") {
+      return `${url.pathname}${url.search}`;
+    }
+  } catch {
+    // Fall back to the patient list when the return URL is invalid.
+  }
+
+  return "/reception/patientmanagement";
+}
 
 const getBirthDateFromResidentRegNo = (residentRegNo: string) => {
   if (!/^\d{13}$/.test(residentRegNo)) return null;
@@ -76,7 +92,9 @@ const getGenderFromResidentRegNo = (residentRegNo: string) => {
 
 export default function PatientDetailForm({
   patientId,
+  returnTo,
 }: PatientDetailFormProps) {
+  const patientListReturnTo = getPatientListReturnTo(returnTo ?? null);
   const dispatch = useDispatch<AppDispatch>();
   const [editing, setEditing] = useState(false);
   const [patientName, setPatientName] = useState("");
@@ -363,7 +381,7 @@ export default function PatientDetailForm({
       <PageHeader
         title="Patient Details"
         actions={
-          <Link href="/reception/patientmanagement">
+          <Link href={patientListReturnTo}>
             <Button>Back to List</Button>
           </Link>
         }
@@ -613,14 +631,13 @@ export default function PatientDetailForm({
 
           {patientDetail.patientId === patientId ? (
             <PatientContactPanel
-              key={patientId}
               patientId={patientId}
               patientName={patientDetail.patientName}
             />
           ) : null}
 
           {patientDetail.patientId === patientId ? (
-            <PatientSafetyPanel key={patientId} patientId={patientId} patientName={patientDetail.patientName} />
+            <PatientSafetyPanel patientId={patientId} patientName={patientDetail.patientName} />
           ) : null}
 
           {conversionEditing && patientDetail.tempPatientYn === "Y" ? (
