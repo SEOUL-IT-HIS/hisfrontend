@@ -332,7 +332,7 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
               <InfoRow label="Admission Dept">{admission.admissionDeptId ? deptNames[admission.admissionDeptId] ?? admission.admissionDeptId : "-"}</InfoRow>
               <InfoRow label="Admission Route">{admission.admissionRoute}</InfoRow>
               <InfoRow label="Admission Date">{formatDateTime(admission.admissionDate)}</InfoRow>
-              <InfoRow label="Sex / Age">{patient ? formatSexAge(patient.genderCd, patient.birthDate) : "-"}</InfoRow>
+              <InfoRow label="Gender / Age">{patient ? formatSexAge(patient.genderCd, patient.birthDate) : "-"}</InfoRow>
               <DoctorRow
                 key={`${admission.admissionId}-${admission.doctorId ?? ""}`}
                 admissionId={admission.admissionId}

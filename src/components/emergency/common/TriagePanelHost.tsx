@@ -15,6 +15,7 @@ import TreatmentPanel from "@/components/emergency/care/treatment/TreatmentPanel
 import MedicationPanel from "@/components/emergency/care/medication/MedicationPanel";
 import CprPanel from "@/components/emergency/care/cpr/CprPanel";
 import OrderPanel from "@/components/emergency/order/OrderPanel";
+import CancelledReceptionBanner from "@/components/emergency/common/CancelledReceptionBanner";
 import DispositionPanel from "@/components/emergency/disposition/DispositionPanel";
 import DispositionFollowUp from "@/components/emergency/disposition/DispositionFollowUp";
 import CongestionPanel from "@/components/emergency/resource/congestion/CongestionPanel";
@@ -54,6 +55,7 @@ export default function TriagePanelHost() {
       {/* 오른쪽: 선택된 환자의 탭별 패널 (세로 스크롤) — 환자 미선택이어도 항상 빈 상태로 노출 */}
       <div className="flex h-[calc(100vh-180px)] min-w-0 flex-col gap-3">
         <TriageSummaryBanner receptionNo={active} />
+        <CancelledReceptionBanner receptionNo={active} />
 
         <div className="flex gap-1 rounded-xl border border-slate-200/80 bg-white p-1 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
           {TABS.map((tab) => (

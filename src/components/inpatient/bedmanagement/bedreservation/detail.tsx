@@ -181,7 +181,7 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
                         </div>
                         <div>
                             <InfoRow label="Bed">{formatBedLabel(bedReservation.bedId)}</InfoRow>
-                            <InfoRow label="Sex / Age">{patientDetail?.patientId === bedReservation.patientId ? formatSexAge(patientDetail.genderCd, patientDetail.birthDate) : "-"}</InfoRow>
+                            <InfoRow label="Gender / Age">{patientDetail?.patientId === bedReservation.patientId ? formatSexAge(patientDetail.genderCd, patientDetail.birthDate) : "-"}</InfoRow>
                             <InfoRow label="Reserved At">{formatDateTime(bedReservation.reserveAt)}</InfoRow>
                             <InfoRow label="Expected Admission At">{formatDateTime(bedReservation.expectedAdmissionAt)}</InfoRow>
                             <InfoRow label="Created At">{formatDateTime(bedReservation.createdAt)}</InfoRow>

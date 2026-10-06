@@ -5,7 +5,8 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import DischargedNotice from "@/components/emergency/common/DischargedNotice";
 import { selectIsDischarged } from "@/features/emergency/disposition/slice";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField, Input } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
 import ActorField from "@/components/emergency/common/ActorField";
 import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
@@ -237,33 +238,31 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             {/* 스크리닝 유형 */}
-            <FormField label="Screening Type" required>
-              <Select
-                name="screenType"
-                value={form.screenType}
-                onChange={handleChange}
-                options={[...SCREEN_TYPE_OPTIONS]}
-                // 선택
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
+            <DownSelect
+              label="Screening Type"
+              required
+              value={form.screenType}
+              onChange={(screenType) => setForm((prev) => ({ ...prev, screenType }))}
+              options={[...SCREEN_TYPE_OPTIONS]}
+              // 선택
+              placeholder="Select"
+              disabled={submitting}
+            />
             {/* 점수 (0~3) / 점수 */}
             <FormField label={form.screenType ? "Score (0-3)" : "Score"}>
               <Input type="number" name="score" min={0} max={3} value={form.score} onChange={handleChange} disabled={submitting} />
             </FormField>
             {/* 판정 결과 */}
-            <FormField label="Result">
-              <Select
-                name="resultCode"
-                value={form.resultCode}
-                onChange={handleChange}
-                options={[...SCREEN_RESULT_OPTIONS]}
-                // 선택
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
+            <DownSelect
+              label="Result"
+              value={form.resultCode}
+              onChange={(resultCode) => setForm((prev) => ({ ...prev, resultCode }))}
+              options={[...SCREEN_RESULT_OPTIONS]}
+              // 선택
+              placeholder="Select"
+              allowClear
+              disabled={submitting}
+            />
             {/* 시행자 */}
             <ActorField
               label="Screened By"

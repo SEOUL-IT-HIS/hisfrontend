@@ -155,7 +155,7 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
   const columns: DataTableColumn<BedDTO>[] = [
     // patientId가 없으면(빈 병상) "None", 있으면 Map에서 이름 조회 (patientLabel 참고)
     { key: "patient", header: "Patient Name", render: (bed) => <span className="font-medium text-slate-800">{patientLabel(bed.patientId)}</span> },
-    { key: "sexAge", header: "Sex / Age", render: (bed) => (bed.patientId ? sexAgeByPatientId.get(bed.patientId) ?? "-" : "-") },
+    { key: "sexAge", header: "Gender / Age", render: (bed) => (bed.patientId ? sexAgeByPatientId.get(bed.patientId) ?? "-" : "-") },
     { key: "ward", header: "Ward", render: (bed) => wardLabel(bed.wardCd) },
     { key: "roomType", header: "Room Type", render: (bed) => (bed.roomTypeCode ? ROOM_TYPE_LABEL[bed.roomTypeCode] ?? bed.roomTypeCode : "-") },
     { key: "roomNo", header: "Room No.", render: (bed) => bed.roomNo },
@@ -177,7 +177,8 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
   ];
 
   return (
-    <div className={`flex flex-col gap-4 ${embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}`}>
+    // 화면 아래까지 꽉 채움 — 목록과 상세 패널이 각자 안에서 스크롤 (홈 탭 안에서는 남은 높이를, 단독 페이지에서는 화면 높이를 채움)
+    <div className={`flex min-h-0 flex-col gap-4 ${embedded ? "w-full flex-1" : "mx-auto h-full w-full max-w-[1800px] p-6"}`}>
       {/* 병상관리 홈 탭 안에 끼워졌을 때(embedded)는 홈이 이미 상단 제목을 보여주므로 생략 */}
       {!embedded && <PageHeader title="Bed Status" description="Real-time usage status of all beds." />}
 
@@ -218,9 +219,9 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
 
       {!listStatus.error && (
         // flex로 좌: 목록, 우: 상세 패널을 나란히 배치 (selectedBedId 없으면 오른쪽은 안 그려짐)
-        <div className="flex items-start gap-4">
+        <div className="flex min-h-[480px] flex-1 gap-4">
           {viewMode === "list" ? (
-            <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               <DataTable
                 columns={columns}
                 rows={filteredBeds}
@@ -233,7 +234,7 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
               />
             </div>
           ) : (
-            <div className="min-w-0 flex-1 space-y-4">
+            <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto">
               {listStatus.loading && <p className="text-sm text-slate-400">Loading...</p>}
               {/* 병동 → 병실번호 순으로 카드 하나씩, 카드 안에 그 병실 소속 병상들을 나열 */}
               {bedsByRoom.map(({ wardCd, roomNo, beds }) => (
@@ -268,7 +269,7 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
 
           {/* 병상을 클릭했을 때만 오른쪽에 상세 패널 표시. onClose로 선택 해제하면 다시 목록만 남음 */}
           {selectedBedId && (
-            <div className="w-[420px] shrink-0">
+            <div className="min-h-0 w-[420px] shrink-0 overflow-y-auto">
               <BedStatusDetail bedId={selectedBedId} onClose={() => setSelectedBedId(null)} />
             </div>
           )}

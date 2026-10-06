@@ -146,7 +146,7 @@ const DischargeRequestDetail = ({ admissionId: admissionIdProp, onClose }: Disch
               </span>
             </div>
             <div>
-              <InfoRow label="Sex / Age">{patient ? formatSexAge(patient.genderCd, patient.birthDate) : "-"}</InfoRow>
+              <InfoRow label="Gender / Age">{patient ? formatSexAge(patient.genderCd, patient.birthDate) : "-"}</InfoRow>
               <InfoRow label="Admission Dept">{admission.admissionDeptId ? deptNames[admission.admissionDeptId] ?? admission.admissionDeptId : "-"}</InfoRow>
               <InfoRow label="Attending Doctor">
                 {admission.doctorId ? doctorNameById.get(admission.doctorId) ?? admission.doctorId : "-"}

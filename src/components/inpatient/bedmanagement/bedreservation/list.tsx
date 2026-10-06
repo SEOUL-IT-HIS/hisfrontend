@@ -67,7 +67,7 @@ const BedReservationList = ({ embedded = false }: BedReservationListProps = {}) 
         </span>
       ),
     },
-    { key: "sexAge", header: "Sex / Age", render: (r) => (r.patientId ? sexAgeByPatientId.get(r.patientId) ?? "-" : "-") },
+    { key: "sexAge", header: "Gender / Age", render: (r) => (r.patientId ? sexAgeByPatientId.get(r.patientId) ?? "-" : "-") },
     { key: "bed", header: "Bed", render: (r) => formatBedLabel(r.bedId) },
     { key: "reserveAt", header: "Reserved At", render: (r) => formatDateTime(r.reserveAt) },
     { key: "expectedAdmissionAt", header: "Expected Admission At", render: (r) => formatDateTime(r.expectedAdmissionAt) },
@@ -87,7 +87,8 @@ const BedReservationList = ({ embedded = false }: BedReservationListProps = {}) 
   ];
 
   return (
-    <div className={`flex flex-col gap-4 ${embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}`}>
+    // 화면 아래까지 꽉 채움 — 목록과 상세 패널이 각자 안에서 스크롤 (홈 탭 안에서는 남은 높이를, 단독 페이지에서는 화면 높이를 채움)
+    <div className={`flex min-h-0 flex-col gap-4 ${embedded ? "w-full flex-1" : "mx-auto h-full w-full max-w-[1800px] p-6"}`}>
       {!embedded && (
         <PageHeader title="Bed Reservation List" description="Current status of registered bed reservations." />
       )}
@@ -99,8 +100,8 @@ const BedReservationList = ({ embedded = false }: BedReservationListProps = {}) 
       {listStatus.error && <Alert>{listStatus.error}</Alert>}
 
       {!listStatus.error && (
-        <div className="flex items-start gap-4">
-          <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-[480px] flex-1 gap-4">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <DataTable
               columns={columns}
               rows={bedReservations}
@@ -114,7 +115,7 @@ const BedReservationList = ({ embedded = false }: BedReservationListProps = {}) 
           </div>
 
           {selectedId !== null && (
-            <div className="w-[420px] shrink-0">
+            <div className="min-h-0 w-[420px] shrink-0 overflow-y-auto">
               <BedReservationDetail bedReservationId={selectedId} onClose={() => setSelectedId(null)} />
             </div>
           )}
