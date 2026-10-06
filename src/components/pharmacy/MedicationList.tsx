@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchMedicationListRequest,
@@ -129,9 +130,20 @@ export default function MedicationList() {
         onClose={() => setSelected(null)}
         maxWidthClassName="max-w-2xl"
         footer={
-          <Button type="button" variant="secondary" onClick={() => setSelected(null)}>
-            Close
-          </Button>
+          <>
+            <Button type="button" variant="secondary" onClick={() => setSelected(null)}>
+              Close
+            </Button>
+            {/* 재고가 한 번도 없는 새 약품은 재고/이력 목록에 안 나와서, 첫 입고를 하려면 여기서 워크스페이스로 들어가야 한다. */}
+            {selected && (
+              <Link
+                href={`/pharmacy/medication/${selected.medicationId}`}
+                className="inline-flex h-10 items-center rounded-xl bg-sky-600 px-4 text-sm font-medium text-white transition-colors hover:bg-sky-700"
+              >
+                Open Workspace
+              </Link>
+            )}
+          </>
         }
       >
         {selected && (

@@ -24,7 +24,7 @@ const groups: WorkGroup[] = [
   },
   {
     title: "Inventory Management",
-    description: "Stock, low stock, medications, receipt, issuance, and disposal — switch between them with the tabs on top.",
+    description: "Stock, low stock, medications, and receipt/issuance history — open a medication to register receipt, issuance, or disposal.",
     href: "/pharmacy/stock",
     linkLabel: "Open Inventory",
   },

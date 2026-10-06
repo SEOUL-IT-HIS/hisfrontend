@@ -19,6 +19,9 @@ type PharmacyTab = {
  * 업무 그룹별 탭 — PharmacyHome에서 그룹을 고르면 바로 첫 업무 화면이 열리고, 그 그룹의
  * 다음 업무는 이 탭으로 이어서 처리한다(허브 페이지로 돌아가지 않아도 됨).
  * 조제 업무는 처방전 목록 → 상세 안에서 조제/불출/반납이 다 이어져서 탭이 필요 없다.
+ * 재고 그룹의 입고/출고/폐기 등록은 탭이 아니라 품목 워크스페이스(Medications 탭에서 약품을 열어 들어감)에서
+ * 처리한다 — 같은 업무가 탭과 워크스페이스 두 군데에 있던 중복을 정리했다. /pharmacy/receipt,
+ * /pharmacy/issuance, /pharmacy/stock/disposal 단독 화면은 주소 호환을 위해 남아 있지만 탭에는 노출하지 않는다.
  */
 const TABS: Record<PharmacyGroup, PharmacyTab[]> = {
   inventory: [
@@ -30,11 +33,8 @@ const TABS: Record<PharmacyGroup, PharmacyTab[]> = {
       alsoActiveForPrefixes: ["/pharmacy/medication/"],
       excludePaths: ["/pharmacy/medication/register"],
     },
-    { label: "Receipt", href: "/pharmacy/receipt" },
     { label: "Receipt History", href: "/pharmacy/receipt/list" },
-    { label: "Issuance", href: "/pharmacy/issuance" },
     { label: "Issuance History", href: "/pharmacy/issuance/list" },
-    { label: "Disposal", href: "/pharmacy/stock/disposal" },
   ],
   controlled: [
     { label: "Records", href: "/pharmacy/controlled/records" },

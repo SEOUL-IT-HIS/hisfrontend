@@ -136,8 +136,10 @@ export default function MedicationWorkspace() {
   const [receivedById, setReceivedById] = useState("");
   const [lotNo, setLotNo] = useState("");
   const [expirationDt, setExpirationDt] = useState("");
+  const [manufactureDt, setManufactureDt] = useState("");
   const [unitCd, setUnitCd] = useState("");
   const [receiptQty, setReceiptQty] = useState("");
+  const [unitPrice, setUnitPrice] = useState("");
   const receiptLoading = useSelector((state: RootState) => state.pharmacy.receiptRegisterLoading);
   const receiptError = useSelector((state: RootState) => state.pharmacy.receiptRegisterError);
   const wasReceiptLoading = useRef(false);
@@ -147,8 +149,10 @@ export default function MedicationWorkspace() {
       refresh();
       setLotNo("");
       setExpirationDt("");
+      setManufactureDt("");
       setUnitCd("");
       setReceiptQty("");
+      setUnitPrice("");
     }
     wasReceiptLoading.current = receiptLoading;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -164,7 +168,18 @@ export default function MedicationWorkspace() {
       storageLocationId,
       receiptDt: new Date().toISOString().slice(0, 10),
       receivedById,
-      items: [{ medicationId, lotNo, expirationDt, unitCd, receiptQty: Number(receiptQty) }],
+      // manufactureDt는 LocalDate라 빈 문자열을 그대로 보내면 백엔드 파싱이 깨지고, unitPrice도 비었으면 보내지 않는다.
+      items: [
+        {
+          medicationId,
+          lotNo,
+          expirationDt,
+          manufactureDt: manufactureDt || undefined,
+          unitCd,
+          receiptQty: Number(receiptQty),
+          unitPrice: unitPrice ? Number(unitPrice) : undefined,
+        },
+      ],
     };
     dispatch(registerReceiptRequest(request));
   };
@@ -300,6 +315,9 @@ export default function MedicationWorkspace() {
                 <FormField label="Expiration Date" required>
                   <Input type="date" value={expirationDt} onChange={(e) => setExpirationDt(e.target.value)} />
                 </FormField>
+                <FormField label="Manufacture Date">
+                  <Input type="date" value={manufactureDt} onChange={(e) => setManufactureDt(e.target.value)} />
+                </FormField>
                 <FormField label="Unit Code" required>
                   <Input type="text" placeholder="e.g. EA" value={unitCd} onChange={(e) => setUnitCd(e.target.value)} />
                 </FormField>
@@ -311,6 +329,14 @@ export default function MedicationWorkspace() {
                     onChange={(e) => setReceiptQty(e.target.value)}
                   />
                 </FormField>
+                <FormField label="Unit Price">
+                  <Input
+                    type="number"
+                    placeholder="Unit Price"
+                    value={unitPrice}
+                    onChange={(e) => setUnitPrice(e.target.value)}
+                  />
+                </FormField>
                 <FormActions
                   submitLabel="Register Receipt"
                   loading={receiptLoading}
@@ -318,8 +344,10 @@ export default function MedicationWorkspace() {
                   onCancel={() => {
                     setLotNo("");
                     setExpirationDt("");
+                    setManufactureDt("");
                     setUnitCd("");
                     setReceiptQty("");
+                    setUnitPrice("");
                   }}
                 />
               </form>
