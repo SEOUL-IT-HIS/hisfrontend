@@ -67,7 +67,7 @@ const BedReservationList = ({ embedded = false }: BedReservationListProps = {}) 
         </span>
       ),
     },
-    { key: "sexAge", header: "Sex / Age", render: (r) => (r.patientId ? sexAgeByPatientId.get(r.patientId) ?? "-" : "-") },
+    { key: "sexAge", header: "Gender / Age", render: (r) => (r.patientId ? sexAgeByPatientId.get(r.patientId) ?? "-" : "-") },
     { key: "bed", header: "Bed", render: (r) => formatBedLabel(r.bedId) },
     { key: "reserveAt", header: "Reserved At", render: (r) => formatDateTime(r.reserveAt) },
     { key: "expectedAdmissionAt", header: "Expected Admission At", render: (r) => formatDateTime(r.expectedAdmissionAt) },

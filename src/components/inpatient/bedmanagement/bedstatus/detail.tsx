@@ -108,7 +108,7 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
                         <InfoRow label="Patient Name">
                             {bed.patientId ? (patientDetail?.patientId === bed.patientId ? patientDetail.patientName : "Loading...") : "None"}
                         </InfoRow>
-                        <InfoRow label="Sex / Age">
+                        <InfoRow label="Gender / Age">
                             {bed.patientId && patientDetail?.patientId === bed.patientId
                                 ? formatSexAge(patientDetail.genderCd, patientDetail.birthDate)
                                 : "-"}
