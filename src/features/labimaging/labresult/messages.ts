@@ -20,6 +20,11 @@ export const LAB_RESULT_MESSAGES = {
   LAB100: "The same result item was entered more than once.",
   LAB101: "The number of result items is out of the allowed range. (1-4)",
   LAB102: "This test requires result items. Please enter them.",
+  LAB105: "The result value is not a valid number. The reference range is numeric.",
+  LAB106: "The reference range's lower bound is greater than its upper bound.",
+  LAB110: "Staff member not found, or no longer active.",
+  LAB112: "Unable to verify staff information right now.",
+  LAB121: "This reception has been cancelled by the prescriber.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;

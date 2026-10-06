@@ -7,6 +7,7 @@ import { Alert } from "@/components/common";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveImageReadingMessage } from "@/features/labimaging/imaginginterpretation/messages";
+import { formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
 import {
   fetchReadingWorklistRequest,
   selectLastSubmittedReading,
@@ -63,6 +64,7 @@ export default function ImageReadingWorkPanel({
 
   // 촬영항목코드는 admin 공통코드다. (ImageAcquisitionWorkPanel 과 동일 그룹)
   const imageItemTypes = useCommonCodeOptions("IMG_ITEM_CD");
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
 
   const [selectedItemId, setSelectedItemId] = useState<string>("");
 
@@ -130,8 +132,11 @@ export default function ImageReadingWorkPanel({
                       {READING_STATUS_LABELS[item.readingStatusCode] ?? item.readingStatusCode}
                     </span>
                     {item.assignedToId ? (
-                      <span className="ml-auto text-xs text-slate-400">
-                        Assigned to {item.assignedToId}
+                      <span
+                        className="ml-auto text-xs text-slate-400"
+                        title={formatStaffName(item.assignedToId, staffNameById, staffLoading).title}
+                      >
+                        Assigned to {formatStaffName(item.assignedToId, staffNameById, staffLoading).text}
                       </span>
                     ) : null}
                   </button>

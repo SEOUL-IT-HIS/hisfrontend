@@ -15,6 +15,8 @@ import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
 import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import type { DataTableColumn } from "@/components/common";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
+import { formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
+import { isFutureDateTime, nowLocalInputValue } from "@/features/labimaging/common/validation";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveLabSpecimenMessage } from "@/features/labimaging/labspecimen/messages";
 import {
@@ -99,6 +101,8 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
    *   위쪽 머리말에도 이름이 있지만, 폼 바로 옆에서 한 번 더 확인할 수 있게 둔다.
    */
   const { names: patientNames } = usePatientNames([reception.patientId]);
+  // collectedById(채취자 empId) → 이름 표시용. (직원ID 화면 노출 정리, 2026-10-05)
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
 
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -149,7 +153,12 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
     const next: FieldErrors = {};
     if (!effectiveSpecimenContainerCode)
       next.specimenContainerCode = "Specimen container is required.";
-    if (!form.collectedAt) next.collectedAt = "Collection date and time is required.";
+    if (!form.collectedAt) {
+      next.collectedAt = "Collection date and time is required.";
+    } else if (isFutureDateTime(form.collectedAt)) {
+      // 서버(LAB107)와 같은 기준. (04번 지시서 Phase 3-B)
+      next.collectedAt = "Future dates or times are not allowed.";
+    }
     if (!signedIn) next.collectedById = "Sign in to record this action.";
     return next;
   }
@@ -191,7 +200,14 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
       render: (s) => SPECIMEN_TYPE_LABELS[s.specimenType] ?? s.specimenType,
     },
     { key: "collectedAt", header: "Collected At", render: (s) => formatDateTime(s.collectedAt) },
-    { key: "collectedById", header: "Collected By", render: (s) => s.collectedById },
+    {
+      key: "collectedById",
+      header: "Collected By",
+      render: (s) => {
+        const display = formatStaffName(s.collectedById, staffNameById, staffLoading);
+        return <span title={display.title}>{display.text}</span>;
+      },
+    },
     {
       key: "fitnessStatus",
       header: "Fitness",
@@ -278,6 +294,7 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
               type="datetime-local"
               name="collectedAt"
               value={form.collectedAt}
+              max={nowLocalInputValue()}
               onChange={handleChange}
               disabled={creating}
             />

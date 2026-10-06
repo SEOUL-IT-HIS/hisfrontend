@@ -77,6 +77,10 @@ const bedAssignmentSlice = createSlice({
         resetBedAssignmentUpdateStatus(state) {
             state.updateStatus = { ...initialStatus };
         },
+        // 등록 후 목록으로 돌아가거나 등록 화면에 다시 들어올 때, 이전 "등록 성공" 상태가 남지 않도록 초기화
+        resetBedAssignmentCreateStatus(state) {
+            state.createStatus = { ...initialStatus };
+        },
     },
 });
 
@@ -85,7 +89,7 @@ export const { fetchBedAssignmentsRequest, fetchBedAssignmentsSuccess, fetchBedA
     createBedAssignmentRequest, createBedAssignmentSuccess, createBedAssignmentFailure,
     updateBedAssignmentRequest, updateBedAssignmentSuccess, updateBedAssignmentFailure,
     deleteBedAssignmentRequest, deleteBedAssignmentSuccess, deleteBedAssignmentFailure,
-    clearBedAssignmentState, resetBedAssignmentUpdateStatus } = bedAssignmentSlice.actions;
+    clearBedAssignmentState, resetBedAssignmentUpdateStatus, resetBedAssignmentCreateStatus } = bedAssignmentSlice.actions;
 export default bedAssignmentSlice.reducer;
 
 // ----- Selector -----

@@ -15,6 +15,7 @@ import {
 import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
 import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import { resolveLabScheduleMessage } from "@/features/labimaging/labschedule/messages";
+import { todayInputValue } from "@/features/labimaging/common/validation";
 import {
   createLabScheduleRequest,
   rescheduleLabScheduleRequest,
@@ -120,7 +121,12 @@ export default function LabScheduleRegisterForm({
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!form.scheduledAt) next.scheduledAt = "Scheduled test date and time is required.";
+    if (!form.scheduledAt) {
+      next.scheduledAt = "Scheduled test date and time is required.";
+    } else if (form.scheduledAt.slice(0, 10) < todayInputValue()) {
+      // 서버(LAB116)와 같은 기준 — 날짜만 비교한다(당일 이른 시각은 허용). (04번 지시서 Phase 3-B)
+      next.scheduledAt = "Cannot schedule a date in the past.";
+    }
     if (!signedIn) next.confirmedById = "Sign in to record this action.";
     return next;
   }
@@ -194,6 +200,7 @@ export default function LabScheduleRegisterForm({
             type="datetime-local"
             name="scheduledAt"
             value={form.scheduledAt}
+            min={`${todayInputValue()}T00:00`}
             onChange={handleChange}
             disabled={creating}
           />
