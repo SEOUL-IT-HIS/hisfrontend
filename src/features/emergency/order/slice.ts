@@ -1,6 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
-  LabItem,
   Order,
   OrderCancelRequest,
   OrderCreateRequest,
@@ -13,9 +12,6 @@ const initialState: OrderState = {
   ordersByReceptionId: {},
   listStatusByReception: {},
   listError: "",
-  labItems: [],
-  labItemsLoading: false,
-  labItemsError: "",
   submitting: false,
   submitError: "",
   busyOrderId: "",
@@ -155,25 +151,6 @@ const orderSlice = createSlice({
       });
     },
 
-    /** 검사항목 검색(처방 등록의 검사 항목 선택). name 이 비면 전체 */
-    searchLabItemsRequest: {
-      reducer(state) {
-        state.labItemsLoading = true;
-        state.labItemsError = "";
-      },
-      prepare(name: string) {
-        return { payload: name };
-      },
-    },
-    searchLabItemsSuccess(state, action: PayloadAction<LabItem[]>) {
-      state.labItemsLoading = false;
-      state.labItems = action.payload;
-    },
-    searchLabItemsFailure(state, action: PayloadAction<string>) {
-      state.labItemsLoading = false;
-      state.labItemsError = action.payload;
-    },
-
     /** 구두처방 사후 확정 */
     confirmVerbalRequest: {
       reducer(state, action: PayloadAction<{ orderId: string; confirmedBy: string }>) {
@@ -242,9 +219,6 @@ export const {
   loadOrderDetailSuccess,
   cancelOrderRequest,
   cancelOrderSuccess,
-  searchLabItemsRequest,
-  searchLabItemsSuccess,
-  searchLabItemsFailure,
   confirmVerbalRequest,
   confirmVerbalSuccess,
   dispatchOrderRequest,
@@ -264,9 +238,6 @@ export const selectOrdersByReception = (receptionId: string) => (state: OrderRoo
   state.emergency.order.ordersByReceptionId[receptionId] ?? NO_ORDERS;
 export const selectOrderListStatus = (receptionId: string) => (state: OrderRoot) =>
   state.emergency.order.listStatusByReception[receptionId];
-export const selectLabItems = (state: OrderRoot) => state.emergency.order.labItems;
-export const selectLabItemsLoading = (state: OrderRoot) => state.emergency.order.labItemsLoading;
-export const selectLabItemsError = (state: OrderRoot) => state.emergency.order.labItemsError;
 export const selectOrderListError = (state: OrderRoot) => state.emergency.order.listError;
 export const selectOrderSubmitting = (state: OrderRoot) => state.emergency.order.submitting;
 export const selectOrderSubmitError = (state: OrderRoot) => state.emergency.order.submitError;

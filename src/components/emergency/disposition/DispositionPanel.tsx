@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Select } from "@/components/common";
+import { Alert, Button } from "@/components/common";
 import ActorField from "@/components/emergency/common/ActorField";
+import DownSelect from "@/components/emergency/common/DownSelect";
 import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
@@ -108,11 +109,6 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
     return typeOptions.find((o) => o.value === code)?.label ?? code;
   }
 
-  function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  }
-
   function handleSubmit() {
     if (!form.dispositionType || !decidedById || !receptionNo) return;
     dispatch(
@@ -151,19 +147,18 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
         <>
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {/* 퇴실 구분 */}
-            <FormField label="Disposition Type" required className="w-[220px]">
-              <Select
-                name="dispositionType"
-                value={form.dispositionType}
-                onChange={handleChange}
-                options={formOptions}
-                // 선택
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
+            <DownSelect
+              label="Disposition Type"
+              required
+              value={form.dispositionType}
+              onChange={(dispositionType) => setForm((prev) => ({ ...prev, dispositionType }))}
+              options={formOptions}
+              // 선택
+              placeholder="Select"
+              disabled={submitting}
+            />
             {/* 결정자(의사) */}
             <ActorField
               label="Decided By"
@@ -172,7 +167,6 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
               value={form.decidedById}
               onChange={(empId) => setForm((prev) => ({ ...prev, decidedById: empId }))}
               disabled={submitting}
-              className="w-[220px]"
             />
           </div>
           <div className="mt-3 flex justify-end gap-2">

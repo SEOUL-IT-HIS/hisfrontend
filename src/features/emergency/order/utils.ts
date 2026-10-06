@@ -98,6 +98,18 @@ export function labItemHasResult(item: OrderItem): boolean {
  */
 export const LAB_NO_RESULT_ITEM_CODES: readonly string[] = ["05", "06", "07", "08"];
 
+/** admin 공통코드 TEST_TYPE_CD 를 못 받을 때의 폴백 */
+export const LAB_TEST_FALLBACK_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: "01", label: "Blood Glucose Test" },
+  { value: "02", label: "CBC" },
+  { value: "03", label: "Liver Function Test" },
+  { value: "04", label: "Urinalysis" },
+  { value: "05", label: "Blood Culture" },
+  { value: "06", label: "Urine Culture" },
+  { value: "07", label: "Histopathology" },
+  { value: "08", label: "Cytology" },
+];
+
 /** 이 검사 항목은 응급에서 결과를 받는 검사인지 */
 export function labResultExpected(item: OrderItem): boolean {
   return item.prescriptionType === ORDER_ITEM_TYPE.LAB && !LAB_NO_RESULT_ITEM_CODES.includes(item.itemCode);
@@ -121,4 +133,10 @@ export function abnormalFlagLabel(flag: string | null | undefined): { text: stri
 /** 처방ID 앞 8자 — 선택 목록에서 처방을 구분하는 용도 */
 export function shortOrderId(orderId: string): string {
   return orderId.slice(0, 8);
+}
+
+/** 처방을 화면에서 알아보게 하는 이름 — 처방 ID 대신 항목 이름(예: "Blood Glucose Test, 타이레놀정500mg"). 아직 항목을 모르면 빈 글자 */
+export function orderTitle(orders: Order[], orderId: string): string {
+  const order = orders.find((o) => o.orderId === orderId);
+  return (order?.items ?? []).map((item) => item.itemName).join(", ");
 }

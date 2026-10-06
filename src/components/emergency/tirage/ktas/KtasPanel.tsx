@@ -5,7 +5,8 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import DischargedNotice from "@/components/emergency/common/DischargedNotice";
 import { selectIsDischarged } from "@/features/emergency/disposition/slice";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField, Input } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
 import ActorField from "@/components/emergency/common/ActorField";
 import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
@@ -53,7 +54,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
-  const assessedById = useActorId(form.assessedById);
+  const assessedById = useActorId(form.assessedById, "STAFF");
 
   useEffect(() => {
     if (receptionNo) {
@@ -173,17 +174,16 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {/* 변경 등급 / 최초 등급 */}
-            <FormField label={hasInitial ? "New Level" : "Initial Level"} required>
-              <Select
-                name="ktasScore"
-                value={form.ktasScore}
-                onChange={handleChange}
-                options={levelOptions}
-                // 선택
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
+            <DownSelect
+              label={hasInitial ? "New Level" : "Initial Level"}
+              required
+              value={form.ktasScore}
+              onChange={(ktasScore) => setForm((prev) => ({ ...prev, ktasScore }))}
+              options={levelOptions}
+              // 선택
+              placeholder="Select"
+              disabled={submitting}
+            />
             {/* 사유 */}
             <FormField label="Reason">
               <Input name="reason" value={form.reason} onChange={handleChange} disabled={submitting} maxLength={200} />
@@ -191,6 +191,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
             {/* 분류자 */}
             <ActorField
               label="Classified By"
+              role="STAFF"
               required
               value={form.assessedById}
               onChange={(empId) => setForm((prev) => ({ ...prev, assessedById: empId }))}

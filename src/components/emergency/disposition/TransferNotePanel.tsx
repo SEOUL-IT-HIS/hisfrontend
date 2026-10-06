@@ -3,8 +3,9 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Select } from "@/components/common";
+import { Alert, Button, FormField } from "@/components/common";
 import ActorField from "@/components/emergency/common/ActorField";
+import DownSelect from "@/components/emergency/common/DownSelect";
 import StaffName from "@/components/emergency/common/StaffName";
 import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
@@ -112,18 +113,17 @@ export default function TransferNotePanel({ dispositionId, className = "" }: Tra
 
       {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {/* 대상 병원 */}
-        <FormField label="Destination Hospital" required className="w-[280px]">
-          <Select
-            name="targetHospitalCode"
-            value={form.targetHospitalCode}
-            onChange={handleChange}
-            options={hospitalOptions}
-            placeholder="Select"
-            disabled={submitting}
-          />
-        </FormField>
+        <DownSelect
+          label="Destination Hospital"
+          required
+          value={form.targetHospitalCode}
+          onChange={(targetHospitalCode) => setForm((prev) => ({ ...prev, targetHospitalCode }))}
+          options={hospitalOptions}
+          placeholder="Select"
+          disabled={submitting}
+        />
         {/* 작성자(의사) */}
         <ActorField
           label="Written By"
@@ -132,7 +132,6 @@ export default function TransferNotePanel({ dispositionId, className = "" }: Tra
           value={form.writtenById}
           onChange={(empId) => setForm((prev) => ({ ...prev, writtenById: empId }))}
           disabled={submitting}
-          className="w-[220px]"
         />
       </div>
       {/* 소견 내용 */}

@@ -97,16 +97,6 @@ export interface OrderCancelRequest {
   userId: string;
 }
 
-/** 검사항목 검색 결과 — 처방코어가 LAB팀 계약대로 내려준 값 */
-export interface LabItem {
-  itemCode: string;
-  itemName: string;
-  /** GENERAL / MICROBIOLOGY / PATHOLOGY */
-  testClassification: string | null;
-  /** 허용 검체 종류 */
-  specimenTypes: string[] | null;
-}
-
 export interface OrderDispatch {
   orderId: string;
   /** LAB / PHARMACY */
@@ -142,10 +132,6 @@ export interface OrderState {
   /** 접수별 목록 조회 상태(loading/loaded/error). 아직 안 불러왔으면 키가 없다 */
   listStatusByReception: Record<string, OrderListStatus>;
   listError: string;
-  /** 검사항목 검색 결과(마지막 검색) */
-  labItems: LabItem[];
-  labItemsLoading: boolean;
-  labItemsError: string;
   submitting: boolean;
   submitError: string;
   /** 취소·전송·조회를 진행 중인 처방ID (없으면 "") */
