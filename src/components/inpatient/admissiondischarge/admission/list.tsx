@@ -218,7 +218,8 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
 
   return (
     // embedded면 탭 컨테이너 폭에 맞춰 꽉 채우고, 아니면 단독 페이지용 중앙정렬+여백
-    <div className={`flex flex-col gap-4 ${embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}`}>
+    // 화면 아래까지 꽉 채움 — 목록과 상세 패널이 각자 안에서 스크롤 (홈 탭 안에서는 남은 높이를, 단독 페이지에서는 화면 높이를 채움)
+    <div className={`flex min-h-0 flex-col gap-4 ${embedded ? "w-full flex-1" : "mx-auto h-full w-full max-w-[1800px] p-6"}`}>
       {/* embedded일 땐 홈이 이미 "입퇴원관리" 제목을 보여주므로 생략 */}
       {!embedded && <PageHeader title="Admission List" description="List of patients registered for admission." />}
 
@@ -237,8 +238,8 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
 
       {!listStatus.error && (
         // 좌: 목록 테이블(flex-1로 남는 공간 다 차지), 우: 선택됐을 때만 나타나는 상세 패널
-        <div className="flex items-start gap-4">
-          <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-[480px] flex-1 gap-4">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <DataTable
               columns={columns}
               rows={visibleAdmissions}
@@ -253,7 +254,7 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
 
           {/* selectedId가 null이 아닐 때만(=행을 클릭했을 때만) 오른쪽 상세 패널이 나타남 */}
           {selectedId && (
-            <div className="w-[420px] shrink-0">
+            <div className="min-h-0 w-[420px] shrink-0 overflow-y-auto">
               {/* admissionId를 prop으로 직접 전달(라우트 파라미터 아님), onClose로 선택 해제 콜백 전달 */}
               <AdmissionDetail admissionId={selectedId} onClose={() => setSelectedId(null)} />
             </div>

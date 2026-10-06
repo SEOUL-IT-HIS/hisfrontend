@@ -50,7 +50,8 @@ export default function AdmissionPickerPanel({
   ];
 
   return (
-    <div className="flex min-w-0 flex-col gap-3">
+    // 부모 높이를 꽉 채우고, 환자가 많으면 표 안에서만 스크롤 (DataTable이 flex-1 + overflow-auto)
+    <div className="flex min-h-0 min-w-0 flex-col gap-3">
       <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         <span className="text-sm font-semibold text-slate-800">{title}</span>
         {headerExtra}
