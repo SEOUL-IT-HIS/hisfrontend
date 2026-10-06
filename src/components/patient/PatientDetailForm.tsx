@@ -613,14 +613,13 @@ export default function PatientDetailForm({
 
           {patientDetail.patientId === patientId ? (
             <PatientContactPanel
-              key={patientId}
               patientId={patientId}
               patientName={patientDetail.patientName}
             />
           ) : null}
 
           {patientDetail.patientId === patientId ? (
-            <PatientSafetyPanel key={patientId} patientId={patientId} patientName={patientDetail.patientName} />
+            <PatientSafetyPanel patientId={patientId} patientName={patientDetail.patientName} />
           ) : null}
 
           {conversionEditing && patientDetail.tempPatientYn === "Y" ? (
