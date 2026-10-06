@@ -1,5 +1,7 @@
 "use client";
 
+import { formatDateTime } from "@/features/inpatient/dateLimits";
+import { formatBedLabel } from "@/features/inpatient/displayFormat";
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchBedAssignmentDetailRequest, updateBedAssignmentRequest, resetBedAssignmentUpdateStatus } from "@/features/inpatient/bedmanagement/bedassignment/slice";
 import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice";
@@ -7,8 +9,9 @@ import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Alert, Button } from "@/components/common";
+import SectionCard, { InfoRow } from "@/components/inpatient/common/SectionCard";
 
-const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
 
 type BedAssignmentDetailProps = {
     /** 목록 옆에 끼워 넣을 때 라우트 파라미터 대신 직접 전달 */
@@ -83,31 +86,28 @@ const BedAssignmentDetail = ({ assignmentId: assignmentIdProp, onClose }: BedAss
     const isActive = bedAssignment?.releasedAt === null;  // 병상 배정이 활성 상태인지 확인
 
     return (
-        <div className="w-full p-6">
-            <div className="mb-6 flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-slate-800">Bed Assignment Details</h1>
-                    <p className="mt-1 text-sm text-slate-500">Assignment information and bed release status.</p>
-                </div>
-                {onClose && ( 
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-                    >
-                        Deselect
-                    </button>
-                )}
-            </div>
+        // 목록 옆에 끼워 넣을 때(onClose 있음)는 여백 없이, 단독 화면일 때만 페이지 여백
+        <div className={`flex flex-col gap-4 ${onClose ? "w-full" : "w-full p-6"}`}>
+            <SectionCard
+                title="Bed Assignment Details"
+                // 목록 옆 좁은 패널에서는 설명을 숨겨 제목과 Deselect가 한 줄에 들어가게 함
+                description={onClose ? undefined : "Assignment information and bed release status."}
+                padded={false}
+                actions={
+                    onClose && (
+                        <Button variant="secondary" onClick={onClose} className="!h-8 !px-3">
+                            Deselect
+                        </Button>
+                    )
+                }
+            >
+                {loading && <p className="px-5 py-6 text-sm text-slate-400">Loading...</p>}
+                {error && <Alert className="m-4">{error}</Alert>}
 
-            {loading && <p className="text-sm text-slate-500">Loading...</p>}
-            {error && <p className="text-sm text-red-600">{error}</p>}
-
-            {!loading && bedAssignment && (
-                <div className="space-y-4">
-                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                            <span className="text-sm font-medium text-slate-800">{patientName}</span>
+                {!loading && bedAssignment && (
+                    <div>
+                        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/60 px-5 py-3">
+                            <span className="text-sm font-semibold text-slate-800">{patientName}</span>
                             <span
                                 className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
                                     isActive
@@ -118,52 +118,23 @@ const BedAssignmentDetail = ({ assignmentId: assignmentIdProp, onClose }: BedAss
                                 {isActive ? "Assigned" : "Released"}
                             </span>
                         </div>
-                        <div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Assignment ID</span>
-                                <span className="text-slate-800">{bedAssignment.assignmentId}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Bed ID</span>
-                                <span className="text-slate-800">{bedAssignment.bedId}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Admission ID</span>
-                                <span className="text-slate-800">{bedAssignment.admissionId}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Assigned At</span>
-                                <span className="text-slate-800">{bedAssignment.assignedAt}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Released At</span>
-                                <span className="text-slate-800">{bedAssignment.releasedAt ?? "-"}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Created At</span>
-                                <span className="text-slate-800">{bedAssignment.createdAt}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Updated At</span>
-                                <span className="text-slate-800">{bedAssignment.updatedAt}</span>
-                            </div>
-                        </div>
+                        <InfoRow label="Bed">{formatBedLabel(bedAssignment.bedId)}</InfoRow>
+                        <InfoRow label="Assigned At">{formatDateTime(bedAssignment.assignedAt)}</InfoRow>
+                        <InfoRow label="Released At">{formatDateTime(bedAssignment.releasedAt)}</InfoRow>
+                        <InfoRow label="Created At">{formatDateTime(bedAssignment.createdAt)}</InfoRow>
+                        <InfoRow label="Updated At">{formatDateTime(bedAssignment.updatedAt)}</InfoRow>
                     </div>
+                )}
+            </SectionCard>
 
-                    {isActive && (
-                        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                            <button
-                                onClick={handleRelease}
-                                disabled={updateStatus.loading}
-                                className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
-                            >
-                                {updateStatus.loading ? "Processing..." : "Release Bed"}
-                            </button>
-                            {updateStatus.error && <p className="mt-2 text-sm text-red-600">{updateStatus.error}</p>}
-                            {updateStatus.success && <p className="mt-2 text-sm text-emerald-600">Bed released.</p>}
-                        </div>
-                    )}
-                </div>
+            {!loading && bedAssignment && isActive && (
+                <SectionCard title="Release Bed" description="Ends this assignment and frees the bed.">
+                    <Button onClick={handleRelease} disabled={updateStatus.loading}>
+                        {updateStatus.loading ? "Processing..." : "Release Bed"}
+                    </Button>
+                    {updateStatus.error && <Alert className="mt-3">{updateStatus.error}</Alert>}
+                    {updateStatus.success && <Alert variant="success" className="mt-3">Bed released.</Alert>}
+                </SectionCard>
             )}
         </div>
     );

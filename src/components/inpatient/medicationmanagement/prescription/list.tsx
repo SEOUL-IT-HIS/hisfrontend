@@ -9,6 +9,9 @@ import {
   selectPrescriptionListStatus,
 } from "@/features/inpatient/medicationmanagement/prescription/slice";
 import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
+import { Alert, Button, DataTable, type DataTableColumn } from "@/components/common";
+import Toolbar from "@/components/inpatient/common/Toolbar";
+import type { PrescriptionDTO } from "@/features/inpatient/medicationmanagement/types";
 
 type PrescriptionListProps = {
   admissionId: string;
@@ -30,61 +33,34 @@ const PrescriptionList = ({ admissionId, selectedPrescriptionId, onSelectPrescri
     dispatch(fetchPrescriptionsRequest(admissionId));
   }, [dispatch, admissionId]);
 
+  const columns: DataTableColumn<PrescriptionDTO>[] = [
+    { key: "serviceType", header: "Service Type", render: (p) => <span className="font-medium text-slate-800">{p.serviceType}</span> },
+    { key: "status", header: "Status", render: (p) => p.status },
+    { key: "itemCount", header: "Item Count", render: (p) => p.items?.length ?? 0 },
+    { key: "prescribedAt", header: "Prescribed At", render: (p) => (p.prescribedAt ? new Date(p.prescribedAt).toLocaleString() : "-") },
+    { key: "prescribedBy", header: "Prescribed By", render: (p) => (p.prescribedBy ? doctorNameById.get(p.prescribedBy) ?? p.prescribedBy : "-") },
+  ];
+
   return (
-    <div className="w-full">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="flex w-full flex-col gap-3">
+      <Toolbar actions={onRegisterClick && <Button onClick={onRegisterClick}>New Request</Button>}>
         <h2 className="text-sm font-semibold text-slate-800">Prescription Requests</h2>
-        {onRegisterClick && (
-          <button
-            onClick={onRegisterClick}
-            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-          >
-            New Request
-          </button>
-        )}
-      </div>
+      </Toolbar>
 
-      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
-      {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
-
-      {!listStatus.loading && !listStatus.error && (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <th className="whitespace-nowrap px-4 py-3">Prescription ID</th>
-                <th className="whitespace-nowrap px-4 py-3">Service Type</th>
-                <th className="whitespace-nowrap px-4 py-3">Status</th>
-                <th className="whitespace-nowrap px-4 py-3">Item Count</th>
-                <th className="whitespace-nowrap px-4 py-3">Prescribed At</th>
-                <th className="whitespace-nowrap px-4 py-3">Prescribed By</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {prescriptions.map((prescription) => (
-                <tr
-                  key={prescription.prescriptionId}
-                  className={`cursor-pointer hover:bg-slate-50 ${
-                    selectedPrescriptionId === prescription.prescriptionId ? "bg-sky-50" : ""
-                  }`}
-                  onClick={() => onSelectPrescription?.(prescription.prescriptionId)}
-                >
-                  <td className="whitespace-nowrap px-4 py-3 font-medium text-sky-700">{prescription.prescriptionId}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{prescription.serviceType}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{prescription.status}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{prescription.items?.length ?? 0}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                    {prescription.prescribedAt ? new Date(prescription.prescribedAt).toLocaleString() : "-"}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{prescription.prescribedBy ? doctorNameById.get(prescription.prescribedBy) ?? prescription.prescribedBy : "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {prescriptions.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-slate-500">No prescription requests for this admission.</p>
-          )}
-        </div>
+      {listStatus.error ? (
+        <Alert>{listStatus.error}</Alert>
+      ) : (
+        <DataTable
+          columns={columns}
+          rows={prescriptions}
+          rowKey={(p) => p.prescriptionId}
+          onRowClick={(p) => onSelectPrescription?.(p.prescriptionId)}
+          isRowActive={(p) => p.prescriptionId === selectedPrescriptionId}
+          loading={listStatus.loading}
+          loadingMessage="Loading..."
+          emptyMessage="No prescription requests for this admission."
+          minWidthClassName="min-w-[560px]"
+        />
       )}
     </div>
   );

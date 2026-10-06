@@ -1,6 +1,7 @@
 "use client"; // 이 컴포넌트는 브라우저에서 실행됨(useState/useEffect 등 훅을 쓰려면 필수)
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux"; // dispatch: 액션 보내기, useSelector: 스토어 값 읽기
 import type { AppDispatch, RootState } from "@/store/store"; // 타입 전용 import(런타임 코드로는 안 남음)
 import {
@@ -14,6 +15,11 @@ import AdmissionDetail from "@/components/inpatient/admissiondischarge/admission
 import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { useDepartmentNames } from "@/features/commonCode/hooks/useDepartmentNames";
 import { formatDateTime, useDayStart } from "@/features/inpatient/dateLimits";
+import { formatSexAge } from "@/features/inpatient/displayFormat";
+import { Alert, DataTable, PageHeader, type DataTableColumn } from "@/components/common";
+import InpatientTabs from "@/components/inpatient/common/InpatientTabs";
+import Toolbar from "@/components/inpatient/common/Toolbar";
+import type { AdmissionDTO } from "@/features/inpatient/admissiondischarge/types";
 
 // "All" 탭에는 진행 중 입원 + 최근 7일 안에 퇴원한 건만 (전체 퇴원 이력은 "Discharged" 탭)
 const RECENT_DISCHARGE_DAYS = 7;
@@ -69,12 +75,22 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
   const listStatus = useSelector(selectAdmissionListStatus); // { loading, error }
   const bedAssignments = useSelector(selectBedAssignments); // 병상배정 목록 배열
   const patients = useSelector((state: RootState) => state.patient.patients); // 환자 목록 배열
-  const [selectedId, setSelectedId] = useState<string | null>(null); // 지금 클릭해서 선택된 입원건 id (없으면 null)
-  const [filterKey, setFilterKey] = useState<FilterKey>("needsAssignment"); // 현재 선택된 필터 키(기본값: 배정 필요)
+  // ?filter=waitingAssigned&admissionId=... 로 들어오면 그 필터와 입원 건을 미리 선택 (병상배정 등록 후 돌아올 때 사용)
+  const searchParams = useSearchParams();
+  const filterParam = searchParams.get("filter");
+  const [selectedId, setSelectedId] = useState<string | null>(searchParams.get("admissionId")); // 지금 클릭해서 선택된 입원건 id (없으면 null)
+  const [filterKey, setFilterKey] = useState<FilterKey>(
+    FILTERS.some((f) => f.key === filterParam) ? (filterParam as FilterKey) : "needsAssignment",
+  ); // 현재 선택된 필터 키(기본값: 배정 필요)
 
   // patientId → patientName 변환용 Map. patients가 안 바뀌면 재계산 안 하도록 useMemo로 캐싱
   const patientNameById = useMemo(
     () => new Map(patients.map((patient) => [patient.patientId, patient.patientName])),
+    [patients],
+  );
+  // patientId → 성별/나이 ("F / 34") — 환자 ID(UUID) 대신 화면에 보여줄 값
+  const sexAgeByPatientId = useMemo(
+    () => new Map(patients.map((patient) => [patient.patientId, formatSexAge(patient.genderCd, patient.birthDate)])),
     [patients],
   );
 
@@ -87,6 +103,19 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
   }, [dispatch]);
 
   // 이 admissionId로 걸린 배정 중, 아직 퇴상 처리 안 된(releasedAt === null) 게 하나라도 있으면 true
+  // 선택한 입원 건을 "입원 확정"(REQUESTED → ADMITTED)하면 Admitted 필터로 넘어가서 방금 처리한 건을 계속 보여줌
+  // (Waiting 필터에 그대로 두면 확정된 건이 목록에서 빠져 사라진 것처럼 보임)
+  // - 같은 입원 건의 상태가 바뀐 경우만 — 다른 행을 클릭해서 선택이 바뀐 경우는 필터를 건드리지 않음
+  // - effect 대신 "이전 값 기억 → 렌더링 중 비교" 방식 (effect 안 setState는 렌더링을 한 번 더 일으킴)
+  const selectedStatus = admissions.find((a) => a.admissionId === selectedId)?.status;
+  const [prevSelected, setPrevSelected] = useState({ id: selectedId, status: selectedStatus });
+  if (prevSelected.id !== selectedId || prevSelected.status !== selectedStatus) {
+    setPrevSelected({ id: selectedId, status: selectedStatus });
+    if (prevSelected.id === selectedId && prevSelected.status === "REQUESTED" && selectedStatus === "ADMITTED") {
+      setFilterKey("admitted");
+    }
+  }
+
   const isBedAssigned = (admissionId: string) => // 입원건별 배정 여부를 판단합니다.
     bedAssignments.some((ba) => ba.admissionId === admissionId && ba.releasedAt === null); // 아직 퇴상 처리 안 된(releasedAt === null) 배정이 있으면 배정 완료로 간주
 
@@ -125,136 +154,101 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
 
 
 
-  return (
-    // embedded면 탭 컨테이너 폭에 맞춰 꽉 채우고, 아니면 단독 페이지용 중앙정렬+여백
-    <div className={embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}>
-      <div className="mb-6 flex items-center justify-between">
-        {/* embedded일 땐 탭 컴포넌트가 이미 "입퇴원관리" 제목을 보여주므로 여기선 빈 자리만 차지 */}
-        {embedded ? (
-          <div />
-        ) : (
-          <div>
-            <h1 className="text-lg font-semibold text-slate-800">Admission List</h1>
-            <p className="mt-1 text-sm text-slate-500">List of patients registered for admission.</p>
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          {/* 상태+병상배정 조합을 "할 일" 단위로 묶은 필터 탭 */}
-          <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">
-            {FILTERS.map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => setFilterKey(f.key)}
-                className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  filterKey === f.key ? "bg-sky-600 text-white" : "text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          {hiddenDischargeCount > 0 && (
-            <span className="text-xs text-slate-400">
-              {hiddenDischargeCount} discharges older than {RECENT_DISCHARGE_DAYS} days → Discharged tab
+  const columns: DataTableColumn<AdmissionDTO>[] = [
+    // patientId로 Map 조회 → 이름이 아직 없으면(patients 로딩 전) "조회중..." 표시
+    { key: "patient", header: "Patient Name", render: (a) => <span className="font-medium text-slate-800">{patientNameById.get(a.patientId) ?? "Looking up..."}</span> },
+    { key: "sexAge", header: "Sex / Age", render: (a) => sexAgeByPatientId.get(a.patientId) ?? "-" },
+    { key: "dept", header: "Admission Dept", render: (a) => (a.admissionDeptId ? deptNames[a.admissionDeptId] ?? a.admissionDeptId : "-") },
+    {
+      key: "route",
+      header: "Admission Route",
+      render: (a) => (
+        <>
+          {a.admissionRoute}
+          {/* 응급 요청 중 격리가 필요한 건은 목록에서도 바로 보이게 표시 (배정 전 확인용) */}
+          {a.isolationYn === "Y" && (
+            <span className="ml-2 inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-200">
+              Isolation
             </span>
           )}
-          {/* 병동 직접 등록 폼은 제거함 — 입원요청은 응급에서 Kafka(emergency.admission.requested.v1)로만 들어옴 */}
-        </div>
-      </div>
+        </>
+      ),
+    },
+    { key: "admissionDate", header: "Admission Date", render: (a) => formatDateTime(a.admissionDate) },
+    { key: "dischargedAt", header: "Discharge Date", render: (a) => formatDateTime(a.dischargedAt) },
+    { key: "doctor", header: "Doctor", render: (a) => (a.doctorId ? doctorNameById.get(a.doctorId) ?? a.doctorId : "-") },
+    {
+      key: "status",
+      header: "Status",
+      // STATUS_BADGE/LABEL에 없는 값이 오더라도(예상 못한 상태값) 깨지지 않게 기본 회색 스타일/원본 문자열로 대체
+      render: (a) => (
+        <span
+          className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
+            STATUS_BADGE[a.status] ?? "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
+          }`}
+        >
+          {STATUS_LABEL[a.status] ?? a.status}
+        </span>
+      ),
+    },
+    {
+      key: "bed",
+      header: "Bed Assignment",
+      // isBedAssigned() 결과에 따라 배지 중 하나만 보여줌
+      render: (a) =>
+        isBedAssigned(a.admissionId) ? (
+          <span className="inline-flex items-center whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+            Assigned
+          </span>
+        ) : hasReleasedAssignment(a.admissionId) ? (
+          <span className="inline-flex items-center whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
+            Released
+          </span>
+        ) : a.status === "ADMITTED" ? (
+          <span className="inline-flex items-center whitespace-nowrap rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-200">
+            Unassigned (Check Required)
+          </span>
+        ) : (
+          <span className="inline-flex items-center whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
+            Unassigned
+          </span>
+        ),
+    },
+  ];
 
-      {/* fetch 진행 상태에 따른 안내 문구 — 로딩중이거나 에러면 아래 테이블 자체를 안 그림 */}
-      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
-      {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
+  return (
+    // embedded면 탭 컨테이너 폭에 맞춰 꽉 채우고, 아니면 단독 페이지용 중앙정렬+여백
+    <div className={`flex flex-col gap-4 ${embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}`}>
+      {/* embedded일 땐 홈이 이미 "입퇴원관리" 제목을 보여주므로 생략 */}
+      {!embedded && <PageHeader title="Admission List" description="List of patients registered for admission." />}
 
-      {!listStatus.loading && !listStatus.error && (
+      <Toolbar>
+        {/* 상태+병상배정 조합을 "할 일" 단위로 묶은 필터 탭 */}
+        <InpatientTabs variant="inline" tabs={FILTERS} active={filterKey} onChange={setFilterKey} />
+        {hiddenDischargeCount > 0 && (
+          <span className="text-xs text-slate-400">
+            {hiddenDischargeCount} discharges older than {RECENT_DISCHARGE_DAYS} days → Discharged tab
+          </span>
+        )}
+        {/* 병동 직접 등록 폼은 제거함 — 입원요청은 응급에서 Kafka(emergency.admission.requested.v1)로만 들어옴 */}
+      </Toolbar>
+
+      {listStatus.error && <Alert>{listStatus.error}</Alert>}
+
+      {!listStatus.error && (
         // 좌: 목록 테이블(flex-1로 남는 공간 다 차지), 우: 선택됐을 때만 나타나는 상세 패널
         <div className="flex items-start gap-4">
-          <div className="min-w-0 flex-1 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                  <th className="whitespace-nowrap px-4 py-3">Admission ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
-                  <th className="whitespace-nowrap px-4 py-3">Admission Dept</th>
-                  <th className="whitespace-nowrap px-4 py-3">Admission Route</th>
-                  <th className="whitespace-nowrap px-4 py-3">Admission Date</th>
-                  <th className="whitespace-nowrap px-4 py-3">Discharge Date</th>
-                  <th className="whitespace-nowrap px-4 py-3">Patient ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">Doctor ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">Status</th>
-                  <th className="whitespace-nowrap px-4 py-3">Bed Assignment</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {/* admissions 배열 길이만큼 <tr>을 하나씩 찍어냄. admissions가 비어있으면 아무 행도 안 그려짐 */}
-                {visibleAdmissions.map((admission) => (
-                  <tr
-                    key={admission.admissionId} // React가 각 행을 구분하는 고유값 — 배열 렌더링엔 필수
-                    onClick={() => setSelectedId(admission.admissionId)} // 클릭하면 이 행의 id를 선택 상태로 저장
-                    className={`cursor-pointer hover:bg-slate-50 ${
-                      selectedId === admission.admissionId ? "bg-sky-50" : "" // 선택된 행만 파란 배경으로 강조
-                    }`}
-                  >
-                    <td className="whitespace-nowrap px-4 py-3 font-medium text-sky-700">{admission.admissionId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-800">
-                      {/* patientId로 Map 조회 → 이름이 아직 없으면(patients 로딩 전) "조회중..." 표시 */}
-                      {patientNameById.get(admission.patientId) ?? "Looking up..."}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                      {admission.admissionDeptId ? deptNames[admission.admissionDeptId] ?? admission.admissionDeptId : "-"}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                      {admission.admissionRoute}
-                      {/* 응급 요청 중 격리가 필요한 건은 목록에서도 바로 보이게 표시 (배정 전 확인용) */}
-                      {admission.isolationYn === "Y" && (
-                        <span className="ml-2 inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-200">
-                          Isolation
-                        </span>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDateTime(admission.admissionDate)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDateTime(admission.dischargedAt)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.patientId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.doctorId ? doctorNameById.get(admission.doctorId) ?? admission.doctorId : "-"}</td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      {/* STATUS_BADGE/LABEL에 없는 값이 오더라도(예상 못한 상태값) 깨지지 않게 기본 회색 스타일/원본 문자열로 대체 */}
-                      <span
-                        className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
-                          STATUS_BADGE[admission.status] ?? "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
-                        }`}
-                      >
-                        {STATUS_LABEL[admission.status] ?? admission.status}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      {/* isBedAssigned() 결과에 따라 배지 두 종류 중 하나만 보여줌 */}
-                      {isBedAssigned(admission.admissionId) ? (
-                        <span className="inline-flex items-center whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                          Assigned
-                        </span>
-                      ) : hasReleasedAssignment(admission.admissionId) ? (
-                        <span className="inline-flex items-center whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
-                          Released
-                        </span>
-                      ) : admission.status === "ADMITTED" ? (
-                        <span className="inline-flex items-center whitespace-nowrap rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-200">
-                          Unassigned (Check Required)
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
-                          Unassigned
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {/* 필터링된 목록이 하나도 없을 때만 안내 문구 표시 */}
-            {visibleAdmissions.length === 0 && (
-              <p className="px-4 py-6 text-center text-sm text-slate-500">No admission data available.</p>
-            )}
+          <div className="flex min-w-0 flex-1 flex-col">
+            <DataTable
+              columns={columns}
+              rows={visibleAdmissions}
+              rowKey={(a) => a.admissionId}
+              onRowClick={(a) => setSelectedId(a.admissionId)}
+              isRowActive={(a) => a.admissionId === selectedId}
+              loading={listStatus.loading}
+              loadingMessage="Loading..."
+              emptyMessage="No admission data available."
+            />
           </div>
 
           {/* selectedId가 null이 아닐 때만(=행을 클릭했을 때만) 오른쪽 상세 패널이 나타남 */}

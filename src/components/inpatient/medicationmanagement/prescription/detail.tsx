@@ -19,8 +19,10 @@ import {
   SEND_STATUS_SENT,
 } from "@/features/inpatient/medicationmanagement/types";
 import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
+import { INFO_ROW } from "@/components/inpatient/common/styles";
+import { Alert, Button, Input } from "@/components/common";
+import { InfoRow } from "@/components/inpatient/common/SectionCard";
 
-const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
 const BADGE = "inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset";
 
 // 항목 전송 상태 배지 (병동 백엔드가 등록 직후 검사실/약제부로 전송한 결과)
@@ -68,30 +70,24 @@ const PrescriptionDetail = ({ prescriptionId }: PrescriptionDetailProps) => {
 
   return (
     <div className="w-full">
-      {loading && <p className="text-sm text-slate-500">Loading...</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {loading && <p className="text-sm text-slate-400">Loading...</p>}
+      {error && <Alert>{error}</Alert>}
 
       {!loading && prescription && (
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <span className="text-sm font-medium text-slate-800">Prescription Info</span>
+          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/60 px-5 py-3">
+              <span className="text-sm font-semibold text-slate-800">Prescription Info</span>
               {/* 검사 결과는 나중에 도착하므로, 다시 불러와서 확인 */}
-              <button
-                type="button"
+              <Button variant="secondary" className="!h-7 !rounded-lg !px-2.5 !text-xs"
                 onClick={() => dispatch(fetchPrescriptionDetailRequest(prescriptionId))}
-                className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
               >
                 Refresh
-              </button>
+              </Button>
             </div>
             <div>
               <div className={INFO_ROW}>
-                <span className="text-slate-500">Prescription ID</span>
-                <span className="text-slate-800">{prescription.prescriptionId}</span>
-              </div>
-              <div className={INFO_ROW}>
-                <span className="text-slate-500">Status</span>
+                <span className="text-slate-400">Status</span>
                 {isCancelled ? (
                   <span className={`${BADGE} bg-rose-50 text-rose-700 ring-rose-200`}>Cancelled</span>
                 ) : (
@@ -100,48 +96,29 @@ const PrescriptionDetail = ({ prescriptionId }: PrescriptionDetailProps) => {
               </div>
               {isCancelled && (
                 <>
-                  <div className={INFO_ROW}>
-                    <span className="text-slate-500">Cancelled At</span>
-                    <span className="text-slate-800">{formatDateTime(prescription.cancelledAt)}</span>
-                  </div>
-                  <div className={INFO_ROW}>
-                    <span className="text-slate-500">Cancel Reason</span>
-                    <span className="text-slate-800">{prescription.cancelReason ?? "-"}</span>
-                  </div>
+                  <InfoRow label="Cancelled At">{formatDateTime(prescription.cancelledAt)}</InfoRow>
+                  <InfoRow label="Cancel Reason">{prescription.cancelReason ?? "-"}</InfoRow>
                 </>
               )}
-              <div className={INFO_ROW}>
-                <span className="text-slate-500">Service Type</span>
-                <span className="text-slate-800">{prescription.serviceType}</span>
-              </div>
-              <div className={INFO_ROW}>
-                <span className="text-slate-500">Order Method</span>
-                <span className="text-slate-800">{prescription.orderMethod}</span>
-              </div>
-              <div className={INFO_ROW}>
-                <span className="text-slate-500">Priority / Timing</span>
-                <span className="text-slate-800">{prescription.priorityCode} / {prescription.timingCode}</span>
-              </div>
-              <div className={INFO_ROW}>
-                <span className="text-slate-500">Prescribed At</span>
-                <span className="text-slate-800">{formatDateTime(prescription.prescribedAt)}</span>
-              </div>
-              <div className={INFO_ROW}>
-                <span className="text-slate-500">Prescribed By</span>
-                <span className="text-slate-800">{prescription.prescribedBy ? doctorNameById.get(prescription.prescribedBy) ?? prescription.prescribedBy : "-"}</span>
-              </div>
+              <InfoRow label="Service Type">{prescription.serviceType}</InfoRow>
+              <InfoRow label="Order Method">{prescription.orderMethod}</InfoRow>
+              <InfoRow label="Priority / Timing">{prescription.priorityCode} / {prescription.timingCode}</InfoRow>
+              <InfoRow label="Prescribed At">{formatDateTime(prescription.prescribedAt)}</InfoRow>
+              <InfoRow label="Prescribed By">{prescription.prescribedBy ? doctorNameById.get(prescription.prescribedBy) ?? prescription.prescribedBy : "-"}</InfoRow>
+              <InfoRow label="Created At">{formatDateTime(prescription.createdAt)}</InfoRow>
+              <InfoRow label="Updated At">{formatDateTime(prescription.updatedAt)}</InfoRow>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-4 py-3">
-              <span className="text-sm font-medium text-slate-800">Prescription Items</span>
+          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3">
+              <span className="text-sm font-semibold text-slate-800">Prescription Items</span>
             </div>
             <div className="divide-y divide-slate-100">
               {prescription.items?.map((item) => {
                 const isMedication = item.prescriptionType === PRESCRIPTION_TYPE_MEDICATION;
                 return (
-                  <div key={item.itemId} className="space-y-1.5 px-4 py-3 text-sm">
+                  <div key={item.itemId} className="space-y-1.5 px-5 py-3 text-sm">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium text-slate-800">
                         {item.itemName}
@@ -159,7 +136,7 @@ const PrescriptionDetail = ({ prescriptionId }: PrescriptionDetailProps) => {
                     {/* 검사 결과 — 검사서비스 결과 이벤트가 도착하면 표시 */}
                     {!isMedication && (
                       item.resultStatus ? (
-                        <div className="rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-900">
+                        <div className="rounded-xl border border-sky-200/80 bg-sky-50 px-3 py-2 text-xs text-sky-900">
                           <span className="font-medium">Result {item.resultStatus}</span>
                           <span className="ml-2 text-sky-700">{formatDateTime(item.resultReportedAt)}</span>
                           {item.resultSummary && <p className="mt-1 whitespace-pre-wrap">{item.resultSummary}</p>}
@@ -172,63 +149,55 @@ const PrescriptionDetail = ({ prescriptionId }: PrescriptionDetailProps) => {
                 );
               })}
               {(!prescription.items || prescription.items.length === 0) && (
-                <p className="px-4 py-6 text-center text-sm text-slate-500">No items available.</p>
+                <p className="px-5 py-10 text-center text-sm text-slate-400">No items available.</p>
               )}
             </div>
           </div>
 
           {/* 재전송 / 취소 — 취소된 처방은 더 할 수 있는 동작이 없으므로 숨김 */}
           {!isCancelled && (
-            <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
               <div className="flex flex-wrap gap-2">
                 {hasUnsent && (
-                  <button
-                    type="button"
+                  <Button
                     onClick={() => dispatch(retryDispatchRequest(prescriptionId))}
                     disabled={actionStatus.loading}
-                    className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                   >
                     Retry Send
-                  </button>
+                  </Button>
                 )}
-                <button
-                  type="button"
+                <Button variant="danger"
                   onClick={() => setShowCancel((v) => !v)}
                   disabled={actionStatus.loading}
-                  className="inline-flex items-center rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
                 >
                   Cancel Prescription
-                </button>
+                </Button>
               </div>
 
               {/* 취소를 막지는 않음 — 등록 직후 자동 전송되므로 막으면 사실상 모든 처방이 취소 불가가 됨 */}
               {showCancel && sentItems.length > 0 && (
-                <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                   Already sent to the lab / pharmacy: {sentItems.map((item) => item.itemName).join(", ")}.
                   Cancelling here does not withdraw those orders — please notify the lab / pharmacy separately.
                 </p>
               )}
               {showCancel && (
                 <div className="flex gap-2">
-                  <input
-                    type="text"
+                  <Input
                     value={cancelReason}
                     onChange={(e) => setCancelReason(e.target.value)}
                     placeholder="Cancel reason"
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500"
                   />
-                  <button
-                    type="button"
+                  <Button variant="danger" className="shrink-0"
                     onClick={onCancelSubmit}
                     disabled={actionStatus.loading || !cancelReason.trim()}
-                    className="shrink-0 rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-60"
                   >
                     {actionStatus.loading ? "Processing..." : "Confirm Cancel"}
-                  </button>
+                  </Button>
                 </div>
               )}
 
-              {actionStatus.error && <p className="text-sm text-red-600">{actionStatus.error}</p>}
+              {actionStatus.error && <Alert>{actionStatus.error}</Alert>}
             </div>
           )}
         </div>

@@ -8,10 +8,9 @@ import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
-const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
-const LABEL = "mb-1 block text-sm font-medium text-slate-700";
-const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
+import { LABEL, FIELD } from "@/components/inpatient/common/styles";
+import { Alert, Button, PageHeader } from "@/components/common";
+import { InfoRow } from "@/components/inpatient/common/SectionCard";
 
 const VitalSignDetail = () => {
     // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
@@ -65,17 +64,22 @@ const VitalSignDetail = () => {
         }
     }, [updateStatus.success, vitalSignId]);
 
-    useEffect(() => {
-        if (!vitalSign) return;
-        setEditForm({
-            temperature: String(vitalSign.temperature),
-            pulse: String(vitalSign.pulse),
-            respiration: String(vitalSign.respiration),
-            bpSystolic: String(vitalSign.bpSystolic),
-            bpDiastolic: String(vitalSign.bpDiastolic),
-            spo2: String(vitalSign.spo2),
-        });
-    }, [vitalSign]);
+    // 서버 값(vitalSign)이 바뀌면 수정 폼에 복사 — effect 대신 "이전 값 기억 → 렌더링 중 비교" 방식
+    // (effect 안에서 setState하면 한 번 더 렌더링되므로 React 권장 방식으로 변경. 초기값 undefined라 첫 렌더링 때도 한 번 복사됨)
+    const [prevVitalSign, setPrevVitalSign] = useState<typeof vitalSign | undefined>(undefined);
+    if (vitalSign !== prevVitalSign) {
+        setPrevVitalSign(vitalSign);
+        if (vitalSign) {
+            setEditForm({
+                temperature: String(vitalSign.temperature),
+                pulse: String(vitalSign.pulse),
+                respiration: String(vitalSign.respiration),
+                bpSystolic: String(vitalSign.bpSystolic),
+                bpDiastolic: String(vitalSign.bpDiastolic),
+                spo2: String(vitalSign.spo2),
+            });
+        }
+    }
 
     const onEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -108,77 +112,39 @@ const VitalSignDetail = () => {
         : "Loading...";
 
     return (
-        <div className="mx-auto w-full max-w-2xl p-6">
-            <div className="mb-6">
-                <h1 className="text-lg font-semibold text-slate-800">Vital Signs Detail</h1>
-                <p className="mt-1 text-sm text-slate-500">View and manage measurement records, edits, and change history.</p>
-            </div>
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-6">
+            <PageHeader title="Vital Signs Detail" description="View and manage measurement records, edits, and change history." />
 
-            {loading && <p className="text-sm text-slate-500">Loading...</p>}
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {loading && <p className="text-sm text-slate-400">Loading...</p>}
+            {error && <Alert>{error}</Alert>}
 
             {!loading && vitalSign && (
                 <div className="space-y-4">
-                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                        <div className="border-b border-slate-100 px-4 py-3">
-                            <span className="text-sm font-medium text-slate-800">{patientName}</span>
+                    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                        <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3">
+                            <span className="text-sm font-semibold text-slate-800">{patientName}</span>
                         </div>
                         <div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Vital Signs ID</span>
-                                <span className="text-slate-800">{vitalSign.vitalSignId}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Admission ID</span>
-                                <span className="text-slate-800">{vitalSign.admissionId}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Measured At</span>
-                                <span className="text-slate-800">{new Date(vitalSign.measuredAt).toLocaleString()}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Temperature</span>
-                                <span className="text-slate-800">{vitalSign.temperature}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Pulse</span>
-                                <span className="text-slate-800">{vitalSign.pulse}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Respiration Rate</span>
-                                <span className="text-slate-800">{vitalSign.respiration}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Blood Pressure</span>
-                                <span className="text-slate-800">{vitalSign.bpSystolic}/{vitalSign.bpDiastolic}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">SpO2</span>
-                                <span className="text-slate-800">{vitalSign.spo2}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Recorded By</span>
-                                <span className="text-slate-800">{vitalSign.recorderId ? nurseNameById.get(vitalSign.recorderId) ?? vitalSign.recorderId : "-"}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Created At</span>
-                                <span className="text-slate-800">{new Date(vitalSign.createdAt).toLocaleString()}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Updated At</span>
-                                <span className="text-slate-800">{new Date(vitalSign.updatedAt).toLocaleString()}</span>
-                            </div>
+                            <InfoRow label="Measured At">{new Date(vitalSign.measuredAt).toLocaleString()}</InfoRow>
+                            <InfoRow label="Temperature">{vitalSign.temperature}</InfoRow>
+                            <InfoRow label="Pulse">{vitalSign.pulse}</InfoRow>
+                            <InfoRow label="Respiration Rate">{vitalSign.respiration}</InfoRow>
+                            <InfoRow label="Blood Pressure">{vitalSign.bpSystolic}/{vitalSign.bpDiastolic}</InfoRow>
+                            <InfoRow label="SpO2">{vitalSign.spo2}</InfoRow>
+                            <InfoRow label="Recorded By">{vitalSign.recorderId ? nurseNameById.get(vitalSign.recorderId) ?? vitalSign.recorderId : "-"}</InfoRow>
+                            <InfoRow label="Created At">{new Date(vitalSign.createdAt).toLocaleString()}</InfoRow>
+                            <InfoRow label="Updated At">{new Date(vitalSign.updatedAt).toLocaleString()}</InfoRow>
                         </div>
                     </div>
 
                     {readOnly && (
-                      <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                      <Alert variant="info">
                         This admission is discharged. Nursing records can be viewed but not edited or deleted.
-                      </p>
+                      </Alert>
                     )}
                     {!readOnly && (
-                      <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                          <p className="text-sm font-medium text-slate-800">Edit Vital Signs</p>
+                      <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                          <p className="text-sm font-semibold text-slate-800">Edit Vital Signs</p>
                           <div>
                               <label htmlFor="temperature" className={LABEL}>Temperature</label>
                               <input type="number" id="temperature" name="temperature" value={editForm.temperature} onChange={onEditChange} step="0.1" className={FIELD} />
@@ -203,30 +169,29 @@ const VitalSignDetail = () => {
                               <label htmlFor="spo2" className={LABEL}>SpO2</label>
                               <input type="number" id="spo2" name="spo2" value={editForm.spo2} onChange={onEditChange} step="0.1" min="0" max="100" className={FIELD} />
                           </div>
-                          <button
+                          <Button
                               onClick={handleUpdate}
                               disabled={updateStatus.loading}
-                              className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                           >
                               {updateStatus.loading ? "Updating..." : "Update"}
-                          </button>
-                          {updateStatus.error && <p className="text-sm text-red-600">{updateStatus.error}</p>}
-                          {updateStatus.success && <p className="text-sm text-emerald-600">Update completed</p>}
+                          </Button>
+                          {updateStatus.error && <Alert>{updateStatus.error}</Alert>}
+                          {updateStatus.success && <Alert variant="success">Update completed</Alert>}
                       </div>
                     )}
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p className="mb-3 text-sm font-medium text-slate-800">Change History</p>
-                        {historyStatus.loading && <p className="text-sm text-slate-500">Loading history...</p>}
-                        {historyStatus.error && <p className="text-sm text-red-600">{historyStatus.error}</p>}
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                        <p className="mb-3 text-sm font-semibold text-slate-800">Change History</p>
+                        {historyStatus.loading && <p className="text-sm text-slate-400">Loading history...</p>}
+                        {historyStatus.error && <Alert>{historyStatus.error}</Alert>}
                         {history.length === 0 && !historyStatus.loading && (
-                            <p className="text-sm text-slate-500">No change history</p>
+                            <p className="text-sm text-slate-400">No change history</p>
                         )}
                         {history.length > 0 && (
-                            <div className="overflow-x-auto rounded-lg border border-slate-200">
+                            <div className="overflow-x-auto rounded-xl border border-slate-200/80">
                                 <table className="w-full text-left text-sm">
                                     <thead>
-                                        <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
+                                        <tr className="border-b border-slate-100 bg-slate-50/95 text-xs font-medium uppercase tracking-wide text-slate-400">
                                             <th className="whitespace-nowrap px-3 py-2">Type</th>
                                             <th className="whitespace-nowrap px-3 py-2">Changed At</th>
                                             <th className="whitespace-nowrap px-3 py-2">Temperature</th>
@@ -265,15 +230,14 @@ const VitalSignDetail = () => {
                     </div>
 
                     {!readOnly && (
-                      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                          <button
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                          <Button variant="danger"
                               onClick={handleDelete}
                               disabled={deleteStatus.loading}
-                              className="inline-flex items-center rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
                           >
                               {deleteStatus.loading ? "Deleting..." : "Delete"}
-                          </button>
-                          {deleteStatus.error && <p className="mt-2 text-sm text-red-600">{deleteStatus.error}</p>}
+                          </Button>
+                          {deleteStatus.error && <Alert className="mt-3">{deleteStatus.error}</Alert>}
                       </div>
                     )}
                 </div>

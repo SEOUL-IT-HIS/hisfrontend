@@ -10,6 +10,11 @@ import {
   selectAdmissions,
 } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
+import { formatDateTime } from "@/features/inpatient/dateLimits";
+import { formatSexAge } from "@/features/inpatient/displayFormat";
+import { PageHeader, Panel } from "@/components/common";
+import AdmissionPickerPanel from "@/components/inpatient/common/AdmissionPickerPanel";
+import InpatientTabs from "@/components/inpatient/common/InpatientTabs";
 import RiskAssessmentList from "@/components/inpatient/nursingrecord/riskassessment/list";
 import VitalSignList from "@/components/inpatient/nursingrecord/vitalsign/list";
 import RestraintList from "@/components/inpatient/nursingrecord/restraint/list";
@@ -67,6 +72,11 @@ const NursingRecordHome = () => {
     () => new Map(patients.map((patient) => [patient.patientId, patient.patientName])),
     [patients],
   );
+  // 성별/나이 ("F / 34") — 입원 ID · 환자 ID 대신 화면에 보여줄 값
+  const sexAgeLabel = (patientId: string) => {
+    const patient = patients.find((p) => p.patientId === patientId);
+    return patient ? formatSexAge(patient.genderCd, patient.birthDate) : "-";
+  };
   const patientLabel = (patientId: string) =>
     patientNameById.get(patientId) ?? (patientListLoading ? "Loading..." : "Unknown");
 
@@ -82,89 +92,54 @@ const NursingRecordHome = () => {
   const readOnly = selectedAdmission?.status === "DISCHARGED";
 
   return (
-    <div className="mx-auto w-full max-w-[1800px] p-6">
-      <div className="mb-6">
-        <h1 className="text-lg font-semibold text-slate-800">Nursing Record Management</h1>
-        <p className="mt-1 text-sm text-slate-500">Select an admitted patient to view vital signs, risk assessments, restraints, nursing assessments, and I&O records.</p>
-      </div>
+    <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-4 p-6">
+      <PageHeader
+        title="Nursing Record Management"
+        description="Select an admitted patient to view vital signs, risk assessments, restraints, nursing assessments, and I&O records."
+      />
 
-      <div className="flex items-start gap-4">
+      <div className="grid grid-cols-[minmax(320px,1fr)_3fr] items-start gap-4">
         {/* 왼쪽: 입원 중인 환자 목록 */}
-        <div className="w-72 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
-            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Admitted Patients</span>
+        <AdmissionPickerPanel
+          title="Admitted Patients"
+          admissions={recordableAdmissions}
+          loading={admissionListStatus.loading}
+          error={admissionListStatus.error}
+          selectedAdmissionId={selectedAdmissionId}
+          onSelect={setSelectedAdmissionId}
+          patientLabel={patientLabel}
+          statusLabel={STATUS_LABEL}
+          headerExtra={
             <label className="flex items-center gap-1.5 text-xs text-slate-500">
               <input
                 type="checkbox"
                 checked={showDischarged}
                 onChange={(e) => setShowDischarged(e.target.checked)}
-                className="h-3.5 w-3.5 rounded border-slate-300"
+                className="h-3.5 w-3.5 rounded border-slate-300 accent-sky-600"
               />
               Show discharged
             </label>
-          </div>
-          {admissionListStatus.loading && <p className="px-4 py-6 text-sm text-slate-500">Loading...</p>}
-          {admissionListStatus.error && <p className="px-4 py-6 text-sm text-red-600">{admissionListStatus.error}</p>}
-          {!admissionListStatus.loading && !admissionListStatus.error && (
-            <ul className="divide-y divide-slate-100">
-              {recordableAdmissions.map((admission) => (
-                <li key={admission.admissionId}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedAdmissionId(admission.admissionId)}
-                    className={`flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left text-sm hover:bg-slate-50 ${
-                      selectedAdmissionId === admission.admissionId ? "bg-sky-50" : ""
-                    }`}
-                  >
-                    <span className={`font-medium ${admission.status === "DISCHARGED" ? "text-slate-500" : "text-slate-800"}`}>
-                      {patientLabel(admission.patientId)}
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      {admission.admissionId} · {STATUS_LABEL[admission.status] ?? admission.status}
-                    </span>
-                  </button>
-                </li>
-              ))}
-              {recordableAdmissions.length === 0 && (
-                <li className="px-4 py-6 text-center text-sm text-slate-500">No admitted patients.</li>
-              )}
-            </ul>
-          )}
-        </div>
+          }
+        />
 
         {/* 오른쪽: 선택한 입원 건의 간호기록 탭 */}
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-col gap-3">
           {!selectedAdmissionId ? (
-            <p className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-500">
+            <Panel dashed className="px-4 py-10 text-center text-sm text-slate-500">
               Select a patient on the left to see nursing records.
-            </p>
+            </Panel>
           ) : (
             <>
               {selectedAdmission && (
-                <p className="mb-4 text-sm text-slate-600">
-                  <span className="font-medium text-slate-800">{patientLabel(selectedAdmission.patientId)}</span>
+                <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3 text-sm shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                  <span className="font-semibold text-slate-800">{patientLabel(selectedAdmission.patientId)}</span>
                   <span className="ml-2 text-slate-500">
-                    {selectedAdmission.admissionId} · Patient ID {selectedAdmission.patientId}
+                    {sexAgeLabel(selectedAdmission.patientId)} · Admitted {formatDateTime(selectedAdmission.admissionDate)}
                   </span>
-                </p>
+                </div>
               )}
 
-              <div className="mb-6 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">
-                {TABS.map((tab) => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                      activeTab === tab.key
-                        ? "bg-sky-600 text-white"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+              <InpatientTabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
 
               {/* 모든 탭 목록에 선택한 입원 건을 넘겨서 그 환자 기록만 표시 */}
               {activeTab === "vitalsign" && <VitalSignList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}

@@ -18,8 +18,11 @@ import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice
 import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useDayEnd } from "@/features/inpatient/dateLimits";
+import { useDayEnd, futureTimeError } from "@/features/inpatient/dateLimits";
 import { useDispatch, useSelector } from "react-redux";
+import { LABEL, FIELD } from "@/components/inpatient/common/styles";
+import { Alert, Button, PageHeader } from "@/components/common";
+import { InfoRow } from "@/components/inpatient/common/SectionCard";
 
 const RISK_BADGE: Record<string, string> = {
     HIGH: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
@@ -32,10 +35,6 @@ const RISK_LABEL: Record<string, string> = {
     MEDIUM: "Medium Risk",
     LOW: "Low Risk",
 };
-
-const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
-const LABEL = "mb-1 block text-sm font-medium text-slate-700";
-const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 const RiskAssessmentDetail = () => {
     // 기록 시각은 미래일 수 없음 — 화면은 오늘까지만 선택, 시각과 입원일 하한은 서버가 검증
@@ -83,16 +82,21 @@ const RiskAssessmentDetail = () => {
         }
     }, [updateStatus.success, patientRiskAssessmentId]);
 
-    useEffect(() => {
-        if (!riskAssessment) return;
-        setEditForm({
-            assessmentTypeCd: riskAssessment.assessmentTypeCd,
-            score: String(riskAssessment.score),
-            riskLevelCd: riskAssessment.riskLevelCd,
-            assessedAt: new Date(riskAssessment.assessedAt).toISOString().slice(0, 16),
-            assessorId: riskAssessment.assessorId ?? "",
-        });
-    }, [riskAssessment]);
+    // 서버 값(riskAssessment)이 바뀌면 수정 폼에 복사 — effect 대신 "이전 값 기억 → 렌더링 중 비교" 방식
+    // (effect 안에서 setState하면 한 번 더 렌더링되므로 React 권장 방식으로 변경. 초기값 undefined라 첫 렌더링 때도 한 번 복사됨)
+    const [prevRiskAssessment, setPrevRiskAssessment] = useState<typeof riskAssessment | undefined>(undefined);
+    if (riskAssessment !== prevRiskAssessment) {
+        setPrevRiskAssessment(riskAssessment);
+        if (riskAssessment) {
+            setEditForm({
+                assessmentTypeCd: riskAssessment.assessmentTypeCd,
+                score: String(riskAssessment.score),
+                riskLevelCd: riskAssessment.riskLevelCd,
+                assessedAt: new Date(riskAssessment.assessedAt).toISOString().slice(0, 16),
+                assessorId: riskAssessment.assessorId ?? "",
+            });
+        }
+    }
 
     const onEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -104,8 +108,14 @@ const RiskAssessmentDetail = () => {
         dispatch(deleteRiskAssessmentRequest(patientRiskAssessmentId));
     };
 
+    // 제출 직전 미래 시각 확인 결과 (서버도 같은 기준으로 거절함)
+    const [timeError, setTimeError] = useState<string | null>(null);
+
     const handleUpdate = () => {
         if (!riskAssessment) return;
+        const futureError = futureTimeError(editForm.assessedAt, "Assessed at");
+        setTimeError(futureError);
+        if (futureError) return;
         dispatch(updateRiskAssessmentRequest({
             patientRiskAssessmentId: riskAssessment.patientRiskAssessmentId,
             admissionId: riskAssessment.admissionId,
@@ -122,20 +132,17 @@ const RiskAssessmentDetail = () => {
         : "Loading...";
 
     return (
-        <div className="mx-auto w-full max-w-2xl p-6">
-            <div className="mb-6">
-                <h1 className="text-lg font-semibold text-slate-800">Patient Risk Assessment Detail</h1>
-                <p className="mt-1 text-sm text-slate-500">View and manage assessment results.</p>
-            </div>
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 p-6">
+            <PageHeader title="Patient Risk Assessment Detail" description="View and manage assessment results." />
 
-            {loading && <p className="text-sm text-slate-500">Loading...</p>}
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {loading && <p className="text-sm text-slate-400">Loading...</p>}
+            {error && <Alert>{error}</Alert>}
 
             {!loading && riskAssessment && (
                 <div className="space-y-4">
-                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                            <span className="text-sm font-medium text-slate-800">{patientName}</span>
+                    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/60 px-5 py-3">
+                            <span className="text-sm font-semibold text-slate-800">{patientName}</span>
                             <span
                                 className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
                                     RISK_BADGE[riskAssessment.riskLevelCd] ?? "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
@@ -145,49 +152,23 @@ const RiskAssessmentDetail = () => {
                             </span>
                         </div>
                         <div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Risk Assessment ID</span>
-                                <span className="text-slate-800">{riskAssessment.patientRiskAssessmentId}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Admission ID</span>
-                                <span className="text-slate-800">{riskAssessment.admissionId}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Assessment Type Code</span>
-                                <span className="text-slate-800">{codeLabel(ASSESSMENT_TYPE_OPTIONS, riskAssessment.assessmentTypeCd)}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Assessment Score</span>
-                                <span className="text-slate-800">{riskAssessment.score}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Assessment Date/Time</span>
-                                <span className="text-slate-800">{new Date(riskAssessment.assessedAt).toLocaleString()}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Assessor ID</span>
-                                <span className="text-slate-800">{riskAssessment.assessorId ? nurseNameById.get(riskAssessment.assessorId) ?? riskAssessment.assessorId : "-"}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Created At</span>
-                                <span className="text-slate-800">{new Date(riskAssessment.createdAt).toLocaleString()}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Updated At</span>
-                                <span className="text-slate-800">{new Date(riskAssessment.updatedAt).toLocaleString()}</span>
-                            </div>
+                            <InfoRow label="Assessment Type Code">{codeLabel(ASSESSMENT_TYPE_OPTIONS, riskAssessment.assessmentTypeCd)}</InfoRow>
+                            <InfoRow label="Assessment Score">{riskAssessment.score}</InfoRow>
+                            <InfoRow label="Assessment Date/Time">{new Date(riskAssessment.assessedAt).toLocaleString()}</InfoRow>
+                            <InfoRow label="Assessed By">{riskAssessment.assessorId ? nurseNameById.get(riskAssessment.assessorId) ?? riskAssessment.assessorId : "-"}</InfoRow>
+                            <InfoRow label="Created At">{new Date(riskAssessment.createdAt).toLocaleString()}</InfoRow>
+                            <InfoRow label="Updated At">{new Date(riskAssessment.updatedAt).toLocaleString()}</InfoRow>
                         </div>
                     </div>
 
                     {readOnly && (
-                      <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                      <Alert variant="info">
                         This admission is discharged. Nursing records can be viewed but not edited or deleted.
-                      </p>
+                      </Alert>
                     )}
                     {!readOnly && (
-                      <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                          <p className="text-sm font-medium text-slate-800">Edit Risk Assessment</p>
+                      <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                          <p className="text-sm font-semibold text-slate-800">Edit Risk Assessment</p>
                           <div>
                               <label htmlFor="assessmentTypeCd" className={LABEL}>Assessment Type</label>
                               <CodeSelect id="assessmentTypeCd" name="assessmentTypeCd" value={editForm.assessmentTypeCd} options={ASSESSMENT_TYPE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
@@ -208,28 +189,27 @@ const RiskAssessmentDetail = () => {
                               <label htmlFor="assessorId" className={LABEL}>Assessor (Nurse)</label>
                               <NurseSelect id="assessorId" name="assessorId" value={editForm.assessorId} onChange={onEditChange} className={FIELD} required={false} />
                           </div>
-                          <button
+                          <Button
                               onClick={handleUpdate}
                               disabled={updateStatus.loading}
-                              className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                           >
                               {updateStatus.loading ? "Updating..." : "Update"}
-                          </button>
-                          {updateStatus.error && <p className="text-sm text-red-600">{updateStatus.error}</p>}
-                          {updateStatus.success && <p className="text-sm text-emerald-600">Update completed</p>}
+                          </Button>
+                          {timeError && <Alert>{timeError}</Alert>}
+                          {updateStatus.error && <Alert>{updateStatus.error}</Alert>}
+                          {updateStatus.success && <Alert variant="success">Update completed</Alert>}
                       </div>
                     )}
 
                     {!readOnly && (
-                      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                          <button
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                          <Button variant="danger"
                               onClick={handleDelete}
                               disabled={deleteStatus.loading}
-                              className="inline-flex items-center rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
                           >
                               {deleteStatus.loading ? "Deleting..." : "Delete"}
-                          </button>
-                          {deleteStatus.error && <p className="mt-2 text-sm text-red-600">{deleteStatus.error}</p>}
+                          </Button>
+                          {deleteStatus.error && <Alert className="mt-3">{deleteStatus.error}</Alert>}
                       </div>
                     )}
                 </div>

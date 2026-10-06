@@ -9,13 +9,17 @@ import {
   selectBedAssignmentListStatus,
 } from "@/features/inpatient/bedmanagement/bedassignment/slice";
 import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
-import Link from "next/link";
+import { Alert, DataTable, PageHeader, type DataTableColumn } from "@/components/common";
+import LinkButton from "@/components/inpatient/common/LinkButton";
+import Toolbar from "@/components/inpatient/common/Toolbar";
+import type { BedAssignmentDTO } from "@/features/inpatient/bedmanagement/types";
 import { useSearchParams } from "next/navigation";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import { fetchBedRequest, selectBed } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import BedAssignmentDetail from "@/components/inpatient/bedmanagement/bedassignment/detail";
 import { formatDateTime, useDayStart } from "@/features/inpatient/dateLimits";
+import { formatBedLabel } from "@/features/inpatient/displayFormat";
 
 // 기본 보기: 배정 중 + 최근 7일 안에 퇴상된 건 (그보다 오래된 이력은 "전체 이력 보기"로)
 const RECENT_RELEASE_DAYS = 7;
@@ -102,106 +106,91 @@ const wardNameByCd = useMemo(
     dispatch(fetchBedRequest());
   }, [dispatch]);
 
-  return (
-    <div className={embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}>
-      <div className="mb-6 flex items-center justify-between">
-        {embedded ? (
-          <div />
-        ) : (
-        <div>
-          <h1 className="text-lg font-semibold text-slate-800">Bed Assignment List</h1>
-          <p className="mt-1 text-sm text-slate-500">A record of bed assignments and releases to date.</p>
-        </div>
-        )}
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-1.5 text-sm text-slate-600">
-            <input
-              type="checkbox"
-              checked={showAllHistory}
-              onChange={(e) => setShowAllHistory(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300"
-            />
-            Show all history
-            {!showAllHistory && hiddenCount > 0 && (
-              <span className="text-xs text-slate-400">({hiddenCount} older releases hidden)</span>
-            )}
-          </label>
-          <Link
-            href="/inpatient/bedmanagement/bedassignment/create"
-            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
+  const columns: DataTableColumn<BedAssignmentDTO>[] = [
+    {
+      key: "patient",
+      header: "Patient Name",
+      render: (a) => (
+        <span className="font-medium text-slate-800">
+          {patientNameById.get(patientIdByAdmissionId.get(a.admissionId) ?? "") ?? "Unknown"}
+        </span>
+      ),
+    },
+    {
+      key: "ward",
+      header: "Ward",
+      render: (a) => {
+        const wardCd = wardCdByBedId.get(a.bedId);
+        return wardCd ? wardNameByCd.get(wardCd) ?? wardCd : "-";
+      },
+    },
+    { key: "bed", header: "Bed", render: (a) => formatBedLabel(a.bedId) },
+    { key: "assignedAt", header: "Assigned At", render: (a) => formatDateTime(a.assignedAt) },
+    { key: "releasedAt", header: "Released At", render: (a) => formatDateTime(a.releasedAt) },
+    {
+      key: "status",
+      header: "Status",
+      render: (a) => {
+        const isActive = a.releasedAt === null;
+        return (
+          <span
+            className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
+              isActive
+                ? "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200"
+                : "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
+            }`}
           >
-            Register Assignment
-          </Link>
-        </div>
-      </div>
+            {isActive ? "Assigned" : "Released"}
+          </span>
+        );
+      },
+    },
+  ];
 
-      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
-      {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
+  return (
+    <div className={`flex flex-col gap-4 ${embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}`}>
+      {!embedded && (
+        <PageHeader title="Bed Assignment List" description="A record of bed assignments and releases to date." />
+      )}
 
-      {!listStatus.loading && !listStatus.error && (
+      <Toolbar
+        actions={
+          <LinkButton href="/inpatient/bedmanagement/bedassignment/create?from=assignment">Register Assignment</LinkButton>
+        }
+      >
+        <label className="flex items-center gap-1.5 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={showAllHistory}
+            onChange={(e) => setShowAllHistory(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300 accent-sky-600"
+          />
+          Show all history
+          {!showAllHistory && hiddenCount > 0 && (
+            <span className="text-xs text-slate-400">({hiddenCount} older releases hidden)</span>
+          )}
+        </label>
+      </Toolbar>
+
+      {listStatus.error && <Alert>{listStatus.error}</Alert>}
+
+      {!listStatus.error && (
         <div className="flex items-start gap-4">
-          <div className="min-w-0 flex-1 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                  <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
-                  <th className="whitespace-nowrap px-4 py-3">Assignment ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">Ward</th>
-                  <th className="whitespace-nowrap px-4 py-3">Bed ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">Admission ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">Assigned At</th>
-                  <th className="whitespace-nowrap px-4 py-3">Released At</th>
-                  <th className="whitespace-nowrap px-4 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {visibleAssignments.map((bedAssignment) => {
-                  const isActive = bedAssignment.releasedAt === null;
-                  const wardCd = wardCdByBedId.get(bedAssignment.bedId);
-                  return (
-                    <tr
-                      key={bedAssignment.assignmentId}
-                      onClick={() => setSelectedId(bedAssignment.assignmentId)}
-                      className={`cursor-pointer hover:bg-slate-50 ${
-                        selectedId === bedAssignment.assignmentId ? "bg-sky-50" : ""
-                      }`}
-                    >
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-800">
-                        {patientNameById.get(patientIdByAdmissionId.get(bedAssignment.admissionId) ?? "") ?? "Unknown"}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 font-medium text-sky-700">
-                        {bedAssignment.assignmentId}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                        {wardCd ? wardNameByCd.get(wardCd) ?? wardCd : "-"}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bedAssignment.bedId}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bedAssignment.admissionId}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDateTime(bedAssignment.assignedAt)}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDateTime(bedAssignment.releasedAt)}</td>
-                      <td className="whitespace-nowrap px-4 py-3">
-                        <span
-                          className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
-                            isActive
-                              ? "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200"
-                              : "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
-                          }`}
-                        >
-                          {isActive ? "Assigned" : "Released"}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {visibleAssignments.length === 0 && (
-              <p className="px-4 py-6 text-center text-sm text-slate-500">
-                {bedAssignments.length === 0
+          <div className="flex min-w-0 flex-1 flex-col">
+            <DataTable
+              columns={columns}
+              rows={visibleAssignments}
+              rowKey={(a) => a.assignmentId}
+              onRowClick={(a) => setSelectedId(a.assignmentId)}
+              isRowActive={(a) => a.assignmentId === selectedId}
+              loading={listStatus.loading}
+              loadingMessage="Loading..."
+              emptyMessage={
+                bedAssignments.length === 0
                   ? "No assignment data available."
-                  : `No current assignments or releases in the last ${RECENT_RELEASE_DAYS} days.`}
-              </p>
-            )}
+                  : `No current assignments or releases in the last ${RECENT_RELEASE_DAYS} days.`
+              }
+            />
           </div>
 
           {selectedId !== null && (
