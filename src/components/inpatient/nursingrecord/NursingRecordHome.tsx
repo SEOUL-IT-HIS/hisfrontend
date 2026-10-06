@@ -92,13 +92,14 @@ const NursingRecordHome = () => {
   const readOnly = selectedAdmission?.status === "DISCHARGED";
 
   return (
-    <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-4 p-6">
+    // 응급 화면처럼 왼쪽 목록·오른쪽 내용이 화면 아래까지 꽉 차고, 각자 안에서 스크롤
+    <div className="mx-auto flex h-full w-full max-w-[1800px] flex-col gap-4 p-6">
       <PageHeader
         title="Nursing Record Management"
         description="Select an admitted patient to view vital signs, risk assessments, restraints, nursing assessments, and I&O records."
       />
 
-      <div className="grid grid-cols-[minmax(320px,1fr)_3fr] items-start gap-4">
+      <div className="grid min-h-[560px] flex-1 grid-cols-[minmax(320px,1fr)_3fr] grid-rows-[minmax(0,1fr)] gap-4">
         {/* 왼쪽: 입원 중인 환자 목록 */}
         <AdmissionPickerPanel
           title="Admitted Patients"
@@ -123,9 +124,9 @@ const NursingRecordHome = () => {
         />
 
         {/* 오른쪽: 선택한 입원 건의 간호기록 탭 */}
-        <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex min-h-0 min-w-0 flex-col gap-3">
           {!selectedAdmissionId ? (
-            <Panel dashed className="px-4 py-10 text-center text-sm text-slate-500">
+            <Panel dashed className="flex-1 items-center justify-center px-4 py-10 text-center text-sm text-slate-500">
               Select a patient on the left to see nursing records.
             </Panel>
           ) : (
@@ -141,12 +142,15 @@ const NursingRecordHome = () => {
 
               <InpatientTabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
 
-              {/* 모든 탭 목록에 선택한 입원 건을 넘겨서 그 환자 기록만 표시 */}
-              {activeTab === "vitalsign" && <VitalSignList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
-              {activeTab === "riskassessment" && <RiskAssessmentList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
-              {activeTab === "restraint" && <RestraintList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
-              {activeTab === "nursingassessment" && <NursingAssessmentList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
-              {activeTab === "iandorecord" && <IandORecordList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
+              {/* 탭 내용 — 이 영역 안에서만 스크롤 */}
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                {/* 모든 탭 목록에 선택한 입원 건을 넘겨서 그 환자 기록만 표시 */}
+                {activeTab === "vitalsign" && <VitalSignList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
+                {activeTab === "riskassessment" && <RiskAssessmentList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
+                {activeTab === "restraint" && <RestraintList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
+                {activeTab === "nursingassessment" && <NursingAssessmentList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
+                {activeTab === "iandorecord" && <IandORecordList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
+              </div>
             </>
           )}
         </div>

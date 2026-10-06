@@ -77,13 +77,14 @@ const PrescriptionRequestHome = () => {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-4 p-6">
+    // 응급 화면처럼 왼쪽 목록·오른쪽 내용이 화면 아래까지 꽉 차고, 각자 안에서 스크롤
+    <div className="mx-auto flex h-full w-full max-w-[1800px] flex-col gap-4 p-6">
       <PageHeader
         title="Prescription Requests"
         description="Select an admitted patient to view and send prescription requests to the outpatient prescription core."
       />
 
-      <div className="grid grid-cols-[minmax(320px,1fr)_3fr] items-start gap-4">
+      <div className="grid min-h-[560px] flex-1 grid-cols-[minmax(320px,1fr)_3fr] grid-rows-[minmax(0,1fr)] gap-4">
         {/* 왼쪽: 입원 중인 환자 목록 */}
         <AdmissionPickerPanel
           title="Admitted Patients"
@@ -97,9 +98,9 @@ const PrescriptionRequestHome = () => {
         />
 
         {/* 오른쪽: 선택한 입원 건의 처방 요청 */}
-        <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex min-h-0 min-w-0 flex-col gap-3">
           {!selectedAdmissionId ? (
-            <Panel dashed className="px-4 py-10 text-center text-sm text-slate-500">
+            <Panel dashed className="flex-1 items-center justify-center px-4 py-10 text-center text-sm text-slate-500">
               Select a patient on the left to see prescription requests.
             </Panel>
           ) : (
@@ -113,7 +114,8 @@ const PrescriptionRequestHome = () => {
                 </div>
               )}
 
-              <div className="flex items-start gap-4">
+              {/* 처방 목록 + 상세/폼 — 이 영역 안에서만 스크롤 */}
+              <div className="flex min-h-0 flex-1 items-start gap-4 overflow-y-auto">
                 <div className="min-w-0 flex-1">
                   <PrescriptionList
                     admissionId={selectedAdmissionId}
