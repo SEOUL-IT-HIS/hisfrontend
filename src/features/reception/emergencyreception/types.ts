@@ -6,7 +6,7 @@ export interface EmergencyReceptionRequest {
   deptId: string;
   doctorId: string;
   memo: string;
-  ktasLevel: number;
+  ktasLevel: number | null;
   visitMethod: string;
   chiefComplaint: string;
   consciousness: string;
@@ -30,7 +30,7 @@ export interface EmergencyReceptionDetail {
   status: string;
   memo: string;
   receivedAt: string;
-  ktasLevel: number;
+  ktasLevel: number | null;
   arrivalPath: string;
   chiefComplaintRaw: string;
   consciousness: string;
