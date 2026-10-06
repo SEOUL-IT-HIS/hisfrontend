@@ -364,7 +364,7 @@ export default function LabWorklist() {
           loadingMessage="Loading..."
           emptyMessage={
             filter === "EXCLUDED"
-              ? "No excluded receptions."
+              ? "No receptions excluded in the last 7 days."
               : filter === "CANCELLED"
                 ? "No cancelled receptions."
                 : "No receptions to process."
