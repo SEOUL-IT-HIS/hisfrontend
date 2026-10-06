@@ -63,11 +63,16 @@ const movementColumns: DataTableColumn<InventoryMovementDto>[] = [
   { key: "storageLocationId", header: "Storage Location", render: (row) => row.storageLocationId },
 ];
 
+type WorkspaceAction = "receipt" | "issuance" | "disposal";
+
 /**
- * 품목 중심 워크스페이스 — 입고/재고/출고/폐기가 각자 다른 화면(PharmacyHome의 링크 모음)으로
- * 흩어져 있어 한 품목을 다루려면 화면을 계속 옮겨다녀야 했다. 이 화면은 품목 하나를 고정해두고
- * 현재 재고·최근 입출고 내역을 보면서 그 자리에서 바로 입고/출고/폐기까지 처리하게 묶었다
- * (billing의 BillingDetailWorkspace — 좌측에서 고른 대상을 우측에서 바로 처리하는 것과 같은 패턴).
+ * 품목 중심 워크스페이스 — 입고/재고/출고/폐기가 각자 다른 화면으로 흩어져 있어 한 품목을
+ * 다루려면 화면을 계속 옮겨다녀야 했다. 이 화면은 품목 하나를 고정해두고 현재 재고·최근
+ * 입출고 내역을 보면서 그 자리에서 바로 입고/출고/폐기까지 처리하게 묶었다
+ * (billing의 BillingDetailWorkspace — 한 대상을 고르면 그 자리에서 바로 처리하는 것과 같은 패턴).
+ *
+ * 화면 높이를 고정하지 않고 자연스럽게 늘어나게 둔다(PharmacyShell이 스크롤을 맡음) — 입력 폼이
+ * 창 크기에 따라 잘려 보이지 않던 문제를 막기 위해서다.
  */
 export default function MedicationWorkspace() {
   const dispatch = useDispatch();
@@ -105,9 +110,13 @@ export default function MedicationWorkspace() {
   const [employees, setEmployees] = useState<Emp[]>([]);
   useEffect(() => {
     let ignore = false;
-    fetchEmpApi().then((list) => {
-      if (!ignore) setEmployees(list);
-    });
+    fetchEmpApi()
+      .then((list) => {
+        if (!ignore) setEmployees(list);
+      })
+      .catch(() => {
+        // 직원 목록을 못 불러와도 재고/이력 조회와 출고/폐기는 그대로 쓸 수 있어야 한다.
+      });
     return () => {
       ignore = true;
     };
@@ -116,6 +125,10 @@ export default function MedicationWorkspace() {
     value: employee.empId,
     label: `${employee.empName} (${employee.empNo})`,
   }));
+
+  // 오른쪽 입력 영역은 입고/출고/폐기 중 하나만 보여준다 — 세 폼을 위아래로 다 펼치면 화면이
+  // 길어져 창 크기에 따라 입력칸이 안 보인다.
+  const [activeAction, setActiveAction] = useState<WorkspaceAction>("receipt");
 
   // ----- 입고 -----
   const [supplierId, setSupplierId] = useState("");
@@ -200,8 +213,13 @@ export default function MedicationWorkspace() {
     dispatch(registerDisposalRequest({ medicationId, quantity: Number(disposalQty), reason: disposalReason }));
   };
 
+  const actionTabClass = (action: WorkspaceAction) =>
+    `flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+      activeAction === action ? "bg-white text-sky-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+    }`;
+
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
+    <div className="flex flex-col gap-4 pb-8">
       <PageHeader
         title={medication ? medication.medicationName : `Medication #${medicationId}`}
         description={
@@ -214,8 +232,8 @@ export default function MedicationWorkspace() {
         Back to Medication List
       </Link>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="flex min-h-0 flex-col gap-4">
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <div className="flex flex-col gap-4">
           <Panel className="p-4">
             <h3 className="mb-2 text-sm font-semibold text-slate-700">Current Stock</h3>
             <DataTable
@@ -224,10 +242,11 @@ export default function MedicationWorkspace() {
               rowKey={(row) => row.medicationStockId}
               loading={stockLoading}
               loadingMessage="Loading..."
+              minWidthClassName="min-w-[520px]"
               emptyMessage={stockError ?? "No stock for this medication."}
             />
           </Panel>
-          <Panel className="min-h-0 flex-1 p-4">
+          <Panel className="p-4">
             <h3 className="mb-2 text-sm font-semibold text-slate-700">Recent Activity</h3>
             <DataTable
               columns={movementColumns}
@@ -235,117 +254,133 @@ export default function MedicationWorkspace() {
               rowKey={(row) => row.inventoryMovementId}
               loading={movementLoading}
               loadingMessage="Loading..."
+              minWidthClassName="min-w-[520px]"
               emptyMessage={movementError ?? "No activity yet."}
             />
           </Panel>
         </div>
 
-        <div className="flex min-h-0 flex-col gap-4 overflow-y-auto">
-          <Panel className="p-4">
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">Register Receipt</h3>
-            {receiptError && <p className="mb-2 text-sm text-rose-500">{receiptError}</p>}
-            <form onSubmit={handleReceiptSubmit} className="flex flex-col gap-3">
-              <FormField label="Supplier" required>
-                <SupplierSelect value={supplierId} onChange={(e) => setSupplierId(e.target.value)} />
-              </FormField>
-              <FormField label="Storage Location" required>
-                <StorageLocationSelect
-                  value={storageLocationId}
-                  onChange={(e) => setStorageLocationId(e.target.value)}
-                />
-              </FormField>
-              <FormField label="Handler" required>
-                <Select
-                  placeholder="Select handler"
-                  options={employeeOptions}
-                  value={receivedById}
-                  onChange={(e) => setReceivedById(e.target.value)}
-                />
-              </FormField>
-              <FormField label="Lot No." required>
-                <Input type="text" placeholder="Lot No." value={lotNo} onChange={(e) => setLotNo(e.target.value)} />
-              </FormField>
-              <FormField label="Expiration Date" required>
-                <Input type="date" value={expirationDt} onChange={(e) => setExpirationDt(e.target.value)} />
-              </FormField>
-              <FormField label="Unit Code" required>
-                <Input type="text" placeholder="e.g. EA" value={unitCd} onChange={(e) => setUnitCd(e.target.value)} />
-              </FormField>
-              <FormField label="Receipt Qty" required>
-                <Input
-                  type="number"
-                  placeholder="Receipt Qty"
-                  value={receiptQty}
-                  onChange={(e) => setReceiptQty(e.target.value)}
-                />
-              </FormField>
-              <FormActions
-                submitLabel="Register Receipt"
-                loading={receiptLoading}
-                cancelLabel="Reset"
-                onCancel={() => {
-                  setLotNo("");
-                  setExpirationDt("");
-                  setUnitCd("");
-                  setReceiptQty("");
-                }}
-              />
-            </form>
-          </Panel>
+        <Panel className="p-4">
+          <div className="mb-4 flex gap-1 rounded-xl bg-slate-100/80 p-1">
+            <button type="button" className={actionTabClass("receipt")} onClick={() => setActiveAction("receipt")}>
+              Receipt
+            </button>
+            <button type="button" className={actionTabClass("issuance")} onClick={() => setActiveAction("issuance")}>
+              Issuance
+            </button>
+            <button type="button" className={actionTabClass("disposal")} onClick={() => setActiveAction("disposal")}>
+              Disposal
+            </button>
+          </div>
 
-          <Panel className="p-4">
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">Register Issuance</h3>
-            {issuanceError && <p className="mb-2 text-sm text-rose-500">{issuanceError}</p>}
-            <form onSubmit={handleIssuanceSubmit} className="flex flex-col gap-3">
-              <FormField label="Issue Qty" required hint="Deducted from the earliest-expiring lot automatically (FEFO).">
-                <Input
-                  type="number"
-                  placeholder="Issue Qty"
-                  value={issuanceQty}
-                  onChange={(e) => setIssuanceQty(e.target.value)}
+          {activeAction === "receipt" && (
+            <>
+              {receiptError && <p className="mb-2 text-sm text-rose-500">{receiptError}</p>}
+              <form onSubmit={handleReceiptSubmit} className="flex flex-col gap-3">
+                <FormField label="Supplier" required>
+                  <SupplierSelect value={supplierId} onChange={(e) => setSupplierId(e.target.value)} />
+                </FormField>
+                <FormField label="Storage Location" required>
+                  <StorageLocationSelect
+                    value={storageLocationId}
+                    onChange={(e) => setStorageLocationId(e.target.value)}
+                  />
+                </FormField>
+                <FormField label="Handler" required>
+                  <Select
+                    placeholder="Select handler"
+                    options={employeeOptions}
+                    value={receivedById}
+                    onChange={(e) => setReceivedById(e.target.value)}
+                  />
+                </FormField>
+                <FormField label="Lot No." required>
+                  <Input type="text" placeholder="Lot No." value={lotNo} onChange={(e) => setLotNo(e.target.value)} />
+                </FormField>
+                <FormField label="Expiration Date" required>
+                  <Input type="date" value={expirationDt} onChange={(e) => setExpirationDt(e.target.value)} />
+                </FormField>
+                <FormField label="Unit Code" required>
+                  <Input type="text" placeholder="e.g. EA" value={unitCd} onChange={(e) => setUnitCd(e.target.value)} />
+                </FormField>
+                <FormField label="Receipt Qty" required>
+                  <Input
+                    type="number"
+                    placeholder="Receipt Qty"
+                    value={receiptQty}
+                    onChange={(e) => setReceiptQty(e.target.value)}
+                  />
+                </FormField>
+                <FormActions
+                  submitLabel="Register Receipt"
+                  loading={receiptLoading}
+                  cancelLabel="Reset"
+                  onCancel={() => {
+                    setLotNo("");
+                    setExpirationDt("");
+                    setUnitCd("");
+                    setReceiptQty("");
+                  }}
                 />
-              </FormField>
-              <FormActions
-                submitLabel="Register Issuance"
-                loading={issuanceLoading}
-                cancelLabel="Reset"
-                onCancel={() => setIssuanceQty("")}
-              />
-            </form>
-          </Panel>
+              </form>
+            </>
+          )}
 
-          <Panel className="p-4">
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">Register Disposal</h3>
-            {disposalError && <p className="mb-2 text-sm text-rose-500">{disposalError}</p>}
-            <form onSubmit={handleDisposalSubmit} className="flex flex-col gap-3">
-              <FormField label="Disposal Qty" required hint="Deducted from the earliest-expiring lot automatically (FEFO).">
-                <Input
-                  type="number"
-                  placeholder="Disposal Qty"
-                  value={disposalQty}
-                  onChange={(e) => setDisposalQty(e.target.value)}
+          {activeAction === "issuance" && (
+            <>
+              {issuanceError && <p className="mb-2 text-sm text-rose-500">{issuanceError}</p>}
+              <form onSubmit={handleIssuanceSubmit} className="flex flex-col gap-3">
+                <FormField label="Issue Qty" required hint="Deducted from the earliest-expiring lot automatically (FEFO).">
+                  <Input
+                    type="number"
+                    placeholder="Issue Qty"
+                    value={issuanceQty}
+                    onChange={(e) => setIssuanceQty(e.target.value)}
+                  />
+                </FormField>
+                <FormActions
+                  submitLabel="Register Issuance"
+                  loading={issuanceLoading}
+                  cancelLabel="Reset"
+                  onCancel={() => setIssuanceQty("")}
                 />
-              </FormField>
-              <FormField label="Disposal Reason" required>
-                <Input
-                  type="text"
-                  placeholder="Disposal Reason"
-                  value={disposalReason}
-                  onChange={(e) => setDisposalReason(e.target.value)}
+              </form>
+            </>
+          )}
+
+          {activeAction === "disposal" && (
+            <>
+              {disposalError && <p className="mb-2 text-sm text-rose-500">{disposalError}</p>}
+              <form onSubmit={handleDisposalSubmit} className="flex flex-col gap-3">
+                <FormField label="Disposal Qty" required hint="Deducted from the earliest-expiring lot automatically (FEFO).">
+                  <Input
+                    type="number"
+                    placeholder="Disposal Qty"
+                    value={disposalQty}
+                    onChange={(e) => setDisposalQty(e.target.value)}
+                  />
+                </FormField>
+                <FormField label="Disposal Reason" required>
+                  <Input
+                    type="text"
+                    placeholder="Disposal Reason"
+                    value={disposalReason}
+                    onChange={(e) => setDisposalReason(e.target.value)}
+                  />
+                </FormField>
+                <FormActions
+                  submitLabel="Register Disposal"
+                  loading={disposalLoading}
+                  cancelLabel="Reset"
+                  onCancel={() => {
+                    setDisposalQty("");
+                    setDisposalReason("");
+                  }}
                 />
-              </FormField>
-              <FormActions
-                submitLabel="Register Disposal"
-                loading={disposalLoading}
-                cancelLabel="Reset"
-                onCancel={() => {
-                  setDisposalQty("");
-                  setDisposalReason("");
-                }}
-              />
-            </form>
-          </Panel>
-        </div>
+              </form>
+            </>
+          )}
+        </Panel>
       </div>
     </div>
   );

@@ -27,7 +27,7 @@ export default function IssuanceRegisterForm() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
+    <div className="flex flex-col gap-4 pb-8">
       <PageHeader title="Register Issuance" description="Enter a medication ID and quantity to register an issuance." />
       <Panel className="max-w-md p-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

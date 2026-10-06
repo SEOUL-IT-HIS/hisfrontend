@@ -9,7 +9,8 @@ type WorkGroup = {
 };
 
 /**
- * PHM 업무 묶음 4개를 고르는 화면 — 각 묶음의 세부 링크는 그 허브 페이지가 담당한다(2단 구조).
+ * PHM 업무 묶음 4개를 고르는 화면 — 각 링크는 허브를 거치지 않고 그 묶음의 첫 업무 화면으로 바로 간다.
+ * 그 묶음의 다음 업무는 업무 화면 위의 탭(PharmacyShell)으로 이어서 처리한다.
  * 이전에는 티켓이 구현될 때마다 링크를 하나씩 추가해 DB/기능 이름 기준으로 섞여 있었는데
  * (공급업체 등록 같은 어쩌다 한 번 하는 설정과 입고 등록 같은 매일 하는 업무가 같은 박스에 있었음),
  * 업무 흐름 기준(조제/재고관리/마약류/기준정보)으로 다시 묶었다(2026-10-06).
@@ -23,20 +24,20 @@ const groups: WorkGroup[] = [
   },
   {
     title: "Inventory Management",
-    description: "Stock, receipt, issuance, and disposal for regular (non-controlled) medications.",
-    href: "/pharmacy/inventory-home",
-    linkLabel: "Open Inventory Management",
+    description: "Stock, low stock, medications, receipt, issuance, and disposal — switch between them with the tabs on top.",
+    href: "/pharmacy/stock",
+    linkLabel: "Open Inventory",
   },
   {
     title: "Controlled Drugs",
-    description: "Receipt, issuance, and disposal of controlled (narcotic) drugs, each with staff and witness tracking.",
-    href: "/pharmacy/controlled",
-    linkLabel: "Open Controlled Drug Management",
+    description: "Records, receipt, issuance, and disposal of controlled (narcotic) drugs, each with staff and witness tracking.",
+    href: "/pharmacy/controlled/records",
+    linkLabel: "Open Controlled Drug Records",
   },
   {
     title: "Master Data",
-    description: "One-off setup: medications, suppliers, and storage locations.",
-    href: "/pharmacy/master-data",
+    description: "One-off setup: medications, suppliers, and storage locations — switch between them with the tabs on top.",
+    href: "/pharmacy/medication/register",
     linkLabel: "Open Master Data",
   },
 ];

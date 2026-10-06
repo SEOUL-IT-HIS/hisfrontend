@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchReceiptListRequest } from "@/features/pharmacy/slice";
 import type { RootState } from "@/store/store";
@@ -10,7 +11,15 @@ import type { ReceiptDto } from "@/features/pharmacy/types";
 
 const columns: DataTableColumn<ReceiptDto>[] = [
   { key: "medicationId", header: "Medication ID", render: (row) => row.medicationId },
-  { key: "medicationName", header: "Medication Name", render: (row) => row.medicationName ?? "-" },
+  {
+    key: "medicationName",
+    header: "Medication Name",
+    render: (row) => (
+      <Link href={`/pharmacy/medication/${row.medicationId}`} className="text-sky-700 hover:underline">
+        {row.medicationName ?? row.medicationId}
+      </Link>
+    ),
+  },
   { key: "lotNo", header: "Lot No.", render: (row) => row.lotNo },
   { key: "quantity", header: "Receipt Qty", render: (row) => row.quantity },
   { key: "unitPrice", header: "Unit Price", render: (row) => row.unitPrice ?? "-" },

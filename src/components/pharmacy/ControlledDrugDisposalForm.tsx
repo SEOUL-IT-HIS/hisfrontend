@@ -63,7 +63,7 @@ export default function ControlledDrugDisposalForm() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
+    <div className="flex flex-col gap-4 pb-8">
       <PageHeader
         title="Controlled Drug Disposal"
         description="Register a controlled drug disposal with staff and witness information."

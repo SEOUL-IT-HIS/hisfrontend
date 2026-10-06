@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   cancelDispensePrescriptionRequest,
@@ -114,8 +115,11 @@ export default function PrescriptionDetail() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
+    <div className="flex flex-col gap-4 pb-8">
       <PageHeader title="Prescription Details" description="Details of a prescription forwarded to pharmacy." />
+      <Link href="/pharmacy/prescription" className="text-sm text-sky-700 underline">
+        Back to Prescription List
+      </Link>
 
       {loading && <p className="text-sm text-slate-400">Loading...</p>}
       {error && <p className="text-sm text-rose-500">{error}</p>}
@@ -219,7 +223,7 @@ export default function PrescriptionDetail() {
             <ReleasePanel prescriptionLinkId={id} release={detail.release} />
           )}
 
-          <Panel className="min-h-0 flex-1 p-4">
+          <Panel className="p-4">
             <DataTable
               columns={makeItemColumns(id, detail.release?.releaseStatusCd)}
               rows={detail.items}

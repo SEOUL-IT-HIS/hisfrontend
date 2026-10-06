@@ -62,7 +62,7 @@ export default function ControlledDrugIssuanceForm() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
+    <div className="flex flex-col gap-4 pb-8">
       <PageHeader
         title="Controlled Drug Issuance"
         description="Register a controlled drug issuance with staff and witness information."

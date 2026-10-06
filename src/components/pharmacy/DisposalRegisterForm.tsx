@@ -53,7 +53,7 @@ export default function DisposalRegisterForm() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
+    <div className="flex flex-col gap-4 pb-8">
       <PageHeader
         title="Disposal Management"
         description="Enter a medication ID, quantity, and reason to register a disposal."
@@ -84,7 +84,7 @@ export default function DisposalRegisterForm() {
           </div>
         </form>
       </Panel>
-      <Panel className="min-h-0 flex-1 p-4">
+      <Panel className="p-4">
         <DataTable
           columns={columns}
           rows={rows}
