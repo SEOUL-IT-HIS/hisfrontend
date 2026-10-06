@@ -155,7 +155,7 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
   const columns: DataTableColumn<BedDTO>[] = [
     // patientId가 없으면(빈 병상) "None", 있으면 Map에서 이름 조회 (patientLabel 참고)
     { key: "patient", header: "Patient Name", render: (bed) => <span className="font-medium text-slate-800">{patientLabel(bed.patientId)}</span> },
-    { key: "sexAge", header: "Sex / Age", render: (bed) => (bed.patientId ? sexAgeByPatientId.get(bed.patientId) ?? "-" : "-") },
+    { key: "sexAge", header: "Gender / Age", render: (bed) => (bed.patientId ? sexAgeByPatientId.get(bed.patientId) ?? "-" : "-") },
     { key: "ward", header: "Ward", render: (bed) => wardLabel(bed.wardCd) },
     { key: "roomType", header: "Room Type", render: (bed) => (bed.roomTypeCode ? ROOM_TYPE_LABEL[bed.roomTypeCode] ?? bed.roomTypeCode : "-") },
     { key: "roomNo", header: "Room No.", render: (bed) => bed.roomNo },
