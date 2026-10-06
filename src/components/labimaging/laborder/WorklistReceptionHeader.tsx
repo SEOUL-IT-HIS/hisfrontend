@@ -108,6 +108,7 @@ export default function WorklistReceptionHeader({
               ) : null}
             </>
           ) : null}
+          {reception.receptionStatusCode === "CANCELLED" ? " · Cancelled" : ""}
         </p>
         <p className="mt-0.5 text-xs text-slate-400">
           Received {formatDateTime(reception.receivedAt)}
@@ -116,7 +117,11 @@ export default function WorklistReceptionHeader({
             : " · Not scheduled"}
         </p>
 
-        {reception.receptionStatusCode === "EXCLUDED" ? (
+        {reception.receptionStatusCode === "CANCELLED" ? (
+          <p className="mt-1 text-xs text-rose-600">
+            Cancelled — {reception.cancelReason}
+          </p>
+        ) : reception.receptionStatusCode === "EXCLUDED" ? (
           <p className="mt-1 text-xs text-amber-600">
             Excluded — {reception.exclusionReason}
           </p>

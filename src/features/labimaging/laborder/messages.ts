@@ -19,6 +19,8 @@ export const LAB_ORDER_MESSAGES = {
   LAB111: "This staff member is not a doctor.",
   LAB112: "Unable to verify staff information right now.",
   LAB113: "The same item was entered more than once.",
+  LAB117: "The order for this prescription has not been received yet.",
+  LAB121: "This reception has been cancelled by the prescriber.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;

@@ -22,6 +22,7 @@ export const MICROBIOLOGY_RESULT_MESSAGES = {
   LAB078: "The same antibiotic was entered more than once.",
   LAB110: "Staff member not found, or no longer active.",
   LAB112: "Unable to verify staff information right now.",
+  LAB121: "This reception has been cancelled by the prescriber.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;

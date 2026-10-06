@@ -100,6 +100,15 @@ export default function LabReceptionDetail() {
     ["Received By", receivedByDisplay.text, receivedByDisplay.title],
   ];
 
+  // 취소 요청 기록 — 요청이 없었던 접수는 행 자체를 넣지 않는다(05번 지시서 Phase 5-3).
+  if (reception.cancelRequestedAt) {
+    rows.push(
+      ["Cancel Requested At", formatDateTime(reception.cancelRequestedAt)],
+      ["Cancel Reason", reception.cancelReason || "-"],
+      ["Cancel Result", reception.cancelOutcome ?? "-"],
+    );
+  }
+
   return (
     <div className="space-y-4">
       <Panel>

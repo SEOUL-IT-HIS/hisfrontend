@@ -16,6 +16,7 @@ import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor"
 import type { DataTableColumn } from "@/components/common";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
+import { isFutureDateTime, nowLocalInputValue } from "@/features/labimaging/common/validation";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveLabSpecimenMessage } from "@/features/labimaging/labspecimen/messages";
 import {
@@ -152,7 +153,12 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
     const next: FieldErrors = {};
     if (!effectiveSpecimenContainerCode)
       next.specimenContainerCode = "Specimen container is required.";
-    if (!form.collectedAt) next.collectedAt = "Collection date and time is required.";
+    if (!form.collectedAt) {
+      next.collectedAt = "Collection date and time is required.";
+    } else if (isFutureDateTime(form.collectedAt)) {
+      // 서버(LAB107)와 같은 기준. (04번 지시서 Phase 3-B)
+      next.collectedAt = "Future dates or times are not allowed.";
+    }
     if (!signedIn) next.collectedById = "Sign in to record this action.";
     return next;
   }
@@ -288,6 +294,7 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
               type="datetime-local"
               name="collectedAt"
               value={form.collectedAt}
+              max={nowLocalInputValue()}
               onChange={handleChange}
               disabled={creating}
             />
