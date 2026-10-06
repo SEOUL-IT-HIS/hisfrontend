@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { SearchBar, Input, DataTable, Pagination } from "@/components/common";
+import { Button, Input, DataTable, Pagination } from "@/components/common";
 import DownSelect from "@/components/emergency/common/DownSelect";
 import type { DataTableColumn } from "@/components/common/DataTable";
 import KtasLevelBadge from "@/components/emergency/receptionList/KtasLevelBadge";
@@ -121,12 +121,10 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
 
     return (
         <div className="flex h-[calc(100vh-180px)] flex-col gap-3">
-            {/* 조회 / 초기화 — 공용 SearchBar 기본값(한글)을 이 화면에서만 영어로 덮어씀 */}
-            <SearchBar
-                onSearch={() => setPage(1)}
-                searchLabel="Search"
-                onReset={() => { setKeyword(""); setPage(1); }}
-                resetLabel="Reset"
+            {/* 검색줄 — 상태 필터·이름 검색·버튼을 한 줄에 둔다(왼쪽 목록은 폭이 좁아 공용 SearchBar 는 줄이 나뉜다). 아주 좁을 때만 줄바꿈 */}
+            <form
+                onSubmit={(e) => { e.preventDefault(); setPage(1); }}
+                className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
             >
                 <DownSelect
                     label="Status"
@@ -134,16 +132,22 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
                     value={status}
                     onChange={(value) => { setStatus(value); setPage(1); }}
                     options={STATUS_OPTIONS}
-                    className="w-[150px]"
+                    className="w-[130px] shrink-0"
                 />
                 <Input
                     // 환자명 검색
                     placeholder="Search patient name"
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
-                    className="max-w-[200px]"
+                    className="min-w-[120px] flex-1"
                 />
-            </SearchBar>
+                <Button type="button" variant="secondary" onClick={() => { setKeyword(""); setPage(1); }}>
+                    Reset
+                </Button>
+                <Button type="submit" variant="primary">
+                    Search
+                </Button>
+            </form>
 
             <div className="flex min-h-0 flex-1 flex-col">
                 <DataTable
