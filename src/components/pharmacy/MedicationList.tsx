@@ -11,17 +11,7 @@ import type { RootState } from "@/store/store";
 import { Button, DataTable, Modal, Panel, PageHeader } from "@/components/common";
 import type { DataTableColumn } from "@/components/common";
 import type { MedicationDto } from "@/features/pharmacy/types";
-
-/** admin 공통코드 DOSAGE_FORM_CD 라벨 — 코드값만 보여주면 알아보기 어려워 표시용으로만 둔다 */
-const DOSAGE_FORM_LABELS: Record<string, string> = {
-  "01": "Tablet/Capsule",
-  "02": "IV Fluid",
-  "03": "Injection",
-};
-
-function dosageFormLabel(code: string | null): string {
-  return code ? DOSAGE_FORM_LABELS[code] ?? code : "-";
-}
+import { dosageFormLabel } from "@/features/pharmacy/labels";
 
 // 목록에는 핵심 4개만 보여주고(한 화면에 다 들어오게), 나머지 부가 정보는 행을 눌렀을 때 뜨는 모달에서 본다.
 const columns: DataTableColumn<MedicationDto>[] = [

@@ -126,6 +126,8 @@ import type {
   Medication,
   MedicationRegisterForm,
   MedicationReturnRegisterRequest,
+  PrescriptionDispenseRequest,
+  PrescriptionListQuery,
   PrescriptionRejectRequest,
   ReceiptRegisterRequest,
   ReleaseCancelRequest,
@@ -229,11 +231,17 @@ function* registerIssuanceSaga(action: PayloadAction<IssuanceRegisterRequest>) {
 }
 
 // ----- 처방전 목록/상세 조회 (HL2-17) -----
-function* fetchPrescriptionListSaga() {
+function* fetchPrescriptionListSaga(action: PayloadAction<PrescriptionListQuery>) {
   try {
     const response: Awaited<ReturnType<typeof getPrescriptionList>> =
-      yield call(getPrescriptionList);
-    yield put(fetchPrescriptionListSuccess(response.data.content));
+      yield call(getPrescriptionList, action.payload);
+    yield put(
+      fetchPrescriptionListSuccess({
+        items: response.data.content,
+        totalElements: response.data.totalElements,
+        totalPages: response.data.totalPages,
+      })
+    );
   } catch (error) {
     yield put(fetchPrescriptionListFailure(resolveErrorMessage(error)));
   }
@@ -250,10 +258,14 @@ function* fetchPrescriptionDetailSaga(action: PayloadAction<string>) {
 }
 
 // ----- 조제완료/조제거절 (HL2-18) -----
-function* dispensePrescriptionSaga(action: PayloadAction<string>) {
+function* dispensePrescriptionSaga(
+  action: PayloadAction<PrescriptionDispenseRequest>
+) {
   try {
     yield call(dispensePrescription, action.payload);
     yield put(dispensePrescriptionSuccess());
+    // 조제 로트/조제 수량/처리 약사 등 서버가 채운 값을 보여주려고 상세를 다시 불러온다.
+    yield put(fetchPrescriptionDetailRequest(action.payload.prescriptionLinkId));
   } catch (error) {
     yield put(dispensePrescriptionFailure(resolveErrorMessage(error)));
   }
@@ -264,7 +276,8 @@ function* rejectPrescriptionSaga(
 ) {
   try {
     yield call(rejectPrescription, action.payload);
-    yield put(rejectPrescriptionSuccess(action.payload.reason));
+    yield put(rejectPrescriptionSuccess());
+    yield put(fetchPrescriptionDetailRequest(action.payload.prescriptionLinkId));
   } catch (error) {
     yield put(rejectPrescriptionFailure(resolveErrorMessage(error)));
   }

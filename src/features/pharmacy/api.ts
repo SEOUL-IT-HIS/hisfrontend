@@ -17,7 +17,9 @@ import type {
   MedicationReturnRegisterResponse,
   PageResponse,
   PrescriptionDetail,
+  PrescriptionDispenseRequest,
   PrescriptionListItem,
+  PrescriptionListQuery,
   PrescriptionRejectRequest,
   ReceiptDto,
   ReceiptRegisterRequest,
@@ -30,6 +32,9 @@ import type {
   SupplierDto,
   SupplierRegisterRequest,
 } from "./types";
+
+/** 처방전 목록 한 페이지의 건수 */
+export const PRESCRIPTION_PAGE_SIZE = 15;
 
 // 상대경로만 사용. next.config.ts의 /api/pharmacy rewrite가 실제 서버로 전달.
 // (PHARMACY_API_ORIGIN 덮어쓰기는 .env.local에서, next.config.ts 쪽에서 함)
@@ -186,13 +191,19 @@ export async function createDisposal(
   return response.data;
 }
 
-/** 처방전 목록 (HL2-17) */
-export async function getPrescriptionList(): Promise<
-  ApiResponse<PageResponse<PrescriptionListItem>>
-> {
+/** 처방전 목록 (HL2-17) — 단계(stage) 필터와 페이지를 서버에서 처리한다 */
+export async function getPrescriptionList(
+  query: PrescriptionListQuery
+): Promise<ApiResponse<PageResponse<PrescriptionListItem>>> {
   const response = await apiClient.get<
     ApiResponse<PageResponse<PrescriptionListItem>>
-  >("/api/pharmacy/prescriptions");
+  >("/api/pharmacy/prescriptions", {
+    params: {
+      page: query.page,
+      size: PRESCRIPTION_PAGE_SIZE,
+      stage: query.stage === "ALL" ? undefined : query.stage,
+    },
+  });
   return response.data;
 }
 
@@ -208,10 +219,11 @@ export async function getPrescriptionDetail(
 
 /** 조제완료 (HL2-18) */
 export async function dispensePrescription(
-  prescriptionLinkId: string
+  request: PrescriptionDispenseRequest
 ): Promise<ApiResponse<void>> {
   const response = await apiClient.patch<ApiResponse<void>>(
-    `/api/pharmacy/prescriptions/${prescriptionLinkId}/dispense`
+    `/api/pharmacy/prescriptions/${request.prescriptionLinkId}/dispense`,
+    { actorId: request.actorId }
   );
   return response.data;
 }
@@ -222,7 +234,7 @@ export async function rejectPrescription(
 ): Promise<ApiResponse<void>> {
   const response = await apiClient.patch<ApiResponse<void>>(
     `/api/pharmacy/prescriptions/${request.prescriptionLinkId}/reject`,
-    { reason: request.reason }
+    { reason: request.reason, actorId: request.actorId }
   );
   return response.data;
 }
@@ -233,7 +245,7 @@ export async function cancelDispensePrescription(
 ): Promise<ApiResponse<void>> {
   const response = await apiClient.patch<ApiResponse<void>>(
     `/api/pharmacy/prescriptions/${request.prescriptionLinkId}/cancel-dispense`,
-    { reason: request.reason }
+    { reason: request.reason, actorId: request.actorId }
   );
   return response.data;
 }
@@ -242,6 +254,7 @@ export async function cancelDispensePrescription(
 export async function createRelease(
   request: ReleaseRegisterRequest
 ): Promise<ApiResponse<ReleaseRegisterResponse>> {
+  // 병동/보호자 불출에만 필요한 값은 해당할 때만 보낸다 — 백엔드가 유형별로 필수 여부를 검증한다.
   const response = await apiClient.post<ApiResponse<ReleaseRegisterResponse>>(
     "/api/pharmacy/releases",
     request
@@ -255,7 +268,7 @@ export async function cancelRelease(
 ): Promise<ApiResponse<void>> {
   const response = await apiClient.patch<ApiResponse<void>>(
     `/api/pharmacy/releases/${request.medicationReleaseId}/cancel`,
-    { reason: request.reason }
+    { reason: request.reason, actorId: request.actorId }
   );
   return response.data;
 }
@@ -270,6 +283,7 @@ export async function createMedicationReturn(
       dispensingItemId: request.dispensingItemId,
       returnQty: request.returnQty,
       reason: request.reason,
+      actorId: request.actorId,
     }
   );
   return response.data;
@@ -281,7 +295,7 @@ export async function createReturnedDisposal(
 ): Promise<ApiResponse<void>> {
   const response = await apiClient.post<ApiResponse<void>>(
     `/api/pharmacy/returns/${request.medicationReturnItemId}/disposals`,
-    { disposalQty: request.disposalQty, reason: request.reason }
+    { disposalQty: request.disposalQty, reason: request.reason, actorId: request.actorId }
   );
   return response.data;
 }

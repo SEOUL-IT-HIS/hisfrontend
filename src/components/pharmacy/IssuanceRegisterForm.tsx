@@ -6,21 +6,24 @@ import { useRouter } from "next/navigation";
 import { registerIssuanceRequest } from "@/features/pharmacy/slice";
 import { Button, FormField, Input, PageHeader, Panel } from "@/components/common";
 import MedicationSearchInput from "@/components/pharmacy/MedicationSearchInput";
+import { useActor } from "@/features/pharmacy/useActor";
 
 export default function IssuanceRegisterForm() {
   const dispatch = useDispatch();
   const router = useRouter();
+  const { actorId, actorName } = useActor();
   const [medicationId, setMedicationId] = useState("");
   const [quantity, setQuantity] = useState("");
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!medicationId || !quantity) return;
+    if (!medicationId || !quantity || !actorId) return;
 
     dispatch(
       registerIssuanceRequest({
         medicationId,
         quantity: Number(quantity),
+        issuedById: actorId,
       })
     );
     router.push("/pharmacy/issuance/list");
@@ -42,8 +45,11 @@ export default function IssuanceRegisterForm() {
               onChange={(e) => setQuantity(e.target.value)}
             />
           </FormField>
+          <p className="text-xs text-slate-400">Issued by: {actorName || "-"} (signed-in user)</p>
           <div className="flex justify-end">
-            <Button type="submit">Register</Button>
+            <Button type="submit" disabled={!actorId}>
+              Register
+            </Button>
           </div>
         </form>
       </Panel>

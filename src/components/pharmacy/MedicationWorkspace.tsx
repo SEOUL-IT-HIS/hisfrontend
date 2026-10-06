@@ -25,6 +25,7 @@ import type { DataTableColumn } from "@/components/common";
 import SupplierSelect from "@/components/pharmacy/SupplierSelect";
 import StorageLocationSelect from "@/components/pharmacy/StorageLocationSelect";
 import { fetchEmpApi } from "@/features/emp/api/empApi";
+import { useActor } from "@/features/pharmacy/useActor";
 import type { Emp } from "@/features/emp/types/empTypes";
 import type { RootState } from "@/store/store";
 import type { InventoryDto, InventoryMovementDto, ReceiptRegisterRequest } from "@/features/pharmacy/types";
@@ -78,6 +79,7 @@ export default function MedicationWorkspace() {
   const dispatch = useDispatch();
   const params = useParams<{ id: string }>();
   const medicationId = params.id;
+  const { actorId, actorName } = useActor();
 
   const medications = useSelector((state: RootState) => state.pharmacy.medicationList);
   const medication = medications.find((m) => String(m.medicationId) === medicationId);
@@ -201,8 +203,10 @@ export default function MedicationWorkspace() {
 
   const handleIssuanceSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!issuanceQty) return;
-    dispatch(registerIssuanceRequest({ medicationId, quantity: Number(issuanceQty) }));
+    if (!issuanceQty || !actorId) return;
+    dispatch(
+      registerIssuanceRequest({ medicationId, quantity: Number(issuanceQty), issuedById: actorId })
+    );
   };
 
   // ----- 폐기 -----
@@ -224,8 +228,15 @@ export default function MedicationWorkspace() {
 
   const handleDisposalSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!disposalQty || !disposalReason) return;
-    dispatch(registerDisposalRequest({ medicationId, quantity: Number(disposalQty), reason: disposalReason }));
+    if (!disposalQty || !disposalReason || !actorId) return;
+    dispatch(
+      registerDisposalRequest({
+        medicationId,
+        quantity: Number(disposalQty),
+        reason: disposalReason,
+        disposedById: actorId,
+      })
+    );
   };
 
   const actionTabClass = (action: WorkspaceAction) =>
@@ -366,9 +377,11 @@ export default function MedicationWorkspace() {
                     onChange={(e) => setIssuanceQty(e.target.value)}
                   />
                 </FormField>
+                <p className="text-xs text-slate-400">Issued by: {actorName || "-"} (signed-in user)</p>
                 <FormActions
                   submitLabel="Register Issuance"
                   loading={issuanceLoading}
+                  submitDisabled={!actorId}
                   cancelLabel="Reset"
                   onCancel={() => setIssuanceQty("")}
                 />
@@ -396,9 +409,11 @@ export default function MedicationWorkspace() {
                     onChange={(e) => setDisposalReason(e.target.value)}
                   />
                 </FormField>
+                <p className="text-xs text-slate-400">Disposed by: {actorName || "-"} (signed-in user)</p>
                 <FormActions
                   submitLabel="Register Disposal"
                   loading={disposalLoading}
+                  submitDisabled={!actorId}
                   cancelLabel="Reset"
                   onCancel={() => {
                     setDisposalQty("");

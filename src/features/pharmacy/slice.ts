@@ -15,7 +15,9 @@ import type {
   MedicationReturnRegisterRequest,
   PharmacyState,
   PrescriptionDetail,
+  PrescriptionDispenseRequest,
   PrescriptionListItem,
+  PrescriptionListQuery,
   PrescriptionRejectRequest,
   ReceiptDto,
   ReceiptRegisterRequest,
@@ -53,6 +55,8 @@ const initialState: PharmacyState = {
   issuanceError: null,
 
   prescriptionList: [],
+  prescriptionTotalElements: 0,
+  prescriptionTotalPages: 0,
   prescriptionLoading: false,
   prescriptionError: null,
 
@@ -221,16 +225,22 @@ const pharmacySlice = createSlice({
     },
 
     // ----- 처방전 목록/상세 조회 (HL2-17) -----
-    fetchPrescriptionListRequest(state) {
+    fetchPrescriptionListRequest(state, _action: PayloadAction<PrescriptionListQuery>) {
       state.prescriptionLoading = true;
       state.prescriptionError = null;
     },
     fetchPrescriptionListSuccess(
       state,
-      action: PayloadAction<PrescriptionListItem[]>
+      action: PayloadAction<{
+        items: PrescriptionListItem[];
+        totalElements: number;
+        totalPages: number;
+      }>
     ) {
       state.prescriptionLoading = false;
-      state.prescriptionList = action.payload;
+      state.prescriptionList = action.payload.items;
+      state.prescriptionTotalElements = action.payload.totalElements;
+      state.prescriptionTotalPages = action.payload.totalPages;
     },
     fetchPrescriptionListFailure(state, action: PayloadAction<string>) {
       state.prescriptionLoading = false;
@@ -255,15 +265,16 @@ const pharmacySlice = createSlice({
     },
 
     // ----- 조제완료/조제거절 (HL2-18) -----
-    dispensePrescriptionRequest(state, _action: PayloadAction<string>) {
+    dispensePrescriptionRequest(
+      state,
+      _action: PayloadAction<PrescriptionDispenseRequest>
+    ) {
       state.prescriptionActionLoading = true;
       state.prescriptionActionError = null;
     },
     dispensePrescriptionSuccess(state) {
       state.prescriptionActionLoading = false;
-      if (state.prescriptionDetail) {
-        state.prescriptionDetail.status = "DISPENSED";
-      }
+      // 조제 로트/조제 수량/처리 약사는 서버 값이라, saga가 이어서 상세를 다시 불러와 채운다.
     },
     dispensePrescriptionFailure(state, action: PayloadAction<string>) {
       state.prescriptionActionLoading = false;
@@ -276,12 +287,9 @@ const pharmacySlice = createSlice({
       state.prescriptionActionLoading = true;
       state.prescriptionActionError = null;
     },
-    rejectPrescriptionSuccess(state, action: PayloadAction<string>) {
+    rejectPrescriptionSuccess(state) {
       state.prescriptionActionLoading = false;
-      if (state.prescriptionDetail) {
-        state.prescriptionDetail.status = "REJECTED";
-        state.prescriptionDetail.rejectReason = action.payload;
-      }
+      // 거절 사유/처리 약사는 서버 값이라, saga가 이어서 상세를 다시 불러와 채운다.
     },
     rejectPrescriptionFailure(state, action: PayloadAction<string>) {
       state.prescriptionActionLoading = false;
