@@ -308,9 +308,9 @@ export default function SurgeryWorklist() {
     },
     {
       key: "surgeonId",
-      header: "Status",
+      header: "Surgeon",
       className: "w-32",
-      render: (s) => employeeNames[s.surgeonId]?.trim() || "Surgeon name unavailable",
+      render: (s) => employeeNames[s.surgeonId]?.trim() || "-",
     },
   ];
 
