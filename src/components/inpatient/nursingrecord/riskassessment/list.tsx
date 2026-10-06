@@ -9,6 +9,9 @@ import Link from "next/link";
 import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import { fetchRiskAssessmentsRequest, selectRiskAssessments, selectRiskAssessmentListStatus } from "@/features/inpatient/nursingrecord/riskassessment/slice";
+import { Alert, DataTable, PageHeader, type DataTableColumn } from "@/components/common";
+import Toolbar from "@/components/inpatient/common/Toolbar";
+import LinkButton from "@/components/inpatient/common/LinkButton";
 
 const RISK_BADGE: Record<string, string> = {
   HIGH: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
@@ -60,87 +63,49 @@ const RiskAssessmentList = ({ embedded = false, admissionId = null, readOnly = f
     dispatch(fetchPatientListRequest({}));
   }, [dispatch]);
 
+  // 입원 건 → 환자 이름 (기록에는 admissionId만 있어서 두 단계로 찾음)
+  const patientNameOf = (recordAdmissionId: string) => {
+    const patientId = patientIdByAdmissionId.get(recordAdmissionId);
+    return patientId ? patientNameById.get(patientId) ?? "Loading..." : "None";
+  };
+
+  const columns: DataTableColumn<(typeof visibleRiskAssessments)[number]>[] = [
+    { key: "patientname", header: "Patient Name", render: (riskAssessment) => <span className="font-medium text-slate-800">{patientNameOf(riskAssessment.admissionId)}</span> },
+    { key: "details", header: "Details", render: (riskAssessment) => <Link href={`/inpatient/nursingrecord/riskassessment/${riskAssessment.patientRiskAssessmentId}`} className="font-medium text-sky-700 hover:underline">View</Link> },
+    { key: "assessmenttypecode", header: "Assessment Type Code", render: (riskAssessment) => codeLabel(ASSESSMENT_TYPE_OPTIONS, riskAssessment.assessmentTypeCd) },
+    { key: "assessmentscore", header: "Assessment Score", render: (riskAssessment) => riskAssessment.score },
+    { key: "risklevel", header: "Risk Level", render: (riskAssessment) => <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${RISK_BADGE[riskAssessment.riskLevelCd] ?? "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"}`}>{RISK_LABEL[riskAssessment.riskLevelCd] ?? riskAssessment.riskLevelCd}</span> },
+    { key: "assessmentdate", header: "Assessment Date", render: (riskAssessment) => new Date(riskAssessment.assessedAt).toLocaleDateString() },
+    { key: "assessedby", header: "Assessed By", render: (riskAssessment) => riskAssessment.assessorId ? nurseNameById.get(riskAssessment.assessorId) ?? riskAssessment.assessorId : "-" },
+    { key: "createdat", header: "Created At", render: (riskAssessment) => new Date(riskAssessment.createdAt).toLocaleString() },
+    { key: "updatedat", header: "Updated At", render: (riskAssessment) => new Date(riskAssessment.updatedAt).toLocaleString() },
+  ];
+
   return (
-    <div className={embedded ? "w-full" : "mx-auto w-full max-w-6xl p-6"}>
-      <div className="mb-6 flex items-center justify-between">
-        {embedded ? (
-          <div />
-        ) : (
-          <div>
-            <h1 className="text-lg font-semibold text-slate-800">Patient Risk Assessment List</h1>
-            <p className="mt-1 text-sm text-slate-500">Risk assessment records by patient.</p>
-          </div>
-        )}
-        {!readOnly && (
-          <Link
-            href={`/inpatient/nursingrecord/riskassessment/create${admissionId ? `?admissionId=${admissionId}` : ""}`}
-            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-          >
-            Register Assessment
-          </Link>
-        )}
-      </div>
+    <div className={`flex flex-col gap-4 ${embedded ? "w-full" : "mx-auto w-full max-w-6xl p-6"}`}>
+      {!embedded && <PageHeader title="Patient Risk Assessment List" description="Risk assessment records by patient." />}
 
-      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
-      {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
+      <Toolbar
+        actions={
+          !readOnly && (
+            <LinkButton href={`/inpatient/nursingrecord/riskassessment/create${admissionId ? `?admissionId=${admissionId}` : ""}`}>Register Assessment</LinkButton>
+          )
+        }
+      >
+        <span className="text-sm text-slate-500">{visibleRiskAssessments.length} records</span>
+      </Toolbar>
 
-      {!listStatus.loading && !listStatus.error && (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
-                <th className="whitespace-nowrap px-4 py-3">Risk Assessment ID</th>
-                <th className="whitespace-nowrap px-4 py-3">Admission ID</th>
-                <th className="whitespace-nowrap px-4 py-3">Assessment Type Code</th>
-                <th className="whitespace-nowrap px-4 py-3">Assessment Score</th>
-                <th className="whitespace-nowrap px-4 py-3">Risk Level</th>
-                <th className="whitespace-nowrap px-4 py-3">Assessment Date</th>
-                <th className="whitespace-nowrap px-4 py-3">Assessor ID</th>
-                <th className="whitespace-nowrap px-4 py-3">Created At</th>
-                <th className="whitespace-nowrap px-4 py-3">Updated At</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {visibleRiskAssessments.map((riskAssessment) => {
-                const patientId = patientIdByAdmissionId.get(riskAssessment.admissionId);
-                const patientName = patientId ? (patientNameById.get(patientId) ?? "Loading...") : "None";
-                return (
-                  <tr key={riskAssessment.patientRiskAssessmentId} className="hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-800">{patientName}</td>
-                    <td className="whitespace-nowrap px-4 py-3 font-medium">
-                      <Link
-                        href={`/inpatient/nursingrecord/riskassessment/${riskAssessment.patientRiskAssessmentId}`}
-                        className="text-sky-700 hover:underline"
-                      >
-                        {riskAssessment.patientRiskAssessmentId}
-                      </Link>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{riskAssessment.admissionId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{codeLabel(ASSESSMENT_TYPE_OPTIONS, riskAssessment.assessmentTypeCd)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{riskAssessment.score}</td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <span
-                        className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
-                          RISK_BADGE[riskAssessment.riskLevelCd] ?? "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
-                        }`}
-                      >
-                        {RISK_LABEL[riskAssessment.riskLevelCd] ?? riskAssessment.riskLevelCd}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(riskAssessment.assessedAt).toLocaleDateString()}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{riskAssessment.assessorId ? nurseNameById.get(riskAssessment.assessorId) ?? riskAssessment.assessorId : "-"}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(riskAssessment.createdAt).toLocaleString()}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(riskAssessment.updatedAt).toLocaleString()}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {visibleRiskAssessments.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-slate-500">No risk assessment data available.</p>
-          )}
-        </div>
+      {listStatus.error ? (
+        <Alert>{listStatus.error}</Alert>
+      ) : (
+        <DataTable
+          columns={columns}
+          rows={visibleRiskAssessments}
+          rowKey={(riskAssessment) => riskAssessment.patientRiskAssessmentId}
+          loading={listStatus.loading}
+          loadingMessage="Loading..."
+          emptyMessage="No risk assessment data available."
+        />
       )}
     </div>
   );

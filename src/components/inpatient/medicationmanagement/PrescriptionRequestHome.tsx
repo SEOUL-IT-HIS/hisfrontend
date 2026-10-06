@@ -10,6 +10,10 @@ import {
   selectAdmissions,
 } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
+import { formatDateTime } from "@/features/inpatient/dateLimits";
+import { formatSexAge } from "@/features/inpatient/displayFormat";
+import { Button, PageHeader, Panel } from "@/components/common";
+import AdmissionPickerPanel from "@/components/inpatient/common/AdmissionPickerPanel";
 import PrescriptionList from "@/components/inpatient/medicationmanagement/prescription/list";
 import PrescriptionDetail from "@/components/inpatient/medicationmanagement/prescription/detail";
 import PrescriptionRegisterForm from "@/components/inpatient/medicationmanagement/prescription/registerForm";
@@ -25,7 +29,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 // 오른쪽 패널에 무엇을 보여줄지 — 처방 상세 or 새 요청 폼 (없으면 목록만)
-type Panel = { type: "detail"; prescriptionId: string } | { type: "register" } | null;
+type SidePanel = { type: "detail"; prescriptionId: string } | { type: "register" } | null;
 
 /**
  * 처방 요청 화면 (병동 → 외래 처방코어로 처방을 "요청"하는 화면, 처방을 직접 내리는 화면이 아님)
@@ -42,7 +46,7 @@ const PrescriptionRequestHome = () => {
   const patientListLoading = useSelector((state: RootState) => state.patient.listLoading);
 
   const [selectedAdmissionId, setSelectedAdmissionId] = useState<string | null>(searchParams.get("admissionId"));
-  const [panel, setPanel] = useState<Panel>(null);
+  const [panel, setPanel] = useState<SidePanel>(null);
 
   useEffect(() => {
     dispatch(fetchAdmissionsRequest());
@@ -53,6 +57,11 @@ const PrescriptionRequestHome = () => {
     () => new Map(patients.map((patient) => [patient.patientId, patient.patientName])),
     [patients],
   );
+  // 성별/나이 ("F / 34") — 입원 ID · 환자 ID 대신 화면에 보여줄 값
+  const sexAgeLabel = (patientId: string) => {
+    const patient = patients.find((p) => p.patientId === patientId);
+    return patient ? formatSexAge(patient.genderCd, patient.birthDate) : "-";
+  };
   const patientLabel = (patientId: string) =>
     patientNameById.get(patientId) ?? (patientListLoading ? "Loading..." : "Unknown");
 
@@ -68,62 +77,40 @@ const PrescriptionRequestHome = () => {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1800px] p-6">
-      <div className="mb-6">
-        <h1 className="text-lg font-semibold text-slate-800">Prescription Requests</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Select an admitted patient to view and send prescription requests to the outpatient prescription core.
-        </p>
-      </div>
+    <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-4 p-6">
+      <PageHeader
+        title="Prescription Requests"
+        description="Select an admitted patient to view and send prescription requests to the outpatient prescription core."
+      />
 
-      <div className="flex items-start gap-4">
+      <div className="grid grid-cols-[minmax(320px,1fr)_3fr] items-start gap-4">
         {/* 왼쪽: 입원 중인 환자 목록 */}
-        <div className="w-72 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 bg-slate-50 px-4 py-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-            Admitted Patients
-          </div>
-          {admissionListStatus.loading && <p className="px-4 py-6 text-sm text-slate-500">Loading...</p>}
-          {admissionListStatus.error && <p className="px-4 py-6 text-sm text-red-600">{admissionListStatus.error}</p>}
-          {!admissionListStatus.loading && !admissionListStatus.error && (
-            <ul className="divide-y divide-slate-100">
-              {requestableAdmissions.map((admission) => (
-                <li key={admission.admissionId}>
-                  <button
-                    type="button"
-                    onClick={() => selectAdmission(admission.admissionId)}
-                    className={`flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left text-sm hover:bg-slate-50 ${
-                      selectedAdmissionId === admission.admissionId ? "bg-sky-50" : ""
-                    }`}
-                  >
-                    <span className="font-medium text-slate-800">{patientLabel(admission.patientId)}</span>
-                    <span className="text-xs text-slate-500">
-                      {admission.admissionId} · {STATUS_LABEL[admission.status] ?? admission.status}
-                    </span>
-                  </button>
-                </li>
-              ))}
-              {requestableAdmissions.length === 0 && (
-                <li className="px-4 py-6 text-center text-sm text-slate-500">No admitted patients.</li>
-              )}
-            </ul>
-          )}
-        </div>
+        <AdmissionPickerPanel
+          title="Admitted Patients"
+          admissions={requestableAdmissions}
+          loading={admissionListStatus.loading}
+          error={admissionListStatus.error}
+          selectedAdmissionId={selectedAdmissionId}
+          onSelect={selectAdmission}
+          patientLabel={patientLabel}
+          statusLabel={STATUS_LABEL}
+        />
 
         {/* 오른쪽: 선택한 입원 건의 처방 요청 */}
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-col gap-3">
           {!selectedAdmissionId ? (
-            <p className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-500">
+            <Panel dashed className="px-4 py-10 text-center text-sm text-slate-500">
               Select a patient on the left to see prescription requests.
-            </p>
+            </Panel>
           ) : (
-            <div className="space-y-4">
+            <>
               {selectedAdmission && (
-                <p className="text-sm text-slate-600">
-                  <span className="font-medium text-slate-800">{patientLabel(selectedAdmission.patientId)}</span>
+                <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3 text-sm shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                  <span className="font-semibold text-slate-800">{patientLabel(selectedAdmission.patientId)}</span>
                   <span className="ml-2 text-slate-500">
-                    {selectedAdmission.admissionId} · Patient ID {selectedAdmission.patientId}
+                    {sexAgeLabel(selectedAdmission.patientId)} · Admitted {formatDateTime(selectedAdmission.admissionDate)}
                   </span>
-                </p>
+                </div>
               )}
 
               <div className="flex items-start gap-4">
@@ -139,13 +126,9 @@ const PrescriptionRequestHome = () => {
                 {panel?.type === "detail" && (
                   <div className="w-[480px] shrink-0">
                     <div className="mb-2 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => setPanel(null)}
-                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-                      >
+                      <Button variant="secondary" onClick={() => setPanel(null)} className="!h-8 !px-3">
                         Deselect
-                      </button>
+                      </Button>
                     </div>
                     {/* key: 다른 처방을 고르면 상세를 새로 그려서 취소 사유 입력값 등이 초기화되게 함 */}
                     <PrescriptionDetail key={panel.prescriptionId} prescriptionId={panel.prescriptionId} />
@@ -164,7 +147,7 @@ const PrescriptionRequestHome = () => {
                   </div>
                 )}
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>

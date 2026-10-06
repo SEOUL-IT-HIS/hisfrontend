@@ -9,6 +9,9 @@ import Link from "next/link";
 import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import { fetchNursingAssessmentsRequest, selectNursingAssessments, selectNursingAssessmentListStatus } from "@/features/inpatient/nursingrecord/nursingassessment/slice";
+import { Alert, DataTable, PageHeader, type DataTableColumn } from "@/components/common";
+import Toolbar from "@/components/inpatient/common/Toolbar";
+import LinkButton from "@/components/inpatient/common/LinkButton";
 
 type NursingAssessmentListProps = {
   /** 간호기록관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
@@ -48,81 +51,50 @@ const NursingAssessmentList = ({ embedded = false, admissionId = null, readOnly 
     dispatch(fetchPatientListRequest({}));
   }, [dispatch]);
 
+  // 입원 건 → 환자 이름 (기록에는 admissionId만 있어서 두 단계로 찾음)
+  const patientNameOf = (recordAdmissionId: string) => {
+    const patientId = patientIdByAdmissionId.get(recordAdmissionId);
+    return patientId ? patientNameById.get(patientId) ?? "Loading..." : "None";
+  };
+
+  const columns: DataTableColumn<(typeof visibleNursingAssessments)[number]>[] = [
+    { key: "patientname", header: "Patient Name", render: (nursingAssessment) => <span className="font-medium text-slate-800">{patientNameOf(nursingAssessment.admissionId)}</span> },
+    { key: "details", header: "Details", render: (nursingAssessment) => <Link href={`/inpatient/nursingrecord/nursingassessment/${nursingAssessment.nursingAssessmentId}`} className="font-medium text-sky-700 hover:underline">View</Link> },
+    { key: "allergyyn", header: "Allergy Yn", render: (nursingAssessment) => codeLabel(YN_OPTIONS, nursingAssessment.allergyYn) },
+    { key: "allergydetail", header: "Allergy Detail", render: (nursingAssessment) => nursingAssessment.allergyDetail },
+    { key: "pastmedicalhistory", header: "Past Medical History", render: (nursingAssessment) => nursingAssessment.pastMedicalHistory },
+    { key: "mentalstatuscode", header: "Mental Status Code", render: (nursingAssessment) => codeLabel(MENTAL_STATUS_OPTIONS, nursingAssessment.mentalStatusCd) },
+    { key: "assessedat", header: "Assessed At", render: (nursingAssessment) => new Date(nursingAssessment.assessedAt).toLocaleString() },
+    { key: "assessedby", header: "Assessed By", render: (nursingAssessment) => nursingAssessment.assessorId ? nurseNameById.get(nursingAssessment.assessorId) ?? nursingAssessment.assessorId : "-" },
+    { key: "createdat", header: "Created At", render: (nursingAssessment) => new Date(nursingAssessment.createdAt).toLocaleString() },
+    { key: "updatedat", header: "Updated At", render: (nursingAssessment) => new Date(nursingAssessment.updatedAt).toLocaleString() },
+  ];
+
   return (
-    <div className={embedded ? "w-full" : "mx-auto w-full max-w-6xl p-6"}>
-      <div className="mb-6 flex items-center justify-between">
-        {embedded ? (
-          <div />
-        ) : (
-          <div>
-            <h1 className="text-lg font-semibold text-slate-800">Patient Nursing Assessment List</h1>
-            <p className="mt-1 text-sm text-slate-500">Nursing assessment records by patient.</p>
-          </div>
-        )}
-        {!readOnly && (
-          <Link
-            href={`/inpatient/nursingrecord/nursingassessment/create${admissionId ? `?admissionId=${admissionId}` : ""}`}
-            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-          >
-            Register Assessment
-          </Link>
-        )}
-      </div>
+    <div className={`flex flex-col gap-4 ${embedded ? "w-full" : "mx-auto w-full max-w-6xl p-6"}`}>
+      {!embedded && <PageHeader title="Patient Nursing Assessment List" description="Nursing assessment records by patient." />}
 
-      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
-      {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
+      <Toolbar
+        actions={
+          !readOnly && (
+            <LinkButton href={`/inpatient/nursingrecord/nursingassessment/create${admissionId ? `?admissionId=${admissionId}` : ""}`}>Register Assessment</LinkButton>
+          )
+        }
+      >
+        <span className="text-sm text-slate-500">{visibleNursingAssessments.length} records</span>
+      </Toolbar>
 
-      {!listStatus.loading && !listStatus.error && (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
-                <th className="whitespace-nowrap px-4 py-3">Nursing Assessment ID</th>
-                <th className="whitespace-nowrap px-4 py-3">Admission ID</th>
-                <th className="whitespace-nowrap px-4 py-3">Allergy Yn</th>
-                <th className="whitespace-nowrap px-4 py-3">Allergy Detail</th>
-                <th className="whitespace-nowrap px-4 py-3">Past Medical History</th>
-                <th className="whitespace-nowrap px-4 py-3">Mental Status Code</th>
-                <th className="whitespace-nowrap px-4 py-3">Assessed At</th>
-                <th className="whitespace-nowrap px-4 py-3">Assessor ID</th>
-                <th className="whitespace-nowrap px-4 py-3">Created At</th>
-                <th className="whitespace-nowrap px-4 py-3">Updated At</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {visibleNursingAssessments.map((nursingAssessment) => {
-                const patientId = patientIdByAdmissionId.get(nursingAssessment.admissionId);
-                const patientName = patientId ? (patientNameById.get(patientId) ?? "Loading...") : "None";
-                return (
-                  <tr key={nursingAssessment.nursingAssessmentId} className="hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-800">{patientName}</td>
-                    <td className="whitespace-nowrap px-4 py-3 font-medium">
-                      <Link
-                        href={`/inpatient/nursingrecord/nursingassessment/${nursingAssessment.nursingAssessmentId}`}
-                        className="text-sky-700 hover:underline"
-                      >
-                        {nursingAssessment.nursingAssessmentId}
-                      </Link>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{nursingAssessment.admissionId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{codeLabel(YN_OPTIONS, nursingAssessment.allergyYn)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{nursingAssessment.allergyDetail}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{nursingAssessment.pastMedicalHistory}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{codeLabel(MENTAL_STATUS_OPTIONS, nursingAssessment.mentalStatusCd)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(nursingAssessment.assessedAt).toLocaleString()}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{nursingAssessment.assessorId ? nurseNameById.get(nursingAssessment.assessorId) ?? nursingAssessment.assessorId : "-"}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(nursingAssessment.createdAt).toLocaleString()}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(nursingAssessment.updatedAt).toLocaleString()}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {visibleNursingAssessments.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-slate-500">No nursing assessment data available.</p>
-          )}
-        </div>
+      {listStatus.error ? (
+        <Alert>{listStatus.error}</Alert>
+      ) : (
+        <DataTable
+          columns={columns}
+          rows={visibleNursingAssessments}
+          rowKey={(nursingAssessment) => nursingAssessment.nursingAssessmentId}
+          loading={listStatus.loading}
+          loadingMessage="Loading..."
+          emptyMessage="No nursing assessment data available."
+        />
       )}
     </div>
   );
