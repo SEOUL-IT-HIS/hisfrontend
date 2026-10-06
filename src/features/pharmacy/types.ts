@@ -367,6 +367,11 @@ export interface PharmacyState {
   storageLocationRegisterLoading: boolean;
   storageLocationRegisterError: string | null;
 
+  /** 재고부족 조회 */
+  lowStockList: InventoryDto[];
+  lowStockLoading: boolean;
+  lowStockError: string | null;
+
   /** 품목 중심 워크스페이스 — 선택한 약품의 재고(로트·보관위치별) */
   medicationStockList: InventoryDto[];
   medicationStockLoading: boolean;

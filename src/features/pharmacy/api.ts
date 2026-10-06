@@ -76,6 +76,17 @@ export async function getInventoryList(
   return response.data;
 }
 
+/** 재고부족 조회 — 현재 수량이 threshold 이하인 재고를 수량이 적은 순으로 */
+export async function getLowStockInventory(
+  threshold: number
+): Promise<ApiResponse<InventoryDto[]>> {
+  const response = await apiClient.get<ApiResponse<InventoryDto[]>>(
+    "/api/pharmacy/inventories/low-stock-list",
+    { params: { threshold } }
+  );
+  return response.data;
+}
+
 /** 품목 중심 워크스페이스 — 선택한 약품의 최근 입출고 내역 */
 export async function getMedicationMovements(
   medicationId: string

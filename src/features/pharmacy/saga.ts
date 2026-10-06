@@ -19,6 +19,7 @@ import {
   getControlledDrugRecords,
   getInventoryList,
   getIssuanceList,
+  getLowStockInventory,
   getMedicationList,
   getMedicationMovements,
   getPrescriptionDetail,
@@ -49,6 +50,9 @@ import {
   fetchIssuanceListFailure,
   fetchIssuanceListRequest,
   fetchIssuanceListSuccess,
+  fetchLowStockFailure,
+  fetchLowStockRequest,
+  fetchLowStockSuccess,
   fetchMedicationListFailure,
   fetchMedicationListRequest,
   fetchMedicationListSuccess,
@@ -427,6 +431,17 @@ function* registerStorageLocationSaga(
   }
 }
 
+// ----- 재고부족 조회 -----
+function* fetchLowStockSaga(action: PayloadAction<number>) {
+  try {
+    const response: Awaited<ReturnType<typeof getLowStockInventory>> =
+      yield call(getLowStockInventory, action.payload);
+    yield put(fetchLowStockSuccess(response.data));
+  } catch (error) {
+    yield put(fetchLowStockFailure(resolveErrorMessage(error)));
+  }
+}
+
 // ----- 품목 중심 워크스페이스: 선택한 약품의 재고/최근 입출고 내역 -----
 function* fetchMedicationStockSaga(action: PayloadAction<string>) {
   try {
@@ -509,6 +524,7 @@ export default function* pharmacySaga() {
     registerStorageLocationRequest.type,
     registerStorageLocationSaga
   );
+  yield takeLatest(fetchLowStockRequest.type, fetchLowStockSaga);
   yield takeLatest(fetchMedicationStockRequest.type, fetchMedicationStockSaga);
   yield takeLatest(
     fetchMedicationMovementsRequest.type,

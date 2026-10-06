@@ -92,6 +92,10 @@ const initialState: PharmacyState = {
   storageLocationRegisterLoading: false,
   storageLocationRegisterError: null,
 
+  lowStockList: [],
+  lowStockLoading: false,
+  lowStockError: null,
+
   medicationStockList: [],
   medicationStockLoading: false,
   medicationStockError: null,
@@ -476,6 +480,20 @@ const pharmacySlice = createSlice({
       state.storageLocationRegisterError = action.payload;
     },
 
+    // ----- 재고부족 조회 -----
+    fetchLowStockRequest(state, _action: PayloadAction<number>) {
+      state.lowStockLoading = true;
+      state.lowStockError = null;
+    },
+    fetchLowStockSuccess(state, action: PayloadAction<InventoryDto[]>) {
+      state.lowStockLoading = false;
+      state.lowStockList = action.payload;
+    },
+    fetchLowStockFailure(state, action: PayloadAction<string>) {
+      state.lowStockLoading = false;
+      state.lowStockError = action.payload;
+    },
+
     // ----- 품목 중심 워크스페이스: 선택한 약품의 재고/최근 입출고 내역 -----
     fetchMedicationStockRequest(state, _action: PayloadAction<string>) {
       state.medicationStockLoading = true;
@@ -591,6 +609,10 @@ export const {
   registerStorageLocationRequest,
   registerStorageLocationSuccess,
   registerStorageLocationFailure,
+
+  fetchLowStockRequest,
+  fetchLowStockSuccess,
+  fetchLowStockFailure,
 
   fetchMedicationStockRequest,
   fetchMedicationStockSuccess,
