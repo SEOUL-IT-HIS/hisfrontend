@@ -16,6 +16,9 @@ export const IMAGE_FILE_MESSAGES = {
   LAB054: "This file type is not allowed.",
   LAB055: "Could not connect to the image storage. Please try again shortly.",
   LAB056: "Failed to save the image file. The upload has been cancelled.",
+  LAB109: "The file is too large.",
+  LAB110: "Staff member not found, or no longer active.",
+  LAB112: "Unable to verify staff information right now.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;

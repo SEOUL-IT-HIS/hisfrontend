@@ -252,6 +252,8 @@ export interface ImageReceptionDetail extends ImageReceptionContext {
   treatTypeCode: string;
   urgencyYn: "Y" | "N";
   physicianNo?: string;
+  /** 처방의ID — 표시용이 아니라 처방의사명을 조회하는 열쇠(2026-10-05, 처방의사명 표시) */
+  physicianId?: string;
   /** 촬영항목코드 목록 (공통코드 IMG_ITEM_CD) */
   imageItemCodes: string[];
   receivedAt: string;

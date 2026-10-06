@@ -10,6 +10,11 @@ import {
 } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import DischargeRequestDetail from "@/components/inpatient/admissiondischarge/discharge/DischargeRequestDetail";
+import { useDepartmentNames } from "@/features/commonCode/hooks/useDepartmentNames";
+import { formatDateTime } from "@/features/inpatient/dateLimits";
+import { formatSexAge } from "@/features/inpatient/displayFormat";
+import { Alert, DataTable, PageHeader, type DataTableColumn } from "@/components/common";
+import type { AdmissionDTO } from "@/features/inpatient/admissiondischarge/types";
 
 type DischargeTargetListProps = {
   /** 입퇴원관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
@@ -32,70 +37,60 @@ const DischargeTargetList = ({ embedded = false }: DischargeTargetListProps = {}
     () => new Map(patients.map((patient) => [patient.patientId, patient.patientName])),
     [patients],
   );
+  // patientId → 성별/나이, 진료과 코드 → 진료과명 (ID 대신 화면에 보여줄 값)
+  const sexAgeByPatientId = useMemo(
+    () => new Map(patients.map((patient) => [patient.patientId, formatSexAge(patient.genderCd, patient.birthDate)])),
+    [patients],
+  );
+  const { names: deptNames } = useDepartmentNames();
 
   useEffect(() => {
     dispatch(fetchAdmissionsRequest());
     dispatch(fetchPatientListRequest({}));
   }, [dispatch]);
 
+  const columns: DataTableColumn<AdmissionDTO>[] = [
+    { key: "patient", header: "Patient Name", render: (a) => <span className="font-medium text-slate-800">{patientNameById.get(a.patientId) ?? "Looking up..."}</span> },
+    { key: "sexAge", header: "Sex / Age", render: (a) => sexAgeByPatientId.get(a.patientId) ?? "-" },
+    { key: "dept", header: "Admission Dept", render: (a) => (a.admissionDeptId ? deptNames[a.admissionDeptId] ?? a.admissionDeptId : "-") },
+    { key: "admissionDate", header: "Admission Date", render: (a) => formatDateTime(a.admissionDate) },
+    {
+      key: "status",
+      header: "Status",
+      render: () => (
+        <span className="inline-flex items-center whitespace-nowrap rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-200">
+          Admitted
+        </span>
+      ),
+    },
+  ];
+
   return (
-    <div className={embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}>
+    // 화면 아래까지 꽉 채움 — 목록과 상세 패널이 각자 안에서 스크롤 (홈 탭 안에서는 남은 높이를, 단독 페이지에서는 화면 높이를 채움)
+    <div className={`flex min-h-0 flex-col gap-4 ${embedded ? "w-full flex-1" : "mx-auto h-full w-full max-w-[1800px] p-6"}`}>
       {!embedded && (
-        <div className="mb-6">
-          <h1 className="text-lg font-semibold text-slate-800">Discharge Target List</h1>
-          <p className="mt-1 text-sm text-slate-500">List of currently admitted patients eligible for discharge processing.</p>
-        </div>
+        <PageHeader title="Discharge Target List" description="List of currently admitted patients eligible for discharge processing." />
       )}
 
-      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
-      {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
+      {listStatus.error && <Alert>{listStatus.error}</Alert>}
 
-      {!listStatus.loading && !listStatus.error && (
-        <div className="flex items-start gap-4">
-          <div className="min-w-0 flex-1 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                  <th className="whitespace-nowrap px-4 py-3">Admission ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
-                  <th className="whitespace-nowrap px-4 py-3">Admission Dept ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">Patient ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">Admission Date</th>
-                  <th className="whitespace-nowrap px-4 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {dischargeTargets.map((admission) => (
-                  <tr
-                    key={admission.admissionId}
-                    onClick={() => setSelectedId(admission.admissionId)}
-                    className={`cursor-pointer hover:bg-slate-50 ${
-                      selectedId === admission.admissionId ? "bg-sky-50" : ""
-                    }`}
-                  >
-                    <td className="whitespace-nowrap px-4 py-3 font-medium text-sky-700">{admission.admissionId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-800">
-                      {patientNameById.get(admission.patientId) ?? "Looking up..."}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDeptId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.patientId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{admission.admissionDate}</td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <span className="inline-flex items-center whitespace-nowrap rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-200">
-                        Admitted
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {dischargeTargets.length === 0 && (
-              <p className="px-4 py-6 text-center text-sm text-slate-500">No patients eligible for discharge.</p>
-            )}
+      {!listStatus.error && (
+        <div className="flex min-h-[480px] flex-1 gap-4">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <DataTable
+              columns={columns}
+              rows={dischargeTargets}
+              rowKey={(a) => a.admissionId}
+              onRowClick={(a) => setSelectedId(a.admissionId)}
+              isRowActive={(a) => a.admissionId === selectedId}
+              loading={listStatus.loading}
+              loadingMessage="Loading..."
+              emptyMessage="No patients eligible for discharge."
+            />
           </div>
 
           {selectedId && (
-            <div className="w-[420px] shrink-0">
+            <div className="min-h-0 w-[420px] shrink-0 overflow-y-auto">
               <DischargeRequestDetail admissionId={selectedId} onClose={() => setSelectedId(null)} />
             </div>
           )}

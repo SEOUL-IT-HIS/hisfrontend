@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Button } from "@/components/common";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
+import { formatPhysician, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import {
@@ -51,6 +52,7 @@ export default function WorklistReceptionHeader({
   // 선택한 접수 1건이라 배열에 하나만 담아 넘긴다. 훅은 목록/단건을 같은 방식으로 다룬다.
   const { names: patientNames } = usePatientNames([reception.patientId]);
   const patientName = patientNames[reception.patientId];
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
 
   const treatTypes = useCommonCodeOptions("RCPT_TYPE_CD");
   const testTypes = useCommonCodeOptions("TEST_TYPE_CD");
@@ -68,6 +70,9 @@ export default function WorklistReceptionHeader({
   const labItems = matched
     ? matched.labItemCodes.map((code) => toCodeLabel(testTypes.options, code)).join(", ")
     : "";
+
+  // physicianId(처방의 empId) → 이름. "-" 이면 뒤쪽에서 구절 자체를 생략한다.
+  const physicianDisplay = matched ? formatPhysician(matched, staffNameById, staffLoading) : null;
 
   return (
     <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
@@ -98,9 +103,12 @@ export default function WorklistReceptionHeader({
             <>
               {" · "}
               {toCodeLabel(treatTypes.options, matched.treatTypeCode)}
-              {matched.physicianNo ? ` · Physician ${matched.physicianNo}` : null}
+              {physicianDisplay && physicianDisplay.text !== "-" ? (
+                <span title={physicianDisplay.title}> · Physician {physicianDisplay.text}</span>
+              ) : null}
             </>
           ) : null}
+          {reception.receptionStatusCode === "CANCELLED" ? " · Cancelled" : ""}
         </p>
         <p className="mt-0.5 text-xs text-slate-400">
           Received {formatDateTime(reception.receivedAt)}
@@ -109,7 +117,11 @@ export default function WorklistReceptionHeader({
             : " · Not scheduled"}
         </p>
 
-        {reception.receptionStatusCode === "EXCLUDED" ? (
+        {reception.receptionStatusCode === "CANCELLED" ? (
+          <p className="mt-1 text-xs text-rose-600">
+            Cancelled — {reception.cancelReason}
+          </p>
+        ) : reception.receptionStatusCode === "EXCLUDED" ? (
           <p className="mt-1 text-xs text-amber-600">
             Excluded — {reception.exclusionReason}
           </p>

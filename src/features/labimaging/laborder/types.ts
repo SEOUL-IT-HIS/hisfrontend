@@ -111,17 +111,27 @@ export interface LabWorklistItem {
   confirmedResultCount: number;
   nextStep: WorklistStep;
 
-  /** ACCEPTED = 처리 대상, EXCLUDED = 제외됨 */
+  /** ACCEPTED = 처리 대상, EXCLUDED = 제외됨, CANCELLED = 처방 취소로 종료됨 */
   receptionStatusCode: string;
   exclusionReason?: string;
   excludedAt?: string;
+
+  /**
+   * 처방 취소 (05번 지시서 Phase 4/5).
+   * ⚠ cancelRequestedAt 이 있는데 receptionStatusCode 가 CANCELLED 가 아니면
+   *   "취소 요청은 받았지만 이미 진행 중이라 거절/일부만 처리됐다"는 뜻이다 — cancelOutcome 참고.
+   */
+  cancelRequestedAt?: string;
+  cancelReason?: string;
+  /** CANCELLED(전체 취소) / PARTIAL(일부만 취소) / REFUSED(전부 거절). 취소 요청이 없으면 없음 */
+  cancelOutcome?: string;
 }
 
 /**
  * 워크리스트 필터. 백엔드 GET /worklist?receptionStatusCode= 와 대응한다.
  * "ALL" 이면 파라미터를 보내지 않는다.
  */
-export type WorklistStatusFilter = "ACCEPTED" | "EXCLUDED" | "ALL";
+export type WorklistStatusFilter = "ACCEPTED" | "EXCLUDED" | "CANCELLED" | "ALL";
 
 export const WORKLIST_FILTER_OPTIONS: ReadonlyArray<{
   value: WorklistStatusFilter;
@@ -129,6 +139,7 @@ export const WORKLIST_FILTER_OPTIONS: ReadonlyArray<{
 }> = [
   { value: "ACCEPTED", label: "Active" },
   { value: "EXCLUDED", label: "Excluded" },
+  { value: "CANCELLED", label: "Cancelled" },
   { value: "ALL", label: "All" },
 ];
 
@@ -227,6 +238,8 @@ export interface LabReceptionDetail extends LabReceptionContext {
   treatTypeCode: string;
   urgencyYn: "Y" | "N";
   physicianNo?: string;
+  /** 처방의ID — 표시용이 아니라 처방의사명을 조회하는 열쇠(2026-10-05, 처방의사명 표시) */
+  physicianId?: string;
   /** 검사항목코드 목록 (공통코드 TEST_TYPE_CD) */
   labItemCodes: string[];
   receivedAt: string;
@@ -237,6 +250,11 @@ export interface LabReceptionDetail extends LabReceptionContext {
   /** 접수상태코드 — 서비스 내부 Enum (RECEPTION_STATUS_LABELS 로 한글 변환) */
   receptionStatusCode: string;
   receivedById: string;
+
+  // ---- 처방 취소 (05번 지시서 Phase 4/5) ----
+  cancelRequestedAt?: string;
+  cancelReason?: string;
+  cancelOutcome?: string;
 }
 
 /**
@@ -258,6 +276,7 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
  */
 export const RECEPTION_STATUS_LABELS: Record<string, string> = {
   ACCEPTED: "Accepted",
+  CANCELLED: "Cancelled",
 };
 
 /** 코드값을 한글 라벨로. 사전에 없으면 원본 코드를 그대로 보여준다(누락을 숨기지 않기 위함). */

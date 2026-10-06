@@ -54,13 +54,13 @@ export async function fetchLabReceptionByNo(
 
 /**
  * 검사 워크리스트를 조회한다.
- * GET /api/lab-imaging/lab-orders/worklist[?receptionStatusCode=ACCEPTED|EXCLUDED]
+ * GET /api/lab-imaging/lab-orders/worklist[?receptionStatusCode=ACCEPTED|EXCLUDED|CANCELLED]
  *
- * @param receptionStatusCode "ACCEPTED"=처리 대상, "EXCLUDED"=제외됨.
+ * @param receptionStatusCode "ACCEPTED"=처리 대상, "EXCLUDED"=제외됨, "CANCELLED"=취소됨(05번 지시서).
  *                            생략하면 파라미터를 보내지 않아 백엔드가 전체를 반환한다.
  */
 export async function fetchLabWorklist(
-  receptionStatusCode?: "ACCEPTED" | "EXCLUDED",
+  receptionStatusCode?: "ACCEPTED" | "EXCLUDED" | "CANCELLED",
 ): Promise<LabWorklistItem[]> {
   const { data } = await apiClient.get<ApiResponse<LabWorklistItem[]>>(
     `${LAB_ORDER_PATH}/worklist`,

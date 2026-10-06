@@ -59,6 +59,8 @@ export interface PrescriptionDTO {
     prescribedAt: Date;
     prescribedBy: string;
     cancelledAt: string | null;
+    createdAt?: string | null;
+    updatedAt?: string | null;
     cancelReason: string | null;
     orderMethod: string;
     admissionId: string;

@@ -53,68 +53,71 @@ export default function Header() {
   );
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/90 px-5 backdrop-blur">
-      <div className="flex items-center gap-3">
-        <Link
-          href="/main"
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-white transition-colors hover:bg-sky-700"
-          aria-label="Go to home"
-        >
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden>
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </Link>
-        <div>
-          <h1 className="text-sm font-semibold tracking-tight text-slate-900">
-            Hospital Information System
-          </h1>
-          <p className="text-[11px] text-slate-400">SANDAE HOSPITAL · Admin Console</p>
+    <>
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/90 px-5 backdrop-blur">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/main"
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-white transition-colors hover:bg-sky-700"
+            aria-label="Go to home"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden>
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </Link>
+          <div>
+            <h1 className="text-sm font-semibold tracking-tight text-slate-900">
+              Hospital Information System
+            </h1>
+            <p className="text-[11px] text-slate-400">SANDAE HOSPITAL · Admin Console</p>
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center gap-3">
-        <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/15 sm:inline-flex">
-          Operational
-        </span>
-        {isAdmin || user == null ? (
-          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5">
-            {badgeInner}
-          </div>
-        ) : (
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5 transition-colors hover:bg-slate-100"
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-            >
+        <div className="flex items-center gap-3">
+          <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/15 sm:inline-flex">
+            Operational
+          </span>
+          {isAdmin || user == null ? (
+            <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5">
               {badgeInner}
-            </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5 transition-colors hover:bg-slate-100"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+              >
+                {badgeInner}
+              </button>
 
-            {menuOpen ? (
-              <>
-                {/* 메뉴 바깥을 누르면 닫히도록 화면 전체를 덮는 투명 판 */}
-                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                <div
-                  role="menu"
-                  className="absolute right-0 z-50 mt-2 w-44 rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
-                >
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={openPasswordModal}
-                    className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+              {menuOpen ? (
+                <>
+                  {/* 메뉴 바깥을 누르면 닫히도록 화면 전체를 덮는 투명 판 */}
+                  <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                  <div
+                    role="menu"
+                    className="absolute right-0 z-50 mt-2 w-44 rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
                   >
-                    Change password
-                  </button>
-                </div>
-              </>
-            ) : null}
-          </div>
-        )}
-      </div>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={openPasswordModal}
+                      className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      Change password
+                    </button>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          )}
+        </div>
+      </header>
 
+      {/* header 에 backdrop-blur 가 있어서, Modal 을 header 안에 두면 화면이 아니라 header 기준으로 배치되어 잘린다. 그래서 header 밖에 둔다 */}
       {/* 모달이 닫히면 Modal 이 아무것도 그리지 않으므로, 다시 열 때 폼 입력값이 새로 시작된다 */}
       <Modal
         open={passwordOpen}
@@ -124,7 +127,7 @@ export default function Header() {
       >
         <ChangePasswordForm onClose={() => setPasswordOpen(false)} />
       </Modal>
-    </header>
+    </>
   );
 }
 

@@ -17,6 +17,7 @@ import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor"
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveImageScheduleMessage } from "@/features/labimaging/imagingschedule/messages";
+import { todayInputValue } from "@/features/labimaging/common/validation";
 import {
   createImageScheduleRequest,
   fetchImageScheduleItemsRequest,
@@ -203,7 +204,12 @@ export default function ImageScheduleRegisterForm({
     const next: FieldErrors = {};
     if (!form.roomCode.trim()) next.roomCode = "Exam room code is required.";
     if (!form.equipmentCode.trim()) next.equipmentCode = "Equipment code is required.";
-    if (!form.scheduledAt) next.scheduledAt = "Scheduled imaging date and time is required.";
+    if (!form.scheduledAt) {
+      next.scheduledAt = "Scheduled imaging date and time is required.";
+    } else if (form.scheduledAt.slice(0, 10) < todayInputValue()) {
+      // 서버(LAB116)와 같은 기준 — 날짜만 비교한다(당일 이른 시각은 허용). (04번 지시서 Phase 3-B)
+      next.scheduledAt = "Cannot schedule a date in the past.";
+    }
     if (!form.contraindicationCheckCode.trim())
       next.contraindicationCheckCode = "Contraindication check result is required.";
     if (!signedIn) next.confirmedById = "Sign in to record this action.";
@@ -401,6 +407,7 @@ export default function ImageScheduleRegisterForm({
                 type="datetime-local"
                 name="scheduledAt"
                 value={form.scheduledAt}
+                min={`${todayInputValue()}T00:00`}
                 onChange={handleChange}
                 disabled={creating}
               />

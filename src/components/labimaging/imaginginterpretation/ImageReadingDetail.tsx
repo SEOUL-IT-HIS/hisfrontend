@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, ConfirmDialog, FormField, Input } from "@/components/common";
+import { Alert, Button, ConfirmDialog, FormField } from "@/components/common";
+import DoctorSelect from "@/components/labimaging/common/DoctorSelect";
 import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
 import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
+import { formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
 import { resolveImageReadingMessage } from "@/features/labimaging/imaginginterpretation/messages";
 import {
   assignReadingRequest,
@@ -135,6 +137,7 @@ export default function ImageReadingDetail({
   const detailLoaded = loadedReadingItemId === imageOrderItemId && detail !== null;
   const filesLoaded = loadedFileItemId === imageOrderItemId;
   const { names: patientNames } = usePatientNames(detail ? [detail.patientId] : []);
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
 
   const isConfirmed = detail?.readingStatusCode === READING_STATUS.CONFIRMED;
 
@@ -313,16 +316,14 @@ export default function ImageReadingDetail({
           </div>
 
           <div className="flex flex-wrap items-end gap-3 border-t border-slate-100 pt-3">
-            <FormField label="Assign To (Staff ID)" className="w-48">
-              <Input
+            <FormField label="Assign To (Doctor)" className="w-56">
+              <DoctorSelect
                 value={assignedToId}
-                onChange={(e) => {
-                  setAssignedToId(e.target.value);
+                onChange={(value) => {
+                  setAssignedToId(value);
                   setErrors((prev) => ({ ...prev, assignedToId: undefined }));
                 }}
-                maxLength={20}
                 disabled={isConfirmed || submitting}
-                placeholder="e.g. STF00099"
               />
               {errors.assignedToId ? (
                 <span className="text-xs text-rose-500">{errors.assignedToId}</span>
@@ -336,8 +337,8 @@ export default function ImageReadingDetail({
               Assign
             </Button>
             {detail?.assignedToId ? (
-              <span className="text-xs text-slate-400">
-                Currently assigned to {detail.assignedToId}
+              <span className="text-xs text-slate-400" title={formatStaffName(detail.assignedToId, staffNameById, staffLoading).title}>
+                Currently assigned to {formatStaffName(detail.assignedToId, staffNameById, staffLoading).text}
               </span>
             ) : null}
           </div>
@@ -355,8 +356,8 @@ export default function ImageReadingDetail({
           </div>
 
           {isConfirmed ? (
-            <p className="text-xs text-slate-400">
-              Confirmed by {detail?.signedById} at {formatDateTime(detail?.signedAt)}
+            <p className="text-xs text-slate-400" title={formatStaffName(detail?.signedById, staffNameById, staffLoading).title}>
+              Confirmed by {formatStaffName(detail?.signedById, staffNameById, staffLoading).text} at {formatDateTime(detail?.signedAt)}
             </p>
           ) : null}
         </div>
