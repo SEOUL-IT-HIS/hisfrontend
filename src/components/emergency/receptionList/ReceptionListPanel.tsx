@@ -7,12 +7,14 @@ import DownSelect from "@/components/emergency/common/DownSelect";
 import type { DataTableColumn } from "@/components/common/DataTable";
 import KtasLevelBadge from "@/components/emergency/receptionList/KtasLevelBadge";
 import {
+    checkReceptionCancelledRequest,
     fetchReceptionListRequest,
     refreshReceptionListRequest,
+    selectReceptionCancelCheck,
     selectReceptionListItems,
     selectReceptionListLoading,
 } from "@/features/emergency/receptionList/slice";
-import { RECEPTION_LIST_POLL_INTERVAL_MS, type ReceptionListItem } from "@/features/emergency/receptionList/types";
+import { RECEPTION_CANCEL_RECHECK_MS, RECEPTION_LIST_POLL_INTERVAL_MS, type ReceptionListItem } from "@/features/emergency/receptionList/types";
 import { BED_ZONE_OPTIONS } from "@/features/emergency/resource/bed/types";
 import type { AppDispatch } from "@/store/store";
 import { selectDispositionByReceptionId } from "@/features/emergency/disposition/slice";
@@ -61,6 +63,20 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
     useEffect(() => {
         dispatch(fetchReceptionListRequest(status === "ALL" ? undefined : status));
     }, [dispatch, status, followUpKey]);
+
+    // 선택해 둔 환자가 (목록 갱신으로) 목록에서 사라졌으면 접수에서 취소된 것인지 확인한다 — 화면에 안내를 띄우기 위해서다.
+    // 퇴실로 Done 이 되었거나 직접 바꾼 필터 때문에 안 보이는 경우에도 묻지만 결과가 취소가 아니면 아무 안내도 하지 않는다.
+    // 취소가 아니라는 결과는 1분 뒤에 다시 확인한다(그 사이 취소될 수 있다). 취소로 확인되면 더 묻지 않는다.
+    const cancelCheck = useSelector(selectReceptionCancelCheck(activeReceptionNo ?? ""));
+    const activeInList = items.some((item) => item.receptionId === activeReceptionNo);
+    useEffect(() => {
+        if (!activeReceptionNo || loading || activeInList) return;
+        const needsCheck =
+            !cancelCheck ||
+            (cancelCheck.state === "active" && Date.now() - cancelCheck.at > RECEPTION_CANCEL_RECHECK_MS) ||
+            (cancelCheck.state === "checking" && Date.now() - cancelCheck.at > RECEPTION_CANCEL_RECHECK_MS);
+        if (needsCheck) dispatch(checkReceptionCancelledRequest(activeReceptionNo));
+    }, [dispatch, activeReceptionNo, loading, activeInList, items, cancelCheck]);
 
     // 접수에서 새로 들어온 환자·취소를 새로고침 없이 보이게 한다 — 10초마다 조용히 다시 불러온다.
     // 다른 탭·창에 가려진 동안은 멈추고, 다시 보이면 바로 한 번 불러온다.

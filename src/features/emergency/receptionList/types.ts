@@ -19,6 +19,9 @@ export type ReceptionListItem = {
     chiefComplaintRaw: string | null;
 };
 
+/** "취소 아님"으로 확인한 결과를 다시 묻기까지의 시간(그 사이 접수에서 취소될 수 있다) */
+export const RECEPTION_CANCEL_RECHECK_MS = 60_000;
+
 /** 환자 목록을 자동으로 다시 불러오는 간격(접수에서 들어온 환자를 새로고침 없이 보이게 한다) */
 export const RECEPTION_LIST_POLL_INTERVAL_MS = 10_000;
 
@@ -28,4 +31,6 @@ export type ReceptionListState = {
     error: string;
     /** 마지막으로 요청한 상태 필터(IN_CARE · DONE · CANCELLED, undefined = 전체) */
     statusFilter?: string;
+    /** 선택해 둔 환자가 목록에서 사라졌을 때 접수 취소 여부를 물은 결과(checking → cancelled | active) */
+    cancelCheck: Record<string, { state: "checking" | "cancelled" | "active"; at: number }>;
 };

@@ -3,7 +3,7 @@
 import { useSelector } from "react-redux";
 import { Alert } from "@/components/common";
 import { selectIsDischarged } from "@/features/emergency/disposition/slice";
-import { selectReceptionListItems } from "@/features/emergency/receptionList/slice";
+import { selectIsReceptionCancelled } from "@/features/emergency/receptionList/slice";
 
 type DischargedNoticeProps = { receptionNo: string };
 
@@ -13,9 +13,7 @@ type DischargedNoticeProps = { receptionNo: string };
  */
 export default function DischargedNotice({ receptionNo }: DischargedNoticeProps) {
   const discharged = useSelector(selectIsDischarged(receptionNo));
-  const cancelled = useSelector(selectReceptionListItems).some(
-    (item) => item.receptionId === receptionNo && item.careStatusCode === "CANCELLED",
-  );
+  const cancelled = useSelector(selectIsReceptionCancelled(receptionNo));
   if (cancelled) {
     return (
       // 접수에서 취소한 접수입니다. 여기서는 새로 등록할 수 없습니다.

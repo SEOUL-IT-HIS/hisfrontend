@@ -1,7 +1,9 @@
 import { call, put, select, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import { getReceptionList } from "@/features/emergency/receptionList/api";
+import { getReceptionCancellable, getReceptionList, type ReceptionCancellable } from "@/features/emergency/receptionList/api";
 import {
+    checkReceptionCancelledRequest,
+    checkReceptionCancelledResult,
     fetchReceptionListFailure,
     fetchReceptionListRequest,
     fetchReceptionListSuccess,
@@ -24,6 +26,23 @@ function* fetchReceptionListSaga(action: PayloadAction<string | undefined>) {
     }
 }
 
+function* checkReceptionCancelledSaga(action: PayloadAction<string>) {
+    try {
+        const info: ReceptionCancellable = yield call(getReceptionCancellable, action.payload);
+        yield put(
+            checkReceptionCancelledResult({
+                receptionId: action.payload,
+                cancelled: info.reasonCode === "ALREADY_CANCELLED",
+                at: Date.now(),
+            }),
+        );
+    } catch {
+        // 확인하지 못하면 취소가 아닌 것으로 둔다 — 새로 저장할 때 서버가 막고 안내 문장을 보여준다
+        yield put(checkReceptionCancelledResult({ receptionId: action.payload, cancelled: false, at: Date.now() }));
+    }
+}
+
 export default function* receptionListSaga() {
     yield takeLatest([fetchReceptionListRequest.type, refreshReceptionListRequest.type], fetchReceptionListSaga);
+    yield takeLatest(checkReceptionCancelledRequest.type, checkReceptionCancelledSaga);
 }

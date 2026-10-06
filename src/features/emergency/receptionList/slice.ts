@@ -6,6 +6,7 @@ const initialState: ReceptionListState = {
     loading: false,
     error: "",
     statusFilter: undefined,
+    cancelCheck: {},
 };
 
 const receptionListSlice = createSlice({
@@ -34,6 +35,16 @@ const receptionListSlice = createSlice({
             state.loading = false;
             state.error = action.payload;
         },
+        // 선택해 둔 환자가 갱신된 목록에서 사라졌을 때, 접수에서 취소된 것인지 한 번 확인한다
+        checkReceptionCancelledRequest(state, action: PayloadAction<string>) {
+            state.cancelCheck[action.payload] = { state: "checking", at: Date.now() };
+        },
+        checkReceptionCancelledResult(state, action: PayloadAction<{ receptionId: string; cancelled: boolean; at: number }>) {
+            state.cancelCheck[action.payload.receptionId] = {
+                state: action.payload.cancelled ? "cancelled" : "active",
+                at: action.payload.at,
+            };
+        },
     },
 });
 
@@ -42,6 +53,8 @@ export const {
     refreshReceptionListRequest,
     fetchReceptionListSuccess,
     fetchReceptionListFailure,
+    checkReceptionCancelledRequest,
+    checkReceptionCancelledResult,
 } = receptionListSlice.actions;
 export default receptionListSlice.reducer;
 
@@ -50,4 +63,12 @@ type ReceptionListRoot = { emergency: { receptionList: ReceptionListState } };
 export const selectReceptionListItems = (state: ReceptionListRoot) => state.emergency.receptionList.items;
 export const selectReceptionListLoading = (state: ReceptionListRoot) => state.emergency.receptionList.loading;
 export const selectReceptionListStatusFilter = (state: ReceptionListRoot) => state.emergency.receptionList.statusFilter;
+/** 이 접수에 대한 취소 확인 상태(없으면 아직 안 물었다) */
+export const selectReceptionCancelCheck = (receptionId: string) => (state: ReceptionListRoot) =>
+    state.emergency.receptionList.cancelCheck[receptionId];
+/** 접수에서 취소된 접수인지 — 목록에 취소로 보이거나, 목록에서 사라진 뒤 확인해 취소로 확인된 경우 */
+export const selectIsReceptionCancelled = (receptionId: string) => (state: ReceptionListRoot) =>
+    !!receptionId &&
+    (state.emergency.receptionList.items.some((item) => item.receptionId === receptionId && item.careStatusCode === "CANCELLED") ||
+        state.emergency.receptionList.cancelCheck[receptionId]?.state === "cancelled");
 export const selectReceptionListError = (state: ReceptionListRoot) => state.emergency.receptionList.error;
