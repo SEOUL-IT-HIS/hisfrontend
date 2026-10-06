@@ -8,10 +8,11 @@ import type { DataTableColumn } from "@/components/common/DataTable";
 import KtasLevelBadge from "@/components/emergency/receptionList/KtasLevelBadge";
 import {
     fetchReceptionListRequest,
+    refreshReceptionListRequest,
     selectReceptionListItems,
     selectReceptionListLoading,
 } from "@/features/emergency/receptionList/slice";
-import type { ReceptionListItem } from "@/features/emergency/receptionList/types";
+import { RECEPTION_LIST_POLL_INTERVAL_MS, type ReceptionListItem } from "@/features/emergency/receptionList/types";
 import { BED_ZONE_OPTIONS } from "@/features/emergency/resource/bed/types";
 import type { AppDispatch } from "@/store/store";
 import { selectDispositionByReceptionId } from "@/features/emergency/disposition/slice";
@@ -61,6 +62,20 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
         dispatch(fetchReceptionListRequest(status === "ALL" ? undefined : status));
     }, [dispatch, status, followUpKey]);
 
+    // 접수에서 새로 들어온 환자·취소를 새로고침 없이 보이게 한다 — 10초마다 조용히 다시 불러온다.
+    // 다른 탭·창에 가려진 동안은 멈추고, 다시 보이면 바로 한 번 불러온다.
+    useEffect(() => {
+        const refreshIfVisible = () => {
+            if (document.visibilityState === "visible") dispatch(refreshReceptionListRequest());
+        };
+        const timer = setInterval(refreshIfVisible, RECEPTION_LIST_POLL_INTERVAL_MS);
+        document.addEventListener("visibilitychange", refreshIfVisible);
+        return () => {
+            clearInterval(timer);
+            document.removeEventListener("visibilitychange", refreshIfVisible);
+        };
+    }, [dispatch]);
+
     // 백엔드가 접수 시각 오름차순(먼저 접수한 환자 먼저)으로 내려주므로 그 순서를 그대로 쓴다.
     // (접수ID 는 UUID 라 정렬 기준으로 쓰면 접수 순서와 무관하게 뒤섞인다)
     const sortedItems = items;
@@ -72,7 +87,9 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
         (item) => keyword === "" || (item.patientName?.includes(keyword) ?? false),
     );
     const totalPages = Math.max(Math.ceil(filtered.length / PAGE_SIZE), 1);
-    const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    // 자동 갱신으로 목록이 줄면 보던 페이지가 없어질 수 있다 — 마지막 페이지로 맞춘다
+    const currentPage = Math.min(page, totalPages);
+    const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
     const columns: DataTableColumn<ReceptionListItem>[] = [
         { key: "ktas", header: "KTAS", render: (r) => <KtasLevelBadge level={r.ktasLevelCode} /> },
@@ -149,7 +166,7 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
                 />
                 <div className="flex justify-center rounded-b-2xl border border-t-0 border-slate-200/80 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                     {/* 이전 / 다음 — 공용 Pagination 기본값(한글)을 이 화면에서만 영어로 덮어씀 */}
-                    <Pagination page={page} totalPages={totalPages} onPageChange={setPage} prevLabel="Previous" nextLabel="Next" />
+                    <Pagination page={currentPage} totalPages={totalPages} onPageChange={setPage} prevLabel="Previous" nextLabel="Next" />
                 </div>
             </div>
         </div>

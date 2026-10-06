@@ -19,6 +19,9 @@ export type ReceptionListItem = {
     chiefComplaintRaw: string | null;
 };
 
+/** 환자 목록을 자동으로 다시 불러오는 간격(접수에서 들어온 환자를 새로고침 없이 보이게 한다) */
+export const RECEPTION_LIST_POLL_INTERVAL_MS = 10_000;
+
 export type ReceptionListState = {
     items: ReceptionListItem[];
     loading: boolean;

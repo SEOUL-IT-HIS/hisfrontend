@@ -23,11 +23,9 @@ const receptionListSlice = createSlice({
                 return { payload: status };
             },
         },
-        // 필터는 그대로 두고 지금 보고 있는 목록만 다시 불러온다(KTAS 등록 뒤 배지 갱신 등)
-        refreshReceptionListRequest(state) {
-            state.loading = true;
-            state.error = "";
-        },
+        // 필터는 그대로 두고 지금 보고 있는 목록만 조용히 다시 불러온다(KTAS 등록 뒤 배지 갱신, 주기적 갱신).
+        // 로딩 표시를 켜지 않아 표가 깜빡이지 않는다.
+        refreshReceptionListRequest() {},
         fetchReceptionListSuccess(state, action: PayloadAction<ReceptionListItem[]>) {
             state.loading = false;
             state.items = action.payload;
