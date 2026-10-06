@@ -71,6 +71,8 @@ export default function InterfaceSendLogPage() {
   const [form, setForm] = useState<InterfaceSendLogSearch>(lastSearch);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  /** 조회 기간 역전(From > To) 인라인 오류. (04번 지시서 Phase 3-E-3) */
+  const [rangeError, setRangeError] = useState("");
 
   useEffect(() => {
     dispatch(fetchInterfaceSendLogsRequest(lastSearch));
@@ -93,12 +95,19 @@ export default function InterfaceSendLogPage() {
   }, [eventTypes.options, statuses.options, systems.options]);
 
   function search(page: number) {
+    // 서버(LAB114)와 같은 기준 — 시작일이 종료일보다 늦으면 조회하지 않는다. (04번 지시서 Phase 3-E-3)
+    if (form.from && form.to && form.from > form.to) {
+      setRangeError("The start date must not be after the end date.");
+      return;
+    }
+    setRangeError("");
     dispatch(fetchInterfaceSendLogsRequest({ ...form, page }));
   }
 
   function reset() {
     const cleared: InterfaceSendLogSearch = { ...form, eventTypeCode: "", sendStatusCode: "", from: "", to: "" };
     setForm(cleared);
+    setRangeError("");
     dispatch(fetchInterfaceSendLogsRequest({ ...cleared, page: 0 }));
   }
 
@@ -164,7 +173,11 @@ export default function InterfaceSendLogPage() {
             id="send-log-from"
             type="date"
             value={form.from}
-            onChange={(e) => setForm({ ...form, from: e.target.value })}
+            max={form.to || undefined}
+            onChange={(e) => {
+              setForm({ ...form, from: e.target.value });
+              setRangeError("");
+            }}
           />
         </FormField>
         <FormField label="To" htmlFor="send-log-to">
@@ -172,11 +185,16 @@ export default function InterfaceSendLogPage() {
             id="send-log-to"
             type="date"
             value={form.to}
-            onChange={(e) => setForm({ ...form, to: e.target.value })}
+            min={form.from || undefined}
+            onChange={(e) => {
+              setForm({ ...form, to: e.target.value });
+              setRangeError("");
+            }}
           />
         </FormField>
       </SearchBar>
 
+      {rangeError ? <Alert>{rangeError}</Alert> : null}
       {loadError ? <Alert>{resolveInterfaceSendLogMessage(loadError)}</Alert> : null}
 
       <DataTable

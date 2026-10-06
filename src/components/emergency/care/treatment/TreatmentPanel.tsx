@@ -3,7 +3,11 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
+import ActorField from "@/components/emergency/common/ActorField";
+import StaffName from "@/components/emergency/common/StaffName";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import { CODE_GROUP, optionLabel, toCodeOptions } from "@/features/emergency/codes";
 import {
@@ -21,6 +25,9 @@ import {
   selectCommonCodeLoaded,
   selectCommonCodesByGroup,
 } from "@/features/emergency/commonCode/slice";
+import OrderSelect from "@/components/emergency/order/OrderSelect";
+import { selectOrdersByReception } from "@/features/emergency/order/slice";
+import { orderTitle } from "@/features/emergency/order/utils";
 import { formatDateTime } from "@/features/emergency/utils";
 
 type TreatmentPanelProps = { receptionNo: string; className?: string };
@@ -29,7 +36,8 @@ const initialForm = { orderId: "", treatmentCode: "", description: "", performed
 
 /**
  * 응급 처치 기록 패널 (UC-CARE-03, Jira UD2-18)
- * - 처치는 GR2 처방(orderId)을 참조해서 기록한다(처방 원장은 GR2 소유, 응급은 참조만).
+ * - 처치는 처방(orderId)을 참조해서 기록한다(처방 원장은 처방코어 소유, 응급은 참조만).
+ *   처방 ID 는 이 환자의 처방 목록(Order 탭)에서 고른다(직접 입력도 가능).
  * - 처치 종류는 admin 공통코드 ER_TREATMENT_TYPE_CD(없으면 폴백).
  */
 export default function TreatmentPanel({ receptionNo, className = "" }: TreatmentPanelProps) {
@@ -44,6 +52,9 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
+  // 시행자는 기본이 로그인한 사람이고, 실제로 시행한 사람이 다르면(의사가 시술하고 간호사가 기록 등) 고른다
+  const performedById = useActorId(form.performedById, "STAFF");
+  const orders = useSelector(selectOrdersByReception(receptionNo));
 
   useEffect(() => {
     if (receptionNo) dispatch(fetchTreatmentsRequest(receptionNo));
@@ -67,7 +78,15 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
     !submitting &&
     !!form.orderId.trim() &&
     !!form.treatmentCode &&
-    !!form.performedById.trim();
+    !!performedById;
+
+  // 버튼이 눌리지 않을 때 무엇이 빠졌는지 알려 준다
+  const missing = [
+    !receptionNo && "a patient",
+    !form.orderId.trim() && "an order (register one in the Order tab first)",
+    !form.treatmentCode && "a treatment type",
+    !performedById && "who performed it",
+  ].filter(Boolean);
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -82,7 +101,7 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
         orderId: form.orderId.trim(),
         treatmentCode: form.treatmentCode,
         description: form.description.trim() || undefined,
-        performedById: form.performedById.trim(),
+        performedById,
       }),
     );
   }
@@ -106,7 +125,8 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
                   <p className="text-xs font-medium text-sky-600">{optionLabel(typeOptions, item.treatmentTypeCode)}</p>
                   {item.description ? <p className="whitespace-pre-wrap text-slate-800">{item.description}</p> : null}
                   <p className="mt-1 text-xs text-slate-400">
-                    {formatDateTime(item.performedAt)} · {item.performedById} · Order {item.orderId}
+                    {formatDateTime(item.performedAt)} · <StaffName empId={item.performedById} />
+                    {orderTitle(orders, item.orderId) ? ` · ${orderTitle(orders, item.orderId)}` : ""}
                   </p>
                 </li>
               ))}
@@ -118,32 +138,34 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
-          <div className="flex flex-wrap gap-3">
-            {/* 처방 ID (GR2) */}
-            <FormField label="Order ID" required hint="Prescription ID from the order core (GR2)." className="w-[300px]">
-              <Input name="orderId" value={form.orderId} onChange={handleChange} disabled={submitting} maxLength={36} />
-            </FormField>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {/* 처방 선택 — 이 환자의 처방(Order 탭)에서 고른다. 처방 ID 는 처방코어 prescriptionId */}
+            <OrderSelect
+              receptionNo={receptionNo}
+              value={form.orderId}
+              onChange={(orderId) => setForm((prev) => ({ ...prev, orderId }))}
+              disabled={submitting}
+              className="sm:col-span-2"
+            />
             {/* 처치 종류 */}
-            <FormField label="Treatment Type" required className="w-[200px]">
-              <Select
-                name="treatmentCode"
-                value={form.treatmentCode}
-                onChange={handleChange}
-                options={typeOptions}
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
-            {/* 시행자ID */}
-            <FormField label="Performed By ID" required className="w-[180px]">
-              <Input
-                name="performedById"
-                value={form.performedById}
-                onChange={handleChange}
-                disabled={submitting}
-                maxLength={36}
-              />
-            </FormField>
+            <DownSelect
+              label="Treatment Type"
+              required
+              value={form.treatmentCode}
+              onChange={(treatmentCode) => setForm((prev) => ({ ...prev, treatmentCode }))}
+              options={typeOptions}
+              placeholder="Select"
+              disabled={submitting}
+            />
+            {/* 시행자 */}
+            <ActorField
+              label="Performed By"
+              role="STAFF"
+              required
+              value={form.performedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, performedById: empId }))}
+              disabled={submitting}
+            />
           </div>
           {/* 처치 내용 */}
           <FormField label="Description" className="mt-3">
@@ -156,7 +178,10 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
               className="w-full min-h-[64px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
             />
           </FormField>
-          <div className="mt-3 flex justify-end">
+          <div className="mt-3 flex items-center justify-end gap-3">
+            {!submitting && missing.length > 0 ? (
+              <p className="text-xs text-slate-400">Select {missing.join(", ")} to register.</p>
+            ) : null}
             <Button type="button" onClick={handleSubmit} disabled={!canSubmit}>
               {/* 등록 중... / 처치 기록 등록 */}
               {submitting ? "Saving..." : "Register Treatment"}

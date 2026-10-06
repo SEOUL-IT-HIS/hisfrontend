@@ -11,6 +11,13 @@ import { Button, DataTable, Panel, PageHeader } from "@/components/common";
 import type { DataTableColumn } from "@/components/common";
 import type { MedicationDto } from "@/features/pharmacy/types";
 
+/** admin 공통코드 DOSAGE_FORM_CD 라벨 — 코드값만 보여주면 알아보기 어려워 표시용으로만 둔다 */
+const DOSAGE_FORM_LABELS: Record<string, string> = {
+  "01": "Tablet/Capsule",
+  "02": "IV Fluid",
+  "03": "Injection",
+};
+
 const columns: DataTableColumn<MedicationDto>[] = [
   { key: "medicationId", header: "Medication ID", render: (row) => row.medicationId },
   { key: "medicationName", header: "Product Name", render: (row) => row.medicationName },
@@ -20,7 +27,13 @@ const columns: DataTableColumn<MedicationDto>[] = [
   { key: "etcOtcName", header: "Rx/OTC", render: (row) => row.etcOtcName ?? "-" },
   { key: "classNo", header: "Class No.", render: (row) => row.classNo ?? "-" },
   { key: "className", header: "Class Name", render: (row) => row.className ?? "-" },
-  { key: "formCodeName", header: "Form", render: (row) => row.formCodeName ?? "-" },
+  { key: "formCodeName", header: "Form (detail)", render: (row) => row.formCodeName ?? "-" },
+  {
+    key: "dosageFormCd",
+    header: "Dosage Form Category",
+    render: (row) =>
+      row.dosageFormCd ? DOSAGE_FORM_LABELS[row.dosageFormCd] ?? row.dosageFormCd : "-",
+  },
   { key: "chart", header: "Appearance", render: (row) => row.chart ?? "-" },
   { key: "itemPermitDate", header: "Permit Date", render: (row) => row.itemPermitDate ?? "-" },
   { key: "ediCode", header: "EDI Code", render: (row) => row.ediCode ?? "-" },

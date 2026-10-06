@@ -7,6 +7,7 @@ import type { CongestionLevel } from "@/features/emergency/resource/congestion/t
 export interface LosAlert {
   id: string;
   receptionId: string;
+  patientName: string | null;
   thresholdMinutes: number | null;
   triggeredAt: string;
   acknowledgedById: string | null;

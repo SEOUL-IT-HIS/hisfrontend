@@ -4,8 +4,9 @@ import { useState, type FormEvent } from "react";
 import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import { registerMedicationRequest } from "@/features/pharmacy/slice";
-import { FormActions, FormField, Input, PageHeader, Panel } from "@/components/common";
+import { FormActions, FormField, Input, PageHeader, Panel, Select } from "@/components/common";
 import type { MedicationRegisterRequest } from "@/features/pharmacy/types";
+import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 
 const initialForm: MedicationRegisterRequest = {
   medicationName: "",
@@ -16,6 +17,7 @@ const initialForm: MedicationRegisterRequest = {
   classNo: "",
   className: "",
   formCodeName: "",
+  dosageFormCd: "",
   chart: "",
   itemPermitDate: "",
   ediCode: "",
@@ -27,6 +29,10 @@ export default function MedicationRegisterForm() {
   const router = useRouter();
   const [form, setForm] = useState<MedicationRegisterRequest>(initialForm);
 
+  // admin 공통코드 DOSAGE_FORM_CD(01 알약/캡슐·02 수액·03 주사) — 외래/입원/응급 처방 화면과
+  // 같은 코드그룹을 그대로 가져와 드롭다운으로 선택하게 한다(자유 텍스트 입력 아님).
+  const { options: dosageFormOptions } = useCommonCodeOptions("DOSAGE_FORM_CD");
+
   const handleChange =
     (field: keyof MedicationRegisterRequest) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,7 +41,7 @@ export default function MedicationRegisterForm() {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!form.medicationName.trim()) {
+    if (!form.medicationName.trim() || !form.dosageFormCd) {
       return;
     }
     // itemPermitDate는 LocalDate라 빈 문자열("")을 그대로 보내면 백엔드 파싱이 깨진다.
@@ -53,7 +59,7 @@ export default function MedicationRegisterForm() {
     <div className="flex flex-col gap-4 pb-8">
       <PageHeader
         title="Register Medication"
-        description="Register a medication based on Public API (drug pill identification) fields."
+        description="Register a medication. Pill identification fields below are mainly for tablets/capsules imported from the public API — injections and IV fluids don't exist in that dataset, so register them here manually with Dosage Form Category set accordingly."
       />
       <Panel className="max-w-xl p-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -113,10 +119,18 @@ export default function MedicationRegisterForm() {
               onChange={handleChange("className")}
             />
           </FormField>
-          <FormField label="Form">
+          <FormField label="Dosage Form Category" required>
+            <Select
+              value={form.dosageFormCd}
+              onChange={(e) => setForm((prev) => ({ ...prev, dosageFormCd: e.target.value }))}
+              options={dosageFormOptions}
+              placeholder="Select dosage form"
+            />
+          </FormField>
+          <FormField label="Form (detail)">
             <Input
               type="text"
-              placeholder="e.g. Tablet"
+              placeholder="e.g. Tablet, Hard capsule"
               value={form.formCodeName}
               onChange={handleChange("formCodeName")}
             />

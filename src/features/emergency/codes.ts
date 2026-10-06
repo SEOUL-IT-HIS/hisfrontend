@@ -30,7 +30,17 @@ export const CODE_GROUP = {
   /** admin 에 이미 있는 그룹(진료과·병동) — 입원요청에서 씀 */
   DEPT: "DEPT_CD",
   WARD: "WARD_CD",
+  /** 처방코어(OPD)가 쓰는 admin 그룹 — 응급 처방 등록에서 씀 */
+  ORDER_PRIORITY: "ORDER_PRIORITY_CD",
+  ORDER_TIMING: "ORDER_TIMING_CD",
+  /** 약품 제형 — admin 그룹(외래·입원 처방도 같은 그룹을 쓴다). 응급 처방 등록의 약품 항목에서 씀 */
+  DOSAGE_FORM: "DOSAGE_FORM_CD",
+  /** admin 에 이미 있는 그룹(검사 종류 01~08). 외래·병동·LAB 이 같은 값을 검사 항목 코드로 쓴다 */
+  LAB_TEST: "TEST_TYPE_CD",
 } as const;
+
+/** 응급의학과의 admin 부서 코드(DEPT_CD 10, Emergency Medicine) — 의사·간호사 목록에서 응급 직원을 맨 위에 보여줄 때 쓴다 */
+export const ER_DEPT_CODE = "10";
 
 export const BED_STATUS = {
   EMPTY: "01",

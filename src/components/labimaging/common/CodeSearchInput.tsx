@@ -23,6 +23,15 @@ type Props = {
   name?: string;
 };
 
+/**
+ * value가 options 목록에 있는 코드인지. 빈 값은 "아직 안 골랐다"로 보고 true를 돌려준다 —
+ * 필수 여부는 호출부의 별도 검증이 담당하고, 이 함수는 "입력은 있는데 모르는 코드"만 가린다.
+ * (04번 지시서 Phase 4-1 — CodeSearchInput 에서 Unknown code 인 값은 제출을 막는다)
+ */
+export function isKnownCode(value: string, options: CommonCodeOption[]): boolean {
+  return !value || options.some((opt) => opt.value === value);
+}
+
 export default function CodeSearchInput({ value, onChange, options, disabled, placeholder, name }: Props) {
   const listId = useId();
   const matched = options.find((opt) => opt.value === value);

@@ -8,22 +8,36 @@
 export const EMERGENCY_MESSAGES = {
   // 요청 값이 올바르지 않습니다.
   EMG_BAD_REQUEST: "The request value is invalid.",
+  // 로그인이 필요합니다.
+  EMG_UNAUTHENTICATED: "Please sign in to continue.",
   // 조회하려는 대상을 찾을 수 없습니다.
   EMG_NOT_FOUND: "The requested item could not be found.",
   // 현재 상태와 충돌하는 요청입니다.
   EMG_CONFLICT: "This request conflicts with the current state.",
   // 서버 내부 오류가 발생했습니다.
   EMG_INTERNAL_ERROR: "An internal server error occurred.",
+  // 연계 서비스(처방코어 등)가 응답하지 않거나 오류를 돌려줬습니다.
+  EMG_UPSTREAM_ERROR: "The order service is not responding. Please try again later.",
 } as const;
 
 export type EmergencyMessageCode = keyof typeof EMERGENCY_MESSAGES;
 
+/** 서버가 409(EMG_CONFLICT)로 주는 영문 사유(뒤에 접수 ID 가 붙는다)를 직원이 알아볼 문장으로 바꾼다 */
+const CONFLICT_REASON_MESSAGES: ReadonlyArray<readonly [RegExp, string]> = [
+  // 접수에서 취소한 접수에는 새로 등록할 수 없습니다.
+  [/^reception cancelled\b/, "This reception was cancelled at reception. New entries cannot be registered."],
+  // 퇴실 처리가 끝난 환자에게는 새로 등록할 수 없습니다.
+  [/^reception already discharged\b/, "This patient has already been discharged. New entries cannot be registered here."],
+];
+
 /**
  * 코드(EMG_*)면 문구로 변환하고, 이미 완성 문구면 그대로 반환한다.
+ * 접수 취소·퇴실로 막힌 요청(서버 사유 문구)은 알아볼 수 있는 문장으로 바꾼다.
  */
 export function resolveEmergencyMessage(codeOrMessage: string): string {
   if (codeOrMessage in EMERGENCY_MESSAGES) {
     return EMERGENCY_MESSAGES[codeOrMessage as EmergencyMessageCode];
   }
-  return codeOrMessage;
+  const reason = CONFLICT_REASON_MESSAGES.find(([pattern]) => pattern.test(codeOrMessage));
+  return reason ? reason[1] : codeOrMessage;
 }

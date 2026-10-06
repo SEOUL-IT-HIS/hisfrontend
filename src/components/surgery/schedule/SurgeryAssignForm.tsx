@@ -12,7 +12,10 @@ import {
   Panel,
   Select,
 } from "@/components/common";
-import { usePatientNames } from "@/features/surgery/common/usePatientNames";
+import {
+  getPatientDisplayName,
+  usePatientNames,
+} from "@/features/surgery/common/usePatientNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   fetchAvailableRoomsRequest,
@@ -211,7 +214,7 @@ export default function SurgeryAssignForm({
       <Panel className="p-3">
         <dl className="grid grid-cols-2 gap-2 text-sm">
           <dt className="text-slate-500">Patient</dt>
-          <dd>{patientNames[order.patientId] ?? order.patientId}</dd>
+          <dd>{getPatientDisplayName(order.patientId, patientNames)}</dd>
           <dt className="text-slate-500">Surgeon ID</dt>
           <dd>{order.surgeonId}</dd>
           <dt className="text-slate-500">Surgery</dt>
@@ -220,8 +223,6 @@ export default function SurgeryAssignForm({
           <dd>{order.requestedDt}</dd>
           <dt className="text-slate-500">Type</dt>
           <dd>{order.emergencyYn === "Y" ? "Emergency" : "Routine"}</dd>
-          <dt className="text-slate-500">Visit ID</dt>
-          <dd>{order.visitId ?? "-"}</dd>
         </dl>
       </Panel>
 

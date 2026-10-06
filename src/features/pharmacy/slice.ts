@@ -1,16 +1,26 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
+  ControlledDrugDisposalRequest,
+  ControlledDrugIssuanceRequest,
+  ControlledDrugReceiptRequest,
+  ControlledDrugRecordDto,
+  DispensingCancelRequest,
   DisposalRegisterRequest,
   IssuanceDto,
   IssuanceRegisterRequest,
   InventoryDto,
   Medication,
   MedicationRegisterForm,
+  MedicationReturnRegisterRequest,
   PharmacyState,
   PrescriptionDetail,
   PrescriptionListItem,
+  PrescriptionRejectRequest,
   ReceiptDto,
   ReceiptRegisterRequest,
+  ReleaseCancelRequest,
+  ReleaseRegisterRequest,
+  ReturnedDisposalRegisterRequest,
 } from "./types";
 
 const initialState: PharmacyState = {
@@ -45,8 +55,25 @@ const initialState: PharmacyState = {
   prescriptionDetailLoading: false,
   prescriptionDetailError: null,
 
+  prescriptionActionLoading: false,
+  prescriptionActionError: null,
+
   disposalLoading: false,
   disposalError: null,
+
+  releaseLoading: false,
+  releaseError: null,
+
+  returnLoading: false,
+  returnError: null,
+  lastReturnItemId: null,
+
+  controlledDrugRegisterLoading: false,
+  controlledDrugRegisterError: null,
+
+  controlledDrugRecordList: [],
+  controlledDrugRecordLoading: false,
+  controlledDrugRecordError: null,
 };
 
 const pharmacySlice = createSlice({
@@ -183,6 +210,8 @@ const pharmacySlice = createSlice({
     fetchPrescriptionDetailRequest(state, _action: PayloadAction<string>) {
       state.prescriptionDetailLoading = true;
       state.prescriptionDetailError = null;
+      // 다른 처방전 상세로 이동했을 때 이전 처방전의 조제완료/거절 에러가 남아 보이지 않도록 비운다.
+      state.prescriptionActionError = null;
     },
     fetchPrescriptionDetailSuccess(
       state,
@@ -194,6 +223,58 @@ const pharmacySlice = createSlice({
     fetchPrescriptionDetailFailure(state, action: PayloadAction<string>) {
       state.prescriptionDetailLoading = false;
       state.prescriptionDetailError = action.payload;
+    },
+
+    // ----- 조제완료/조제거절 (HL2-18) -----
+    dispensePrescriptionRequest(state, _action: PayloadAction<string>) {
+      state.prescriptionActionLoading = true;
+      state.prescriptionActionError = null;
+    },
+    dispensePrescriptionSuccess(state) {
+      state.prescriptionActionLoading = false;
+      if (state.prescriptionDetail) {
+        state.prescriptionDetail.status = "DISPENSED";
+      }
+    },
+    dispensePrescriptionFailure(state, action: PayloadAction<string>) {
+      state.prescriptionActionLoading = false;
+      state.prescriptionActionError = action.payload;
+    },
+    rejectPrescriptionRequest(
+      state,
+      _action: PayloadAction<PrescriptionRejectRequest>
+    ) {
+      state.prescriptionActionLoading = true;
+      state.prescriptionActionError = null;
+    },
+    rejectPrescriptionSuccess(state, action: PayloadAction<string>) {
+      state.prescriptionActionLoading = false;
+      if (state.prescriptionDetail) {
+        state.prescriptionDetail.status = "REJECTED";
+        state.prescriptionDetail.rejectReason = action.payload;
+      }
+    },
+    rejectPrescriptionFailure(state, action: PayloadAction<string>) {
+      state.prescriptionActionLoading = false;
+      state.prescriptionActionError = action.payload;
+    },
+
+    // ----- 조제취소 (HL2-18) -----
+    cancelDispensePrescriptionRequest(
+      state,
+      _action: PayloadAction<DispensingCancelRequest>
+    ) {
+      state.prescriptionActionLoading = true;
+      state.prescriptionActionError = null;
+    },
+    cancelDispensePrescriptionSuccess(state) {
+      state.prescriptionActionLoading = false;
+      // 상세 데이터(조제항목별 dispensingItemId, 불출 상태)는 saga가 이어서
+      // fetchPrescriptionDetailRequest를 다시 호출해 서버 값으로 갱신한다.
+    },
+    cancelDispensePrescriptionFailure(state, action: PayloadAction<string>) {
+      state.prescriptionActionLoading = false;
+      state.prescriptionActionError = action.payload;
     },
 
     // ----- 약품 폐기 관리 (HL2-10) -----
@@ -210,6 +291,111 @@ const pharmacySlice = createSlice({
     registerDisposalFailure(state, action: PayloadAction<string>) {
       state.disposalLoading = false;
       state.disposalError = action.payload;
+    },
+
+    // ----- 불출/불출취소 (HL2-20, HL2-21) -----
+    registerReleaseRequest(state, _action: PayloadAction<ReleaseRegisterRequest>) {
+      state.releaseLoading = true;
+      state.releaseError = null;
+    },
+    registerReleaseSuccess(state) {
+      state.releaseLoading = false;
+    },
+    registerReleaseFailure(state, action: PayloadAction<string>) {
+      state.releaseLoading = false;
+      state.releaseError = action.payload;
+    },
+    cancelReleaseRequest(state, _action: PayloadAction<ReleaseCancelRequest>) {
+      state.releaseLoading = true;
+      state.releaseError = null;
+    },
+    cancelReleaseSuccess(state) {
+      state.releaseLoading = false;
+    },
+    cancelReleaseFailure(state, action: PayloadAction<string>) {
+      state.releaseLoading = false;
+      state.releaseError = action.payload;
+    },
+
+    // ----- 반납/반납약품폐기 (HL2-22, HL2-23) -----
+    registerMedicationReturnRequest(
+      state,
+      _action: PayloadAction<MedicationReturnRegisterRequest>
+    ) {
+      state.returnLoading = true;
+      state.returnError = null;
+      state.lastReturnItemId = null;
+    },
+    registerMedicationReturnSuccess(state, action: PayloadAction<string>) {
+      state.returnLoading = false;
+      state.lastReturnItemId = action.payload;
+    },
+    registerMedicationReturnFailure(state, action: PayloadAction<string>) {
+      state.returnLoading = false;
+      state.returnError = action.payload;
+    },
+    registerReturnedDisposalRequest(
+      state,
+      _action: PayloadAction<ReturnedDisposalRegisterRequest>
+    ) {
+      state.returnLoading = true;
+      state.returnError = null;
+    },
+    registerReturnedDisposalSuccess(state) {
+      state.returnLoading = false;
+      state.lastReturnItemId = null;
+    },
+    registerReturnedDisposalFailure(state, action: PayloadAction<string>) {
+      state.returnLoading = false;
+      state.returnError = action.payload;
+    },
+
+    // ----- 특수약품(마약류) 관리 (HL2-11~16) -----
+    registerControlledDrugReceiptRequest(
+      state,
+      _action: PayloadAction<ControlledDrugReceiptRequest>
+    ) {
+      state.controlledDrugRegisterLoading = true;
+      state.controlledDrugRegisterError = null;
+    },
+    registerControlledDrugIssuanceRequest(
+      state,
+      _action: PayloadAction<ControlledDrugIssuanceRequest>
+    ) {
+      state.controlledDrugRegisterLoading = true;
+      state.controlledDrugRegisterError = null;
+    },
+    registerControlledDrugDisposalRequest(
+      state,
+      _action: PayloadAction<ControlledDrugDisposalRequest>
+    ) {
+      state.controlledDrugRegisterLoading = true;
+      state.controlledDrugRegisterError = null;
+    },
+    registerControlledDrugSuccess(state) {
+      state.controlledDrugRegisterLoading = false;
+    },
+    registerControlledDrugFailure(state, action: PayloadAction<string>) {
+      state.controlledDrugRegisterLoading = false;
+      state.controlledDrugRegisterError = action.payload;
+    },
+    fetchControlledDrugRecordsRequest(
+      state,
+      _action: PayloadAction<string | undefined>
+    ) {
+      state.controlledDrugRecordLoading = true;
+      state.controlledDrugRecordError = null;
+    },
+    fetchControlledDrugRecordsSuccess(
+      state,
+      action: PayloadAction<ControlledDrugRecordDto[]>
+    ) {
+      state.controlledDrugRecordLoading = false;
+      state.controlledDrugRecordList = action.payload;
+    },
+    fetchControlledDrugRecordsFailure(state, action: PayloadAction<string>) {
+      state.controlledDrugRecordLoading = false;
+      state.controlledDrugRecordError = action.payload;
     },
   },
 });
@@ -251,9 +437,42 @@ export const {
   fetchPrescriptionDetailSuccess,
   fetchPrescriptionDetailFailure,
 
+  dispensePrescriptionRequest,
+  dispensePrescriptionSuccess,
+  dispensePrescriptionFailure,
+  rejectPrescriptionRequest,
+  rejectPrescriptionSuccess,
+  rejectPrescriptionFailure,
+  cancelDispensePrescriptionRequest,
+  cancelDispensePrescriptionSuccess,
+  cancelDispensePrescriptionFailure,
+
   registerDisposalRequest,
   registerDisposalSuccess,
   registerDisposalFailure,
+
+  registerReleaseRequest,
+  registerReleaseSuccess,
+  registerReleaseFailure,
+  cancelReleaseRequest,
+  cancelReleaseSuccess,
+  cancelReleaseFailure,
+
+  registerMedicationReturnRequest,
+  registerMedicationReturnSuccess,
+  registerMedicationReturnFailure,
+  registerReturnedDisposalRequest,
+  registerReturnedDisposalSuccess,
+  registerReturnedDisposalFailure,
+
+  registerControlledDrugReceiptRequest,
+  registerControlledDrugIssuanceRequest,
+  registerControlledDrugDisposalRequest,
+  registerControlledDrugSuccess,
+  registerControlledDrugFailure,
+  fetchControlledDrugRecordsRequest,
+  fetchControlledDrugRecordsSuccess,
+  fetchControlledDrugRecordsFailure,
 } = pharmacySlice.actions;
 
 export default pharmacySlice.reducer;

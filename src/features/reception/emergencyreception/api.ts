@@ -1,6 +1,7 @@
 import apiClient from "@/lib/axios";
 import type { ApiResponse } from "@/features/reception/types";
 import type {
+  EmergencyActiveCheckResult,
   EmergencyReceptionDetail,
   EmergencyReceptionListItem,
   EmergencyReceptionRequest,
@@ -36,4 +37,20 @@ export async function registerEmergencyReception(
     request,
   );
   return data;
+}
+
+/**
+ * 응급접수 중복(활성) 확인 — 등록 직전 사전 확인용.
+ * - reception-service ReceptionController.checkActiveEmergencyReception()
+ * - 응급 서비스 장애/타임아웃이어도 reception-service가 fail-open으로 200을 내려준다.
+ *   (이 호출 자체가 실패하는 경우는 reception-service 쪽 문제이며, 호출부에서 fail-open 처리한다)
+ */
+export async function checkActiveEmergencyReception(
+  patientId: string,
+): Promise<EmergencyActiveCheckResult> {
+  const { data } = await apiClient.get<ApiResponse<EmergencyActiveCheckResult>>(
+    `${EMERGENCY_RECEPTION_PATH}/active-check`,
+    { params: { patientId } },
+  );
+  return data.data;
 }

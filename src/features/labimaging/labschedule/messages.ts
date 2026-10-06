@@ -5,6 +5,10 @@ export const LAB_SCHEDULE_MESSAGES = {
   LAB013: "Lab reception not found.",
   LAB014: "There is no existing lab schedule to reschedule.",
   LAB027: "A lab schedule already exists. Use Reschedule instead.",
+  LAB110: "Staff member not found, or no longer active.",
+  LAB112: "Unable to verify staff information right now.",
+  LAB116: "Cannot schedule a date in the past.",
+  LAB121: "This reception has been cancelled by the prescriber.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;

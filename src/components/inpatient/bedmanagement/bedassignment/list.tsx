@@ -9,12 +9,20 @@ import {
   selectBedAssignmentListStatus,
 } from "@/features/inpatient/bedmanagement/bedassignment/slice";
 import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
-import Link from "next/link";
+import { Alert, DataTable, PageHeader, type DataTableColumn } from "@/components/common";
+import LinkButton from "@/components/inpatient/common/LinkButton";
+import Toolbar from "@/components/inpatient/common/Toolbar";
+import type { BedAssignmentDTO } from "@/features/inpatient/bedmanagement/types";
 import { useSearchParams } from "next/navigation";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import { fetchBedRequest, selectBed } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import BedAssignmentDetail from "@/components/inpatient/bedmanagement/bedassignment/detail";
+import { formatDateTime, useDayStart } from "@/features/inpatient/dateLimits";
+import { formatBedLabel } from "@/features/inpatient/displayFormat";
+
+// 기본 보기: 배정 중 + 최근 7일 안에 퇴상된 건 (그보다 오래된 이력은 "전체 이력 보기"로)
+const RECENT_RELEASE_DAYS = 7;
 
 type BedAssignmentListProps = {
   /** 병상관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
@@ -68,6 +76,24 @@ const wardNameByCd = useMemo(
   [wardOptions],
 );
 
+  // 퇴상 이력 기간 필터 — 기준 시각은 "7일 전 00:00" (브라우저 시간, 서버 렌더에서는 undefined → 전체 표시)
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const releaseCutoff = useDayStart(-RECENT_RELEASE_DAYS);
+  const visibleAssignments = useMemo(() => {
+    const isRecent = (releasedAt: string | null) =>
+      releasedAt === null || !releaseCutoff || releasedAt >= releaseCutoff; // ISO 문자열이라 문자열 비교로 시각 비교
+    return bedAssignments
+      .filter((a) => showAllHistory || isRecent(a.releasedAt) || a.assignmentId === selectedId)
+      // 배정 중인 건 먼저(최근 배정 순), 그다음 퇴상 건(최근 퇴상 순)
+      .sort((a, b) => {
+        if ((a.releasedAt === null) !== (b.releasedAt === null)) return a.releasedAt === null ? -1 : 1;
+        return a.releasedAt === null
+          ? b.assignedAt.localeCompare(a.assignedAt)
+          : (b.releasedAt ?? "").localeCompare(a.releasedAt ?? "");
+      });
+  }, [bedAssignments, showAllHistory, releaseCutoff, selectedId]);
+  const hiddenCount = bedAssignments.length - visibleAssignments.length;
+
   // 지금 구조: bedAssignments/admissions/patients 세 가지를 각각 따로 fetch하고,
   // 위 두 Map으로 프론트에서 조립함(client-side join).
   // - bedAssignments + admissions → 백엔드가 JOIN 쿼리 하나로 합쳐주면 fetch 1번으로 줄일 수 있음
@@ -80,92 +106,96 @@ const wardNameByCd = useMemo(
     dispatch(fetchBedRequest());
   }, [dispatch]);
 
+  const columns: DataTableColumn<BedAssignmentDTO>[] = [
+    {
+      key: "patient",
+      header: "Patient Name",
+      render: (a) => (
+        <span className="font-medium text-slate-800">
+          {patientNameById.get(patientIdByAdmissionId.get(a.admissionId) ?? "") ?? "Unknown"}
+        </span>
+      ),
+    },
+    {
+      key: "ward",
+      header: "Ward",
+      render: (a) => {
+        const wardCd = wardCdByBedId.get(a.bedId);
+        return wardCd ? wardNameByCd.get(wardCd) ?? wardCd : "-";
+      },
+    },
+    { key: "bed", header: "Bed", render: (a) => formatBedLabel(a.bedId) },
+    { key: "assignedAt", header: "Assigned At", render: (a) => formatDateTime(a.assignedAt) },
+    { key: "releasedAt", header: "Released At", render: (a) => formatDateTime(a.releasedAt) },
+    {
+      key: "status",
+      header: "Status",
+      render: (a) => {
+        const isActive = a.releasedAt === null;
+        return (
+          <span
+            className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
+              isActive
+                ? "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200"
+                : "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
+            }`}
+          >
+            {isActive ? "Assigned" : "Released"}
+          </span>
+        );
+      },
+    },
+  ];
+
   return (
-    <div className={embedded ? "w-full" : "mx-auto w-full max-w-[1800px] p-6"}>
-      <div className="mb-6 flex items-center justify-between">
-        {embedded ? (
-          <div />
-        ) : (
-        <div>
-          <h1 className="text-lg font-semibold text-slate-800">Bed Assignment List</h1>
-          <p className="mt-1 text-sm text-slate-500">A record of bed assignments and releases to date.</p>
-        </div>
-        )}
-        <Link
-          href="/inpatient/bedmanagement/bedassignment/create"
-          className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-        >
-          Register Assignment
-        </Link>
-      </div>
+    // 화면 아래까지 꽉 채움 — 목록과 상세 패널이 각자 안에서 스크롤 (홈 탭 안에서는 남은 높이를, 단독 페이지에서는 화면 높이를 채움)
+    <div className={`flex min-h-0 flex-col gap-4 ${embedded ? "w-full flex-1" : "mx-auto h-full w-full max-w-[1800px] p-6"}`}>
+      {!embedded && (
+        <PageHeader title="Bed Assignment List" description="A record of bed assignments and releases to date." />
+      )}
 
-      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
-      {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
+      <Toolbar
+        actions={
+          <LinkButton href="/inpatient/bedmanagement/bedassignment/create?from=assignment">Register Assignment</LinkButton>
+        }
+      >
+        <label className="flex items-center gap-1.5 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={showAllHistory}
+            onChange={(e) => setShowAllHistory(e.target.checked)}
+            className="h-4 w-4 rounded border-slate-300 accent-sky-600"
+          />
+          Show all history
+          {!showAllHistory && hiddenCount > 0 && (
+            <span className="text-xs text-slate-400">({hiddenCount} older releases hidden)</span>
+          )}
+        </label>
+      </Toolbar>
 
-      {!listStatus.loading && !listStatus.error && (
-        <div className="flex items-start gap-4">
-          <div className="min-w-0 flex-1 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                  <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
-                  <th className="whitespace-nowrap px-4 py-3">Assignment ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">Ward</th>
-                  <th className="whitespace-nowrap px-4 py-3">Bed ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">Admission ID</th>
-                  <th className="whitespace-nowrap px-4 py-3">Assigned At</th>
-                  <th className="whitespace-nowrap px-4 py-3">Released At</th>
-                  <th className="whitespace-nowrap px-4 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {bedAssignments.map((bedAssignment) => {
-                  const isActive = bedAssignment.releasedAt === null;
-                  const wardCd = wardCdByBedId.get(bedAssignment.bedId);
-                  return (
-                    <tr
-                      key={bedAssignment.assignmentId}
-                      onClick={() => setSelectedId(bedAssignment.assignmentId)}
-                      className={`cursor-pointer hover:bg-slate-50 ${
-                        selectedId === bedAssignment.assignmentId ? "bg-sky-50" : ""
-                      }`}
-                    >
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-800">
-                        {patientNameById.get(patientIdByAdmissionId.get(bedAssignment.admissionId) ?? "") ?? "Unknown"}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 font-medium text-sky-700">
-                        {bedAssignment.assignmentId}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                        {wardCd ? wardNameByCd.get(wardCd) ?? wardCd : "-"}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bedAssignment.bedId}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bedAssignment.admissionId}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bedAssignment.assignedAt}</td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-600">{bedAssignment.releasedAt ?? "-"}</td>
-                      <td className="whitespace-nowrap px-4 py-3">
-                        <span
-                          className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
-                            isActive
-                              ? "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200"
-                              : "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
-                          }`}
-                        >
-                          {isActive ? "Assigned" : "Released"}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {bedAssignments.length === 0 && (
-              <p className="px-4 py-6 text-center text-sm text-slate-500">No assignment data available.</p>
-            )}
+      {listStatus.error && <Alert>{listStatus.error}</Alert>}
+
+      {!listStatus.error && (
+        <div className="flex min-h-[480px] flex-1 gap-4">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <DataTable
+              columns={columns}
+              rows={visibleAssignments}
+              rowKey={(a) => a.assignmentId}
+              onRowClick={(a) => setSelectedId(a.assignmentId)}
+              isRowActive={(a) => a.assignmentId === selectedId}
+              loading={listStatus.loading}
+              loadingMessage="Loading..."
+              emptyMessage={
+                bedAssignments.length === 0
+                  ? "No assignment data available."
+                  : `No current assignments or releases in the last ${RECENT_RELEASE_DAYS} days.`
+              }
+            />
           </div>
 
           {selectedId !== null && (
-            <div className="w-[420px] shrink-0">
+            <div className="min-h-0 w-[420px] shrink-0 overflow-y-auto">
               <BedAssignmentDetail assignmentId={selectedId} onClose={() => setSelectedId(null)} />
             </div>
           )}

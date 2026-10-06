@@ -4,14 +4,16 @@ import { useEffect, useState, type SubmitEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, ConfirmDialog, FormField, Select } from "@/components/common";
-import CodeSearchInput from "@/components/labimaging/common/CodeSearchInput";
+import CodeSearchInput, { isKnownCode } from "@/components/labimaging/common/CodeSearchInput";
 import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
 import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
+import { formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { LabWorklistItem } from "@/features/labimaging/laborder/types";
 import type { LabResultItem } from "@/features/labimaging/labresult/types";
 import { fetchPathologyAttachment, joinFindings, splitFindings } from "@/features/labimaging/pathologyresult/api";
 import { resolvePathologyResultMessage } from "@/features/labimaging/pathologyresult/messages";
+import { validatePathologyAttachment } from "@/features/labimaging/common/validation";
 import {
   confirmPathologyResultRequest,
   createPathologyResultRequest,
@@ -71,6 +73,8 @@ function formatDateTime(value?: string) {
 export default function PathologyResultWorkPanel({ reception, pathologyItems }: Props) {
   const dispatch = useDispatch<AppDispatch>();
   const { actorId, actorName, signedIn } = useLoginActor();
+  // 입력자·확정자 empId → 이름 표시용. (직원ID 화면 노출 정리, 2026-10-05)
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
 
   const results = useSelector(selectPathologyResults);
   const loading = useSelector(selectPathologyLoading);
@@ -150,7 +154,14 @@ export default function PathologyResultWorkPanel({ reception, pathologyItems }: 
     if (!itemId) return "Select a pathology test item.";
     if (!form.pathologyTypeCode) return "Select a pathology type.";
     if (!joinFindings(form.sections)) return "Enter at least one findings section.";
-    if (file && !ACCEPT.split(",").includes(file.type)) return "Attachment type not allowed. Use JPG, PNG, or PDF.";
+    // 목록에 없는 진단명코드는 제출을 막는다. (04번 지시서 Phase 4-1)
+    if (!isKnownCode(form.diagnosisCode, diagnoses.options)) return "Unknown diagnosis code. Please choose one from the list.";
+    if (file) {
+      // 선택 즉시가 아니라 제출 시점에 확인한다 — 이 폼은 결과 등록/수정과 같은 submit 한 번으로
+      // 끝나는 흐름이라 별도의 file change 핸들러가 없다. (04번 지시서 Phase 3-D)
+      const fileError = validatePathologyAttachment(file);
+      if (fileError) return fileError;
+    }
     return "";
   }
 
@@ -273,7 +284,12 @@ export default function PathologyResultWorkPanel({ reception, pathologyItems }: 
 
         <FormField label="Recorded By">
           {result ? (
-            <p className="text-sm text-slate-700">{result.recordedById}</p>
+            <p
+              className="text-sm text-slate-700"
+              title={formatStaffName(result.recordedById, staffNameById, staffLoading).title}
+            >
+              {formatStaffName(result.recordedById, staffNameById, staffLoading).text}
+            </p>
           ) : (
             <LoginActorInput name="recordedById" actorName={actorName} signedIn={signedIn} />
           )}
@@ -281,8 +297,12 @@ export default function PathologyResultWorkPanel({ reception, pathologyItems }: 
 
         <div className="flex items-end justify-end gap-2">
           {confirmed ? (
-            <span className="text-sm text-slate-500">
-              Confirmed by {result?.confirmedById} at {formatDateTime(result?.confirmedAt)}
+            <span
+              className="text-sm text-slate-500"
+              title={formatStaffName(result?.confirmedById, staffNameById, staffLoading).title}
+            >
+              Confirmed by {formatStaffName(result?.confirmedById, staffNameById, staffLoading).text} at{" "}
+              {formatDateTime(result?.confirmedAt)}
             </span>
           ) : (
             <>

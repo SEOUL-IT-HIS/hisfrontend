@@ -3,7 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField, Input } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import { ADMISSION_STATUS, CODE_GROUP, optionLabel, toCodeOptions } from "@/features/emergency/codes";
 import {
@@ -22,6 +23,9 @@ import {
   selectCommonCodesByGroup,
 } from "@/features/emergency/commonCode/slice";
 import { formatDateTime } from "@/features/emergency/utils";
+
+/** 희망 병동 선택에서 숨기는 병동 코드(WARD_CD): 06 ICU, 07 ER Observation Unit, 08 Other */
+const HIDDEN_WARD_CODES = ["06", "07", "08"];
 
 type AdmissionRequestPanelProps = { dispositionId: string; className?: string };
 
@@ -55,6 +59,8 @@ export default function AdmissionRequestPanel({ dispositionId, className = "" }:
 
   const deptOptions = toCodeOptions(deptCodes, []);
   const wardOptions = toCodeOptions(wardCodes, []);
+  // 병동팀이 더 이상 받지 않는 병동 — 희망 병동 선택에서는 숨긴다. 이미 배정된 병동 이름 표시(wardOptions)에는 그대로 쓴다.
+  const selectableWardOptions = wardOptions.filter((o) => !HIDDEN_WARD_CODES.includes(o.value));
   const statusOptions = toCodeOptions(statusCodes, ADMISSION_STATUS_FALLBACK_OPTIONS);
   const latest = items[0];
   // 거부된 요청만 있으면 다시 요청할 수 있다(백엔드 규칙과 동일).
@@ -99,6 +105,8 @@ export default function AdmissionRequestPanel({ dispositionId, className = "" }:
           {/* 상태 · 요청 일시 */}
           {optionLabel(statusOptions, latest.requestStatusCode)} · Requested {formatDateTime(latest.requestedAt)}
           {latest.targetDeptCode ? ` · Dept ${optionLabel(deptOptions, latest.targetDeptCode)}` : ""}
+          {/* 배정된 병동 — 희망 병동이 아니라 병동의 BED_ASSIGNED 회신값 */}
+          {latest.assignedWardCode ? ` · Ward ${optionLabel(wardOptions, latest.assignedWardCode)}` : ""}
           {latest.requestStatusCode === ADMISSION_STATUS.REQUESTED ? (
             <p className="mt-1 text-xs">
               {/* 병동 회신을 기다리는 중입니다. */}
@@ -114,37 +122,39 @@ export default function AdmissionRequestPanel({ dispositionId, className = "" }:
       {canRequest ? (
         <>
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {/* 진료과 (admin DEPT_CD 가 없으면 코드 직접 입력) */}
-            <FormField label="Department" className="w-[220px]">
-              {deptOptions.length > 0 ? (
-                <Select
-                  name="targetDeptCode"
-                  value={form.targetDeptCode}
-                  onChange={handleChange}
-                  options={deptOptions}
-                  placeholder="(optional)"
-                  disabled={submitting}
-                />
-              ) : (
+            {deptOptions.length > 0 ? (
+              <DownSelect
+                label="Department"
+                value={form.targetDeptCode}
+                onChange={(targetDeptCode) => setForm((prev) => ({ ...prev, targetDeptCode }))}
+                options={deptOptions}
+                placeholder="(optional)"
+                allowClear
+                disabled={submitting}
+              />
+            ) : (
+              <FormField label="Department">
                 <Input name="targetDeptCode" value={form.targetDeptCode} onChange={handleChange} disabled={submitting} maxLength={20} />
-              )}
-            </FormField>
+              </FormField>
+            )}
             {/* 희망 병동 */}
-            <FormField label="Preferred Ward" className="w-[220px]">
-              {wardOptions.length > 0 ? (
-                <Select
-                  name="wardPrefer"
-                  value={form.wardPrefer}
-                  onChange={handleChange}
-                  options={wardOptions}
-                  placeholder="(optional)"
-                  disabled={submitting}
-                />
-              ) : (
+            {wardOptions.length > 0 ? (
+              <DownSelect
+                label="Preferred Ward"
+                value={form.wardPrefer}
+                onChange={(wardPrefer) => setForm((prev) => ({ ...prev, wardPrefer }))}
+                options={selectableWardOptions}
+                placeholder="(optional)"
+                allowClear
+                disabled={submitting}
+              />
+            ) : (
+              <FormField label="Preferred Ward">
                 <Input name="wardPrefer" value={form.wardPrefer} onChange={handleChange} disabled={submitting} maxLength={20} />
-              )}
-            </FormField>
+              </FormField>
+            )}
           </div>
           {/* 요청 메모 (선택, 병동에 전달) */}
           <FormField label="Note" hint="Optional memo for the ward." className="mt-3">
