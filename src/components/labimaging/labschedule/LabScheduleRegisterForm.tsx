@@ -12,7 +12,10 @@ import {
   Panel,
   Select,
 } from "@/components/common";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import { resolveLabScheduleMessage } from "@/features/labimaging/labschedule/messages";
+import { todayInputValue } from "@/features/labimaging/common/validation";
 import {
   createLabScheduleRequest,
   rescheduleLabScheduleRequest,
@@ -75,6 +78,9 @@ export default function LabScheduleRegisterForm({
   onCancel,
 }: Props = {}) {
   const dispatch = useDispatch<AppDispatch>();
+
+  /** 담당자는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
   const router = useRouter();
 
   const labReceptionId = labReceptionIdProp ?? "";
@@ -115,9 +121,13 @@ export default function LabScheduleRegisterForm({
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!form.scheduledAt) next.scheduledAt = "Scheduled test date and time is required.";
-    if (!form.confirmedById.trim())
-      next.confirmedById = "Confirming staff ID is required.";
+    if (!form.scheduledAt) {
+      next.scheduledAt = "Scheduled test date and time is required.";
+    } else if (form.scheduledAt.slice(0, 10) < todayInputValue()) {
+      // 서버(LAB116)와 같은 기준 — 날짜만 비교한다(당일 이른 시각은 허용). (04번 지시서 Phase 3-B)
+      next.scheduledAt = "Cannot schedule a date in the past.";
+    }
+    if (!signedIn) next.confirmedById = "Sign in to record this action.";
     return next;
   }
 
@@ -135,7 +145,7 @@ export default function LabScheduleRegisterForm({
           scheduledAt: form.scheduledAt,
           reservationYn: form.reservationYn,
           guidanceNote: form.guidanceNote.trim() || undefined,
-          confirmedById: form.confirmedById.trim(),
+          confirmedById: actorId,
         }),
       );
     } else {
@@ -190,6 +200,7 @@ export default function LabScheduleRegisterForm({
             type="datetime-local"
             name="scheduledAt"
             value={form.scheduledAt}
+            min={`${todayInputValue()}T00:00`}
             onChange={handleChange}
             disabled={creating}
           />
@@ -208,15 +219,8 @@ export default function LabScheduleRegisterForm({
           />
         </FormField>
 
-        <FormField label="Confirming Staff ID" required>
-          <Input
-            name="confirmedById"
-            value={form.confirmedById}
-            onChange={handleChange}
-            maxLength={20}
-            disabled={creating}
-            placeholder="e.g. STF00021"
-          />
+        <FormField label="Confirmed By" required>
+          <LoginActorInput name="confirmedById" actorName={actorName} signedIn={signedIn} />
           {errors.confirmedById ? (
             <span className="text-xs text-rose-500">{errors.confirmedById}</span>
           ) : null}

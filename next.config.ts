@@ -12,9 +12,9 @@ import type { NextConfig } from "next";
 // 포트만 서비스마다 다르다. admin 만 9191 이고 나머지는 808x 다.
 // 내 PC 에서 다른 사람 백엔드를 부르려면 .env.local 에 그 주소를 적는다. (.env.local 은 git 제외)
 const adminApiOrigin =
-  process.env.ADMIN_API_ORIGIN ?? "http://localhost:9191";
+process.env.ADMIN_API_ORIGIN ?? "http://localhost:9191";
 const patientApiOrigin =
-  process.env.PATIENT_API_ORIGIN ?? "http://localhost:8087";
+process.env.PATIENT_API_ORIGIN ?? "http://localhost:8087";
 const labImagingApiOrigin =
   process.env.LABIMAGING_API_ORIGIN ?? "http://localhost:8085";
 const inpatientApiOrigin =
@@ -31,6 +31,10 @@ const billingApiOrigin =
   process.env.BILLING_API_ORIGIN ?? "http://localhost:8081";
 const pharmacyApiOrigin =
   process.env.PHARMACY_API_ORIGIN ?? "http://localhost:8082";
+// 직원 프로필 사진 저장소(SeaweedFS S3). 서버에서 8333 은 밖으로 안 열려 있어서
+// 브라우저는 /files/... 로 요청하고, Next 서버가 대신 받아서 넘겨준다.
+const seaweedOrigin =
+  process.env.SEAWEED_ORIGIN ?? "http://localhost:8333";
 
 const nextConfig: NextConfig = {
   /*
@@ -63,6 +67,10 @@ const nextConfig: NextConfig = {
     "192.168.1.120",
     "192.168.1.105",
     "192.168.1.143",
+    "192.168.1.125",
+    // 원격 서버를 공인 주소/도메인으로 접속할 때 (http://seoulit.pe.kr:18080)
+    "seoulit.pe.kr",
+    "117.16.154.233",
   ],
   async rewrites() {
     return [
@@ -150,6 +158,14 @@ const nextConfig: NextConfig = {
       {
         source: "/api/pharmacy/:path*",
         destination: `${pharmacyApiOrigin}/api/pharmacy/:path*`,
+      },
+
+      // ---------- 직원 프로필 사진 (SeaweedFS S3) ----------
+      // admin 의 seaweed.public-base-url=/files 와 짝이다.
+      // 예: /files/emp-photo/abc.jpg → http://localhost:8333/emp-photo/abc.jpg
+      {
+        source: "/files/:path*",
+        destination: `${seaweedOrigin}/:path*`,
       },
 
       // ---------- admin-service (나머지 /api) ----------

@@ -12,13 +12,15 @@ import type { AppDispatch, RootState } from "@/store/store";
 
 type PrescriptionDetailProps = {
     prescriptionId: string | null;
+    prescriberNames?: Record<string, string>; // empId -> 처방자 이름 (없으면 ID만 표시)
     onClose: () => void;
 };
 
 const getStatusText = (status: string) => {
     switch (status) {
-        case 'REQUESTED':
         case 'ORDERED':
+            return 'Ordered'; // 처방됨
+        case 'REQUESTED':
         case 'PENDING':
             return 'Pending'; // 처방대기
         case 'ISSUED':
@@ -39,7 +41,24 @@ const getStatusText = (status: string) => {
 
 const formatDateTime = (value?: string | null) => (value ? value.replace("T", " ").slice(0, 19) : "-");
 
-const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps) => {
+// 이상여부 표시 (N=정상, H=높음, L=낮음, null=판정불가)
+const ABNORMAL_BADGE: Record<string, { label: string; className: string }> = {
+    N: { label: "Normal", className: "bg-emerald-50 text-emerald-700 ring-emerald-600/15" },
+    H: { label: "High", className: "bg-red-50 text-red-700 ring-red-600/20" },
+    L: { label: "Low", className: "bg-blue-50 text-blue-700 ring-blue-600/20" },
+};
+
+const AbnormalBadge = ({ flag }: { flag?: string | null }) => {
+    const badge = flag ? ABNORMAL_BADGE[flag] : undefined;
+    if (!badge) return <span className="text-slate-400">-</span>;
+    return (
+        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${badge.className}`}>
+            {badge.label}
+        </span>
+    );
+};
+
+const PrescriptionDetail = ({ prescriptionId, prescriberNames, onClose }: PrescriptionDetailProps) => {
     const dispatch = useDispatch<AppDispatch>();
 
     const prescription = useSelector((state: RootState) => state.outpatient.prescription.selectedPrescription);
@@ -60,6 +79,9 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
         };
     }, [dispatch, prescriptionId]);
 
+    // 검사 처방 항목만 추출 (prescriptionType 은 데이터 값이라 한글 그대로 비교)
+    const labItems = prescription?.items?.filter((item) => item.prescriptionType === "검사") ?? [];
+
     // 처방 비활성화 (취소 사유는 간단하게 prompt로 받음)
     function handleDeactivate() {
         if (!prescriptionId) return;
@@ -74,7 +96,7 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
             // 처방 상세
             title="Prescription Details"
             onClose={onClose}
-            maxWidthClassName="max-w-2xl"
+            maxWidthClassName="max-w-3xl"
         >
             {loading ? (
                 // 처방 내역을 불러오는 중입니다...
@@ -88,10 +110,6 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
                         <h3 className="text-lg font-bold text-slate-800">
                             {prescription.patientName ?? "Unknown"}
                         </h3>
-                        <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-600 border border-slate-200">
-                            {/* 진료ID: */}
-                            Encounter ID: {prescription.encounterId}
-                        </span>
                         <span className="ml-auto text-xs text-slate-500">
                             {/* 처방일시: */}
                             Prescribed At: {formatDateTime(prescription.prescribedAt)}
@@ -105,9 +123,9 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
                                 {getStatusText(prescription.status)}
                             </div>
                         </FormField>
-                        <FormField label="Prescriber ID">
+                        <FormField label="Prescriber">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
-                                {prescription.prescribedBy}
+                                {prescriberNames?.[prescription.prescribedBy] ?? prescription.prescribedBy}
                             </div>
                         </FormField>
                         <FormField label="Service Type">
@@ -159,6 +177,72 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
                             </table>
                         </div>
                     </FormField>
+
+                    {/* 검사결과 (검사 처방 항목이 있을 때만 노출) */}
+                    {labItems.length > 0 && (
+                        <FormField label="Lab Results">
+                            <div className="overflow-x-auto rounded-lg border border-slate-200">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
+                                    <tr>
+                                        {/* 검사항목 / 결과항목 / 결과값 / 참고범위 / 판정 */}
+                                        <th className="p-2 font-semibold">Test</th>
+                                        <th className="p-2 font-semibold">Result Item</th>
+                                        <th className="p-2 font-semibold">Value</th>
+                                        <th className="p-2 font-semibold">Reference Range</th>
+                                        <th className="p-2 font-semibold">Flag</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200 text-slate-800">
+                                    {labItems.map((item) => {
+                                        const details = item.resultDetails ?? [];
+
+                                        // 결과가 아직 없는 경우: 전송 실패 / 결과 대기중
+                                        if (details.length === 0) {
+                                            return (
+                                                <tr key={item.itemId}>
+                                                    <td className="p-2 font-medium">{item.itemName}</td>
+                                                    <td colSpan={4} className="p-2 text-slate-500">
+                                                        {item.sendStatus === "FAILED"
+                                                            // 검사오더 전송 실패
+                                                            ? `Order failed${item.rejectReason ? `: ${item.rejectReason}` : ""}`
+                                                            // 결과 대기중
+                                                            : "Result pending"}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }
+
+                                        return details.map((detail, index) => (
+                                            <tr key={`${item.itemId}-${detail.seq}`}>
+                                                <td className="p-2 font-medium">
+                                                    {index === 0 ? (
+                                                        <>
+                                                            {item.itemName}
+                                                            {item.resultReportedAt && (
+                                                                <div className="text-xs font-normal text-slate-400">
+                                                                    {/* 보고일시 */}
+                                                                    Reported: {formatDateTime(item.resultReportedAt)}
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    ) : null}
+                                                </td>
+                                                <td className="p-2">{detail.detailName ?? detail.detailCode ?? "-"}</td>
+                                                <td className="p-2">
+                                                    {detail.resultValue ?? "-"}
+                                                    {detail.resultValue && detail.resultUnit ? ` ${detail.resultUnit}` : ""}
+                                                </td>
+                                                <td className="p-2">{detail.referenceRange ?? "-"}</td>
+                                                <td className="p-2"><AbnormalBadge flag={detail.abnormalFlag} /></td>
+                                            </tr>
+                                        ));
+                                    })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </FormField>
+                    )}
 
                     {/* 취소/보류/중단된 처방인 경우 사유 노출 */}
                     {prescription.status === "CANCELLED" && (

@@ -39,3 +39,23 @@ export interface EmergencyReceptionDetail {
 
 /** GET /api/reception/emergency 목록 항목 (등록 응답과 동일 shape) */
 export type EmergencyReceptionListItem = EmergencyReceptionDetail;
+
+/**
+ * GET /api/reception/emergency/active-check 응답의 활성 접수 1건.
+ * reception-service ActiveEmergencyReceptionResponsedto 와 1:1 매칭.
+ */
+export interface ActiveEmergencyReception {
+  receptionId: string;
+  patientId: string;
+  receivedAt: string;
+}
+
+/**
+ * GET /api/reception/emergency/active-check 응답 — 응급접수 등록 직전 사전 확인 결과.
+ * reception-service EmergencyActiveCheckResponsedto 와 1:1 매칭.
+ * 응급 서비스 장애/타임아웃 시에도 hasActiveReception=false 로 내려온다(fail-open).
+ */
+export interface EmergencyActiveCheckResult {
+  hasActiveReception: boolean;
+  activeReceptions: ActiveEmergencyReception[];
+}

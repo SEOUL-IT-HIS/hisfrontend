@@ -3,7 +3,11 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
+import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import { selectIsDischarged } from "@/features/emergency/disposition/slice";
 import { Alert, Button, FormField, Input } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createVitalsRequest,
@@ -38,6 +42,7 @@ const initialForm = {
  */
 export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const discharged = useSelector(selectIsDischarged(receptionNo));
   const items = useSelector(selectVitalsItems);
   const loading = useSelector(selectVitalsLoading);
   const error = useSelector(selectVitalsError);
@@ -45,6 +50,8 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
   const submitError = useSelector(selectVitalsSubmitError);
 
   const [form, setForm] = useState(initialForm);
+  // 측정자는 기본이 로그인한 사람이고, 실제로 측정한 사람이 다르면 고른다
+  const measuredById = useActorId(form.measuredById, "STAFF");
   const [lastCount, setLastCount] = useState(0);
 
   useEffect(() => {
@@ -81,7 +88,7 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
     dispatch(
       createVitalsRequest({
         encounterId: receptionNo,
-        measuredById: form.measuredById || undefined,
+        measuredById: measuredById || undefined,
         vitals: [
           {
             systolicBp: toNumber(form.systolicBp),
@@ -145,37 +152,45 @@ export default function VitalsPanel({ receptionNo, className = "" }: VitalsPanel
           ) : null}
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
+          <DischargedNotice receptionNo={receptionNo} />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {/* 수축기혈압 */}
+            {/* 수축기혈압 — 정상범위 참고용 placeholder (90~140) */}
             <FormField label="Systolic BP">
-              <Input type="number" name="systolicBp" value={form.systolicBp} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="systolicBp" value={form.systolicBp} onChange={handleChange} disabled={submitting} placeholder="90-140" />
             </FormField>
-            {/* 맥박 */}
+            {/* 맥박 (60~100) */}
             <FormField label="Heart Rate">
-              <Input type="number" name="heartRate" value={form.heartRate} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="heartRate" value={form.heartRate} onChange={handleChange} disabled={submitting} placeholder="60-100" />
             </FormField>
-            {/* 호흡수 */}
+            {/* 호흡수 (12~20) */}
             <FormField label="Resp Rate">
-              <Input type="number" name="respRate" value={form.respRate} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="respRate" value={form.respRate} onChange={handleChange} disabled={submitting} placeholder="12-20" />
             </FormField>
-            {/* 체온 */}
+            {/* 체온 (36.5~37.5) */}
             <FormField label="Temp">
-              <Input type="number" step="0.1" name="temperature" value={form.temperature} onChange={handleChange} disabled={submitting} />
+              <Input type="number" step="0.1" name="temperature" value={form.temperature} onChange={handleChange} disabled={submitting} placeholder="36.5-37.5" />
             </FormField>
+            {/* SpO2 (95~100) */}
             <FormField label="SpO2">
-              <Input type="number" name="spo2" value={form.spo2} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="spo2" value={form.spo2} onChange={handleChange} disabled={submitting} placeholder="95-100" />
             </FormField>
+            {/* GCS (3~15, 15 정상) */}
             <FormField label="GCS">
-              <Input type="number" name="gcs" value={form.gcs} onChange={handleChange} disabled={submitting} />
+              <Input type="number" name="gcs" value={form.gcs} onChange={handleChange} disabled={submitting} placeholder="15" />
             </FormField>
-            {/* 측정자ID */}
-            <FormField label="Measured By ID" className="sm:col-span-3">
-              <Input name="measuredById" value={form.measuredById} onChange={handleChange} disabled={submitting} maxLength={36} />
-            </FormField>
+            {/* 측정자 */}
+            <ActorField
+              label="Measured By"
+              role="STAFF"
+              value={form.measuredById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, measuredById: empId }))}
+              disabled={submitting}
+              className="sm:col-span-3"
+            />
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleSubmit} disabled={submitting || !hasAnyValue || !receptionNo}>
+            <Button type="button" onClick={handleSubmit} disabled={submitting || !hasAnyValue || !receptionNo || discharged}>
               {/* 저장 중... / 활력징후 등록 */}
               {submitting ? "Saving..." : "Register Vital Signs"}
             </Button>

@@ -54,13 +54,13 @@ export async function fetchLabReceptionByNo(
 
 /**
  * 검사 워크리스트를 조회한다.
- * GET /api/lab-imaging/lab-orders/worklist[?receptionStatusCode=ACCEPTED|EXCLUDED]
+ * GET /api/lab-imaging/lab-orders/worklist[?receptionStatusCode=ACCEPTED|EXCLUDED|CANCELLED]
  *
- * @param receptionStatusCode "ACCEPTED"=처리 대상, "EXCLUDED"=제외됨.
+ * @param receptionStatusCode "ACCEPTED"=처리 대상, "EXCLUDED"=제외됨, "CANCELLED"=취소됨(05번 지시서).
  *                            생략하면 파라미터를 보내지 않아 백엔드가 전체를 반환한다.
  */
 export async function fetchLabWorklist(
-  receptionStatusCode?: "ACCEPTED" | "EXCLUDED",
+  receptionStatusCode?: "ACCEPTED" | "EXCLUDED" | "CANCELLED",
 ): Promise<LabWorklistItem[]> {
   const { data } = await apiClient.get<ApiResponse<LabWorklistItem[]>>(
     `${LAB_ORDER_PATH}/worklist`,
@@ -85,13 +85,14 @@ export async function excludeReception(
 
 /**
  * 제외된 접수를 워크리스트로 되돌린다.
- * DELETE /api/lab-imaging/lab-orders/receptions/{receptionNo}/exclusion
+ * POST /api/lab-imaging/lab-orders/receptions/{receptionNo}/restoration
  *
  * ⚠ 제외 상태가 아닌 접수면 백엔드가 LAB026 으로 거절한다.
  *   (결과 등록으로 목록에서 빠진 건까지 되살아나면 안 되기 때문)
+ * ⚠ 예전 DELETE .../exclusion 은 5차 Phase 10-3 에서 제거됐다 — 영상(imagingorder/api.ts)과 같은 규칙이다.
  */
 export async function restoreReception(receptionNo: string): Promise<void> {
-  await apiClient.delete<ApiResponse<null>>(
-    `${LAB_ORDER_PATH}/receptions/${encodeURIComponent(receptionNo)}/exclusion`,
+  await apiClient.post<ApiResponse<null>>(
+    `${LAB_ORDER_PATH}/receptions/${encodeURIComponent(receptionNo)}/restoration`,
   );
 }

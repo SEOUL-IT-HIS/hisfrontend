@@ -3,10 +3,14 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, ConfirmDialog, FormField, Input } from "@/components/common";
+import { Alert, Button, ConfirmDialog, FormField } from "@/components/common";
+import DoctorSelect from "@/components/labimaging/common/DoctorSelect";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
+import { formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
 import { resolveImageReadingMessage } from "@/features/labimaging/imaginginterpretation/messages";
 import {
   assignReadingRequest,
@@ -38,7 +42,7 @@ import { resolveImageFileMessage } from "@/features/labimaging/imagingacquisitio
 
 /**
  * 판독 상세 — 영상 확인 + 소견 입력 + 배정/확정.
- * 대응 유스케이스: UC-IMG-04 영상판독처리 (Jira ZP2-23)
+ * 대응 유스케이스: UC-RD-01 영상판독처리 (Jira ZP2-23)
  *
  * ⚠ DICOM 뷰어·윈도잉 등 전문 판독 기능은 만들지 않는다(2026-08-31 결정). 이미지 계열
  *   파일(jpeg/png/tiff)만 <img> 로 미리보기하고, 그 외(application/dicom)는 파일명과
@@ -104,7 +108,8 @@ export default function ImageReadingDetail({
   /** 소견 입력칸을 서버 값으로 채운 판독ID. 아직 안 채웠으면 null. (아래 렌더 중 동기화 참고) */
   const [syncedReadingId, setSyncedReadingId] = useState<string | null>(null);
   const [assignedToId, setAssignedToId] = useState("");
-  const [signedById, setSignedById] = useState("");
+  /** 판독 서명자는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
   const [errors, setErrors] = useState<FieldErrors>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -132,6 +137,7 @@ export default function ImageReadingDetail({
   const detailLoaded = loadedReadingItemId === imageOrderItemId && detail !== null;
   const filesLoaded = loadedFileItemId === imageOrderItemId;
   const { names: patientNames } = usePatientNames(detail ? [detail.patientId] : []);
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
 
   const isConfirmed = detail?.readingStatusCode === READING_STATUS.CONFIRMED;
 
@@ -171,7 +177,7 @@ export default function ImageReadingDetail({
   function handleConfirmClick() {
     if (!detail) return;
     const nextErrors: FieldErrors = {};
-    if (!signedById.trim()) nextErrors.signedById = "Signer staff ID is required.";
+    if (!signedIn) nextErrors.signedById = "Sign in to sign this reading.";
     if (!detail.findings?.trim()) nextErrors.findings = "Save findings before confirming.";
     setErrors((prev) => ({ ...prev, ...nextErrors }));
     if (Object.values(nextErrors).some(Boolean)) return;
@@ -183,7 +189,7 @@ export default function ImageReadingDetail({
     dispatch(
       confirmReadingRequest(
         detail.imageReadingId,
-        { signedById: signedById.trim() },
+        { signedById: actorId },
         imageOrderItemId,
       ),
     );
@@ -310,16 +316,14 @@ export default function ImageReadingDetail({
           </div>
 
           <div className="flex flex-wrap items-end gap-3 border-t border-slate-100 pt-3">
-            <FormField label="Assign To (Staff ID)" className="w-48">
-              <Input
+            <FormField label="Assign To (Doctor)" className="w-56">
+              <DoctorSelect
                 value={assignedToId}
-                onChange={(e) => {
-                  setAssignedToId(e.target.value);
+                onChange={(value) => {
+                  setAssignedToId(value);
                   setErrors((prev) => ({ ...prev, assignedToId: undefined }));
                 }}
-                maxLength={20}
                 disabled={isConfirmed || submitting}
-                placeholder="e.g. STF00099"
               />
               {errors.assignedToId ? (
                 <span className="text-xs text-rose-500">{errors.assignedToId}</span>
@@ -333,24 +337,15 @@ export default function ImageReadingDetail({
               Assign
             </Button>
             {detail?.assignedToId ? (
-              <span className="text-xs text-slate-400">
-                Currently assigned to {detail.assignedToId}
+              <span className="text-xs text-slate-400" title={formatStaffName(detail.assignedToId, staffNameById, staffLoading).title}>
+                Currently assigned to {formatStaffName(detail.assignedToId, staffNameById, staffLoading).text}
               </span>
             ) : null}
           </div>
 
           <div className="flex flex-wrap items-end gap-3 border-t border-slate-100 pt-3">
-            <FormField label="Signed By (Staff ID)" className="w-48">
-              <Input
-                value={signedById}
-                onChange={(e) => {
-                  setSignedById(e.target.value);
-                  setErrors((prev) => ({ ...prev, signedById: undefined }));
-                }}
-                maxLength={20}
-                disabled={isConfirmed || submitting}
-                placeholder="e.g. STF00099"
-              />
+            <FormField label="Signed By" className="w-48">
+              <LoginActorInput name="signedById" actorName={actorName} signedIn={signedIn} />
               {errors.signedById ? (
                 <span className="text-xs text-rose-500">{errors.signedById}</span>
               ) : null}
@@ -361,8 +356,8 @@ export default function ImageReadingDetail({
           </div>
 
           {isConfirmed ? (
-            <p className="text-xs text-slate-400">
-              Confirmed by {detail?.signedById} at {formatDateTime(detail?.signedAt)}
+            <p className="text-xs text-slate-400" title={formatStaffName(detail?.signedById, staffNameById, staffLoading).title}>
+              Confirmed by {formatStaffName(detail?.signedById, staffNameById, staffLoading).text} at {formatDateTime(detail?.signedAt)}
             </p>
           ) : null}
         </div>
@@ -375,7 +370,7 @@ export default function ImageReadingDetail({
       <ConfirmDialog
         open={confirmOpen}
         title="Confirm Reading"
-        message={`Confirm this reading as ${signedById.trim()}? A confirmed reading can no longer be edited.`}
+        message={`Confirm this reading as ${actorName}? A confirmed reading can no longer be edited.`}
         confirmLabel="Confirm"
         cancelLabel="Cancel"
         danger

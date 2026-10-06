@@ -10,7 +10,7 @@ import type { DataTableColumn } from "@/components/common";
 import type { BillingDetailItem } from "@/features/billing/searchBillingDetail/types";
 
 type BillingDetailSearchDetailProps = {
-  billingId: string | null;
+  patientId: string | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -76,7 +76,7 @@ const ITEM_COLUMNS: DataTableColumn<BillingDetailItem>[] = [
   },
 ];
 
-const BillingDetailSearchDetail = ({ billingId }: BillingDetailSearchDetailProps) => {
+const BillingDetailSearchDetail = ({ patientId }: BillingDetailSearchDetailProps) => {
   const dispatch = useDispatch<AppDispatch>();
 
   const [paymentOpen, setPaymentOpen] = useState(false); // 결제 모달 open 상태
@@ -91,13 +91,13 @@ const BillingDetailSearchDetail = ({ billingId }: BillingDetailSearchDetailProps
   ); // 진료비 상세조회 Redux State
 
   useEffect(() => {
-    if (!billingId) return;
+    if (!patientId) return;
     setPaymentOpen(false);
-    dispatch(fetchBillingDetailRequest(billingId));
-  }, [billingId, dispatch]);
+    dispatch(fetchBillingDetailRequest(patientId)); // 환자의 미수납 건 전체를 합산해서 조회
+  }, [patientId, dispatch]);
 
   // 환자 미선택
-  if (billingId === null) {
+  if (patientId === null) {
     return (
       <Panel dashed>
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
@@ -187,7 +187,7 @@ const BillingDetailSearchDetail = ({ billingId }: BillingDetailSearchDetailProps
 
       {detail ? (
         <PaymentRequest
-          billingId={detail.billingId}
+          billingIds={detail.billingIds}
           paymentAmount={detail.totalAmount}
           open={paymentOpen}
           onClose={() => setPaymentOpen(false)}

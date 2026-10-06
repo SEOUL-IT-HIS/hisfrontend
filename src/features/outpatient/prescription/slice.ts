@@ -23,7 +23,9 @@ const initialState: PrescriptionState = {
 };
 
 const prescriptionSlice = createSlice({
-    name: "prescription",
+    // inpatient 처방 slice 도 name 이 "prescription" 이라 액션 타입이 겹쳐서(prescription/fetchPrescriptionDetailRequest)
+    // 입원 saga 가 외래 처방 상세 요청까지 가로채 /api/inpatient 로 호출하던 문제가 있어 접두어를 분리한다.
+    name: "outpatientPrescription",
     initialState,
     reducers: {
         // 처방 목록 조회

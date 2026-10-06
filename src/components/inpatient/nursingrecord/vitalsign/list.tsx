@@ -1,19 +1,29 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { fetchVitalSignsRequest, selectVitalSignListStatus, selectVitalSigns } from "@/features/inpatient/nursingrecord/vitalsign/slice";
 import Link from "next/link";
 import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
+import { Alert, DataTable, PageHeader, type DataTableColumn } from "@/components/common";
+import Toolbar from "@/components/inpatient/common/Toolbar";
+import LinkButton from "@/components/inpatient/common/LinkButton";
 
 type VitalSignListProps = {
   /** 간호기록관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
   embedded?: boolean;
+  /** 간호기록 홈에서 선택한 입원 건 — 있으면 그 입원 건 기록만 보여주고, 없으면(단독 목록 페이지) 전체 */
+  admissionId?: string | null;
+  /** 퇴원 완료된 입원 건이면 true — 기록 조회만 하고 등록 버튼은 숨김 */
+  readOnly?: boolean;
 };
 
-const VitalSignList = ({ embedded = false }: VitalSignListProps = {}) => {
+const VitalSignList = ({ embedded = false, admissionId = null, readOnly = false }: VitalSignListProps = {}) => {
+    // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
+    const { nameById: nurseNameById } = useNurseOptions();
   const dispatch = useDispatch<AppDispatch>();
   const vitalSigns = useSelector(selectVitalSigns);
   const listStatus = useSelector(selectVitalSignListStatus);
@@ -28,78 +38,61 @@ const VitalSignList = ({ embedded = false }: VitalSignListProps = {}) => {
     return new Map(patients.map((patient) => [patient.patientId, patient.patientName]));
   }, [patients]);
 
+  // 지금은 백엔드가 전체 목록만 주므로 프론트에서 admissionId로 걸러냄 (백엔드에 입원 건별 조회 API가 생기면 이 filter는 제거)
+  const visibleVitalSigns = useMemo(
+    () => (admissionId ? vitalSigns.filter((vitalSign) => vitalSign.admissionId === admissionId) : vitalSigns),
+    [vitalSigns, admissionId],
+  );
+
   useEffect(() => {
     dispatch(fetchVitalSignsRequest());
     dispatch(fetchAdmissionsRequest());
     dispatch(fetchPatientListRequest({}));
   }, [dispatch]);
 
+  // 입원 건 → 환자 이름 (기록에는 admissionId만 있어서 두 단계로 찾음)
+  const patientNameOf = (recordAdmissionId: string) => {
+    const patientId = patientIdByAdmissionId.get(recordAdmissionId);
+    return patientId ? patientNameById.get(patientId) ?? "Loading..." : "None";
+  };
+
+  const columns: DataTableColumn<(typeof visibleVitalSigns)[number]>[] = [
+    { key: "patientname", header: "Patient Name", render: (vitalSign) => <span className="font-medium text-slate-800">{patientNameOf(vitalSign.admissionId)}</span> },
+    { key: "measuredat", header: "Measured At", render: (vitalSign) => new Date(vitalSign.measuredAt).toLocaleString() },
+    { key: "temperature", header: "Temperature", render: (vitalSign) => vitalSign.temperature },
+    { key: "pulse", header: "Pulse", render: (vitalSign) => vitalSign.pulse },
+    { key: "respirationrate", header: "Respiration Rate", render: (vitalSign) => vitalSign.respiration },
+    { key: "bloodpressure", header: "Blood Pressure", render: (vitalSign) => <>{vitalSign.bpSystolic}/{vitalSign.bpDiastolic}</> },
+    { key: "spo2", header: "SpO2", render: (vitalSign) => vitalSign.spo2 },
+    { key: "recordedby", header: "Recorded By", render: (vitalSign) => vitalSign.recorderId ? nurseNameById.get(vitalSign.recorderId) ?? vitalSign.recorderId : "-" },
+    { key: "details", header: "Details", render: (vitalSign) => <Link href={`/inpatient/nursingrecord/vitalsign/${vitalSign.vitalSignId}`} className="font-medium text-sky-700 hover:underline">View</Link> },
+  ];
+
   return (
-    <div className={embedded ? "w-full" : "mx-auto w-full max-w-6xl p-6"}>
-      <div className="mb-6 flex items-center justify-between">
-        {embedded ? (
-          <div />
-        ) : (
-          <div>
-            <h1 className="text-lg font-semibold text-slate-800">Vital Signs List</h1>
-            <p className="mt-1 text-sm text-slate-500">Vital sign measurement records by patient.</p>
-          </div>
-        )}
-        <Link
-          href="/inpatient/nursingrecord/vitalsign/create"
-          className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-        >
-          Register Vital Signs
-        </Link>
-      </div>
+    <div className={`flex flex-col gap-4 ${embedded ? "w-full" : "mx-auto w-full max-w-6xl p-6"}`}>
+      {!embedded && <PageHeader title="Vital Signs List" description="Vital sign measurement records by patient." />}
 
-      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
-      {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
+      <Toolbar
+        actions={
+          !readOnly && (
+            <LinkButton href={`/inpatient/nursingrecord/vitalsign/create${admissionId ? `?admissionId=${admissionId}` : ""}`}>Register Vital Signs</LinkButton>
+          )
+        }
+      >
+        <span className="text-sm text-slate-500">{visibleVitalSigns.length} records</span>
+      </Toolbar>
 
-      {!listStatus.loading && !listStatus.error && (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
-                <th className="whitespace-nowrap px-4 py-3">Measured At</th>
-                <th className="whitespace-nowrap px-4 py-3">Temperature</th>
-                <th className="whitespace-nowrap px-4 py-3">Pulse</th>
-                <th className="whitespace-nowrap px-4 py-3">Respiration Rate</th>
-                <th className="whitespace-nowrap px-4 py-3">Blood Pressure</th>
-                <th className="whitespace-nowrap px-4 py-3">SpO2</th>
-                <th className="whitespace-nowrap px-4 py-3">Recorded By</th>
-                <th className="whitespace-nowrap px-4 py-3">Details</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {vitalSigns.map((vitalSign) => {
-                const patientId = patientIdByAdmissionId.get(vitalSign.admissionId);
-                const patientName = patientId ? (patientNameById.get(patientId) ?? "Loading...") : "None";
-                return (
-                  <tr key={vitalSign.vitalSignId} className="hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-800">{patientName}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(vitalSign.measuredAt).toLocaleString()}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{vitalSign.temperature}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{vitalSign.pulse}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{vitalSign.respiration}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{vitalSign.bpSystolic}/{vitalSign.bpDiastolic}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{vitalSign.spo2}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{vitalSign.recorderId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 font-medium">
-                      <Link href={`/inpatient/nursingrecord/vitalsign/${vitalSign.vitalSignId}`} className="text-sky-700 hover:underline">
-                        {vitalSign.vitalSignId}
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {vitalSigns.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-slate-500">No vital signs data available.</p>
-          )}
-        </div>
+      {listStatus.error ? (
+        <Alert>{listStatus.error}</Alert>
+      ) : (
+        <DataTable
+          columns={columns}
+          rows={visibleVitalSigns}
+          rowKey={(vitalSign) => vitalSign.vitalSignId}
+          loading={listStatus.loading}
+          loadingMessage="Loading..."
+          emptyMessage="No vital signs data available."
+        />
       )}
     </div>
   );

@@ -6,6 +6,7 @@ import type { AppDispatch } from "@/store/store";
 import { Alert, Button, DataTable, Panel } from "@/components/common";
 import type { DataTableColumn } from "@/components/common";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
+import { fetchLabWorklist } from "@/features/labimaging/laborder/api";
 import { resolveLabOrderMessage } from "@/features/labimaging/laborder/messages";
 import {
   clearWorklistSelection,
@@ -32,6 +33,8 @@ import {
   selectLastCreatedSpecimen,
 } from "@/features/labimaging/labspecimen/slice";
 import { selectLastSubmittedLabResult } from "@/features/labimaging/labresult/slice";
+import { selectLastSubmittedMicrobiologyResult } from "@/features/labimaging/microbiologyresult/slice";
+import { selectLastSubmittedPathologyResult } from "@/features/labimaging/pathologyresult/slice";
 import ReceptionExcludeDialog from "@/components/labimaging/common/ReceptionExcludeDialog";
 import WorklistProgress from "@/components/labimaging/laborder/WorklistProgress";
 import WorklistReceptionHeader from "@/components/labimaging/laborder/WorklistReceptionHeader";
@@ -54,9 +57,9 @@ import LabResultWorkPanel from "@/components/labimaging/labresult/LabResultWorkP
  *    기간이 지났다고 자동으로 숨기면, 실제로는 처리해야 하는데 누락된 건까지 같이 사라진다.
  * 4. 정렬은 접수일시 오름차순이다. 오래 대기한 건이 위, 새 오더는 아래에 붙는다. (서버가 정렬)
  *
- * ── 아직 없는 것
- * 적합성 판정·결과 등록 화면은 미구현이라 오른쪽 탭에서 비활성으로 표시된다.
- * 일정 등록은 기존 화면이 있어 링크로 연결한다. (다음 단계에서 이 패널 안으로 들여올 예정)
+ * ── 오른쪽 탭 (5차 기준 전부 활성)
+ * 일정 → 검체 → 적합성 판정 → 결과(일반·미생물·병리). 결과 탭 안에서 항목 유형별 패널로 나뉜다.
+ * (탭 enabled 플래그와 "not implemented" 안내는 새 단계를 추가할 때 쓰려고 남겨 둔 자리다)
  */
 
 /** 백엔드가 ISO 문자열로 준다. 초 단위는 화면에서 의미가 없어 분까지만 보여준다. */
@@ -85,6 +88,13 @@ export default function LabWorklist() {
   const exclusionError = useSelector(selectExclusionError);
 
   const [filter, setFilter] = useState<WorklistStatusFilter>("ACCEPTED");
+  /**
+   * 최근 24시간 내 취소된 접수 수 (05번 지시서 Phase 5-2).
+   * ⚠ 새 API 를 만들지 않는다 — 기존 워크리스트 조회를 CANCELLED 로 한 번 더 부른다.
+   *   정보성 안내일 뿐이라 redux 상태로 올리지 않고 여기서 로컬로만 들고 있다가,
+   *   실패해도 화면(메인 목록)에 영향을 주지 않도록 조용히 넘긴다.
+   */
+  const [recentCancelledCount, setRecentCancelledCount] = useState(0);
   /*
    * ⚠ 첫 탭은 일정이다. 검체가 아니다. (2026-09-03 — 영상 워크리스트와 통일)
    *   업무의 시작이 일정 등록이라, 접수를 처음 고른 담당자가 바로 해야 할 일이 거기 있다.
@@ -112,6 +122,19 @@ export default function LabWorklist() {
   const lastAcceptedId = useSelector(selectLastAcceptedSpecimen)?.specimenId ?? null;
   // 결과가 등록·수정·확정되면 nextStep 이 바뀌므로 목록을 다시 부른다.
   const lastResultId = useSelector(selectLastSubmittedLabResult)?.labResultId ?? null;
+  /*
+   * 미생물 결과도 진행도(n/m)에 들어간다(5차 Phase 3). 미생물 패널은 별도 slice 라 위 lastResultId 가
+   * 바뀌지 않으므로 따로 구독한다. 등록·수정·확정 모두 잡으려고 ID 에 상태·갱신시각을 붙인다.
+   */
+  const lastMicrobiology = useSelector(selectLastSubmittedMicrobiologyResult);
+  const lastMicrobiologyKey = lastMicrobiology
+    ? `${lastMicrobiology.microbiologyResultId}:${lastMicrobiology.resultStatusCode}:${lastMicrobiology.updatedAt ?? ""}`
+    : null;
+  // 병리 결과도 진행도에 들어간다(5차 Phase 4). 미생물과 같은 이유로 따로 구독한다.
+  const lastPathology = useSelector(selectLastSubmittedPathologyResult);
+  const lastPathologyKey = lastPathology
+    ? `${lastPathology.pathologyResultId}:${lastPathology.resultStatusCode}:${lastPathology.updatedAt ?? ""}`
+    : null;
 
   /*
    * 목록을 다시 부르는 지점은 이 효과 하나로 모은다.
@@ -121,7 +144,32 @@ export default function LabWorklist() {
    */
   useEffect(() => {
     dispatch(fetchLabWorklistRequest(filter));
-  }, [dispatch, filter, lastScheduleId, lastSpecimenId, lastAcceptedId, lastResultId]);
+  }, [dispatch, filter, lastScheduleId, lastSpecimenId, lastAcceptedId, lastResultId, lastMicrobiologyKey, lastPathologyKey]);
+
+  /**
+   * 최근 24시간 내 취소 건수 안내용 조회. redux 를 거치지 않고 API 를 바로 부른다
+   * (usePatientNames 와 같은 결 — 메인 목록과 독립된 보조 정보라 별도 요청 상태를 두지 않는다).
+   */
+  useEffect(() => {
+    let cancelled = false;
+    fetchLabWorklist("CANCELLED")
+      .then((list) => {
+        if (cancelled) return;
+        const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+        const count = list.filter((item) => {
+          if (!item.cancelRequestedAt) return false;
+          const requestedAt = new Date(item.cancelRequestedAt).getTime();
+          return !Number.isNaN(requestedAt) && requestedAt >= dayAgo;
+        }).length;
+        setRecentCancelledCount(count);
+      })
+      .catch(() => {
+        // 조회 실패는 메인 목록에 영향을 주지 않는다 — 정보성 안내일 뿐이다.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lastScheduleId, lastSpecimenId, lastAcceptedId, lastResultId, lastMicrobiologyKey, lastPathologyKey]);
 
   /*
    * 목록에 보이는 환자들의 이름을 한 번에 불러온다. (POST /api/patient/batch)
@@ -182,23 +230,50 @@ export default function LabWorklist() {
     {
       key: "nextStep",
       header: "Next Step",
-      render: (r) =>
-        r.receptionStatusCode === "EXCLUDED" ? (
-          <span className="text-slate-400" title={r.exclusionReason}>
-            Excluded
+      render: (r) => {
+        if (r.receptionStatusCode === "CANCELLED") {
+          return (
+            <span className="text-slate-400" title={r.cancelReason}>
+              Cancelled
+            </span>
+          );
+        }
+        if (r.receptionStatusCode === "EXCLUDED") {
+          return (
+            <span className="text-slate-400" title={r.exclusionReason}>
+              Excluded
+            </span>
+          );
+        }
+        // 접수는 그대로 ACCEPTED 로 남아 있지만, 처방의 취소 요청을 이미 받은 건이다.
+        // 일이 진행 중이라 자동으로는 취소하지 못했으니 담당자가 직접 확인해야 한다.
+        const hasCancelWarning = r.cancelOutcome === "REFUSED" || r.cancelOutcome === "PARTIAL";
+        return (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="font-medium text-slate-700">
+              {WORKLIST_STEP_LABELS[r.nextStep]}
+            </span>
+            {hasCancelWarning ? (
+              <span
+                className="rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700"
+                title={r.cancelReason}
+              >
+                Cancel requested
+              </span>
+            ) : null}
           </span>
-        ) : (
-          <span className="font-medium text-slate-700">
-            {WORKLIST_STEP_LABELS[r.nextStep]}
-          </span>
-        ),
+        );
+      },
     },
     {
       key: "actions",
       header: "",
       className: "text-right",
-      render: (r) =>
-        r.receptionStatusCode === "EXCLUDED" ? (
+      render: (r) => {
+        if (r.receptionStatusCode === "CANCELLED") {
+          return null;
+        }
+        return r.receptionStatusCode === "EXCLUDED" ? (
           <Button
             variant="secondary"
             onClick={() => dispatch(restoreReceptionRequest(r.receptionNo, filter))}
@@ -214,9 +289,17 @@ export default function LabWorklist() {
           >
             Exclude
           </Button>
-        ),
+        );
+      },
     },
   ];
+
+  // 작업이 이미 시작돼 자동 취소되지 못한 건 — Active 탭 상단에 경고로 모아 보여준다.
+  const cancelWarningCount = worklist.filter(
+    (item) =>
+      item.receptionStatusCode !== "CANCELLED" &&
+      (item.cancelOutcome === "REFUSED" || item.cancelOutcome === "PARTIAL"),
+  ).length;
 
   return (
     <div className="flex min-h-0 flex-1 gap-4">
@@ -247,6 +330,31 @@ export default function LabWorklist() {
         {error ? <Alert>{resolveLabOrderMessage(error)}</Alert> : null}
         {exclusionError ? <Alert>{resolveLabOrderMessage(exclusionError)}</Alert> : null}
 
+        {filter === "ACCEPTED" && cancelWarningCount > 0 ? (
+          // ⚠ 공통 Alert 에 warning 변형이 없어(error/info/success 뿐) error 를 재사용한다.
+          //   업무 오류는 아니지만 "담당자가 반드시 확인해야 한다"는 강도가 가장 가까운 변형이다.
+          <Alert variant="error">
+            {cancelWarningCount} reception{cancelWarningCount > 1 ? "s" : ""} have a cancel
+            request from the prescriber but work has already started. Please review.
+          </Alert>
+        ) : null}
+
+        {filter !== "CANCELLED" && recentCancelledCount > 0 ? (
+          <Alert variant="info">
+            <span className="mr-2">
+              {recentCancelledCount} reception{recentCancelledCount > 1 ? "s" : ""} cancelled
+              in the last 24 hours.
+            </span>
+            <button
+              type="button"
+              onClick={() => setFilter("CANCELLED")}
+              className="font-semibold underline underline-offset-2"
+            >
+              View cancelled
+            </button>
+          </Alert>
+        ) : null}
+
         <DataTable
           columns={columns}
           rows={worklist}
@@ -257,7 +365,9 @@ export default function LabWorklist() {
           emptyMessage={
             filter === "EXCLUDED"
               ? "No excluded receptions."
-              : "No receptions to process."
+              : filter === "CANCELLED"
+                ? "No cancelled receptions."
+                : "No receptions to process."
           }
         />
       </div>
@@ -272,21 +382,29 @@ export default function LabWorklist() {
           <div className="flex min-h-0 flex-1 flex-col gap-4">
             <WorklistReceptionHeader reception={selected} />
 
-            {/* 작업 탭 — 담당자가 직접 고른다.
-                진행 상태만 보고 자동으로 정하면 일정 재조정처럼 되돌아가는 작업을 할 수 없다. */}
-            <div className="flex gap-2">
-              {WORK_TABS.map((t) => (
-                <Button
-                  key={t.value}
-                  variant={tab === t.value ? "primary" : "secondary"}
-                  onClick={() => setTab(t.value)}
-                  disabled={!t.enabled}
-                  title={t.enabled ? undefined : "This step is not implemented yet."}
-                >
-                  {t.label}
-                </Button>
-              ))}
-            </div>
+            {selected.receptionStatusCode === "CANCELLED" ? (
+              // 취소된 접수는 작업 탭 자체를 보여주지 않는다 — 더 이상 진행할 업무가 없다.
+              <Alert variant="info">
+                This reception has been cancelled by the prescriber.
+                {selected.cancelReason ? ` Reason: ${selected.cancelReason}` : ""}
+              </Alert>
+            ) : (
+              <>
+                {/* 작업 탭 — 담당자가 직접 고른다.
+                    진행 상태만 보고 자동으로 정하면 일정 재조정처럼 되돌아가는 작업을 할 수 없다. */}
+                <div className="flex gap-2">
+                  {WORK_TABS.map((t) => (
+                    <Button
+                      key={t.value}
+                      variant={tab === t.value ? "primary" : "secondary"}
+                      onClick={() => setTab(t.value)}
+                      disabled={!t.enabled}
+                      title={t.enabled ? undefined : "This step is not implemented yet."}
+                    >
+                      {t.label}
+                    </Button>
+                  ))}
+                </div>
 
             {/*
               ⚠ 작업 영역에만 스크롤을 준다.
@@ -334,7 +452,9 @@ export default function LabWorklist() {
                   This step is not implemented yet.
                 </div>
               )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
         )}
       </Panel>

@@ -1,10 +1,31 @@
+// 외래 처방코어 규칙: 항목 종류는 반드시 이 한글 문자열이어야 외래 전송 로직이 인식함
+export const PRESCRIPTION_TYPE_LAB = "검사";
+export const PRESCRIPTION_TYPE_MEDICATION = "약품";
+
+// 병동 백엔드가 관리하는 값
+export const SEND_STATUS_SENT = "SENT";
+export const SEND_STATUS_FAILED = "SEND_FAILED";
+export const PRESCRIPTION_STATUS_CANCELLED = "CANCELLED";
+
+// 처방 등록 요청 항목 — 사용자가 입력하는 값만 보냄 (itemId, 전송상태 등은 외래/서버가 채움)
+export interface PrescriptionItemCreateDTO {
+    prescriptionType: string; // "검사" | "약품"
+    itemCode: string;
+    itemName: string;
+    dosage?: number;
+    frequency?: string;
+    durationDays?: string;
+    detailInfo?: string;
+    dosageFormCd?: string;
+}
+
 export interface PrescriptionCreateDTO {
-    patientId: string; // 프론트에서는 비워서 보내면 됨 - admissionId로 서버가 채워서 외래로 전달
+    // patientId / prescribedBy / departmentCode는 서버가 입원 건(환자, 주치의, 진료과)으로 채워서 외래로 전달 — 프론트는 안 보냄
     serviceType: string;
     orderMethod: string;
     priorityCode: string;
     timingCode: string;
-    items: PrescriptionItemDTO[];
+    items: PrescriptionItemCreateDTO[];
 }
 
 export interface PrescriptionItemDTO {
@@ -17,11 +38,15 @@ export interface PrescriptionItemDTO {
     frequency: string;
     durationDays: string;
     detailInfo: string;
-    sendStatus: string;
-    sentAt: Date;
-    labOrderId: string;
-    rejectReason: string;
+    sendStatus: string | null;   // SENT / SEND_FAILED (검사실·약제부 전송 결과)
+    sentAt: string | null;
+    labOrderId: string | null;
+    rejectReason: string | null;
     dosageFormCd: string;
+    // 검사 결과 (검사서비스 결과 이벤트를 병동이 받아서 채움)
+    resultStatus?: string | null;
+    resultSummary?: string | null;
+    resultReportedAt?: string | null;
 }
 
 export interface PrescriptionDTO {
@@ -33,8 +58,10 @@ export interface PrescriptionDTO {
     status: string;
     prescribedAt: Date;
     prescribedBy: string;
-    cancelledAt: Date;
-    cancelReason: string;
+    cancelledAt: string | null;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+    cancelReason: string | null;
     orderMethod: string;
     admissionId: string;
 
@@ -69,4 +96,5 @@ export interface PrescriptionState {
     listStatus: Status;
     detailStatus: Status;
     createStatus: Status;
+    actionStatus: Status; // 상세 화면의 재전송 / 취소 처리 상태
 }

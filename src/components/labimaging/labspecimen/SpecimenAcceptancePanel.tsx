@@ -9,9 +9,12 @@ import {
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, ConfirmDialog, FormField, Input, Select } from "@/components/common";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
+import { isFutureDateTime, nowLocalInputValue } from "@/features/labimaging/common/validation";
 import { resolveLabSpecimenMessage } from "@/features/labimaging/labspecimen/messages";
 import {
   acceptSpecimenRequest,
@@ -130,6 +133,9 @@ export default function SpecimenAcceptancePanel({
 }) {
   const dispatch = useDispatch<AppDispatch>();
 
+  /** 담당자는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
+
   const specimens = useSelector(selectSpecimens);
   const listLoading = useSelector(selectSpecimensLoading);
   const listError = useSelector(selectSpecimensError);
@@ -154,6 +160,8 @@ export default function SpecimenAcceptancePanel({
   const [barcodeInput, setBarcodeInput] = useState<string>("");
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
+  /** 부적합 판정 제출 전 확인창(04번 지시서 Phase 4-3) — true 면 사유를 다시 보여주고 확인받는다. */
+  const [confirmUnfitOpen, setConfirmUnfitOpen] = useState(false);
 
   /*
    * 검체 목록은 "검체" 탭과 같은 slice 를 쓴다.
@@ -242,28 +250,30 @@ export default function SpecimenAcceptancePanel({
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!form.acceptedAt) next.acceptedAt = "Acceptance date and time is required.";
-    if (!form.acceptedById.trim()) next.acceptedById = "Accepting staff ID is required.";
+    if (!form.acceptedAt) {
+      next.acceptedAt = "Acceptance date and time is required.";
+    } else if (isFutureDateTime(form.acceptedAt)) {
+      // 서버(LAB107)와 같은 기준. (04번 지시서 Phase 3-B)
+      next.acceptedAt = "Future dates or times are not allowed.";
+    } else if (selected?.collectedAt && new Date(form.acceptedAt) < new Date(selected.collectedAt)) {
+      // 서버(LAB108)와 같은 기준 — 인수일시가 채취일시보다 빠를 수 없다.
+      next.acceptedAt = "Acceptance time cannot be earlier than the collection time.";
+    }
+    if (!signedIn) next.acceptedById = "Sign in to record this action.";
     // 부적합일 때만 사유가 필수다. 서버(SpecimenAcceptanceService.validateJudgment)와 같은 규칙.
     if (isUnfit && !form.unfitReasonCode)
       next.unfitReasonCode = "An unfit assessment requires a reason.";
     return next;
   }
 
-  function handleSubmit(e: SubmitEvent) {
-    e.preventDefault();
+  function submitAssessment() {
     if (!selected) return;
-
-    const nextErrors = validate();
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
-
     dispatch(
       acceptSpecimenRequest(
         selected.specimenId,
         {
           acceptedAt: form.acceptedAt,
-          acceptedById: form.acceptedById.trim(),
+          acceptedById: actorId,
           fitnessStatus: form.fitnessStatus,
           // 적합이면 사유를 아예 보내지 않는다. 빈 문자열도 서버에서는 "값이 있음"이 아니다.
           unfitReasonCode: isUnfit ? form.unfitReasonCode : undefined,
@@ -284,6 +294,31 @@ export default function SpecimenAcceptancePanel({
     setForm(initialForm);
     setErrors({});
   }
+
+  function handleSubmit(e: SubmitEvent) {
+    e.preventDefault();
+    if (!selected) return;
+
+    const nextErrors = validate();
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    // 부적합 판정만 한 번 더 확인받는다 — 적합은 흔히 일어나는 결과라 매번 묻지 않는다.
+    // (04번 지시서 Phase 4-3)
+    if (isUnfit) {
+      setConfirmUnfitOpen(true);
+      return;
+    }
+    submitAssessment();
+  }
+
+  function handleConfirmUnfit() {
+    setConfirmUnfitOpen(false);
+    submitAssessment();
+  }
+
+  const unfitReasonLabel =
+    rejectReasons.options.find((o) => o.value === form.unfitReasonCode)?.label ?? form.unfitReasonCode;
 
   /** 판정 결과 표시. 미판정이면 회색. */
   function fitnessCell(s: SpecimenSummary) {
@@ -452,6 +487,7 @@ export default function SpecimenAcceptancePanel({
                 type="datetime-local"
                 name="acceptedAt"
                 value={form.acceptedAt}
+                max={nowLocalInputValue()}
                 onChange={handleChange}
                 disabled={accepting}
               />
@@ -460,15 +496,8 @@ export default function SpecimenAcceptancePanel({
               ) : null}
             </FormField>
 
-            <FormField label="Accepting Staff ID" required>
-              <Input
-                name="acceptedById"
-                value={form.acceptedById}
-                onChange={handleChange}
-                maxLength={20}
-                disabled={accepting}
-                placeholder="e.g. STF00021"
-              />
+            <FormField label="Accepted By" required>
+              <LoginActorInput name="acceptedById" actorName={actorName} signedIn={signedIn} />
               {errors.acceptedById ? (
                 <span className="text-xs text-rose-500">{errors.acceptedById}</span>
               ) : null}
@@ -525,6 +554,21 @@ export default function SpecimenAcceptancePanel({
           </div>
         </form>
       )}
+
+      {/* 부적합 판정 제출 전 확인창 — 사유를 다시 보여준다. (04번 지시서 Phase 4-3) */}
+      <ConfirmDialog
+        open={confirmUnfitOpen}
+        title="Confirm Unfit Assessment"
+        message={`Mark ${selected?.specimenBarcode ?? "this specimen"} as Unfit — ${unfitReasonLabel}${
+          form.recollectionRequestedYn === "Y" ? " (recollection requested)" : ""
+        }?`}
+        confirmLabel="Submit"
+        cancelLabel="Cancel"
+        danger
+        submitting={accepting}
+        onConfirm={handleConfirmUnfit}
+        onCancel={() => setConfirmUnfitOpen(false)}
+      />
     </div>
   );
 }

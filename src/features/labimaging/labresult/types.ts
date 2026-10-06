@@ -29,6 +29,23 @@ export const RESULT_STATUS_LABELS: Record<string, string> = {
   "02": "Confirmed",
 };
 
+/**
+ * 결과항목(상세) 1건 — 백엔드 LabResultDetailDto (6차 2-2).
+ * 이 검사에 LAB_RESULT_ITEM_RULE 규칙이 있을 때만(=LabResultItem.entryItems 가 있을 때만) 쓰인다.
+ */
+export interface LabResultDetail {
+  /** 표시 순번 */
+  seq: number;
+  /** 결과항목코드 (공통코드 RESULT_ITEM_CD) */
+  resultItemCode: string;
+  resultValue: string;
+  /** 판정에 적용된 단위 — 요청값이 아니라 서버가 정한 값(LabResultEntryItem.defaultUnit 기준) */
+  resultUnit?: string;
+  /** 판정에 적용된 참고범위 — 서버가 환자 성별로 정한 값 */
+  referenceRange?: string;
+  abnormalYn: "Y" | "N";
+}
+
 /** 검사 결과 — 백엔드 LabResultSummaryDto */
 export interface LabResultSummary {
   /** 수정·확정 API 의 경로변수 */
@@ -36,12 +53,17 @@ export interface LabResultSummary {
   labOrderItemId: string;
   /** 검사항목코드 (공통코드 TEST_TYPE_CD) */
   labItemCode: string;
-  resultValue: string;
+  /**
+   * ⚠ 6차: 결과항목(상세) 방식이면(details 가 비어있지 않으면) 이 값은 null 이다.
+   *   실제 값은 details[] 각 행에 있다. 기존 방식(details 없음)은 지금까지처럼 여기에 값이 있다.
+   */
+  resultValue: string | null;
   resultUnit?: string;
   referenceRange?: string;
   /**
    * 비정상 여부 (Y/N).
    * ⚠ 화면이 정하지 않는다. 서버가 참고범위와 결과값을 비교해 계산한 값이다. (ZP2-99)
+   * ⚠ 결과항목 방식이면 "상세 중 하나라도 이상이면 Y" 로 집계한 값이다(2-2) — 헤더 요약이다.
    */
   abnormalYn: "Y" | "N";
   /** 공통코드 RESULT_STATUS_CD — 01=등록, 02=확정 */
@@ -51,6 +73,24 @@ export interface LabResultSummary {
   /** 확정 전이면 없음(undefined) */
   confirmedAt?: string;
   confirmedById?: string;
+  /** 결과항목(상세) 목록 (6차). 이 검사가 결과항목 방식이 아니면 비어 있거나 없다(undefined). */
+  details?: LabResultDetail[];
+}
+
+/**
+ * 검사의 결과항목 입력 기준 1건 — 백엔드 LabResultEntryItemDto (6차 2-4).
+ * LabResultItem.entryItems 가 있으면(비어있지 않으면) 그 검사는 "결과항목 방식" 이다 —
+ * 화면은 이 목록으로 입력행을 만들고, 단일 Result Value 폼 대신 항목별 입력을 보여준다.
+ */
+export interface LabResultEntryItem {
+  /** 결과항목코드 (공통코드 RESULT_ITEM_CD) */
+  resultItemCode: string;
+  /** 표시 순번 */
+  itemSeq: number;
+  /** 기본 단위 — 서버가 정한 값, 읽기 전용으로 보여준다 */
+  defaultUnit?: string;
+  /** 참고범위 — 서버가 환자 성별로 미리 계산한 값, 읽기 전용으로 보여준다 */
+  referenceRange?: string;
 }
 
 /**
@@ -64,7 +104,29 @@ export interface LabResultItem {
   labOrderItemId: string;
   /** 검사항목코드 (공통코드 TEST_TYPE_CD) */
   labItemCode: string;
+  /**
+   * 결과 유형 (5차 D1). 화면이 입력 패널을 고르는 기준이다.
+   * GENERAL 만 이 목록의 result 로 등록하고, MICROBIOLOGY/PATHOLOGY 는 각자의 패널·API 를 쓴다.
+   */
+  resultType?: LabResultType;
   result?: LabResultSummary;
+  /**
+   * 이 검사의 결과항목 입력 기준 (6차). 비어있지 않으면 "결과항목 방식" —
+   * 화면은 단일 Result Value 폼 대신 이 목록으로 항목별 입력행을 만든다.
+   */
+  entryItems?: LabResultEntryItem[];
+}
+
+export type LabResultType = "GENERAL" | "MICROBIOLOGY" | "PATHOLOGY";
+
+/**
+ * 결과항목(상세) 1건 입력 — 백엔드 LabResultDetailRequestDto (6차 2-4).
+ * 단위·참고범위·순번·이상여부는 서버가 정하므로 이 요청에는 값과 항목코드만 담는다.
+ */
+export interface LabResultDetailRequest {
+  /** 결과항목코드 (공통코드 RESULT_ITEM_CD) */
+  resultItemCode: string;
+  resultValue: string;
 }
 
 /**
@@ -74,10 +136,14 @@ export interface LabResultItem {
  *   - abnormalYn       : 참고범위와 비교해 서버가 계산 (ZP2-99)
  *   - resultStatusCode : 등록은 언제나 "01"에서 시작한다
  *   - recordedAt       : 서버 시각
+ *
+ * ⚠ 6차: resultValue 는 이 검사가 결과항목 방식(entryItems 있음)이면 보내지 않고
+ *   대신 details 를 채운다. 결과항목 방식이 아니면 지금까지처럼 resultValue 만 보낸다.
+ *   둘을 같이 보내지 않는다 — 서버가 어느 쪽으로 판단할지 애매해진다.
  */
 export interface LabResultCreateRequest {
   labOrderItemId: string;
-  resultValue: string;
+  resultValue?: string;
   resultUnit?: string;
   /**
    * 참고범위 — "정상으로 보는 값".
@@ -86,6 +152,8 @@ export interface LabResultCreateRequest {
    */
   referenceRange?: string;
   recordedById: string;
+  /** 결과항목 방식일 때만 채운다 (6차) */
+  details?: LabResultDetailRequest[];
 }
 
 /**
@@ -93,11 +161,13 @@ export interface LabResultCreateRequest {
  *
  * ⚠ 대상 항목(labOrderItemId)과 입력자(recordedById)는 담지 않는다.
  *   결과가 붙을 항목을 옮기는 건 수정이 아니고, 최초 입력자를 바꾸는 건 기록 조작이다.
+ * ⚠ 6차: 등록과 같은 이유로 resultValue/details 중 이 검사 방식에 맞는 쪽만 보낸다.
  */
 export interface LabResultUpdateRequest {
-  resultValue: string;
+  resultValue?: string;
   resultUnit?: string;
   referenceRange?: string;
+  details?: LabResultDetailRequest[];
 }
 
 /** 결과 확정 요청 — 백엔드 LabResultConfirmRequestDto */

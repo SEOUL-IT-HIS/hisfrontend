@@ -8,7 +8,10 @@ import {
   StatusBadge,
   type DataTableColumn,
 } from "@/components/common";
-import { usePatientNames } from "@/features/surgery/common/usePatientNames";
+import {
+  getPatientDisplayName,
+  usePatientNames,
+} from "@/features/surgery/common/usePatientNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import type { Surgery } from "@/features/surgery/schedule/types";
 import { SURGERY_STATUS } from "@/features/surgery/schedule/types";
@@ -127,11 +130,11 @@ export default function TodaySurgeryBoard({ onAssign, onOpen }: Props) {
   const columns: DataTableColumn<Row>[] = [
     { key: "surgeryName", header: "Surgery", render: (r) => r.surgeryName ?? "-" },
     // 환자는 이름으로 보여준다 — 두 테이블 다 patient_id 만 갖고 있어서(§14.1)
-    // 예전에는 UUID 가 그대로 떴다. 못 불러오면 ID 로 되돌아간다.
+    // 예전에는 UUID 가 그대로 떴다. 못 불러오면 안내 문구를 표시한다.
     {
       key: "patientId",
       header: "Patient",
-      render: (r) => patientNames[r.patientId] ?? r.patientId,
+      render: (r) => getPatientDisplayName(r.patientId, patientNames),
     },
     { key: "date", header: "Date", render: (r) => r.date },
     { key: "roomCode", header: "Room", render: (r) => r.roomCode ?? "Unassigned" },

@@ -9,6 +9,10 @@ export const IMAGE_ORDER_MESSAGES = {
   LAB006: "No imaging orders found.",
   LAB007: "This order has already been received.",
   LAB017: "Invalid code value.",
+  LAB110: "Staff member not found, or no longer active.",
+  LAB111: "This staff member is not a doctor.",
+  LAB112: "Unable to verify staff information right now.",
+  LAB113: "The same item was entered more than once.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;

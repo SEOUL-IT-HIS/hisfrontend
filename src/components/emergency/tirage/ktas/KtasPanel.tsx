@@ -3,7 +3,12 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import { selectIsDischarged } from "@/features/emergency/disposition/slice";
+import { Alert, Button, FormField, Input } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
+import ActorField from "@/components/emergency/common/ActorField";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createKtasRequest,
@@ -16,6 +21,7 @@ import {
   selectKtasSubmitting,
 } from "@/features/emergency/triage/ktas/slice";
 import { KTAS_LEVEL_FALLBACK_OPTIONS } from "@/features/emergency/triage/ktas/types";
+import { ASSESSMENT_TYPE, CODE_GROUP, codeToNumber } from "@/features/emergency/codes";
 import {
   fetchAllCommonCodesRequest,
   selectCommonCodeLoaded,
@@ -37,16 +43,18 @@ const initialForm = { ktasScore: "", reason: "", assessedById: "" };
  */
 export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const discharged = useSelector(selectIsDischarged(receptionNo));
   const items = useSelector(selectKtasItems);
   const loading = useSelector(selectKtasLoading);
   const error = useSelector(selectKtasError);
   const submitting = useSelector(selectKtasSubmitting);
   const submitError = useSelector(selectKtasSubmitError);
   const commonCodeLoaded = useSelector(selectCommonCodeLoaded);
-  const ktasLevelCodes = useSelector(selectCommonCodesByGroup("KTAS_LEVEL"));
+  const ktasLevelCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.KTAS_LEVEL));
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
+  const assessedById = useActorId(form.assessedById, "STAFF");
 
   useEffect(() => {
     if (receptionNo) {
@@ -77,7 +85,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
     }
   }
 
-  const hasInitial = items.some((item) => item.assessmentTypeCode === "INITIAL");
+  const hasInitial = items.some((item) => item.assessmentTypeCode === ASSESSMENT_TYPE.INITIAL);
   const latest = items.length > 0 ? items[items.length - 1] : null;
   const previous = items.length > 1 ? items[items.length - 2] : null;
 
@@ -87,15 +95,15 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
   }
 
   function handleSubmit() {
-    if (!form.ktasScore) return;
+    if (!form.ktasScore || !assessedById) return;
     if (!hasInitial) {
       dispatch(
         createKtasRequest({
           encounterId: receptionNo,
           ktasScore: form.ktasScore,
-          assessmentTypeCode: "INITIAL",
+          assessmentTypeCode: ASSESSMENT_TYPE.INITIAL,
           reason: form.reason || undefined,
-          assessedById: form.assessedById || undefined,
+          assessedById,
         }),
       );
     } else if (latest) {
@@ -103,7 +111,7 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
         reassessKtasRequest(latest.id, {
           ktasScore: form.ktasScore,
           reason: form.reason || undefined,
-          assessedById: form.assessedById || undefined,
+          assessedById,
         }),
       );
     }
@@ -126,15 +134,15 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
               {previous ? (
                 <>
                   {/* {previous}단계 */}
-                  <span className="text-sm text-slate-400 line-through">Level {previous.ktasLevelCode}</span>
+                  <span className="text-sm text-slate-400 line-through">Level {codeToNumber(previous.ktasLevelCode)}</span>
                   <span className="text-slate-400">→</span>
                 </>
               ) : null}
               {/* {latest}단계 */}
-              <span className="text-lg font-semibold text-sky-600">Level {latest.ktasLevelCode}</span>
+              <span className="text-lg font-semibold text-sky-600">Level {codeToNumber(latest.ktasLevelCode)}</span>
               <span className="text-xs text-slate-500">
                 {/* (최초 분류 | 재평가 · 일시) */}
-                ({latest.assessmentTypeCode === "INITIAL" ? "Initial" : "Reassessment"} · {formatDateTime(latest.assessedAt)})
+                ({latest.assessmentTypeCode === ASSESSMENT_TYPE.INITIAL ? "Initial" : "Reassessment"} · {formatDateTime(latest.assessedAt)})
               </span>
             </div>
           ) : (
@@ -150,10 +158,10 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
                 <li key={item.id} className="flex gap-2">
                   <span className="w-16 shrink-0 font-medium text-slate-600">
                     {/* 최초분류 / 재평가 */}
-                    {item.assessmentTypeCode === "INITIAL" ? "Initial" : "Reassessment"}
+                    {item.assessmentTypeCode === ASSESSMENT_TYPE.INITIAL ? "Initial" : "Reassessment"}
                   </span>
                   {/* {level}단계 */}
-                  <span className="w-10 shrink-0">Level {item.ktasLevelCode}</span>
+                  <span className="w-10 shrink-0">Level {codeToNumber(item.ktasLevelCode)}</span>
                   <span className="shrink-0">{formatDateTime(item.assessedAt)}</span>
                   <span className="truncate text-slate-400">{item.reason}</span>
                 </li>
@@ -162,37 +170,36 @@ export default function KtasPanel({ receptionNo, className = "" }: KtasPanelProp
           ) : null}
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
+          <DischargedNotice receptionNo={receptionNo} />
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {/* 변경 등급 / 최초 등급 */}
-            <FormField label={hasInitial ? "New Level" : "Initial Level"} required>
-              <Select
-                name="ktasScore"
-                value={form.ktasScore}
-                onChange={handleChange}
-                options={levelOptions}
-                // 선택
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
+            <DownSelect
+              label={hasInitial ? "New Level" : "Initial Level"}
+              required
+              value={form.ktasScore}
+              onChange={(ktasScore) => setForm((prev) => ({ ...prev, ktasScore }))}
+              options={levelOptions}
+              // 선택
+              placeholder="Select"
+              disabled={submitting}
+            />
             {/* 사유 */}
             <FormField label="Reason">
               <Input name="reason" value={form.reason} onChange={handleChange} disabled={submitting} maxLength={200} />
             </FormField>
-            {/* 분류자ID */}
-            <FormField label="Classified By ID">
-              <Input
-                name="assessedById"
-                value={form.assessedById}
-                onChange={handleChange}
-                disabled={submitting}
-                maxLength={36}
-              />
-            </FormField>
+            {/* 분류자 */}
+            <ActorField
+              label="Classified By"
+              role="STAFF"
+              required
+              value={form.assessedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, assessedById: empId }))}
+              disabled={submitting}
+            />
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.ktasScore || !receptionNo}>
+            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.ktasScore || !assessedById || !receptionNo || discharged}>
               {/* 저장 중... / 재평가 저장 / 최초 분류 등록 */}
               {submitting ? "Saving..." : hasInitial ? "Save Reassessment" : "Register Initial Level"}
             </Button>

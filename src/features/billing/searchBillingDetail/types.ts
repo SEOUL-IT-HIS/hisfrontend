@@ -9,10 +9,20 @@ export type SearchPatientResult = {
   address: string;
   phoneNo: string;
   birthDate: string;
-  itemName: string;
 
   billingId: string;
   billingStatus: string;
+  billingType: string;   // OUTPATIENT / INPATIENT
+  totalAmount: number;   // 결제 대기 항목 합계
+  createdAt: string;     // billing 생성일시 (yyyy-MM-dd HH:mm)
+}
+/** 검색 결과를 환자 단위로 묶은 것 - 목록에서 환자당 한 줄 */
+export type PatientBillingGroup = {
+  patientId: string;
+  patientName: string;
+  birthDate: string;
+  phoneNo: string;
+  bills: SearchPatientResult[];
 }
 /** 진료비 상세조회 결과의 상세 항목(수납상세) 1행 */
 export type BillingDetailItem = {
@@ -33,6 +43,7 @@ export type BillingDetail = {
   visitId: string;
   admissionId: string;
   billingStatus: string;
+  billingIds: string[]; // 합산된 미수납 건 목록 - 결제 요청 시 그대로 보냄
 
   outpatientAmount: number;
   inpatientAmount: number;

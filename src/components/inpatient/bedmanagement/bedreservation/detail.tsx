@@ -1,29 +1,33 @@
 "use client";
 
-import { fetchBedReservationDetailRequest,deleteBedReservationRequest } from "@/features/inpatient/bedmanagement/bedreservation/slice";
+import { fetchBedReservationDetailRequest, deleteBedReservationRequest, updateBedReservationRequest } from "@/features/inpatient/bedmanagement/bedreservation/slice";
 import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice";
 import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { formatDateTime, MAX_RESERVATION_DAYS, useDayEnd, useDayStart, futureTimeError } from "@/features/inpatient/dateLimits";
+import { formatBedLabel, formatSexAge } from "@/features/inpatient/displayFormat";
 import { useDispatch, useSelector } from "react-redux";
+import { LABEL, FIELD } from "@/components/inpatient/common/styles";
+import { Alert, Button, PageHeader } from "@/components/common";
+import { InfoRow } from "@/components/inpatient/common/SectionCard";
 
 // 예약 상태 코드(reservationStatusCd) → 배지 색상
 const STATUS_BADGE: Record<string, string> = {
     REQUESTED: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
     RESERVED: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
     RELEASED: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
+    ASSIGNED: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
 };
 
-// 예약 상태 코드 → 화면에 보여줄 한글 라벨
+// 예약 상태 코드 → 화면에 보여줄 라벨
+// 흐름: REQUESTED(요청) → RESERVED(확정) → ASSIGNED(입원예정시각이 되어 병상배정으로 전환됨) / 중간에 취소되면 RELEASED
 const STATUS_LABEL: Record<string, string> = {
     REQUESTED: "Pending",
     RESERVED: "Reserved",
     RELEASED: "Released",
+    ASSIGNED: "Assigned",
 };
-
-const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
-const LABEL = "mb-1 block text-sm font-medium text-slate-700";
-const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 type BedReservationDetailProps = {
     /** 목록 옆에 끼워 넣을 때 라우트 파라미터 대신 직접 전달 */
@@ -33,6 +37,10 @@ type BedReservationDetailProps = {
 };
 
 const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose }: BedReservationDetailProps = {}) => {
+    // 일정 변경도 등록과 같은 날짜 제한 (예약일시는 오늘까지, 입원 예정일은 오늘 ~ 30일 후)
+    const maxReserveAt = useDayEnd();
+    const minExpectedAdmissionAt = useDayStart();
+    const maxExpectedAdmissionAt = useDayEnd(MAX_RESERVATION_DAYS);
     const dispatch = useDispatch();
     // 목록 옆에 끼워 넣을 때는 prop으로, 단독 라우트(/bedreservation/[id])로 열렸을 때는 URL 파라미터로 id를 받음
     const routeParams = useParams() as { bedReservationId?: string };
@@ -77,14 +85,18 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
 
     // ⑤ 서버 상태(bedReservation)가 바뀔 때마다, 그 값을 "일정 변경" 폼의 입력값으로 복사
     //    (서버 데이터와 폼 입력 상태는 별개의 state라 동기화가 필요함)
-    useEffect(() => {
+    //    effect 대신 "이전 값 기억 → 렌더링 중 비교" 방식 — effect 안 setState는 렌더링을 한 번 더 일으켜서 React 권장 방식으로 변경
+    //    초기값을 undefined로 둬서 첫 렌더링 때도 한 번 복사됨 (store에 이미 예약이 들어 있는 경우 대비)
+    const [prevBedReservation, setPrevBedReservation] = useState<typeof bedReservation | undefined>(undefined);
+    if (bedReservation !== prevBedReservation) {
+        setPrevBedReservation(bedReservation);
         if (bedReservation) {
             setScheduleForm({
                 reserveAt: bedReservation.reserveAt,
                 expectedAdmissionAt: bedReservation.expectedAdmissionAt,
             });
         }
-    }, [bedReservation]);
+    }
 
     const onScheduleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -96,9 +108,29 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
         dispatch(deleteBedReservationRequest(bedReservationId));
     }
 
+    // 예약 확정: REQUESTED → RESERVED
+    // 확정된(RESERVED) 예약만 입원예정시각이 되면 자동으로 병상배정으로 전환됨
+    // 백엔드는 기존 예약 수정 API(PUT)를 그대로 쓰고, 상태 변경 이력도 거기서 자동으로 남음
+    function handleConfirm() {
+        if (!bedReservation) return;
+        dispatch(updateBedReservationRequest({
+            bedReservationId: bedReservation.bedReservationId,
+            bedId: bedReservation.bedId,
+            patientId: bedReservation.patientId,
+            reserveAt: bedReservation.reserveAt,
+            expectedAdmissionAt: bedReservation.expectedAdmissionAt,
+            reservationStatusCd: "RESERVED",
+        }));
+    }
+
     // 일정만 바꾸는 전용 액션이라 액션 생성자(action creator) 없이 type 문자열을 직접 dispatch
+    // 제출 직전 미래 시각 확인 결과 (서버도 같은 기준으로 예약일시가 미래면 거절함)
+    const [timeError, setTimeError] = useState<string | null>(null);
     function handleUpdateSchedule(reserveAt: string, expectedAdmissionAt: string) {
         if (!bedReservationId) return;
+        const futureError = futureTimeError(reserveAt, "Reserved at");
+        setTimeError(futureError);
+        if (futureError) return;
         dispatch({
             type: "bedReservation/updateBedReservationScheduleRequest",
             payload: { id: bedReservationId, reserveAt, expectedAdmissionAt }
@@ -106,33 +138,30 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
     }
 
     return (
-        <div className="w-full p-6">
-            <div className="mb-6 flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-slate-800">Bed Reservation Details</h1>
-                    <p className="mt-1 text-sm text-slate-500">Manage reservation details and schedule.</p>
-                </div>
-                {/* 목록 옆에 끼워 넣었을 때(onClose가 전달된 경우)만 노출 */}
-                {onClose && (
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-                    >
-                        Deselect
-                    </button>
-                )}
-            </div>
+        <div className={`flex w-full flex-col gap-4 ${onClose ? "" : "p-6"}`}>
+            <PageHeader
+                title="Bed Reservation Details"
+                // 목록 옆 좁은 패널에서는 설명을 숨겨 제목과 Deselect가 한 줄에 들어가게 함
+                description={onClose ? undefined : "Manage reservation details and schedule."}
+                actions={
+                    // 목록 옆에 끼워 넣었을 때(onClose가 전달된 경우)만 노출
+                    onClose && (
+                        <Button variant="secondary" className="!h-8 !px-3" onClick={onClose}>
+                            Deselect
+                        </Button>
+                    )
+                }
+            />
 
-            {loading && <p className="text-sm text-slate-500">Loading...</p>}
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {loading && <p className="text-sm text-slate-400">Loading...</p>}
+            {error && <Alert>{error}</Alert>}
 
             {!loading && bedReservation && (
                 <div className="space-y-4">
                     {/* 기본 정보 카드 */}
-                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                            <span className="text-sm font-medium text-slate-800">
+                    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/60 px-5 py-3">
+                            <span className="text-sm font-semibold text-slate-800">
                                 {/*
                                   환자ID가 없으면 "없음",
                                   있는데 아직 ③번 useEffect의 조회 결과(patientDetail)가 이 예약의 patientId와 안 맞으면 "조회중...",
@@ -151,38 +180,42 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
                             </span>
                         </div>
                         <div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Reservation ID</span>
-                                <span className="text-slate-800">{bedReservation.bedReservationId}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Bed ID</span>
-                                <span className="text-slate-800">{bedReservation.bedId}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Patient ID</span>
-                                <span className="text-slate-800">{bedReservation.patientId}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Reserved At</span>
-                                <span className="text-slate-800">{bedReservation.reserveAt}</span>
-                            </div>
-                            <div className={INFO_ROW}>
-                                <span className="text-slate-500">Expected Admission At</span>
-                                <span className="text-slate-800">{bedReservation.expectedAdmissionAt}</span>
-                            </div>
+                            <InfoRow label="Bed">{formatBedLabel(bedReservation.bedId)}</InfoRow>
+                            <InfoRow label="Gender / Age">{patientDetail?.patientId === bedReservation.patientId ? formatSexAge(patientDetail.genderCd, patientDetail.birthDate) : "-"}</InfoRow>
+                            <InfoRow label="Reserved At">{formatDateTime(bedReservation.reserveAt)}</InfoRow>
+                            <InfoRow label="Expected Admission At">{formatDateTime(bedReservation.expectedAdmissionAt)}</InfoRow>
+                            <InfoRow label="Created At">{formatDateTime(bedReservation.createdAt)}</InfoRow>
+                            <InfoRow label="Updated At">{formatDateTime(bedReservation.updatedAt)}</InfoRow>
                         </div>
                     </div>
 
+                    {/* 예약 확정 카드 — 요청(REQUESTED) 상태일 때만 노출 */}
+                    {bedReservation.reservationStatusCd === "REQUESTED" && (
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                            <p className="mb-1 text-sm font-semibold text-slate-800">Confirm Reservation</p>
+                            <p className="mb-3 text-xs text-slate-500">
+                                Once confirmed, the bed is assigned automatically at the expected admission time.
+                            </p>
+                            <Button
+                                onClick={handleConfirm}
+                                disabled={updateStatus.loading}
+                            >
+                                {updateStatus.loading ? "Confirming..." : "Confirm Reservation"}
+                            </Button>
+                            {updateStatus.error && <Alert className="mt-3">{updateStatus.error}</Alert>}
+                        </div>
+                    )}
+
                     {/* 일정 변경 카드 — scheduleForm(로컬 입력값)을 수정하고 저장 시 handleUpdateSchedule 호출 */}
-                    <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p className="text-sm font-medium text-slate-800">Update Schedule</p>
+                    <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                        <p className="text-sm font-semibold text-slate-800">Update Schedule</p>
                         <div>
                             <label htmlFor="reserveAt" className={LABEL}>Reserved At</label>
                             <input
                                 type="datetime-local"
                                 id="reserveAt"
                                 name="reserveAt"
+                                max={maxReserveAt}
                                 value={scheduleForm.reserveAt}
                                 onChange={onScheduleChange}
                                 className={FIELD}
@@ -194,29 +227,30 @@ const BedReservationDetail = ({ bedReservationId: bedReservationIdProp, onClose 
                                 type="datetime-local"
                                 id="expectedAdmissionAt"
                                 name="expectedAdmissionAt"
+                                min={minExpectedAdmissionAt}
+                                max={maxExpectedAdmissionAt}
                                 value={scheduleForm.expectedAdmissionAt}
                                 onChange={onScheduleChange}
                                 className={FIELD}
                             />
                         </div>
-                        <button
+                        <Button
                             onClick={() => handleUpdateSchedule(scheduleForm.reserveAt, scheduleForm.expectedAdmissionAt)}
                             disabled={scheduleUpdateStatus.loading}
-                            className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
                         >
                             {scheduleUpdateStatus.loading ? "Updating..." : "Update Schedule"}
-                        </button>
+                        </Button>
+                        {timeError && <Alert>{timeError}</Alert>}
                     </div>
 
                     {/* 삭제 카드 */}
-                    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <button
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                        <Button variant="danger"
                             onClick={handleDelete}
                             disabled={deleteStatus.loading}
-                            className="inline-flex items-center rounded-lg border border-rose-300 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-60"
                         >
                             {deleteStatus.loading ? "Deleting..." : "Delete Reservation"}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}

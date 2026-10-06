@@ -24,6 +24,14 @@ export async function assignBed(request: BedAssignmentCreateRequest): Promise<Be
   return data.data;
 }
 
+/** 접수의 현재(해제 안 된) 병상 배정을 조회한다. 없으면 null. 새로고침·환자 전환 뒤에도 Release 를 보여주려고 쓴다. UC-RES-02 */
+export async function getCurrentBedAssignment(receptionId: string): Promise<BedAssignment | null> {
+  const { data } = await apiClient.get<ApiResponse<BedAssignment | null>>(`${BED_ASSIGNMENTS_PATH}/current`, {
+    params: { receptionId },
+  });
+  return data.data;
+}
+
 /** 병상 배정을 해제한다(환자 퇴실/전실 시). UC-RES-02 */
 export async function releaseBed(assignmentId: string, request: BedReleaseRequest): Promise<BedAssignment> {
   const { data } = await apiClient.patch<ApiResponse<BedAssignment>>(

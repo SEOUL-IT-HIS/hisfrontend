@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { kakaoPayApproveSuccess, paymentSuccess } from "@/features/billing/payment/slice";
 import type {
   BillingDetail,
   BillingDetailAdmission,
@@ -18,6 +19,7 @@ import type {
  */
 type BillingDetailState = {
   searchPatient: SearchPatientResult[];
+  lastSearch: SearchPatient; // 결제 완료 후 목록을 같은 조건으로 다시 조회하기 위해 마지막 검색조건 보관
   loading: boolean;
   error: string;
 
@@ -33,6 +35,7 @@ type BillingDetailState = {
 
 const initialState: BillingDetailState = {
   searchPatient: [],//환자 검색 데이터 받아올 값.
+  lastSearch: {},
   loading: false,
   error: "",
 
@@ -50,7 +53,8 @@ const billingDetailSlice = createSlice({
   initialState,
   reducers: {
     /** 환자 리스트 검색 시작 → saga 가 이 action 을 듣고 API 호출 */
-    searchBillingDetailRequest(state,_action: PayloadAction<SearchPatient>,) {
+    searchBillingDetailRequest(state, action: PayloadAction<SearchPatient>,) {
+      state.lastSearch = action.payload;
       state.loading = true;
       state.error = "";
     },
@@ -67,7 +71,7 @@ const billingDetailSlice = createSlice({
       state.error = action.payload;
     },
 
-    /** 진료비 상세조회 단건(환자 상세정보) 조회 시작 */
+    /** 진료비 상세조회 시작 - payload는 patientId (그 환자의 미수납 건 전체 합산) */
     fetchBillingDetailRequest(state, _action: PayloadAction<string>) {
       state.detailStatus = { loading: true, error: "" };
     },
@@ -116,10 +120,21 @@ const billingDetailSlice = createSlice({
       state.loading=false; state.error="";},
     updateBillingStatusFailure(state, action: PayloadAction<string>){
       state.loading=false; state.error=action.payload
-    }
+    },
 
-
-
+    /** 화면을 떠날 때 검색 결과/상세를 비움 - 안 하면 다시 들어왔을 때 입력창은 빈칸인데 이전 결과가 그대로 보임 */
+    resetBillingDetail() {
+      return initialState;
+    },
+  },
+  extraReducers: (builder) => {
+    // 결제 성공 시 지금 보고 있는 상세를 결제완료로 표시 (Payment 버튼이 다시 눌리지 않도록)
+    // - 목록 재조회는 payment saga 가 lastSearch 로 다시 요청함
+    const markDetailPaid = (state: BillingDetailState) => {
+      if (state.detail) state.detail.billingStatus = "SUCCESS";
+    };
+    builder.addCase(paymentSuccess, markDetailPaid);
+    builder.addCase(kakaoPayApproveSuccess, markDetailPaid);
   },
 });
 
@@ -138,7 +153,8 @@ export const {
   visitBillingDetailFailure,
   updateBillingStatusRequest,
   updateBillingStatusSuccess,
-  updateBillingStatusFailure
+  updateBillingStatusFailure,
+  resetBillingDetail
 } = billingDetailSlice.actions;
 
 export default billingDetailSlice.reducer;
@@ -148,6 +164,7 @@ export default billingDetailSlice.reducer;
 type BillingDetailRoot = { billing: { billingDetail: BillingDetailState } };
 
 export const selectBillingDetails = (state: BillingDetailRoot) =>state.billing.billingDetail.searchPatient;
+export const selectBillingDetailLastSearch = (state: BillingDetailRoot) => state.billing.billingDetail.lastSearch;
 export const selectBillingDetailLoading = (state: BillingDetailRoot) =>state.billing.billingDetail.loading;
 export const selectBillingDetailError = (state: BillingDetailRoot) => state.billing.billingDetail.error;
 export const selectAdmissionDetail = (state: BillingDetailRoot) => state.billing.billingDetail.admissionDetail;

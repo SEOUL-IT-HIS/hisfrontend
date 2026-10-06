@@ -1,19 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { searchBillingDetailRequest } from "@/features/billing/searchBillingDetail/slice";
+import type {
+    PatientBillingGroup,
+    SearchPatientResult,
+} from "@/features/billing/searchBillingDetail/types";
 import BillingDetailSearchList from "@/components/billing/detail/BillingDetailSearchList";
 import { Alert, Button, FormField, Input, Panel } from "@/components/common";
 
+/** 검색 결과를 환자(patientId) 기준으로 묶는다 — 미수납 건이 여러 개여도 환자당 한 줄로 보여주고 한 번에 수납 */
+function groupByPatient(results: SearchPatientResult[]): PatientBillingGroup[] {
+    const groups = new Map<string, PatientBillingGroup>();
+    for (const result of results) {
+        const existing = groups.get(result.patientId);
+        if (existing) {
+            existing.bills.push(result);
+            continue;
+        }
+        groups.set(result.patientId, {
+            patientId: result.patientId,
+            patientName: result.patientName,
+            birthDate: result.birthDate,
+            phoneNo: result.phoneNo,
+            bills: [result],
+        });
+    }
+    return Array.from(groups.values());
+}
+
 type BillingDetailSearchFormProps = {
-    selectedBillingId: string | null;
-    onSelectPatient: (billingId: string) => void;
+    selectedPatientId: string | null;
+    onSelectPatient: (patientId: string) => void;
 };
 
 export default function BillingDetailSearchForm({
-    selectedBillingId,
+    selectedPatientId,
     onSelectPatient,
 }: BillingDetailSearchFormProps) {
     const dispatch = useDispatch<AppDispatch>();
@@ -21,6 +45,8 @@ export default function BillingDetailSearchForm({
     const { searchPatient, loading, error } = useSelector(
         (state: RootState) => state.billing.billingDetail,
     );
+
+    const patientGroups = useMemo(() => groupByPatient(searchPatient), [searchPatient]);
 
     const onSearch = () => {
         dispatch(searchBillingDetailRequest({ patientName }));// 환자명을 기준으로 진료비 상세 정보를 검색하는 액션을 디스패치합니다.
@@ -34,7 +60,7 @@ export default function BillingDetailSearchForm({
                     <p className="mt-0.5 text-xs text-slate-400">Click a row to view details on the right</p>
                 </div>
                 <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white">
-                    {searchPatient.length} results
+                    {patientGroups.length} results
                 </span>
             </div>
 
@@ -65,36 +91,37 @@ export default function BillingDetailSearchForm({
             ) : null}
 
             <div className="min-h-0 flex-1 overflow-auto">
-                <table className="w-full min-w-[640px] text-left text-sm">
+                <table className="w-full min-w-[760px] text-left text-sm">
                     <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/95 backdrop-blur">
                         <tr className="text-xs uppercase tracking-wide text-slate-400">
                             <th className="px-5 py-3 font-medium">Name</th>
                             <th className="px-5 py-3 font-medium">Birth Date</th>
                             <th className="px-5 py-3 font-medium">Phone</th>
-                            <th className="px-5 py-3 font-medium">Address</th>
-                            <th className="px-5 py-3 font-medium">Item</th>
+                            <th className="px-5 py-3 font-medium">Type</th>
+                            <th className="px-5 py-3 text-right font-medium">Amount</th>
+                            <th className="px-5 py-3 font-medium">Created At</th>
                             <th className="px-5 py-3 font-medium">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={6} className="px-5 py-20 text-center text-slate-400">
+                                <td colSpan={7} className="px-5 py-20 text-center text-slate-400">
                                     Loading...
                                 </td>
                             </tr>
-                        ) : searchPatient.length === 0 ? (
+                        ) : patientGroups.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="px-5 py-20 text-center text-slate-400">
+                                <td colSpan={7} className="px-5 py-20 text-center text-slate-400">
                                     No results found.
                                 </td>
                             </tr>
                         ) : (
-                            searchPatient.map((patient) => (
+                            patientGroups.map((group) => (
                                 <BillingDetailSearchList
-                                    key={patient.billingId}
-                                    patient={patient}
-                                    selected={selectedBillingId === patient.billingId}
+                                    key={group.patientId}
+                                    group={group}
+                                    selected={selectedPatientId === group.patientId}
                                     onSelect={onSelectPatient}
                                 />
                             ))
@@ -105,6 +132,6 @@ export default function BillingDetailSearchForm({
         </Panel>
     );
 }
-// 환자 검색 폼 컴포넌트입니다. 환자명을 입력하고 검색 버튼을 클릭하면, 
-// 해당 환자의 진료비 상세 정보를 조회할 수 있습니다. 검색 결과는 테이블 형식으로 표시되며, 
-// 각 행을 클릭하면 오른쪽 패널에서 상세 정보를 확인할 수 있습니다.
+// 환자 검색 폼 컴포넌트입니다. 환자명을 입력하고 검색 버튼을 클릭하면,
+// 미수납 건이 있는 환자가 한 줄씩 표시되고(여러 건이면 금액 합산),
+// 행을 클릭하면 오른쪽 패널에서 그 환자의 미수납 항목 전체를 확인하고 한 번에 수납할 수 있습니다.

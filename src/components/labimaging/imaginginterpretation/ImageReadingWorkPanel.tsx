@@ -7,6 +7,7 @@ import { Alert } from "@/components/common";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveImageReadingMessage } from "@/features/labimaging/imaginginterpretation/messages";
+import { formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
 import {
   fetchReadingWorklistRequest,
   selectLastSubmittedReading,
@@ -23,7 +24,7 @@ import ImageReadingDetail from "@/components/labimaging/imaginginterpretation/Im
 
 /**
  * 선택한 접수의 오더에 속한 촬영항목별 판독 상태 목록 + 상세(펼치기).
- * 대응 유스케이스: UC-IMG-04 영상판독처리 (Jira ZP2-23)
+ * 대응 유스케이스: UC-RD-01 영상판독처리 (Jira ZP2-23)
  *
  * ⚠ 판독 워크리스트 API(GET /image-readings/worklist)는 접수·오더 단위 조회가 아니다.
  *   "영상파일이 1건 이상 등록된 촬영항목 전체"를 응급 우선으로 내려준다(findOrCreate, ZP2-125).
@@ -63,6 +64,7 @@ export default function ImageReadingWorkPanel({
 
   // 촬영항목코드는 admin 공통코드다. (ImageAcquisitionWorkPanel 과 동일 그룹)
   const imageItemTypes = useCommonCodeOptions("IMG_ITEM_CD");
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
 
   const [selectedItemId, setSelectedItemId] = useState<string>("");
 
@@ -130,8 +132,11 @@ export default function ImageReadingWorkPanel({
                       {READING_STATUS_LABELS[item.readingStatusCode] ?? item.readingStatusCode}
                     </span>
                     {item.assignedToId ? (
-                      <span className="ml-auto text-xs text-slate-400">
-                        Assigned to {item.assignedToId}
+                      <span
+                        className="ml-auto text-xs text-slate-400"
+                        title={formatStaffName(item.assignedToId, staffNameById, staffLoading).title}
+                      >
+                        Assigned to {formatStaffName(item.assignedToId, staffNameById, staffLoading).text}
                       </span>
                     ) : null}
                   </button>

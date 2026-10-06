@@ -35,7 +35,7 @@ function* fetchEmpSaga() {
     yield put(fetchEmpSuccess(emps));
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "직원 목록 조회에 실패했습니다.";
+      error instanceof Error ? error.message : "Failed to load employees.";
     yield put(fetchEmpFailure(message));
   }
 }
@@ -49,7 +49,7 @@ function* fetchEmpDetailSaga(
     yield put(fetchEmpDetailSuccess(emp));
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "직원 상세 조회에 실패했습니다.";
+      error instanceof Error ? error.message : "Failed to load employee details.";
     yield put(fetchEmpDetailFailure(message));
   }
 }
@@ -63,7 +63,7 @@ function* fetchEmpRegisterSaga(
     yield put(fetchEmpRegisterSuccess(newEmp));
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "직원 등록에 실패했습니다.";
+      error instanceof Error ? error.message : "Failed to register the employee.";
     yield put(fetchEmpRegisterFailure(message));
   }
 }
@@ -75,7 +75,7 @@ function* fetchEmpUpdateSaga(action: ReturnType<typeof fetchEmpUpdateRequest>) {
     yield put(fetchEmpUpdateSuccess(updatedEmp));
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "직원 수정에 실패했습니다.";
+      error instanceof Error ? error.message : "Failed to update the employee.";
     yield put(fetchEmpUpdateFailure(message));
   }
 }

@@ -15,6 +15,9 @@ export const IMAGE_READING_MESSAGES = {
   LAB063: "Findings are required to confirm a reading.",
   LAB064: "Imaging item not found.",
   LAB065: "Reading loaded successfully.",
+  LAB110: "Staff member not found, or no longer active.",
+  LAB111: "This staff member is not a doctor.",
+  LAB112: "Unable to verify staff information right now.",
   LAB998: "A required field is missing or has an invalid format.",
   LAB999: "An error occurred while processing the request.",
 } as const;

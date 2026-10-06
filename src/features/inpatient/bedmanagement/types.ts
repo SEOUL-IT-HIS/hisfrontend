@@ -106,3 +106,18 @@ export interface BedReservationState {
   deleteStatus: Status;
   scheduleUpdateStatus: Status;
 }
+/** 병상 대시보드 — GET /api/inpatient/bed/dashboard?wardCd= 응답 (병동 1개 단위 집계) */
+export interface WardBedStatusDTO {
+  totalCnt: number;
+  emptyCnt: number;
+  occupiedCnt: number;
+  reservedCnt: number;
+  maintenanceCnt: number;
+  beds: {
+    bedId: string;
+    roomNo: string;
+    bedNo: string;
+    bedStatus: string;
+    patientId: string | null;
+  }[];
+}

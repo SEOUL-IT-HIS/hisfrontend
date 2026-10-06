@@ -69,7 +69,7 @@ export default function DisposalRegisterForm() {
           </FormField>
           <FormField label="Disposal Qty" required>
             <Input
-              type="text"
+              type="number"
               placeholder="Disposal Qty"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}

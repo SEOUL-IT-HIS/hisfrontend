@@ -71,9 +71,19 @@ const bedSlice = createSlice({
       state.submitting = false;
       state.submitError = action.payload;
     },
-    // 환자를 바꾸면 이전 환자의 배정 표시를 지운다 (백엔드에 환자별 조회 API가 없어서 세션 메모리로만 관리)
+    // 환자를 바꾸면 이전 환자의 배정 표시를 지우고, 백엔드에서 그 환자의 현재 배정을 다시 불러온다
     resetCurrentAssignment(state) {
       state.currentAssignment = null;
+    },
+    fetchCurrentAssignmentRequest: {
+      reducer() {},
+      prepare(receptionId: string) {
+        return { payload: receptionId };
+      },
+    },
+    // 배정이 없으면 null — 이 경우 Release 표시도 없다
+    fetchCurrentAssignmentSuccess(state, action: PayloadAction<BedAssignment | null>) {
+      state.currentAssignment = action.payload;
     },
   },
 });
@@ -89,6 +99,8 @@ export const {
   releaseBedSuccess,
   releaseBedFailure,
   resetCurrentAssignment,
+  fetchCurrentAssignmentRequest,
+  fetchCurrentAssignmentSuccess,
 } = bedSlice.actions;
 
 export default bedSlice.reducer;

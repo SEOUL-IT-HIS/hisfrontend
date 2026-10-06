@@ -3,9 +3,20 @@ export interface AdmissionDTO{
     patientId: string;
     doctorId: string;
     admissionDate: string;
+    /** 퇴원신청 시각 — 신청 전이면 null. 입원료는 이 날짜까지의 일수로 청구됨 */
+    dischargeRequestedAt?: string | null;
+    /** 퇴원 확정 시각 — 퇴원 전이면 null */
+    dischargedAt?: string | null;
     admissionRoute: string;
     admissionDeptId: string;
     status: string;
+    // 응급 입원요청(Kafka)으로 들어온 건만 값이 있음 — 외래/병동 직접 등록 건은 모두 null
+    dispositionId?: string | null;
+    encounterId?: string | null;
+    wardPref?: string | null;     // 희망 병동 (WARD_CD)
+    isolationYn?: string | null;  // 격리 필요 여부 (Y/N)
+    requestedBy?: string | null;  // 입원을 요청한 응급 의사 ID
+    note?: string | null;         // 요청 메모
     createdAt: string;
     updatedAt: string;
 }
@@ -31,6 +42,7 @@ export interface AdmissionState {
   updateStatus: Status;
   deleteStatus: Status;
    changeStatusStatus: Status;  
+  changeDoctorStatus: Status; // 담당의 지정/변경 처리 상태
 }
 // ----- bedmanagement 전용 -----
 

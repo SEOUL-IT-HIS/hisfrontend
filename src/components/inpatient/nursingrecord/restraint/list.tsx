@@ -1,19 +1,33 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useDoctorOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
+import { RESTRAINT_TYPE_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
+import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import Link from "next/link";
 import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import { fetchRestraintsRequest, selectRestraints, selectRestraintListStatus } from "@/features/inpatient/nursingrecord/restraint/slice";
+import { Alert, DataTable, PageHeader, type DataTableColumn } from "@/components/common";
+import Toolbar from "@/components/inpatient/common/Toolbar";
+import LinkButton from "@/components/inpatient/common/LinkButton";
 
 type RestraintListProps = {
   /** 간호기록관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
   embedded?: boolean;
+  /** 간호기록 홈에서 선택한 입원 건 — 있으면 그 입원 건 기록만 보여주고, 없으면(단독 목록 페이지) 전체 */
+  admissionId?: string | null;
+  /** 퇴원 완료된 입원 건이면 true — 기록 조회만 하고 등록 버튼은 숨김 */
+  readOnly?: boolean;
 };
 
-const RestraintList = ({ embedded = false }: RestraintListProps = {}) => {
+const RestraintList = ({ embedded = false, admissionId = null, readOnly = false }: RestraintListProps = {}) => {
+    // 오더 의사 직원 ID(empId) → 의사 이름 (목록에 없는 예전 값은 그대로 표시)
+    const { nameById: doctorNameById } = useDoctorOptions();
+    // 기록자 직원 ID(empId) → 간호사 이름 (목록에 없는 예전 숫자 ID 등은 그대로 표시)
+    const { nameById: nurseNameById } = useNurseOptions();
   const dispatch = useDispatch<AppDispatch>();
   const restraints = useSelector(selectRestraints);
   const listStatus = useSelector(selectRestraintListStatus);
@@ -28,83 +42,61 @@ const RestraintList = ({ embedded = false }: RestraintListProps = {}) => {
     return new Map(patients.map((patient) => [patient.patientId, patient.patientName]));
   }, [patients]);
 
+  // 지금은 백엔드가 전체 목록만 주므로 프론트에서 admissionId로 걸러냄 (백엔드에 입원 건별 조회 API가 생기면 이 filter는 제거)
+  const visibleRestraints = useMemo(
+    () => (admissionId ? restraints.filter((restraint) => restraint.admissionId === admissionId) : restraints),
+    [restraints, admissionId],
+  );
+
   useEffect(() => {
     dispatch(fetchRestraintsRequest());
     dispatch(fetchAdmissionsRequest());
     dispatch(fetchPatientListRequest({}));
   }, [dispatch]);
 
+  // 입원 건 → 환자 이름 (기록에는 admissionId만 있어서 두 단계로 찾음)
+  const patientNameOf = (recordAdmissionId: string) => {
+    const patientId = patientIdByAdmissionId.get(recordAdmissionId);
+    return patientId ? patientNameById.get(patientId) ?? "Loading..." : "None";
+  };
+
+  const columns: DataTableColumn<(typeof visibleRestraints)[number]>[] = [
+    { key: "patientname", header: "Patient Name", render: (restraint) => <span className="font-medium text-slate-800">{patientNameOf(restraint.admissionId)}</span> },
+    { key: "details", header: "Details", render: (restraint) => <Link href={`/inpatient/nursingrecord/restraint/${restraint.restraintId}`} className="font-medium text-sky-700 hover:underline">View</Link> },
+    { key: "restrainttypecode", header: "Restraint Type Code", render: (restraint) => codeLabel(RESTRAINT_TYPE_OPTIONS, restraint.restraintTypeCd) },
+    { key: "appliedat", header: "Applied At", render: (restraint) => new Date(restraint.appliedAt).toLocaleString() },
+    { key: "reason", header: "Reason", render: (restraint) => restraint.reason },
+    { key: "orderingdoctor", header: "Ordering Doctor", render: (restraint) => restraint.doctorOrderId ? doctorNameById.get(restraint.doctorOrderId) ?? restraint.doctorOrderId : "-" },
+    { key: "evaluatedby", header: "Evaluated By", render: (restraint) => restraint.evaluatorId ? nurseNameById.get(restraint.evaluatorId) ?? restraint.evaluatorId : "-" },
+    { key: "createdat", header: "Created At", render: (restraint) => new Date(restraint.createdAt).toLocaleString() },
+    { key: "updatedat", header: "Updated At", render: (restraint) => new Date(restraint.updatedAt).toLocaleString() },
+  ];
+
   return (
-    <div className={embedded ? "w-full" : "mx-auto w-full max-w-6xl p-6"}>
-      <div className="mb-6 flex items-center justify-between">
-        {embedded ? (
-          <div />
-        ) : (
-          <div>
-            <h1 className="text-lg font-semibold text-slate-800">Patient Restraint List</h1>
-            <p className="mt-1 text-sm text-slate-500">Restraint records by patient.</p>
-          </div>
-        )}
-        <Link
-          href="/inpatient/nursingrecord/restraint/create"
-          className="inline-flex items-center rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
-        >
-          Register Restraint
-        </Link>
-      </div>
+    <div className={`flex flex-col gap-4 ${embedded ? "w-full" : "mx-auto w-full max-w-6xl p-6"}`}>
+      {!embedded && <PageHeader title="Patient Restraint List" description="Restraint records by patient." />}
 
-      {listStatus.loading && <p className="text-sm text-slate-500">Loading...</p>}
-      {listStatus.error && <p className="text-sm text-red-600">{listStatus.error}</p>}
+      <Toolbar
+        actions={
+          !readOnly && (
+            <LinkButton href={`/inpatient/nursingrecord/restraint/create${admissionId ? `?admissionId=${admissionId}` : ""}`}>Register Restraint</LinkButton>
+          )
+        }
+      >
+        <span className="text-sm text-slate-500">{visibleRestraints.length} records</span>
+      </Toolbar>
 
-      {!listStatus.loading && !listStatus.error && (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                <th className="whitespace-nowrap px-4 py-3">Patient Name</th>
-                <th className="whitespace-nowrap px-4 py-3">Restraint ID</th>
-                <th className="whitespace-nowrap px-4 py-3">Admission ID</th>
-                <th className="whitespace-nowrap px-4 py-3">Restraint Type Code</th>
-                <th className="whitespace-nowrap px-4 py-3">Applied At</th>
-                <th className="whitespace-nowrap px-4 py-3">Reason</th>
-                <th className="whitespace-nowrap px-4 py-3">Doctor Order ID</th>
-                <th className="whitespace-nowrap px-4 py-3">Evaluator ID</th>
-                <th className="whitespace-nowrap px-4 py-3">Created At</th>
-                <th className="whitespace-nowrap px-4 py-3">Updated At</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {restraints.map((restraint) => {
-                const patientId = patientIdByAdmissionId.get(restraint.admissionId);
-                const patientName = patientId ? (patientNameById.get(patientId) ?? "Loading...") : "None";
-                return (
-                  <tr key={restraint.restraintId} className="hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-800">{patientName}</td>
-                    <td className="whitespace-nowrap px-4 py-3 font-medium">
-                      <Link
-                        href={`/inpatient/nursingrecord/restraint/${restraint.restraintId}`}
-                        className="text-sky-700 hover:underline"
-                      >
-                        {restraint.restraintId}
-                      </Link>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{restraint.admissionId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{restraint.restraintTypeCd}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(restraint.appliedAt).toLocaleString()}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{restraint.reason}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{restraint.doctorOrderId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{restraint.evaluatorId}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(restraint.createdAt).toLocaleString()}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{new Date(restraint.updatedAt).toLocaleString()}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {restraints.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-slate-500">No restraint data available.</p>
-          )}
-        </div>
+      {listStatus.error ? (
+        <Alert>{listStatus.error}</Alert>
+      ) : (
+        <DataTable
+          columns={columns}
+          rows={visibleRestraints}
+          rowKey={(restraint) => restraint.restraintId}
+          loading={listStatus.loading}
+          loadingMessage="Loading..."
+          emptyMessage="No restraint data available."
+        />
       )}
     </div>
   );

@@ -11,9 +11,15 @@ import {
   Input,
 } from "@/components/common";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
+import { formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import MicrobiologyResultWorkPanel from "@/components/labimaging/microbiologyresult/MicrobiologyResultWorkPanel";
+import PathologyResultWorkPanel from "@/components/labimaging/pathologyresult/PathologyResultWorkPanel";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveLabResultMessage } from "@/features/labimaging/labresult/messages";
+import { isSuspiciouslyExtreme, validateNumericResult } from "@/features/labimaging/common/validation";
 import {
   confirmLabResultRequest,
   createLabResultRequest,
@@ -30,6 +36,7 @@ import {
 import {
   RESULT_STATUS,
   RESULT_STATUS_LABELS,
+  type LabResultDetailRequest,
   type LabResultItem,
 } from "@/features/labimaging/labresult/types";
 import type { LabWorklistItem } from "@/features/labimaging/laborder/types";
@@ -95,6 +102,39 @@ function abnormalDirection(
 }
 
 /**
+ * 결과항목(상세) 방식인가 (6차). entryItems 가 있으면(비어있지 않으면) 이 검사는
+ * 단일 Result Value 대신 항목별 입력행으로 값을 받는다.
+ */
+function isDetailMode(item: LabResultItem): boolean {
+  return Boolean(item.entryItems && item.entryItems.length > 0);
+}
+
+/** 목록 행의 결과값 열에 보여줄 문구. 결과항목 방식이면 값들을 쉼표로 나열한다. */
+function resultSummaryText(item: LabResultItem): string {
+  if (!item.result) return "";
+  if (item.result.details && item.result.details.length > 0) {
+    return item.result.details
+      .map((d) => `${d.resultValue}${d.resultUnit ? ` ${d.resultUnit}` : ""}`)
+      .join(", ");
+  }
+  return `${item.result.resultValue ?? ""}${
+    item.result.resultUnit ? ` ${item.result.resultUnit}` : ""
+  }`;
+}
+
+/** 입력한 항목별 값 중 빈 값을 뺀 나머지만 요청 형태로 담는다. (부분 입력 허용 — 6차) */
+function buildDetailsPayload(
+  detailValues: Record<string, string>,
+): LabResultDetailRequest[] {
+  return Object.entries(detailValues)
+    .filter(([, value]) => value.trim().length > 0)
+    .map(([resultItemCode, value]) => ({
+      resultItemCode,
+      resultValue: value.trim(),
+    }));
+}
+
+/**
  * 확정 확인 문구.
  *
  * ⚠ "정말 확정하시겠습니까?" 로 끝내지 않는다. 무엇을 확정하는지(항목·결과값)를 같이 보여줘야
@@ -108,8 +148,15 @@ function confirmMessage(
   if (!target?.result) return "";
 
   const itemLabel = toCodeLabel(testTypeOptions, target.labItemCode);
-  const unit = target.result.resultUnit ? ` ${target.result.resultUnit}` : "";
 
+  if (target.result.details && target.result.details.length > 0) {
+    return (
+      `Confirm ${itemLabel} (${target.result.details.length} result item(s))? ` +
+      "A confirmed result can no longer be edited."
+    );
+  }
+
+  const unit = target.result.resultUnit ? ` ${target.result.resultUnit}` : "";
   return (
     `Confirm ${itemLabel} = ${target.result.resultValue}${unit}? ` +
     "A confirmed result can no longer be edited."
@@ -121,6 +168,8 @@ const initialForm = {
   resultUnit: "",
   referenceRange: "",
   recordedById: "",
+  /** 결과항목(상세) 방식의 입력값 — 항목코드 → 입력값 (6차) */
+  detailValues: {} as Record<string, string>,
 };
 
 type FormState = typeof initialForm;
@@ -141,16 +190,29 @@ export default function LabResultWorkPanel({
   const lastSubmitted = useSelector(selectLastSubmittedLabResult);
 
   const testTypes = useCommonCodeOptions("TEST_TYPE_CD");
+  /** 결과항목 방식(6차)의 항목명 표시용. 서비스 내부 Enum 이 아니라 admin 공통코드다. */
+  const resultItemCodes = useCommonCodeOptions("RESULT_ITEM_CD");
 
   /*
    * ⚠ 결과는 환자 진료에 직접 쓰이는 값이라, 누구 결과를 입력하는지 폼 옆에서
    *   다시 확인할 수 있게 이름을 띄운다. (검체 판정 패널과 같은 이유)
    */
   const { names: patientNames } = usePatientNames([reception.patientId]);
+  // 수정 시 "Recorded By" 에 보여줄 최초 입력자 이름. (직원ID 화면 노출 정리, 2026-10-05)
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
+
+  /** 입력자·확정자는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
 
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
+  /** 결과항목(상세) 방식에서 "하나도 입력 안 함" 같은 폼 전체 단위 오류. (6차) */
+  const [detailsError, setDetailsError] = useState("");
+  /** 결과항목(상세) 방식의 행별 숫자 형식 오류. 항목코드 → 메시지. (Phase 3-A) */
+  const [detailFieldErrors, setDetailFieldErrors] = useState<Record<string, string>>({});
+  /** 비정상적으로 크거나 작은 값 확인창(04번 지시서 Phase 4-4) — true 면 한 번 더 확인받는다. */
+  const [extremeConfirmOpen, setExtremeConfirmOpen] = useState(false);
   /** 확정 확인 다이얼로그의 대상 항목. null 이면 닫힌 상태다. */
   const [confirmTarget, setConfirmTarget] = useState<LabResultItem | null>(null);
 
@@ -168,7 +230,14 @@ export default function LabResultWorkPanel({
   }, [dispatch, reception.receptionNo]);
 
   const selected = items.find((i) => i.labOrderItemId === selectedItemId) ?? null;
-  const unregistered = items.filter((i) => !i.result);
+  /**
+   * 이 목록의 폼으로 결과를 받는 건 일반검사(GENERAL) 항목뿐이다. (5차 D1)
+   * 미생물·병리 항목은 아래 전용 패널에서 등록한다 — 서버도 일반 결과 API 로는 LAB079 로 막는다.
+   */
+  const isGeneral = (item: LabResultItem) => (item.resultType ?? "GENERAL") === "GENERAL";
+  const unregistered = items.filter((i) => isGeneral(i) && !i.result);
+  const microItems = items.filter((i) => i.resultType === "MICROBIOLOGY");
+  const pathologyItems = items.filter((i) => i.resultType === "PATHOLOGY");
 
   /** 수정 중인가 — 고른 항목에 이미 결과가 있으면 수정, 없으면 신규 등록이다. */
   const isEditing = Boolean(selected?.result);
@@ -181,11 +250,28 @@ export default function LabResultWorkPanel({
   function handleSelectItem(item: LabResultItem) {
     setSelectedItemId(item.labOrderItemId);
     setErrors({});
+    setDetailsError("");
+    setDetailFieldErrors({});
     setConfirmTarget(null);
 
-    if (item.result) {
+    if (isDetailMode(item)) {
+      // 결과항목 방식: 항목별 입력값을 채운다. 기존 결과가 있으면 그 값으로, 없으면 빈 칸으로.
+      const detailValues: Record<string, string> = {};
+      for (const entryItem of item.entryItems ?? []) {
+        const existing = item.result?.details?.find(
+          (d) => d.resultItemCode === entryItem.resultItemCode,
+        );
+        detailValues[entryItem.resultItemCode] = existing?.resultValue ?? "";
+      }
       setForm({
-        resultValue: item.result.resultValue,
+        ...initialForm,
+        detailValues,
+        recordedById: item.result?.recordedById ?? "",
+      });
+    } else if (item.result) {
+      setForm({
+        ...initialForm,
+        resultValue: item.result.resultValue ?? "",
         resultUnit: item.result.resultUnit ?? "",
         referenceRange: item.result.referenceRange ?? "",
         // 수정에는 입력자를 보내지 않는다. 최초 입력자를 바꾸는 건 기록 조작이다.
@@ -201,13 +287,58 @@ export default function LabResultWorkPanel({
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
+  function handleDetailChange(resultItemCode: string, value: string) {
+    setForm((prev) => ({
+      ...prev,
+      detailValues: { ...prev.detailValues, [resultItemCode]: value },
+    }));
+  }
+
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!form.resultValue.trim()) next.resultValue = "Result value is required.";
-    // 등록일 때만 입력자가 필요하다. 수정 요청에는 이 값이 들어가지 않는다.
-    if (!isEditing && !form.recordedById.trim())
-      next.recordedById = "Recording staff ID is required.";
+    // 결과항목 방식은 단일 Result Value 가 없다 — 항목별 입력은 제출 시 별도로 확인한다.
+    if (!(selected && isDetailMode(selected))) {
+      if (!form.resultValue.trim()) {
+        next.resultValue = "Result value is required.";
+      } else {
+        // 서버(LAB105/106)와 같은 기준 — 참고범위가 수치 범위인데 결과값이 숫자가 아니거나
+        // 범위 자체가 뒤집혀 있으면 미리 막는다. (04번 지시서 Phase 3-A)
+        const numericError = validateNumericResult(form.resultValue, form.referenceRange);
+        if (numericError) next.resultValue = numericError;
+      }
+    }
+    // 등록일 때만 입력자가 필요하다. 입력자는 로그인 사용자라 로그인 여부만 본다.
+    if (!isEditing && !signedIn) next.recordedById = "Sign in to register a result.";
     return next;
+  }
+
+  /**
+   * 결과항목(상세) 방식의 행별 숫자 형식 오류. (Phase 3-A)
+   * 참고범위는 서버가 정해서 읽기 전용으로 보여주는 값(entryItem.referenceRange)이라,
+   * 입력값만 그 범위에 맞는 숫자 형식인지 확인한다.
+   */
+  function validateDetailValues(): Record<string, string> {
+    const next: Record<string, string> = {};
+    if (!selected) return next;
+    for (const entryItem of selected.entryItems ?? []) {
+      const value = form.detailValues[entryItem.resultItemCode] ?? "";
+      if (!value.trim()) continue;
+      const numericError = validateNumericResult(value, entryItem.referenceRange ?? "");
+      if (numericError) next[entryItem.resultItemCode] = numericError;
+    }
+    return next;
+  }
+
+  /** 선택한 항목·입력값 중 비정상적으로 크거나 작은 값이 있는지. (Phase 4-4) */
+  function hasExtremeValue(): boolean {
+    if (!selected) return false;
+    if (isDetailMode(selected)) {
+      return (selected.entryItems ?? []).some((entryItem) => {
+        const value = form.detailValues[entryItem.resultItemCode] ?? "";
+        return value.trim() && isSuspiciouslyExtreme(value, entryItem.referenceRange ?? "");
+      });
+    }
+    return isSuspiciouslyExtreme(form.resultValue, form.referenceRange);
   }
 
   function handleSubmit(e: SubmitEvent) {
@@ -218,36 +349,88 @@ export default function LabResultWorkPanel({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    // 빈 문자열은 "값 없음"으로 보낸다. 서버에서 빈 문자열은 값이 있는 것으로 취급된다.
-    const resultUnit = form.resultUnit.trim() || undefined;
-    const referenceRange = form.referenceRange.trim() || undefined;
+    if (isDetailMode(selected)) {
+      const details = buildDetailsPayload(form.detailValues);
+      if (details.length === 0) {
+        setDetailsError("Enter at least one result item.");
+        return;
+      }
+      // 서버(LAB105/106)와 같은 기준으로 행별 숫자 형식을 먼저 확인한다. (Phase 3-A)
+      const nextDetailFieldErrors = validateDetailValues();
+      setDetailFieldErrors(nextDetailFieldErrors);
+      if (Object.keys(nextDetailFieldErrors).length > 0) return;
+      setDetailsError("");
+    }
 
-    if (selected.result) {
-      dispatch(
-        updateLabResultRequest(
-          selected.result.labResultId,
-          { resultValue: form.resultValue.trim(), resultUnit, referenceRange },
-          reception.receptionNo,
-        ),
-      );
+    // 비정상적으로 크거나 작은 값은 한 번 더 확인받는다(제출을 막지 않는다). (Phase 4-4)
+    if (hasExtremeValue()) {
+      setExtremeConfirmOpen(true);
+      return;
+    }
+    submitResult();
+  }
+
+  function handleConfirmExtreme() {
+    setExtremeConfirmOpen(false);
+    submitResult();
+  }
+
+  function submitResult() {
+    if (!selected) return;
+
+    if (isDetailMode(selected)) {
+      const details = buildDetailsPayload(form.detailValues);
+
+      if (selected.result) {
+        dispatch(
+          updateLabResultRequest(
+            selected.result.labResultId,
+            { details },
+            reception.receptionNo,
+          ),
+        );
+      } else {
+        dispatch(
+          createLabResultRequest(
+            { labOrderItemId: selected.labOrderItemId, recordedById: actorId, details },
+            reception.receptionNo,
+          ),
+        );
+      }
     } else {
-      dispatch(
-        createLabResultRequest(
-          {
-            labOrderItemId: selected.labOrderItemId,
-            resultValue: form.resultValue.trim(),
-            resultUnit,
-            referenceRange,
-            recordedById: form.recordedById.trim(),
-          },
-          reception.receptionNo,
-        ),
-      );
+      // 빈 문자열은 "값 없음"으로 보낸다. 서버에서 빈 문자열은 값이 있는 것으로 취급된다.
+      const resultUnit = form.resultUnit.trim() || undefined;
+      const referenceRange = form.referenceRange.trim() || undefined;
+
+      if (selected.result) {
+        dispatch(
+          updateLabResultRequest(
+            selected.result.labResultId,
+            { resultValue: form.resultValue.trim(), resultUnit, referenceRange },
+            reception.receptionNo,
+          ),
+        );
+      } else {
+        dispatch(
+          createLabResultRequest(
+            {
+              labOrderItemId: selected.labOrderItemId,
+              resultValue: form.resultValue.trim(),
+              resultUnit,
+              referenceRange,
+              recordedById: actorId,
+            },
+            reception.receptionNo,
+          ),
+        );
+      }
     }
 
     setSelectedItemId("");
     setForm(initialForm);
     setErrors({});
+    setDetailsError("");
+    setDetailFieldErrors({});
   }
 
   /**
@@ -265,10 +448,9 @@ export default function LabResultWorkPanel({
     dispatch(
       confirmLabResultRequest(
         confirmTarget.result.labResultId,
-        // 확정자는 입력자와 다를 수 있으나, 별도 입력칸을 두면 목록이 폼이 된다.
-        // 지금은 입력자ID를 그대로 쓴다. 로그인 사용자가 붙으면 그 값으로 바꾼다.
-        // TODO(인증 연동): confirmedById 를 로그인 사용자 ID 로 교체한다.
-        { confirmedById: confirmTarget.result.recordedById },
+        // 확정자는 로그인 사용자다(UC-RST-05). 서버도 세션 기준으로 기록하고, 이 값은 과도기(D2)용이다.
+        // (예전 TODO(인증 연동) — 입력자ID 를 확정자로 보내던 임시 처리를 해소했다. 5차 Phase 2)
+        { confirmedById: actorId },
         reception.receptionNo,
       ),
     );
@@ -277,6 +459,10 @@ export default function LabResultWorkPanel({
 
   /** 결과 상태 표시. 미등록이면 회색. */
   function statusCell(item: LabResultItem) {
+    if (item.resultType === "MICROBIOLOGY")
+      return <span className="text-slate-500">Microbiology — see panel below</span>;
+    if (item.resultType === "PATHOLOGY")
+      return <span className="text-slate-500">Pathology — see panel below</span>;
     if (!item.result) return <span className="text-slate-400">Not recorded</span>;
 
     const confirmed = item.result.resultStatusCode === RESULT_STATUS.CONFIRMED;
@@ -295,8 +481,12 @@ export default function LabResultWorkPanel({
       {lastSubmitted ? (
         <Alert variant="success">
           {toCodeLabel(testTypes.options, lastSubmitted.labItemCode)} —{" "}
-          {lastSubmitted.resultValue}
-          {lastSubmitted.resultUnit ? ` ${lastSubmitted.resultUnit}` : ""} (
+          {lastSubmitted.details && lastSubmitted.details.length > 0
+            ? `${lastSubmitted.details.length} result item(s)`
+            : `${lastSubmitted.resultValue}${
+                lastSubmitted.resultUnit ? ` ${lastSubmitted.resultUnit}` : ""
+              }`}{" "}
+          (
           {lastSubmitted.abnormalYn === "Y" ? "Abnormal" : "Normal"},{" "}
           {RESULT_STATUS_LABELS[lastSubmitted.resultStatusCode] ??
             lastSubmitted.resultStatusCode}
@@ -357,7 +547,7 @@ export default function LabResultWorkPanel({
                   */}
                   <button
                     type="button"
-                    disabled={confirmed || submitting}
+                    disabled={confirmed || submitting || !isGeneral(item)}
                     onClick={() => handleSelectItem(item)}
                     className={`flex flex-1 items-center gap-3 text-left ${
                       confirmed
@@ -385,29 +575,31 @@ export default function LabResultWorkPanel({
                       }`}
                     >
                       {item.result ? (
-                        <>
-                          {item.result.resultValue}
-                          {item.result.resultUnit ? ` ${item.result.resultUnit}` : ""}
-                        </>
+                        resultSummaryText(item)
                       ) : (
                         <span className="text-slate-300">—</span>
                       )}
                     </span>
                     <span className="w-24 shrink-0 text-slate-400">
-                      {item.result?.referenceRange ?? "-"}
+                      {item.result?.details && item.result.details.length > 0
+                        ? "Multiple"
+                        : (item.result?.referenceRange ?? "-")}
                     </span>
                     {/*
                       ⚠ 비정상 여부는 서버가 계산한 값(abnormalYn)이다.
                         방향(High/Low)만 화면에서 덧붙인다 — 판정이 아니라 이미 나온 판정의 표현이다.
                         정성 결과("양성")는 위아래가 없어 방향 없이 Abnormal 로만 뜬다.
+                        결과항목 방식(resultValue 없음)은 방향을 알 수 없어 Abnormal 로만 뜬다.
                     */}
                     <span className="w-20 shrink-0">
                       {abnormal && item.result ? (
                         <span className="rounded bg-rose-50 px-1.5 py-0.5 text-xs font-medium text-rose-600">
-                          {abnormalDirection(
-                            item.result.resultValue,
-                            item.result.referenceRange,
-                          )}
+                          {item.result.resultValue
+                            ? abnormalDirection(
+                                item.result.resultValue,
+                                item.result.referenceRange,
+                              )
+                            : "Abnormal"}
                         </span>
                       ) : null}
                     </span>
@@ -451,62 +643,135 @@ export default function LabResultWorkPanel({
           </p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField label="Result Value" required>
-              <Input
-                name="resultValue"
-                value={form.resultValue}
-                onChange={handleChange}
-                maxLength={200}
-                disabled={submitting}
-                placeholder="e.g. 4.2 or Negative"
-              />
-              {errors.resultValue ? (
-                <span className="text-xs text-rose-500">{errors.resultValue}</span>
-              ) : null}
-            </FormField>
+            {isDetailMode(selected) ? (
+              /*
+                ⚠ 결과항목 방식(6차)에서는 단일 Result Value 대신 검사별 결과항목 기준(entryItems)
+                  으로 입력행을 만든다. 단위·참고범위는 서버가 정한 값이라 읽기 전용으로만 보여준다
+                  (버릴 필요 없이 그대로 서버가 다시 계산해 응답한다).
+                ⚠ 부분 입력을 허용한다(partialDetailsAllowed) — 모든 행을 채우지 않아도 제출할 수
+                  있고, 빈 칸은 handleSubmit 에서 걸러진다.
+              */
+              <div className="space-y-3 sm:col-span-2">
+                <div className="flex items-center gap-3 px-1 text-xs font-medium text-slate-400">
+                  <span className="w-32 shrink-0">Result Item</span>
+                  <span className="flex-1">Value</span>
+                  <span className="w-20 shrink-0">Unit</span>
+                  <span className="w-24 shrink-0">Reference</span>
+                </div>
+                {(selected.entryItems ?? []).map((entryItem) => {
+                  const existingDetail = selected.result?.details?.find(
+                    (d) => d.resultItemCode === entryItem.resultItemCode,
+                  );
+                  const unit = existingDetail?.resultUnit ?? entryItem.defaultUnit;
+                  const referenceRange =
+                    existingDetail?.referenceRange ?? entryItem.referenceRange;
+                  const abnormalDetail = existingDetail?.abnormalYn === "Y";
+                  const fieldError = detailFieldErrors[entryItem.resultItemCode];
+                  return (
+                    <div key={entryItem.resultItemCode} className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <span className="w-32 shrink-0 text-sm font-medium text-slate-700">
+                          {toCodeLabel(resultItemCodes.options, entryItem.resultItemCode)}
+                        </span>
+                        <Input
+                          className={`flex-1 ${
+                            fieldError
+                              ? "border-rose-400"
+                              : abnormalDetail
+                                ? "border-rose-400 text-rose-600"
+                                : ""
+                          }`}
+                          value={form.detailValues[entryItem.resultItemCode] ?? ""}
+                          onChange={(e) =>
+                            handleDetailChange(entryItem.resultItemCode, e.target.value)
+                          }
+                          maxLength={200}
+                          disabled={submitting}
+                          placeholder="e.g. 4.2 or Negative"
+                        />
+                        <span className="w-20 shrink-0 text-xs text-slate-400">
+                          {unit ?? "-"}
+                        </span>
+                        <span className="w-24 shrink-0 text-xs text-slate-400">
+                          {referenceRange ?? "-"}
+                        </span>
+                      </div>
+                      {fieldError ? (
+                        <span className="block pl-[8.75rem] text-xs text-rose-500">
+                          {fieldError}
+                        </span>
+                      ) : null}
+                    </div>
+                  );
+                })}
+                {detailsError ? (
+                  <span className="text-xs text-rose-500">{detailsError}</span>
+                ) : null}
+              </div>
+            ) : (
+              <>
+                <FormField label="Result Value" required>
+                  <Input
+                    name="resultValue"
+                    value={form.resultValue}
+                    onChange={handleChange}
+                    maxLength={200}
+                    disabled={submitting}
+                    placeholder="e.g. 4.2 or Negative"
+                  />
+                  {errors.resultValue ? (
+                    <span className="text-xs text-rose-500">{errors.resultValue}</span>
+                  ) : null}
+                </FormField>
 
-            <FormField label="Unit" hint="Leave empty for qualitative results.">
-              <Input
-                name="resultUnit"
-                value={form.resultUnit}
-                onChange={handleChange}
-                maxLength={20}
-                disabled={submitting}
-                placeholder="e.g. mg/dL"
-              />
-            </FormField>
+                <FormField label="Unit" hint="Leave empty for qualitative results.">
+                  <Input
+                    name="resultUnit"
+                    value={form.resultUnit}
+                    onChange={handleChange}
+                    maxLength={20}
+                    disabled={submitting}
+                    placeholder="e.g. mg/dL"
+                  />
+                </FormField>
 
-            <FormField
-              label="Reference Range"
-              className="sm:col-span-2"
-              hint={
-                "Values considered normal. Numeric \"3.5-5.5\" or qualitative \"Negative\". " +
-                "Separate several normal values with commas. Leave empty to skip the abnormal check."
-              }
-            >
-              <Input
-                name="referenceRange"
-                value={form.referenceRange}
-                onChange={handleChange}
-                maxLength={50}
-                disabled={submitting}
-                placeholder="e.g. 3.5-5.5"
-              />
-            </FormField>
+                <FormField
+                  label="Reference Range"
+                  className="sm:col-span-2"
+                  hint={
+                    "Values considered normal. Numeric \"3.5-5.5\" or qualitative \"Negative\". " +
+                    "Separate several normal values with commas. Leave empty to skip the abnormal check."
+                  }
+                >
+                  <Input
+                    name="referenceRange"
+                    value={form.referenceRange}
+                    onChange={handleChange}
+                    maxLength={50}
+                    disabled={submitting}
+                    placeholder="e.g. 3.5-5.5"
+                  />
+                </FormField>
+              </>
+            )}
 
             {/*
               수정할 때는 입력자를 바꾸지 않는다. 최초 입력자를 바꾸는 건 기록 조작이라
               서버도 수정 요청에서 이 필드를 받지 않는다. 화면에서는 읽기 전용으로 보여준다.
             */}
-            <FormField label="Recording Staff ID" required={!isEditing}>
-              <Input
-                name="recordedById"
-                value={form.recordedById}
-                onChange={handleChange}
-                maxLength={20}
-                disabled={submitting || isEditing}
-                placeholder="e.g. STF00021"
-              />
+            <FormField label="Recorded By" required={!isEditing}>
+              {/* 등록: 로그인 사용자로 기록된다. 수정: 최초 입력자를 그대로 보여준다(바꿀 수 없다). */}
+              {isEditing ? (
+                <Input
+                  name="recordedById"
+                  value={formatStaffName(form.recordedById, staffNameById, staffLoading).text}
+                  title={formatStaffName(form.recordedById, staffNameById, staffLoading).title}
+                  readOnly
+                  disabled
+                />
+              ) : (
+                <LoginActorInput name="recordedById" actorName={actorName} signedIn={signedIn} />
+              )}
               {errors.recordedById ? (
                 <span className="text-xs text-rose-500">{errors.recordedById}</span>
               ) : null}
@@ -526,6 +791,8 @@ export default function LabResultWorkPanel({
                 setSelectedItemId("");
                 setForm(initialForm);
                 setErrors({});
+                setDetailsError("");
+                setDetailFieldErrors({});
               }}
               disabled={submitting}
             >
@@ -548,6 +815,20 @@ export default function LabResultWorkPanel({
         ⚠ 공통 ConfirmDialog 의 기본 라벨은 한글("확인"/"취소")이라 영문으로 덮어쓴다.
           공용 컴포넌트 자체는 손대지 않는다. (12.4 화면 텍스트 언어 원칙)
       */}
+      {/* ---------- 미생물 결과 (5차 Phase 3) — 접수당 미생물 항목 1개일 때만 입력할 수 있다 ---------- */}
+      {microItems.length === 1 ? (
+        <MicrobiologyResultWorkPanel reception={reception} microItem={microItems[0]} />
+      ) : microItems.length > 1 ? (
+        <Alert>
+          This reception has more than one microbiology test item. Only one is supported per reception.
+        </Alert>
+      ) : null}
+
+      {/* ---------- 병리 결과 (5차 Phase 4) — 병리 항목마다 결과 1건 ---------- */}
+      {pathologyItems.length > 0 ? (
+        <PathologyResultWorkPanel reception={reception} pathologyItems={pathologyItems} />
+      ) : null}
+
       <ConfirmDialog
         open={confirmTarget !== null}
         title="Confirm Test Result"
@@ -558,6 +839,18 @@ export default function LabResultWorkPanel({
         submitting={submitting}
         onConfirm={handleConfirm}
         onCancel={() => setConfirmTarget(null)}
+      />
+
+      {/* 비정상적으로 크거나 작은 값 확인창 — 제출을 막지 않고 한 번 더 확인만 받는다. (Phase 4-4) */}
+      <ConfirmDialog
+        open={extremeConfirmOpen}
+        title="Unusual Value"
+        message="This value is unusually large or small. Please check the decimal point or unit before continuing."
+        confirmLabel="Continue"
+        cancelLabel="Cancel"
+        submitting={submitting}
+        onConfirm={handleConfirmExtreme}
+        onCancel={() => setExtremeConfirmOpen(false)}
       />
     </div>
   );

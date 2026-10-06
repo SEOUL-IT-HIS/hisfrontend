@@ -44,6 +44,15 @@ const groups: QuickLinkGroup[] = [
     title: "Prescription",
     links: [{ label: "Prescription List", href: "/pharmacy/prescription" }],
   },
+  {
+    title: "Controlled Drugs",
+    links: [
+      { label: "Register Receipt", href: "/pharmacy/controlled/receipt" },
+      { label: "Register Issuance", href: "/pharmacy/controlled/issuance" },
+      { label: "Register Disposal", href: "/pharmacy/controlled/disposal" },
+      { label: "Records", href: "/pharmacy/controlled/records" },
+    ],
+  },
 ];
 
 export default function PharmacyHome() {

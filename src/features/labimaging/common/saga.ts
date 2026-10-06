@@ -8,6 +8,9 @@ import consentSaga from "@/features/labimaging/imagingconsent/saga";
 import labResultSaga from "@/features/labimaging/labresult/saga";
 import imageFileSaga from "@/features/labimaging/imagingacquisition/saga";
 import imageReadingSaga from "@/features/labimaging/imaginginterpretation/saga";
+import microbiologyResultSaga from "@/features/labimaging/microbiologyresult/saga";
+import pathologyResultSaga from "@/features/labimaging/pathologyresult/saga";
+import interfaceSendLogSaga from "@/features/labimaging/interfacelog/saga";
 
 /**
  * labImaging 도메인 결합 saga
@@ -24,5 +27,8 @@ export default function* labImagingSaga() {
     fork(labResultSaga),
     fork(imageFileSaga),
     fork(imageReadingSaga),
+    fork(microbiologyResultSaga),
+    fork(pathologyResultSaga),
+    fork(interfaceSendLogSaga),
   ]);
 }

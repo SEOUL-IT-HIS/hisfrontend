@@ -28,6 +28,14 @@ export async function fetchBillingDetailApi(billingId: string): Promise<BillingD
   return data.data;
 }
 
+/** 환자의 미수납 건 전체를 합산한 진료비 상세조회 - 한 번에 수납하는 화면용 */
+export async function fetchPatientBillingDetailApi(patientId: string): Promise<BillingDetail> {
+  const { data } = await apiClient.get<ApiResponse<BillingDetail>>(
+    `${BILLING_DETAIL_PATH}/patients/${patientId}`,
+  );
+  return data.data;
+}
+
 export async function admissionBillingDetailApi(admissionId: string): Promise<BillingDetailAdmission> {
   const { data } = await apiClient.get<ApiResponse<BillingDetailAdmission>>(
     `${BILLING_DETAIL_PATH}/preview/admission/${admissionId}`,

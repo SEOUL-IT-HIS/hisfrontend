@@ -4,7 +4,12 @@ import { useEffect, useState, type ChangeEvent, type SubmitEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import DoctorSelect from "@/components/labimaging/common/DoctorSelect";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
+import { useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
+import { hasDuplicateItemCode, isUuid, normalizeOrderNo } from "@/features/labimaging/common/validation";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveLabOrderMessage } from "@/features/labimaging/laborder/messages";
 import {
@@ -52,6 +57,9 @@ type FieldErrors = Partial<Record<keyof FormState | "orderItems", string>>;
  */
 export default function LabOrderReceptionForm() {
   const dispatch = useDispatch<AppDispatch>();
+
+  /** 담당자는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
   const creating = useSelector(selectLabOrderCreating);
   const createError = useSelector(selectLabOrderCreateError);
   const lastCreated = useSelector(selectLastCreatedLabOrder);
@@ -59,6 +67,8 @@ export default function LabOrderReceptionForm() {
   const systemCodes = useCommonCodeOptions("SYSTEM_SOURCE_CD");
   const treatTypes = useCommonCodeOptions("RCPT_TYPE_CD");
   const testTypes = useCommonCodeOptions("TEST_TYPE_CD");
+  /** 직원 디렉터리를 못 불러오면 Physician 입력이 드롭다운 대신 자유 입력(physicianNo)으로 바뀐다. */
+  const { failed: staffDirectoryFailed } = useStaffDirectory();
 
   const [form, setForm] = useState<FormState>(initialForm);
   const [items, setItems] = useState<LabOrderItemRequest[]>([{ labItemCode: "" }]);
@@ -90,7 +100,7 @@ export default function LabOrderReceptionForm() {
    *   이 확인이 없으면 오입력을 서버 응답(LAB998)으로만 알게 된다.
    */
   const typedPatientId = form.patientId.trim();
-  const { names: typedPatientNames } = usePatientNames(
+  const { names: typedPatientNames, loading: typedPatientNameLoading, error: typedPatientNameError } = usePatientNames(
     typedPatientId.length === 36 ? [typedPatientId] : [],
   );
   const typedPatientName = typedPatientNames[typedPatientId];
@@ -99,7 +109,9 @@ export default function LabOrderReceptionForm() {
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    // 오더번호는 허용 문자 외 입력을 입력 즉시 제거한다. (04번 지시서 Phase 3-E-1)
+    const nextValue = name === "labOrderNo" ? normalizeOrderNo(value) : value;
+    setForm((prev) => ({ ...prev, [name]: nextValue }));
   }
 
   function handleItemChange(index: number, value: string) {
@@ -122,11 +134,25 @@ export default function LabOrderReceptionForm() {
     const next: FieldErrors = {};
     if (!form.labOrderNo.trim()) next.labOrderNo = "Order number is required.";
     if (!form.systemCode.trim()) next.systemCode = "System code is required.";
-    if (!form.patientId.trim()) next.patientId = "Patient ID is required.";
+    /*
+     * 환자ID 는 36자 UUID 형식이 아니면 제출을 막는다. 형식이 맞고 조회가 "성공"했는데
+     * 이름이 없으면(= 존재하지 않는 환자) 역시 막는다. 조회 자체가 실패(서비스 장애 등)했을
+     * 때는 경고 없이 통과시킨다 — patient-service 장애를 이 폼이 막을 이유가 없다.
+     * (04번 지시서 Phase 4-2)
+     */
+    if (!typedPatientId) {
+      next.patientId = "Patient ID is required.";
+    } else if (!isUuid(typedPatientId)) {
+      next.patientId = "Patient ID must be a valid UUID.";
+    } else if (!typedPatientNameLoading && !typedPatientNameError && !typedPatientName) {
+      next.patientId = "Patient not found. Check the patient ID.";
+    }
     if (!form.treatTypeCode) next.treatTypeCode = "Select a treatment type.";
-    if (!form.receivedById.trim()) next.receivedById = "Receptionist ID is required.";
+    if (!signedIn) next.receivedById = "Sign in to record this action.";
     if (items.every((item) => !item.labItemCode.trim())) {
       next.orderItems = "Enter at least one test item.";
+    } else if (hasDuplicateItemCode(items.map((item) => item.labItemCode))) {
+      next.orderItems = "The same test item was selected more than once.";
     }
     return next;
   }
@@ -147,7 +173,7 @@ export default function LabOrderReceptionForm() {
       physicianId: form.physicianId.trim() || undefined,
       treatTypeCode: form.treatTypeCode,
       urgencyYn: form.urgencyYn,
-      receivedById: form.receivedById.trim(),
+      receivedById: actorId,
       // 빈 행은 제거하고 유효 항목만 전송
       orderItems: items
         .filter((item) => item.labItemCode.trim())
@@ -174,7 +200,7 @@ export default function LabOrderReceptionForm() {
             name="labOrderNo"
             value={form.labOrderNo}
             onChange={handleChange}
-            maxLength={20}
+            maxLength={36}
             disabled={creating}
             placeholder="e.g. EXT-LO-20260715-001"
           />
@@ -221,38 +247,30 @@ export default function LabOrderReceptionForm() {
           */}
           {typedPatientName ? (
             <span className="text-xs text-emerald-600">Patient: {typedPatientName}</span>
-          ) : form.patientId.trim().length === 36 
-          
-          
-          ? 
-          
-          
-          (
+          ) : form.patientId.trim().length === 36 ? (
             <span className="text-xs text-amber-600">
               Patient not found. Check the patient ID.
             </span>
           ) : null}
         </FormField>
 
-        <FormField label="Physician No.">
-          <Input
-            name="physicianNo"
-            value={form.physicianNo}
-            onChange={handleChange}
-            maxLength={20}
+        {/*
+          physicianId/physicianNo 중 디렉터리 조회 성공 여부에 따라 하나만 쓴다(서로 배타적).
+          DoctorSelect 가 같은 useStaffDirectory().failed 를 내부에서도 읽어 드롭다운/자유입력을
+          똑같이 전환하므로, 여기서 쓰는 값과 보이는 입력 모양이 항상 일치한다.
+        */}
+        <FormField label="Physician" className="sm:col-span-2">
+          <DoctorSelect
+            value={staffDirectoryFailed ? form.physicianNo : form.physicianId}
+            onChange={(value) =>
+              setForm((prev) =>
+                staffDirectoryFailed
+                  ? { ...prev, physicianNo: value, physicianId: "" }
+                  : { ...prev, physicianId: value, physicianNo: "" },
+              )
+            }
             disabled={creating}
-            placeholder="Optional"
-          />
-        </FormField>
-
-        <FormField label="Physician ID">
-          <Input
-            name="physicianId"
-            value={form.physicianId}
-            onChange={handleChange}
-            maxLength={36}
-            disabled={creating}
-            placeholder="Optional"
+            placeholder="Select physician (optional)"
           />
         </FormField>
 
@@ -283,15 +301,8 @@ export default function LabOrderReceptionForm() {
           />
         </FormField>
 
-        <FormField label="Receptionist ID" required className="sm:col-span-2">
-          <Input
-            name="receivedById"
-            value={form.receivedById}
-            onChange={handleChange}
-            maxLength={20}
-            disabled={creating}
-            placeholder="e.g. staff-uuid-001"
-          />
+        <FormField label="Received By" required className="sm:col-span-2">
+          <LoginActorInput name="receivedById" actorName={actorName} signedIn={signedIn} />
           {errors.receivedById ? (
             <span className="text-xs text-rose-500">{errors.receivedById}</span>
           ) : null}

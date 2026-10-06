@@ -1,4 +1,5 @@
 import apiClient from "@/lib/axios";
+import { surgeryDemoMode } from "@/features/surgery/localSimulation";
 
 /**
  * 환자 일괄 조회 (patient-service)
@@ -46,6 +47,12 @@ export async function fetchPatientNames(
   const unique = [...new Set(patientIds.filter(Boolean))].slice(0, MAX_BATCH_SIZE);
   if (unique.length === 0) {
     return {};
+  }
+
+  if (surgeryDemoMode) {
+    return Object.fromEntries(
+      unique.map((patientId) => [patientId, "Demo patient"]),
+    );
   }
 
   const { data } = await apiClient.post<PatientBatchResponse>(

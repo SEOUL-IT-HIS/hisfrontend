@@ -286,7 +286,7 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
         <Link
           href="/main"
           className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500 text-white shadow-sm shadow-sky-500/25 transition-colors hover:bg-sky-600"
-          aria-label="대문으로 이동"
+          aria-label="Go to home"
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden>
             <path d="M12 5v14M5 12h14" />
@@ -300,15 +300,15 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
         ) : null}
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-3" aria-label="업무영역 메뉴">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-3" aria-label="Work area menu">
         {loading ? (
-          <p className="px-2 py-3 text-xs text-slate-400">메뉴 불러오는 중…</p>
+          <p className="px-2 py-3 text-xs text-slate-400">Loading menus…</p>
         ) : null}
         {error ? (
           <p className="px-2 py-3 text-xs text-rose-500">{error}</p>
         ) : null}
         {!loading && !error && menuTree.length === 0 ? (
-          <p className="px-2 py-3 text-xs text-slate-400">표시할 메뉴가 없습니다.</p>
+          <p className="px-2 py-3 text-xs text-slate-400">No menus to show.</p>
         ) : null}
 
         {menuTree.map((item) => {
@@ -413,10 +413,10 @@ export default function Sidebar({ menuTree, loading = false, error = "" }: Sideb
 
       <ConfirmDialog
         open={logoutConfirmOpen}
-        title="로그아웃"
-        message="정말 로그아웃하시겠습니까?"
-        confirmLabel="로그아웃"
-        cancelLabel="취소"
+        title="Log out"
+        message="Are you sure you want to log out?"
+        confirmLabel="Log out"
+        cancelLabel="Cancel"
         submitting={authLoading}
         onConfirm={handleLogoutConfirm}
         onCancel={handleLogoutCancel}

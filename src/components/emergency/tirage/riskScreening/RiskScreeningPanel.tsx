@@ -3,7 +3,12 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import { selectIsDischarged } from "@/features/emergency/disposition/slice";
+import { Alert, Button, FormField, Input } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
+import ActorField from "@/components/emergency/common/ActorField";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createRiskScreeningRequest,
@@ -16,6 +21,7 @@ import {
 } from "@/features/emergency/triage/riskScreening/slice";
 import { SCREEN_RESULT_OPTIONS, SCREEN_TYPE_OPTIONS } from "@/features/emergency/triage/riskScreening/types";
 import { formatDateTime, latestByTime } from "@/features/emergency/utils";
+import { SCREENING_RESULT, SCREENING_TYPE } from "@/features/emergency/codes";
 import { selectVitalsItems } from "@/features/emergency/triage/vitals/slice";
 
 type RiskScreeningPanelProps = {
@@ -23,7 +29,7 @@ type RiskScreeningPanelProps = {
   className?: string;
 };
 
-const initialForm = { screenType: "" as "" | "SEPSIS" | "STROKE", score: "", resultCode: "", screenedById: "" };
+const initialForm = { screenType: "", score: "", resultCode: "", screenedById: "" };
 
 const FAST_CHECK_ITEMS = [
   // 안면마비
@@ -44,9 +50,9 @@ const resultBadgeClass: Record<string, string> = {
 
 const SCREEN_TOOL_GUIDE: Record<string, string> = {
   // qSOFA — 빈호흡(호흡수≥22) · 의식저하(GCS<15) · 저혈압(수축기혈압≤100) 중 2개 이상이면 고위험(POSITIVE)
-  SEPSIS: "qSOFA — High risk (POSITIVE) if 2 or more of: Tachypnea (RR≥22) · Altered consciousness (GCS<15) · Hypotension (SBP≤100)",
+  [SCREENING_TYPE.SEPSIS]: "qSOFA — High risk (POSITIVE) if 2 or more of: Tachypnea (RR≥22) · Altered consciousness (GCS<15) · Hypotension (SBP≤100)",
   // FAST — 안면마비 · 팔처짐 · 발음이상 중 하나라도 있으면 양성(POSITIVE)
-  STROKE: "FAST — Positive (POSITIVE) if any of: Facial droop · Arm drift · Speech difficulty",
+  [SCREENING_TYPE.STROKE]: "FAST — Positive (POSITIVE) if any of: Facial droop · Arm drift · Speech difficulty",
 };
 
 /**
@@ -54,6 +60,7 @@ const SCREEN_TOOL_GUIDE: Record<string, string> = {
  */
 export default function RiskScreeningPanel({ receptionNo, className = "" }: RiskScreeningPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const discharged = useSelector(selectIsDischarged(receptionNo));
   const items = useSelector(selectRiskScreeningItems);
   const loading = useSelector(selectRiskScreeningLoading);
   const error = useSelector(selectRiskScreeningError);
@@ -62,6 +69,8 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
   const vitalsItems = useSelector(selectVitalsItems);
 
   const [form, setForm] = useState(initialForm);
+  // 시행자는 기본이 로그인한 사람이고, 실제로 시행한 사람이 다르면 고른다
+  const screenedById = useActorId(form.screenedById, "STAFF");
   const [lastCount, setLastCount] = useState(0);
   const [localError, setLocalError] = useState("");
   const [fastChecks, setFastChecks] = useState(initialFastChecks);
@@ -89,7 +98,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
   // FAST(뇌졸중)는 안면마비/팔처짐/발음이상 등 신체진찰 소견이라 우리 데이터엔 없어 자동계산 대상이 아니다.
   const latestVitals = latestByTime(vitalsItems, (i) => i.measuredAt);
   const qsofaSuggestion =
-    form.screenType === "SEPSIS" && latestVitals
+    form.screenType === SCREENING_TYPE.SEPSIS && latestVitals
       ? (() => {
           const criteria = [
             {
@@ -115,7 +124,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
           const metCount = criteria.filter((c) => c.met).length;
           return {
             score: metCount,
-            resultCode: metCount >= 2 ? "POSITIVE" : "NEGATIVE",
+            resultCode: metCount >= 2 ? SCREENING_RESULT.POSITIVE : SCREENING_RESULT.NEGATIVE,
             criteria,
           } as const;
         })()
@@ -132,13 +141,13 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
 
   // FAST(뇌졸중)는 안면마비/팔처짐/발음이상 체크 1개당 1점, 1점 이상이면 양성.
   const fastSuggestion =
-    form.screenType === "STROKE"
+    form.screenType === SCREENING_TYPE.STROKE
       ? (() => {
           const criteria = FAST_CHECK_ITEMS.map((item) => ({ met: fastChecks[item.key], label: item.label }));
           const metCount = criteria.filter((c) => c.met).length;
           return {
             score: metCount,
-            resultCode: metCount >= 1 ? "POSITIVE" : "NEGATIVE",
+            resultCode: metCount >= 1 ? SCREENING_RESULT.POSITIVE : SCREENING_RESULT.NEGATIVE,
             criteria,
           } as const;
         })()
@@ -173,8 +182,8 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
         encounterId: receptionNo,
         screenType: form.screenType,
         score: form.score.trim() ? Number(form.score) : undefined,
-        resultCode: form.resultCode ? (form.resultCode as "NEGATIVE" | "POSITIVE" | "INCONCLUSIVE") : undefined,
-        screenedById: form.screenedById || undefined,
+        resultCode: form.resultCode ? form.resultCode : undefined,
+        screenedById: screenedById || undefined,
       }),
     );
   }
@@ -224,41 +233,44 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
           )}
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
+          <DischargedNotice receptionNo={receptionNo} />
           {localError ? <Alert variant="error">{localError}</Alert> : null}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             {/* 스크리닝 유형 */}
-            <FormField label="Screening Type" required>
-              <Select
-                name="screenType"
-                value={form.screenType}
-                onChange={handleChange}
-                options={[...SCREEN_TYPE_OPTIONS]}
-                // 선택
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
+            <DownSelect
+              label="Screening Type"
+              required
+              value={form.screenType}
+              onChange={(screenType) => setForm((prev) => ({ ...prev, screenType }))}
+              options={[...SCREEN_TYPE_OPTIONS]}
+              // 선택
+              placeholder="Select"
+              disabled={submitting}
+            />
             {/* 점수 (0~3) / 점수 */}
             <FormField label={form.screenType ? "Score (0-3)" : "Score"}>
               <Input type="number" name="score" min={0} max={3} value={form.score} onChange={handleChange} disabled={submitting} />
             </FormField>
             {/* 판정 결과 */}
-            <FormField label="Result">
-              <Select
-                name="resultCode"
-                value={form.resultCode}
-                onChange={handleChange}
-                options={[...SCREEN_RESULT_OPTIONS]}
-                // 선택
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
-            {/* 시행자ID */}
-            <FormField label="Screened By ID">
-              <Input name="screenedById" value={form.screenedById} onChange={handleChange} disabled={submitting} maxLength={36} />
-            </FormField>
+            <DownSelect
+              label="Result"
+              value={form.resultCode}
+              onChange={(resultCode) => setForm((prev) => ({ ...prev, resultCode }))}
+              options={[...SCREEN_RESULT_OPTIONS]}
+              // 선택
+              placeholder="Select"
+              allowClear
+              disabled={submitting}
+            />
+            {/* 시행자 */}
+            <ActorField
+              label="Screened By"
+              role="STAFF"
+              value={form.screenedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, screenedById: empId }))}
+              disabled={submitting}
+            />
           </div>
 
           {form.screenType ? (
@@ -267,7 +279,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
             </p>
           ) : null}
 
-          {form.screenType === "STROKE" ? (
+          {form.screenType === SCREENING_TYPE.STROKE ? (
             <div className="mt-3 flex flex-wrap gap-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
               {FAST_CHECK_ITEMS.map((item) => (
                 <label key={item.key} className="flex items-center gap-1.5">
@@ -283,7 +295,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
             </div>
           ) : null}
 
-          {!qsofaSuggestion && form.screenType === "SEPSIS" ? (
+          {!qsofaSuggestion && form.screenType === SCREENING_TYPE.SEPSIS ? (
             <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-400">
               {/* 활력징후가 아직 없어 자동계산할 수 없습니다. */}
               Cannot auto-calculate yet — no vital signs recorded.
@@ -296,7 +308,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
                 <span className="font-medium">
                   {/* 자동계산: X점 (양성 권장 / 음성 권장) */}
                   Auto-calc: {(qsofaSuggestion ?? fastSuggestion)!.score} pt (
-                  {(qsofaSuggestion ?? fastSuggestion)!.resultCode === "POSITIVE" ? "Positive suggested" : "Negative suggested"})
+                  {(qsofaSuggestion ?? fastSuggestion)!.resultCode === SCREENING_RESULT.POSITIVE ? "Positive suggested" : "Negative suggested"})
                 </span>
                 <button
                   type="button"
@@ -318,7 +330,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
           ) : null}
 
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.screenType || !receptionNo}>
+            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.screenType || !receptionNo || discharged}>
               {/* 저장 중... / 스크리닝 결과 등록 */}
               {submitting ? "Saving..." : "Register Screening Result"}
             </Button>

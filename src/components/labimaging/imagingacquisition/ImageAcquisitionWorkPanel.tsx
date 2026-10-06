@@ -3,10 +3,14 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input } from "@/components/common";
+import { Alert, Button, FormField } from "@/components/common";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
+import { formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { CommonCodeOption } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveImageFileMessage } from "@/features/labimaging/imagingacquisition/messages";
+import { validateImageFile } from "@/features/labimaging/common/validation";
 import {
   fetchImageFilesRequest,
   resetImageFileState,
@@ -96,7 +100,10 @@ export default function ImageAcquisitionWorkPanel({
 
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadedById, setUploadedById] = useState<string>("");
+  /** 업로더는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
+  // uploadedById(업로더 empId) → 이름 표시용. (직원ID 화면 노출 정리, 2026-10-05)
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
   const [fieldErrors, setFieldErrors] = useState<{ file?: string; uploadedById?: string }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -133,16 +140,24 @@ export default function ImageAcquisitionWorkPanel({
   }
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-    setSelectedFile(e.target.files?.[0] ?? null);
-    setFieldErrors((prev) => ({ ...prev, file: undefined }));
+    const file = e.target.files?.[0] ?? null;
+    setSelectedFile(file);
+    // 선택 즉시 크기·형식을 확인한다 — 업로드를 눌러 서버 응답(413/LAB109·LAB054)을 기다리지 않는다.
+    // (04번 지시서 Phase 3-D)
+    setFieldErrors((prev) => ({ ...prev, file: file ? (validateImageFile(file) ?? undefined) : undefined }));
   }
 
   function handleUpload() {
     if (!selected) return;
 
     const nextErrors: { file?: string; uploadedById?: string } = {};
-    if (!selectedFile) nextErrors.file = "Please choose a file to upload.";
-    if (!uploadedById.trim()) nextErrors.uploadedById = "Uploaded-by staff ID is required.";
+    if (!selectedFile) {
+      nextErrors.file = "Please choose a file to upload.";
+    } else {
+      const fileError = validateImageFile(selectedFile);
+      if (fileError) nextErrors.file = fileError;
+    }
+    if (!signedIn) nextErrors.uploadedById = "Sign in to record this action.";
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0 || !selectedFile) return;
 
@@ -152,7 +167,7 @@ export default function ImageAcquisitionWorkPanel({
         imageReceptionId: reception.imageReceptionId,
         imageOrderItemId: selected.imageOrderItemId,
         patientId: reception.patientId,
-        uploadedById: uploadedById.trim(),
+        uploadedById: actorId,
       }),
     );
 
@@ -233,9 +248,10 @@ export default function ImageAcquisitionWorkPanel({
               {/*
                 ⚠ 드래그앤드롭 등 고급 업로드 UI는 범위 밖이다. 참고할 기존 업로드 컴포넌트가
                   없어 공통 컴포넌트(FormField/Button)와 어울리는 최소한의 <input type="file"> 로 둔다.
-                ⚠ accept 는 브라우저 파일 선택창의 안내일 뿐 강제가 아니다. 실제 형식 검증은
-                  서버(ImageFileService.ALLOWED_CONTENT_TYPES)가 한다 — 여기서 막아도 서버가
-                  다시 확인하는 이유는 이 accept 속성을 무시하고 파일을 골라 보낼 수 있기 때문이다.
+                ⚠ accept 는 브라우저 파일 선택창의 안내일 뿐 강제가 아니다("모든 파일"로 바꿔
+                  무시할 수 있다) — validateImageFile 이 확장자·크기를 코드로 다시 확인하고,
+                  최종 방어선인 형식 검증은 서버(ImageFileService.ALLOWED_CONTENT_TYPES)가
+                  한다. (04번 지시서 Phase 3-D)
               */}
               <input
                 ref={fileInputRef}
@@ -250,13 +266,7 @@ export default function ImageAcquisitionWorkPanel({
               ) : null}
             </FormField>
             <FormField label="Uploaded By" className="w-40">
-              <Input
-                value={uploadedById}
-                onChange={(e) => setUploadedById(e.target.value)}
-                maxLength={20}
-                disabled={uploading}
-                placeholder="e.g. STF00021"
-              />
+              <LoginActorInput name="uploadedById" actorName={actorName} signedIn={signedIn} />
               {fieldErrors.uploadedById ? (
                 <span className="text-xs text-rose-500">{fieldErrors.uploadedById}</span>
               ) : null}
@@ -299,8 +309,11 @@ export default function ImageAcquisitionWorkPanel({
                     <span className="w-36 shrink-0 text-slate-500">
                       {formatDateTime(file.uploadedAt)}
                     </span>
-                    <span className="w-28 shrink-0 text-slate-500">
-                      {file.uploadedById}
+                    <span
+                      className="w-28 shrink-0 text-slate-500"
+                      title={formatStaffName(file.uploadedById, staffNameById, staffLoading).title}
+                    >
+                      {formatStaffName(file.uploadedById, staffNameById, staffLoading).text}
                     </span>
                   </li>
                 ))}

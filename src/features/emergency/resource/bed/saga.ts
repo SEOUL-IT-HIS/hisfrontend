@@ -1,6 +1,6 @@
 import { call, put, takeLatest } from "redux-saga/effects";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import { assignBed, getBeds, releaseBed } from "@/features/emergency/resource/bed/api";
+import { assignBed, getBeds, getCurrentBedAssignment, releaseBed } from "@/features/emergency/resource/bed/api";
 import {
   assignBedFailure,
   assignBedRequest,
@@ -8,6 +8,8 @@ import {
   fetchBedsFailure,
   fetchBedsRequest,
   fetchBedsSuccess,
+  fetchCurrentAssignmentRequest,
+  fetchCurrentAssignmentSuccess,
   releaseBedFailure,
   releaseBedRequest,
   releaseBedSuccess,
@@ -30,6 +32,16 @@ function* fetchBedsSaga() {
   } catch (err) {
     // 병상 목록 조회에 실패했습니다.
     yield put(fetchBedsFailure(errorMessage(err, "Failed to load bed list.")));
+  }
+}
+
+// 현재 배정 조회에 실패해도 화면을 막지 않는다(Release 표시만 없다). 병상 목록은 따로 보인다.
+function* fetchCurrentAssignmentSaga(action: PayloadAction<string>) {
+  try {
+    const assignment: BedAssignment | null = yield call(getCurrentBedAssignment, action.payload);
+    yield put(fetchCurrentAssignmentSuccess(assignment));
+  } catch {
+    yield put(fetchCurrentAssignmentSuccess(null));
   }
 }
 
@@ -61,4 +73,5 @@ export default function* bedSaga() {
   yield takeLatest(fetchBedsRequest.type, fetchBedsSaga);
   yield takeLatest(assignBedRequest.type, assignBedSaga);
   yield takeLatest(releaseBedRequest.type, releaseBedSaga);
+  yield takeLatest(fetchCurrentAssignmentRequest.type, fetchCurrentAssignmentSaga);
 }

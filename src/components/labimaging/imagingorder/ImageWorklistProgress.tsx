@@ -31,7 +31,7 @@ import type { ImageWorklistItem } from "@/features/labimaging/imagingorder/types
 
 type StepChipProps = {
   label: string;
-  /** done=완료(초록), pending=대기(회색), alert=주의(주황), disabled=미구현(연회색) */
+  /** done=완료(초록), pending=대기(회색), alert=주의(주황 — 동의 거부·철회), disabled=해당 없음(연회색) */
   tone: "done" | "pending" | "alert" | "disabled";
 };
 
@@ -78,10 +78,21 @@ export default function ImageWorklistProgress({
         }
         tone={allScheduled ? "done" : "pending"}
       />
-      <StepChip
-        label={consented ? "Consent" : "Consent −"}
-        tone={consented ? "done" : "pending"}
-      />
+      {/*
+        동의 칩 (5차 Phase 9):
+          - 동의가 필요 없는 오더(required-mode=LISTED) → "Consent N/A" (CONSENT 단계를 건너뛴다)
+          - 거부 → "Consent Declined" 주의색 — 거부 상태에서는 촬영으로 넘어가지 않는다
+          - 철회 → "Consent Withdrawn" 주의색 — 촬영 후 철회(D14)면 READING 에 머물면서 이 배지로 알린다
+      */}
+      {item.consentRequiredYn === "N" ? (
+        <StepChip label="Consent N/A" tone="disabled" />
+      ) : item.consentRefusedYn === "Y" ? (
+        <StepChip label="Consent Declined" tone="alert" />
+      ) : item.consentWithdrawnYn === "Y" ? (
+        <StepChip label="Consent Withdrawn" tone="alert" />
+      ) : (
+        <StepChip label={consented ? "Consent" : "Consent −"} tone={consented ? "done" : "pending"} />
+      )}
       {/* ZP2-21 — imageFileCount 가 실제 값으로 오면서 이 칸이 조건대로 초록/회색을 오간다. */}
       <StepChip
         label={hasFiles ? `Images ${item.imageFileCount}` : "Images −"}

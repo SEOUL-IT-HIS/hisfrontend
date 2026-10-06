@@ -9,6 +9,7 @@ const initialState: PrescriptionState = {
     listStatus: { ...initialStatus },
     detailStatus: { ...initialStatus },
     createStatus: { ...initialStatus },
+    actionStatus: { ...initialStatus },
 };
 
 const prescriptionSlice = createSlice({
@@ -48,13 +49,33 @@ const prescriptionSlice = createSlice({
         clearPrescriptionState(state) {
             state.createStatus = { ...initialStatus };
         },
+        // 상세 화면의 재전송 / 취소 — 성공하면 서버가 돌려준 최신 처방으로 상세와 목록을 함께 갱신
+        retryDispatchRequest(state, action: PayloadAction<string>) {
+            state.actionStatus = { ...initialStatus, loading: true };
+        },
+        cancelPrescriptionRequest(state, action: PayloadAction<{ prescriptionId: string; cancelReason: string }>) {
+            state.actionStatus = { ...initialStatus, loading: true };
+        },
+        prescriptionActionSuccess(state, action: PayloadAction<PrescriptionDTO>) {
+            state.detail = action.payload;
+            const index = state.list.findIndex((p) => p.prescriptionId === action.payload.prescriptionId);
+            if (index !== -1) state.list[index] = action.payload;
+            state.actionStatus = { ...initialStatus, success: true };
+        },
+        prescriptionActionFailure(state, action: PayloadAction<string>) {
+            state.actionStatus = { ...initialStatus, error: action.payload };
+        },
+        clearPrescriptionActionStatus(state) {
+            state.actionStatus = { ...initialStatus };
+        },
     },
 });
 
 export const { fetchPrescriptionsRequest, fetchPrescriptionsSuccess, fetchPrescriptionsFailure,
     fetchPrescriptionDetailRequest, fetchPrescriptionDetailSuccess, fetchPrescriptionDetailFailure,
     createPrescriptionRequest, createPrescriptionSuccess, createPrescriptionFailure,
-    clearPrescriptionState } = prescriptionSlice.actions;
+    clearPrescriptionState, retryDispatchRequest, cancelPrescriptionRequest,
+    prescriptionActionSuccess, prescriptionActionFailure, clearPrescriptionActionStatus } = prescriptionSlice.actions;
 export default prescriptionSlice.reducer;
 
 // ----- Selector -----
@@ -71,3 +92,5 @@ export const selectPrescriptionDetailStatus = (state: PrescriptionRoot) =>
   state.inpatient.prescription.detailStatus;
 export const selectPrescriptionCreateStatus = (state: PrescriptionRoot) =>
   state.inpatient.prescription.createStatus;
+export const selectPrescriptionActionStatus = (state: PrescriptionRoot) =>
+  state.inpatient.prescription.actionStatus;

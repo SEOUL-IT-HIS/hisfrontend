@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import { selectIsDischarged } from "@/features/emergency/disposition/slice";
+import { Alert, Button } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import DownSelect from "@/components/emergency/common/DownSelect";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createIsolationRequest,
@@ -23,7 +28,7 @@ type IsolationPanelProps = {
   className?: string;
 };
 
-const initialForm = { isolationTypeCode: "", requiredYn: "Y" as "Y" | "N", decidedById: "" };
+const initialForm = { isolationTypeCode: "", decidedById: "" };
 
 /**
  * 감염병 격리 관리 패널 (UC-TRI-05 / Jira UD2-11)
@@ -32,6 +37,7 @@ const initialForm = { isolationTypeCode: "", requiredYn: "Y" as "Y" | "N", decid
  */
 export default function IsolationPanel({ receptionNo, className = "" }: IsolationPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const discharged = useSelector(selectIsDischarged(receptionNo));
   const items = useSelector(selectIsolationItems);
   const loading = useSelector(selectIsolationLoading);
   const error = useSelector(selectIsolationError);
@@ -40,6 +46,8 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
+  // 격리 결정자는 의사 — 직접 안 고르면 로그인한 사람이 의사일 때 그 사람이다
+  const decidedById = useActorId(form.decidedById, "DOCTOR");
 
   useEffect(() => {
     if (receptionNo) {
@@ -53,19 +61,15 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
 
   const activeIsolations = items.filter((item) => !item.releasedAt);
 
-  function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  }
-
   function handleRegister() {
-    if (!form.isolationTypeCode) return;
+    if (!form.isolationTypeCode || !decidedById) return;
     dispatch(
       createIsolationRequest({
         encounterId: receptionNo,
         isolationTypeCode: form.isolationTypeCode,
-        requiredYn: form.requiredYn,
-        decidedById: form.decidedById || undefined,
+        // 격리 필요 여부를 고르는 칸은 없다 — 격리가 필요 없으면 등록하지 않는 것이 "격리 없음"이다
+        requiredYn: "Y",
+        decidedById,
       }),
     );
     setForm(initialForm);
@@ -100,8 +104,8 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
                         item.isolationTypeCode}
                     </span>{" "}
                     <span className="text-xs text-slate-500">
-                      {/* (격리필요: ... · ... 결정) */}
-                      (Required: {item.requiredYn} · Decided {formatDateTime(item.decidedAt)})
+                      {/* (... 결정) — 예전에 "격리 불필요"로 저장된 기록만 그 표시를 붙인다 */}
+                      ({item.requiredYn === "N" ? "Not required · " : ""}Decided {formatDateTime(item.decidedAt)})
                     </span>
                   </span>
                   {/* 해제 */}
@@ -139,38 +143,32 @@ export default function IsolationPanel({ receptionNo, className = "" }: Isolatio
           </p>
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
+          <DischargedNotice receptionNo={receptionNo} />
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {/* 격리 유형 */}
-            <FormField label="Isolation Type" required>
-              <Select
-                name="isolationTypeCode"
-                value={form.isolationTypeCode}
-                onChange={handleChange}
-                options={[...ISOLATION_TYPE_OPTIONS]}
-                // 선택
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
-            {/* 격리 필요 여부 */}
-            <FormField label="Isolation Required">
-              <Select
-                name="requiredYn"
-                value={form.requiredYn}
-                onChange={handleChange}
-                // 필요 / 불필요
-                options={[{ value: "Y", label: "Required" }, { value: "N", label: "Not Required" }]}
-                disabled={submitting}
-              />
-            </FormField>
-            {/* 결정자ID */}
-            <FormField label="Decided By ID">
-              <Input name="decidedById" value={form.decidedById} onChange={handleChange} disabled={submitting} maxLength={36} />
-            </FormField>
+            <DownSelect
+              label="Isolation Type"
+              required
+              value={form.isolationTypeCode}
+              onChange={(isolationTypeCode) => setForm((prev) => ({ ...prev, isolationTypeCode }))}
+              options={[...ISOLATION_TYPE_OPTIONS]}
+              // 선택
+              placeholder="Select"
+              disabled={submitting}
+            />
+            {/* 결정자(의사) */}
+            <ActorField
+              label="Decided By"
+              role="DOCTOR"
+              required
+              value={form.decidedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, decidedById: empId }))}
+              disabled={submitting}
+            />
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleRegister} disabled={submitting || !form.isolationTypeCode || !receptionNo}>
+            <Button type="button" onClick={handleRegister} disabled={submitting || !form.isolationTypeCode || !decidedById || !receptionNo || discharged}>
               {/* 저장 중... / 격리 등록 */}
               {submitting ? "Saving..." : "Register Isolation"}
             </Button>

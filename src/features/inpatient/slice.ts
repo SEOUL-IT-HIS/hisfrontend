@@ -8,6 +8,7 @@ import riskAssessmentReducer from "./nursingrecord/riskassessment/slice";
 import restraintReducer from "./nursingrecord/restraint/slice";
 import nursingAssessmentReducer from "./nursingrecord/nursingassessment/slice";
 import iandorecordReducer from "./nursingrecord/iandorecord/slice";
+import prescriptionReducer from "./medicationmanagement/prescription/slice";
 /**
  * inpatient(입원) 서비스 reducer
  * - 기능(Story) 단위 하위 slice 를 combine 한다.
@@ -23,6 +24,7 @@ const inpatientReducer = combineReducers({
   restraint: restraintReducer,
   nursingassessment: nursingAssessmentReducer,
   iandorecord: iandorecordReducer,
+  prescription: prescriptionReducer,
 });
 
 export default inpatientReducer;

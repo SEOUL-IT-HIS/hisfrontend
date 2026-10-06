@@ -11,14 +11,20 @@ import {
   Input,
   Select,
 } from "@/components/common";
+import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
+import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
 import type { DataTableColumn } from "@/components/common";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
+import { formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
+import { isFutureDateTime, nowLocalInputValue } from "@/features/labimaging/common/validation";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveLabSpecimenMessage } from "@/features/labimaging/labspecimen/messages";
 import {
   createSpecimenRequest,
+  fetchAllowedSpecimenRulesRequest,
   fetchSpecimensRequest,
   resetSpecimenState,
+  selectAllowedSpecimenRules,
   selectLastCreatedSpecimen,
   selectSpecimenCreateError,
   selectSpecimenCreating,
@@ -66,30 +72,77 @@ function formatDateTime(value?: string) {
 export default function SpecimenWorkPanel({ reception }: { reception: LabWorklistItem }) {
   const dispatch = useDispatch<AppDispatch>();
 
+  /** 담당자는 로그인 사용자다. (5차 Phase 2 — 예전의 직원ID 직접 입력칸을 대체) */
+  const { actorId, actorName, signedIn } = useLoginActor();
+
   const specimens = useSelector(selectSpecimens);
   const listLoading = useSelector(selectSpecimensLoading);
   const listError = useSelector(selectSpecimensError);
   const creating = useSelector(selectSpecimenCreating);
   const createError = useSelector(selectSpecimenCreateError);
   const lastCreated = useSelector(selectLastCreatedSpecimen);
+  /** 이 접수의 오더 검사항목들이 허용하는 검체·검체용기 조합 (6차 2-1). 비어 있으면 제한 없음. */
+  const allowedRules = useSelector(selectAllowedSpecimenRules);
 
   // 검체용기코드는 admin 공통코드다. (검체종류는 서비스 내부 Enum 이라 상수 목록을 쓴다)
   const containerCodes = useCommonCodeOptions("SPECIMEN_CONTAINER_CD");
+
+  const hasRules = allowedRules.length > 0;
+  /** 허용 규칙이 있으면 그 검사들의 검체종류만, 없으면 전부 보여준다. */
+  const allowedTypes: SpecimenType[] = hasRules
+    ? Array.from(new Set(allowedRules.map((r) => r.specimenType)))
+    : SPECIMEN_TYPE_OPTIONS.map((o) => o.value);
+  const typeOptions = hasRules
+    ? SPECIMEN_TYPE_OPTIONS.filter((o) => allowedTypes.includes(o.value))
+    : SPECIMEN_TYPE_OPTIONS;
 
   /*
    * ⚠ 채취는 환자를 잘못 고르면 되돌릴 수 없는 작업이다.
    *   위쪽 머리말에도 이름이 있지만, 폼 바로 옆에서 한 번 더 확인할 수 있게 둔다.
    */
   const { names: patientNames } = usePatientNames([reception.patientId]);
+  // collectedById(채취자 empId) → 이름 표시용. (직원ID 화면 노출 정리, 2026-10-05)
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
 
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
 
-  // 선택한 접수가 바뀌면 이전 접수의 목록/결과를 비우고 새로 불러온다.
+  // 선택한 접수가 바뀌면 이전 접수의 목록/결과/허용조합을 비우고 새로 불러온다.
   useEffect(() => {
     dispatch(resetSpecimenState());
     dispatch(fetchSpecimensRequest(reception.receptionNo));
+    dispatch(fetchAllowedSpecimenRulesRequest(reception.receptionNo));
   }, [dispatch, reception.receptionNo]);
+
+  /**
+   * 검체종류 → 검체용기 연쇄선택 (6차 2-1).
+   *
+   * ⚠ form 을 직접 고쳐 쓰지 않고(effect + setState) 렌더링 중에 "지금 실제로 쓸 값"을 파생시킨다.
+   *   form.specimenType 이 규칙에 없는 값(접수가 막 바뀌었거나 규칙이 막 도착한 순간)이면
+   *   effectiveSpecimenType 이 허용 목록의 첫 값으로, form.specimenContainerCode 가 그 종류의
+   *   허용 용기가 아니면 effectiveSpecimenContainerCode 가 기본값(defaultYn="Y")으로 대신한다.
+   *   규칙이 없으면(hasRules=false) 원래 form 값을 그대로 쓴다 — 예전처럼 아무 조합이나 고를 수 있다.
+   */
+  const effectiveSpecimenType: SpecimenType =
+    hasRules && !allowedTypes.includes(form.specimenType) ? allowedTypes[0] : form.specimenType;
+
+  const rulesForSelectedType = hasRules
+    ? allowedRules.filter((r) => r.specimenType === effectiveSpecimenType)
+    : [];
+
+  const effectiveSpecimenContainerCode =
+    rulesForSelectedType.length > 0 &&
+    !rulesForSelectedType.some((r) => r.specimenContainerCode === form.specimenContainerCode)
+      ? (rulesForSelectedType.find((r) => r.defaultYn === "Y") ?? rulesForSelectedType[0])
+          .specimenContainerCode
+      : form.specimenContainerCode;
+
+  const containerOptions =
+    rulesForSelectedType.length > 0
+      ? containerCodes.options.filter((opt) =>
+          rulesForSelectedType.some((r) => r.specimenContainerCode === opt.value),
+        )
+      : containerCodes.options;
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -98,9 +151,15 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!form.specimenContainerCode) next.specimenContainerCode = "Specimen container is required.";
-    if (!form.collectedAt) next.collectedAt = "Collection date and time is required.";
-    if (!form.collectedById.trim()) next.collectedById = "Collecting staff ID is required.";
+    if (!effectiveSpecimenContainerCode)
+      next.specimenContainerCode = "Specimen container is required.";
+    if (!form.collectedAt) {
+      next.collectedAt = "Collection date and time is required.";
+    } else if (isFutureDateTime(form.collectedAt)) {
+      // 서버(LAB107)와 같은 기준. (04번 지시서 Phase 3-B)
+      next.collectedAt = "Future dates or times are not allowed.";
+    }
+    if (!signedIn) next.collectedById = "Sign in to record this action.";
     return next;
   }
 
@@ -116,11 +175,11 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
       createSpecimenRequest(
         {
           labReceptionId: reception.labReceptionId,
-          specimenContainerCode: form.specimenContainerCode,
-          specimenType: form.specimenType,
+          specimenContainerCode: effectiveSpecimenContainerCode,
+          specimenType: effectiveSpecimenType,
           patientId: reception.patientId,
           collectedAt: form.collectedAt,
-          collectedById: form.collectedById.trim(),
+          collectedById: actorId,
         },
         reception.receptionNo,
       ),
@@ -141,7 +200,14 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
       render: (s) => SPECIMEN_TYPE_LABELS[s.specimenType] ?? s.specimenType,
     },
     { key: "collectedAt", header: "Collected At", render: (s) => formatDateTime(s.collectedAt) },
-    { key: "collectedById", header: "Collected By", render: (s) => s.collectedById },
+    {
+      key: "collectedById",
+      header: "Collected By",
+      render: (s) => {
+        const display = formatStaffName(s.collectedById, staffNameById, staffLoading);
+        return <span title={display.title}>{display.text}</span>;
+      },
+    },
     {
       key: "fitnessStatus",
       header: "Fitness",
@@ -196,9 +262,9 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
           <FormField label="Specimen Container" required>
             <Select
               name="specimenContainerCode"
-              value={form.specimenContainerCode}
+              value={effectiveSpecimenContainerCode}
               onChange={handleChange}
-              options={containerCodes.options}
+              options={containerOptions}
               placeholder={containerCodes.loading ? "Loading..." : "Select"}
               disabled={creating || containerCodes.loading}
             />
@@ -210,9 +276,9 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
           <FormField label="Specimen Type" required>
             <Select
               name="specimenType"
-              value={form.specimenType}
+              value={effectiveSpecimenType}
               onChange={handleChange}
-              options={[...SPECIMEN_TYPE_OPTIONS]}
+              options={[...typeOptions]}
               disabled={creating}
             />
           </FormField>
@@ -228,6 +294,7 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
               type="datetime-local"
               name="collectedAt"
               value={form.collectedAt}
+              max={nowLocalInputValue()}
               onChange={handleChange}
               disabled={creating}
             />
@@ -236,15 +303,8 @@ export default function SpecimenWorkPanel({ reception }: { reception: LabWorklis
             ) : null}
           </FormField>
 
-          <FormField label="Collecting Staff ID" required>
-            <Input
-              name="collectedById"
-              value={form.collectedById}
-              onChange={handleChange}
-              maxLength={20}
-              disabled={creating}
-              placeholder="e.g. STF00021"
-            />
+          <FormField label="Collected By" required>
+            <LoginActorInput name="collectedById" actorName={actorName} signedIn={signedIn} />
             {errors.collectedById ? (
               <span className="text-xs text-rose-500">{errors.collectedById}</span>
             ) : null}

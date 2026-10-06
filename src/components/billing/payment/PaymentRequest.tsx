@@ -1,6 +1,6 @@
 "use client";
 //** 결제 요청 컴포넌트 **/
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { kakaoPayReadyRequest, paymentRequest, resetPayment } from "@/features/billing/payment/slice";
 import type { PaymentMethodCode } from "@/features/billing/payment/types";
@@ -10,7 +10,7 @@ import { Alert, Button, Modal } from "@/components/common";
 // 부모(BillingDetailSearchDetail)가 이 모달을 띄울 때 넘겨주는 값들.
 // open/onClose는 모달 자체를 껐다 켰다 하는 제어권을 부모가 갖고 있다는 뜻(제어 컴포넌트 패턴).
 interface PaymentRequestProps {
-  billingId: string;      // 결제할 수납 건 id - 서버에 보낼 때 이것만 있으면 됨(금액은 서버가 DB에서 다시 계산)
+  billingIds: string[];   // 결제할 수납 건 id 목록(환자의 미수납 건 전체) - 서버에 보낼 때 이것만 있으면 됨(금액은 서버가 DB에서 다시 계산)
   paymentAmount: number;  // 화면에 "얼마 결제하나" 보여주기 위한 표시 전용 값. API 요청에는 안 씀
   open: boolean;          // true면 모달이 열려있음
   onClose: () => void;    // 닫기 버튼/배경 클릭 등으로 모달을 닫을 때 부모에게 알려주는 콜백
@@ -23,12 +23,21 @@ const PAYMENT_METHODS: { code: PaymentMethodCode; label: string }[] = [
   { code: "KAKAO_PAY", label: "KakaoPay" },
 ];
 
-const PaymentRequest = ({ billingId, paymentAmount, open, onClose }: PaymentRequestProps) => {
+const PaymentRequest = ({ billingIds, paymentAmount, open, onClose }: PaymentRequestProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const { loading, error, success } = useSelector((state: RootState) => state.billing.billingPayment);
 
   // 라디오 버튼으로 선택한 결제수단. 아직 아무것도 안 골랐을 수 있어서 ""도 허용
   const [paymentMethodCode, setPaymentMethodCode] = useState<PaymentMethodCode | "">("");
+
+  // 모달이 열릴 때마다 redux에 남은 이전 결제 결과를 지움.
+  // handleClose를 거치지 않고 화면을 벗어난 경우(카카오페이 결제 후 복귀 등) success가 남아 있으면
+  // 다음 환자 결제창이 열리자마자 "결제 완료"가 보이고 Pay 버튼이 사라지는 문제가 있었음.
+  // (라디오 선택값은 컴포넌트 state라 handleClose에서 초기화됨)
+  useEffect(() => {
+    if (!open) return;
+    dispatch(resetPayment());
+  }, [open, dispatch]);
 
   // "Pay" 버튼을 눌렀을 때 실행됨
   const handlePayment = () => {
@@ -43,11 +52,11 @@ const PaymentRequest = ({ billingId, paymentAmount, open, onClose }: PaymentRequ
     // -> saga가 이 액션을 받아서 준비(ready) API를 호출하고, 성공하면 카카오페이 결제창으로 리다이렉트시킴.
     //    승인(approve)까지의 나머지 흐름은 카카오페이가 돌려보내주는 콜백 페이지(KakaoPayReturn)에서 처리됨.
     if (paymentMethodCode === "KAKAO_PAY") {
-      dispatch(kakaoPayReadyRequest({ billingId }));
+      dispatch(kakaoPayReadyRequest({ billingIds }));
       return;
     }
 
-    dispatch(paymentRequest({ billingId, paymentMethodCode }));
+    dispatch(paymentRequest({ billingIds, paymentMethodCode }));
   };
 
   // 모달을 닫을 때(취소 버튼, 성공 후 닫기 버튼 등) 실행됨
