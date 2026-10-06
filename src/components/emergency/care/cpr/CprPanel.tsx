@@ -3,7 +3,11 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField, Input } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
+import ActorField from "@/components/emergency/common/ActorField";
+import StaffName from "@/components/emergency/common/StaffName";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import { CODE_GROUP, optionLabel, toCodeOptions } from "@/features/emergency/codes";
 import {
@@ -53,6 +57,7 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
   const [outcomeCode, setOutcomeCode] = useState("");
   const [lastCount, setLastCount] = useState(0);
   const [lastReceptionNo, setLastReceptionNo] = useState(receptionNo);
+  const recordedById = useActorId(draft.recordedById, "STAFF");
 
   useEffect(() => {
     if (receptionNo) dispatch(fetchCprRequest(receptionNo));
@@ -83,7 +88,7 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
 
   const eventTypeOptions = toCodeOptions(eventTypeCodes, CPR_EVENT_TYPE_FALLBACK_OPTIONS);
   const outcomeOptions = toCodeOptions(outcomeCodes, CPR_OUTCOME_FALLBACK_OPTIONS);
-  const canAdd = !!draft.eventTypeCode && !!draft.recordedById.trim();
+  const canAdd = !!draft.eventTypeCode && !!recordedById;
   const canSubmit = !!receptionNo && !submitting && events.length > 0;
 
   function handleDraftChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -100,7 +105,7 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
         detail: draft.detail.trim() || undefined,
         // datetime-local 값(초 없음)을 ISO 로컬 일시로 맞춘다. 비우면 서버가 현재 시각으로 기록한다.
         eventAt: draft.eventAt ? `${draft.eventAt}:00` : undefined,
-        recordedById: draft.recordedById.trim(),
+        recordedById,
       },
     ]);
     // 기록자는 이어서 입력하기 편하게 남겨둔다.
@@ -139,7 +144,9 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
                         <span className="w-28 shrink-0 text-xs text-slate-400">{formatDateTime(t.eventAt)}</span>
                         <span className="font-medium">{optionLabel(eventTypeOptions, t.eventTypeCode)}</span>
                         {t.detail ? <span className="text-slate-500">{t.detail}</span> : null}
-                        <span className="text-xs text-slate-400">({t.recordedById})</span>
+                        <span className="text-xs text-slate-400">
+                          (<StaffName empId={t.recordedById} />)
+                        </span>
                       </li>
                     ))}
                   </ol>
@@ -160,7 +167,7 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
                 <li key={`${ev.eventTypeCode}-${idx}`} className="flex items-center gap-2">
                   <span>
                     {idx + 1}. {optionLabel(eventTypeOptions, ev.eventTypeCode)}
-                    {ev.detail ? ` — ${ev.detail}` : ""} ({ev.recordedById})
+                    {ev.detail ? ` — ${ev.detail}` : ""} (<StaffName empId={ev.recordedById} />)
                   </span>
                   <button
                     type="button"
@@ -175,24 +182,23 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
             </ol>
           ) : null}
 
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             {/* 이벤트 종류 */}
-            <FormField label="Event Type" required className="w-[180px]">
-              <Select
-                name="eventTypeCode"
-                value={draft.eventTypeCode}
-                onChange={handleDraftChange}
-                options={eventTypeOptions}
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
+            <DownSelect
+              label="Event Type"
+              required
+              value={draft.eventTypeCode}
+              onChange={(eventTypeCode) => setDraft((prev) => ({ ...prev, eventTypeCode }))}
+              options={eventTypeOptions}
+              placeholder="Select"
+              disabled={submitting}
+            />
             {/* 상세 */}
-            <FormField label="Detail" className="w-[220px]">
+            <FormField label="Detail">
               <Input name="detail" value={draft.detail} onChange={handleDraftChange} disabled={submitting} maxLength={500} />
             </FormField>
             {/* 이벤트 시각 (비우면 지금) */}
-            <FormField label="Event At" hint="Leave empty to use the current time." className="w-[220px]">
+            <FormField label="Event At" hint="Leave empty to use the current time.">
               <Input
                 type="datetime-local"
                 name="eventAt"
@@ -201,16 +207,15 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
                 disabled={submitting}
               />
             </FormField>
-            {/* 기록자ID */}
-            <FormField label="Recorded By ID" required className="w-[180px]">
-              <Input
-                name="recordedById"
-                value={draft.recordedById}
-                onChange={handleDraftChange}
-                disabled={submitting}
-                maxLength={36}
-              />
-            </FormField>
+            {/* 기록자 */}
+            <ActorField
+              label="Recorded By"
+              role="STAFF"
+              required
+              value={draft.recordedById}
+              onChange={(empId) => setDraft((prev) => ({ ...prev, recordedById: empId }))}
+              disabled={submitting}
+            />
           </div>
           <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
             <Button type="button" onClick={handleAdd} disabled={!canAdd || submitting}>
@@ -219,15 +224,16 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
             </Button>
             <div className="flex items-end gap-3">
               {/* 결과 (선택) */}
-              <FormField label="Outcome" className="w-[160px]">
-                <Select
-                  value={outcomeCode}
-                  onChange={(e) => setOutcomeCode(e.target.value)}
-                  options={outcomeOptions}
-                  placeholder="(optional)"
-                  disabled={submitting}
-                />
-              </FormField>
+              <DownSelect
+                label="Outcome"
+                value={outcomeCode}
+                onChange={setOutcomeCode}
+                options={outcomeOptions}
+                placeholder="(optional)"
+                allowClear
+                disabled={submitting}
+                className="w-[200px]"
+              />
               <Button type="button" onClick={handleSubmit} disabled={!canSubmit}>
                 {/* 등록 중... / CPR 기록 등록 */}
                 {submitting ? "Saving..." : "Register CPR Record"}

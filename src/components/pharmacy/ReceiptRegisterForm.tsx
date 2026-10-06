@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { registerReceiptRequest } from "@/features/pharmacy/slice";
-import { FormActions, FormField, Input, PageHeader, Panel } from "@/components/common";
+import { FormActions, FormField, Input, PageHeader, Panel, Select } from "@/components/common";
+import MedicationSearchInput from "@/components/pharmacy/MedicationSearchInput";
+import SupplierSelect from "@/components/pharmacy/SupplierSelect";
+import StorageLocationSelect from "@/components/pharmacy/StorageLocationSelect";
 import type { RootState } from "@/store/store";
 import type { ReceiptRegisterRequest } from "@/features/pharmacy/types";
+import { fetchEmpApi } from "@/features/emp/api/empApi";
+import type { Emp } from "@/features/emp/types/empTypes";
 
 const initialForm: ReceiptRegisterRequest = {
   supplierId: "",
@@ -33,6 +38,31 @@ export default function ReceiptRegisterForm() {
   const error = useSelector(
     (state: RootState) => state.pharmacy.receiptRegisterError
   );
+
+  // 입고 담당자는 자유 텍스트로 받지 않고 admin에 실제 등록된 직원만 고를 수 있게 한다.
+  const [employees, setEmployees] = useState<Emp[]>([]);
+  const [employeeLoadError, setEmployeeLoadError] = useState("");
+  useEffect(() => {
+    let ignore = false;
+    fetchEmpApi()
+      .then((list) => {
+        if (!ignore) setEmployees(list);
+      })
+      .catch((err: unknown) => {
+        if (!ignore) {
+          setEmployeeLoadError(
+            err instanceof Error ? err.message : "Failed to load the employee list."
+          );
+        }
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
+  const employeeOptions = employees.map((employee) => ({
+    value: employee.empId,
+    label: `${employee.empName} (${employee.empNo})`,
+  }));
 
   const item = form.items[0];
 
@@ -87,23 +117,20 @@ export default function ReceiptRegisterForm() {
       {error && (
         <p className="text-sm text-rose-500">{error}</p>
       )}
+      {employeeLoadError && <p className="text-sm text-rose-500">{employeeLoadError}</p>}
       <Panel className="max-w-xl p-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <p className="text-xs font-semibold text-slate-400">Receipt Info</p>
-          <FormField label="Supplier ID" required>
-            <Input
-              type="text"
-              placeholder="Supplier ID"
+          <FormField label="Supplier" required>
+            <SupplierSelect
               value={form.supplierId}
-              onChange={handleFieldChange("supplierId")}
+              onChange={(e) => setForm((prev) => ({ ...prev, supplierId: e.target.value }))}
             />
           </FormField>
-          <FormField label="Storage Location ID" required>
-            <Input
-              type="text"
-              placeholder="Storage Location ID"
+          <FormField label="Storage Location" required>
+            <StorageLocationSelect
               value={form.storageLocationId}
-              onChange={handleFieldChange("storageLocationId")}
+              onChange={(e) => setForm((prev) => ({ ...prev, storageLocationId: e.target.value }))}
             />
           </FormField>
           <FormField label="Receipt Date" required>
@@ -113,22 +140,22 @@ export default function ReceiptRegisterForm() {
               onChange={handleFieldChange("receiptDt")}
             />
           </FormField>
-          <FormField label="Handler ID" required>
-            <Input
-              type="text"
-              placeholder="Handler ID"
+          <FormField label="Handler" required>
+            <Select
+              placeholder="Select handler"
+              options={employeeOptions}
               value={form.receivedById}
-              onChange={handleFieldChange("receivedById")}
+              onChange={(e) => setForm((prev) => ({ ...prev, receivedById: e.target.value }))}
             />
           </FormField>
 
           <p className="mt-2 text-xs font-semibold text-slate-400">Medication Item</p>
-          <FormField label="Medication ID" required>
-            <Input
-              type="text"
-              placeholder="Medication ID"
+          <FormField label="Medication" required>
+            <MedicationSearchInput
               value={item.medicationId}
-              onChange={handleItemChange("medicationId")}
+              onChange={(medicationId) =>
+                setForm((prev) => ({ ...prev, items: [{ ...prev.items[0], medicationId }] }))
+              }
             />
           </FormField>
           <FormField label="Lot No." required>

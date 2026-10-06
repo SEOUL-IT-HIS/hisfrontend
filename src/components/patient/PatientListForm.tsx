@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
@@ -32,13 +32,13 @@ const initialSearchCondition: PatientSearchCondition = {
 
 const formatDateTime = (value: string) => value.replace("T", " ").slice(0, 19);
 
-const columns: DataTableColumn<PatientListItem>[] = [
+const getColumns = (returnTo: string): DataTableColumn<PatientListItem>[] => [
   {
     key: "patientName",
     header: "Patient Name",
     render: (patient) => (
       <Link
-        href={`/reception/patientmanagement/${patient.patientId}`}
+        href={`/reception/patientmanagement/${patient.patientId}?returnTo=${encodeURIComponent(returnTo)}`}
         className="font-medium text-blue-600 hover:underline"
       >
         {patient.patientName}
@@ -101,32 +101,63 @@ const columns: DataTableColumn<PatientListItem>[] = [
 ];
 
 export default function PatientListForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const registeredPatientId = searchParams.get("registeredPatientId");
+  const pageParam = Number(searchParams.get("page"));
+  const currentPage = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1;
+  const appliedCondition: PatientSearchCondition = {
+    patientName: searchParams.get("patientName") ?? "",
+    birthDate: searchParams.get("birthDate") ?? "",
+    statusCd: (searchParams.get("statusCd") as PatientStatus | null) ?? undefined,
+  };
+  const currentQuery = searchParams.toString();
+  const listReturnTo = `/reception/patientmanagement${currentQuery ? `?${currentQuery}` : ""}`;
   const dispatch = useDispatch<AppDispatch>();
   const [searchCondition, setSearchCondition] =
     useState<PatientSearchCondition>(initialSearchCondition);
-  const [appliedCondition, setAppliedCondition] = useState<PatientSearchCondition>(initialSearchCondition);
-  const [requestedPage, setRequestedPage] = useState(1);
   const { patientPage, pageLoading: listLoading, pageError: listError } = useSelector(
     (state: RootState) => state.patient,
   );
 
   useEffect(() => {
-    dispatch(fetchPatientPageRequest({ page: 1 }));
-  }, [dispatch]);
+    setSearchCondition(appliedCondition);
+  }, [appliedCondition.patientName, appliedCondition.birthDate, appliedCondition.statusCd]);
+
+  useEffect(() => {
+    dispatch(fetchPatientPageRequest({ ...appliedCondition, page: currentPage }));
+  }, [dispatch, currentPage, appliedCondition.patientName, appliedCondition.birthDate, appliedCondition.statusCd]);
+
+  const updateListUrl = (condition: PatientSearchCondition, page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const patientName = condition.patientName?.trim() ?? "";
+
+    if (patientName) params.set("patientName", patientName);
+    else params.delete("patientName");
+
+    if (condition.birthDate) params.set("birthDate", condition.birthDate);
+    else params.delete("birthDate");
+
+    if (condition.statusCd) params.set("statusCd", condition.statusCd);
+    else params.delete("statusCd");
+
+    if (page > 1) params.set("page", String(page));
+    else params.delete("page");
+
+    const query = params.toString();
+    router.replace(
+      query ? `/reception/patientmanagement?${query}` : "/reception/patientmanagement",
+      { scroll: false },
+    );
+  };
 
   const handleSearch = () => {
-    setAppliedCondition(searchCondition);
-    setRequestedPage(1);
-    dispatch(fetchPatientPageRequest({ ...searchCondition, page: 1 }));
+    updateListUrl(searchCondition, 1);
   };
 
   const handleReset = () => {
     setSearchCondition(initialSearchCondition);
-    setAppliedCondition(initialSearchCondition);
-    setRequestedPage(1);
-    dispatch(fetchPatientPageRequest({ page: 1 }));
+    updateListUrl(initialSearchCondition, 1);
   };
 
   return (
@@ -211,10 +242,10 @@ export default function PatientListForm() {
         </Alert>
       ) : null}
 
-      {listError ? <div className="space-y-2"><Alert variant="error">{listError}</Alert><Button variant="secondary" onClick={() => dispatch(fetchPatientPageRequest({ ...appliedCondition, page: requestedPage }))}>Retry</Button></div> : null}
+      {listError ? <div className="space-y-2"><Alert variant="error">{listError}</Alert><Button variant="secondary" onClick={() => dispatch(fetchPatientPageRequest({ ...appliedCondition, page: currentPage }))}>Retry</Button></div> : null}
 
       <DataTable
-        columns={columns}
+        columns={getColumns(listReturnTo)}
         rows={listError ? [] : patientPage.items}
         rowKey={(patient) => patient.patientId}
         loading={listLoading}
@@ -228,7 +259,7 @@ export default function PatientListForm() {
             {patientPage.totalElements === 0 ? "0 patients" : `${(patientPage.page - 1) * 15 + 1}–${(patientPage.page - 1) * 15 + patientPage.items.length} of ${patientPage.totalElements} patients`} · 15 per page
           </p>
           <Pagination page={patientPage.page} totalPages={patientPage.totalPages} prevLabel="Previous" nextLabel="Next"
-            onPageChange={(page) => { setRequestedPage(page); dispatch(fetchPatientPageRequest({ ...appliedCondition, page })); }} />
+            onPageChange={(page) => updateListUrl(appliedCondition, page)} />
         </div>
       ) : null}
     </div>

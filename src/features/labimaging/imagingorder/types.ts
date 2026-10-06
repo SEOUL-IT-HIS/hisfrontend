@@ -252,6 +252,8 @@ export interface ImageReceptionDetail extends ImageReceptionContext {
   treatTypeCode: string;
   urgencyYn: "Y" | "N";
   physicianNo?: string;
+  /** 처방의ID — 표시용이 아니라 처방의사명을 조회하는 열쇠(2026-10-05, 처방의사명 표시) */
+  physicianId?: string;
   /** 촬영항목코드 목록 (공통코드 IMG_ITEM_CD) */
   imageItemCodes: string[];
   receivedAt: string;
@@ -260,4 +262,9 @@ export interface ImageReceptionDetail extends ImageReceptionContext {
   orderStatusCode: string;
   receptionStatusCode: string;
   receivedById: string;
+  /**
+   * 동의가 필요한 촬영인지 (06번 지시서 Phase 1-1). required-mode=ALL(기본)이면 항상 "Y".
+   * ⚠ 워크리스트 행(ImageWorklistItem.consentRequiredYn)과 같은 값·같은 정책이다.
+   */
+  consentRequiredYn: "Y" | "N";
 }

@@ -12,20 +12,24 @@ import {
   Pagination,
   Panel,
   Select,
-  StatusBadge,
   type DataTableColumn,
 } from "@/components/common";
 import AnesthesiaRecordPanel from "@/components/surgery/anesthesia/AnesthesiaRecordPanel";
 import ChecklistPanel from "@/components/surgery/checklist/ChecklistPanel";
 import ConsentPanel from "@/components/surgery/consent/ConsentPanel";
 import OperativeRecordPanel from "@/components/surgery/operativeRecord/OperativeRecordPanel";
+import PlannedItemsPanel from "@/components/surgery/planneditem/PlannedItemsPanel";
 import { useSearchParams } from "next/navigation";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import {
   fetchChecklistRequest,
   selectChecklistItems,
 } from "@/features/surgery/checklist/slice";
-import { usePatientNames } from "@/features/surgery/common/usePatientNames";
+import {
+  getPatientDisplayName,
+  usePatientNames,
+} from "@/features/surgery/common/usePatientNames";
+import { useEmpNames } from "@/features/emp/hooks/useEmpNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   SURGERY_STATUS,
@@ -87,11 +91,12 @@ import {
  * "어디서 하는 거였지"를 다시 묻게 된다. 상태는 전부 여기, 배정은 전부 저기로 갈랐다.</p>
  */
 
-type Tab = "consent" | "checklist" | "anesthesia" | "record";
+type Tab = "consent" | "checklist" | "plannedItems" | "anesthesia" | "record";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "consent", label: "Consent" },
   { key: "checklist", label: "Checklist" },
+  { key: "plannedItems", label: "Planned items" },
   { key: "anesthesia", label: "Anesthesia" },
   { key: "record", label: "Operative record" },
 ];
@@ -110,12 +115,18 @@ const STATUS_LABEL: Record<string, string> = {
   [SURGERY_STATUS.CANCELLED]: "Cancelled",
 };
 
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  [SURGERY_STATUS.SCHEDULED]: "bg-sky-100 text-sky-700",
+  [SURGERY_STATUS.IN_PROGRESS]: "bg-emerald-100 text-emerald-700",
+  [SURGERY_STATUS.COMPLETED]: "bg-blue-100 text-blue-700",
+  [SURGERY_STATUS.CANCELLED]: "bg-rose-100 text-rose-700",
+};
+
 /**
  * 검색 입력칸의 초기값. "조건 없음"을 빈 문자열로 표현한다.
  *
- * <p><b>환자·집도의 칸을 걷어냈다.</b> 둘 다 식별자(UUID)로만 찾을 수 있었는데,
- * 화면 어디에도 그 식별자가 보이지 않는다 — 목록의 환자 열은 이제 이름을 띄우고,
- * 집도의는 애초에 열이 없다. 사용자가 입력할 값을 알 수 없는 검색칸이었다.
+ * <p><b>환자·집도의 검색칸을 걷어냈다.</b> 둘 다 식별자(UUID)로만 찾을 수 있었는데,
+ * 화면에서는 이름으로 보여 사용자가 입력할 값을 알 수 없는 검색칸이었다.
  * 백엔드 {@code patientId}·{@code surgeonId} 파라미터는 그대로 살아 있으니
  * 이름으로 찾는 방법이 생기면 그때 다시 붙이면 된다.</p>
  */
@@ -245,6 +256,7 @@ export default function SurgeryWorklist() {
 
   // 지금 보이는 행들의 환자명. rows 가 바뀔 때만 다시 부른다(훅 안에서 키로 거른다).
   const { names: patientNames } = usePatientNames(rows.map((s) => s.patientId));
+  const { names: employeeNames } = useEmpNames();
 
   const columns: DataTableColumn<Surgery>[] = [
     {
@@ -262,8 +274,8 @@ export default function SurgeryWorklist() {
         예전에는 UUID 를 그대로 띄웠는데, 사람이 알아볼 수 없는 값이라 목록으로서
         의미가 없었다. 이름은 patient-service 에 매번 물어본다.
 
-        못 불러오면 ID 로 되돌아간다 — 이름은 표시용이라, patient-service 가 죽어도
-        수술 업무는 계속돼야 한다.
+        못 불러오면 안내 문구를 표시한다 — 이름은 표시용이라, patient-service 가
+        죽어도 수술 업무는 계속돼야 한다.
       */
       render: (s) => (
         <button
@@ -280,7 +292,7 @@ export default function SurgeryWorklist() {
               : "text-left font-medium text-slate-700 hover:text-sky-600"
           }
         >
-          {patientNames[s.patientId] ?? s.patientId}
+          {getPatientDisplayName(s.patientId, patientNames)}
         </button>
       ),
     },
@@ -295,20 +307,10 @@ export default function SurgeryWorklist() {
       render: (s) => s.roomCode ?? "-",
     },
     {
-      key: "statusCd",
+      key: "surgeonId",
       header: "Status",
-      // StatusBadge 는 Y/N 전용이라(사용·미사용) 상태 라벨에는 맞지 않는다.
-      // 응급 여부만 Y/N 이라 배지를 쓰고, 상태는 글자로 둔다.
-      render: (s) => (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-600">
-            {STATUS_LABEL[s.statusCd ?? ""] ?? s.statusCd}
-          </span>
-          {s.emergencyYn === "Y" ? (
-            <StatusBadge value="Y" activeLabel="Emergency" />
-          ) : null}
-        </div>
-      ),
+      className: "w-32",
+      render: (s) => employeeNames[s.surgeonId]?.trim() || "Surgeon name unavailable",
     },
   ];
 
@@ -317,10 +319,10 @@ export default function SurgeryWorklist() {
       {/* ---- 왼쪽: 수술 목록 ---- */}
       <div className="flex min-h-0 w-[52%] min-w-[480px] flex-col gap-3">
         {/*
-          검색 조건 (SL2-312·314 기록지 조회 / SL2-333·334 간호기록 조회)
+          수술실과 날짜 조건으로 수술 목록을 좁힌다.
 
           수술실과 날짜만 받는다. 환자·집도의 칸이 있었지만 식별자(UUID)로만 찾을 수
-          있었고, 그 식별자는 화면 어디에도 나오지 않아 입력할 방법이 없었다.
+          있었고, 그 식별자는 화면에 나오지 않아 입력할 방법이 없었다.
 
           날짜 입력에 lang="en" 을 준 이유 — <input type="date"> 는 브라우저·OS 로캘을
           따라 '2026. 09. 03.' 처럼 그리는데, lang 을 명시하면 Chrome 이 그 언어의
@@ -414,122 +416,141 @@ export default function SurgeryWorklist() {
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-slate-800">
-                  {selected.surgeryName ?? "No surgery name"}
-                  <span className="ml-2 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-normal text-slate-700">
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
+              <div className="flex items-start justify-between gap-4 py-3">
+                <div className="flex flex-1 flex-col items-center gap-2 text-center">
+                  <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+                    {selected.surgeryName ?? "No surgery name"}
+                  </h2>
+                  <span
+                    className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                      STATUS_BADGE_CLASS[selected.statusCd ?? ""] ??
+                      "bg-slate-100 text-slate-700"
+                    }`}
+                  >
                     {STATUS_LABEL[selected.statusCd ?? ""] ?? selected.statusCd}
                   </span>
+                  <p className="mt-2 text-base font-medium text-slate-700">
+                    Patient {getPatientDisplayName(selected.patientId, patientNames)}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {selected.surgeryDt}
+                    {selected.roomCode ? ` · ${selected.roomCode}` : ""}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Button
+                    disabled={saving || !isScheduled}
+                    onClick={() => dispatch(startSurgeryRequest(selected.surgeryId))}
+                  >
+                    Start surgery
+                  </Button>
+                  <Button
+                    disabled={saving || !isInProgress || !signOutDone}
+                    onClick={() => dispatch(endSurgeryRequest(selected.surgeryId))}
+                  >
+                    End surgery
+                  </Button>
+                </div>
+              </div>
+
+              {isScheduled && cancelOptions.length === 0 ? (
+                <p className="text-center text-xs text-amber-600">
+                  Failed to load cancellation reason codes. Please check the admin service.
                 </p>
-                <p className="text-xs text-slate-500">
-                  Patient {patientNames[selected.patientId] ?? selected.patientId}{" "}
-                  · {selected.surgeryDt}
-                  {selected.roomCode ? ` · ${selected.roomCode}` : ""}
+              ) : null}
+
+              {/*
+                진행중인데 Sign Out 이 안 끝났으면 종료 버튼이 잠겨 있다.
+                왜 잠겼는지 적어 두지 않으면 버튼이 고장난 것으로 보인다.
+              */}
+              {isInProgress && !signOutDone ? (
+                <p className="text-center text-xs text-amber-700">
+                  Complete the Sign Out checklist before ending the surgery.
                 </p>
+              ) : null}
+
+              <div className="flex flex-wrap gap-2">
+                {TABS.map((t) => (
+                  <Button
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    className={
+                      tab === t.key ? "border-sky-500 text-sky-600" : undefined
+                    }
+                  >
+                    {t.label}
+                  </Button>
+                ))}
               </div>
 
               {/*
-                상태 전이 (배정 상세에서 이관)
-                예약 → 진행중 → 완료 한 방향으로만 간다. 취소는 예약에서만.
-                백엔드가 같은 규칙으로 막지만(400), 눌러도 오류만 뜨는 버튼을
-                열어두면 사용자는 왜 안 되는지 모른 채 헤맨다.
+                key 로 수술마다 새로 마운트한다 — 이전 수술의 입력값이 남으면
+                엉뚱한 수술에 기록이 저장될 수 있다. LabWorklist 와 같은 방식이다.
               */}
-              <div className="flex shrink-0 items-center gap-2">
-                <Button
-                  disabled={saving || !isScheduled}
-                  onClick={() => dispatch(startSurgeryRequest(selected.surgeryId))}
-                >
-                  Start surgery
-                </Button>
-                <Button
-                  disabled={saving || !isInProgress || !signOutDone}
-                  onClick={() => dispatch(endSurgeryRequest(selected.surgeryId))}
-                >
-                  End surgery
-                </Button>
-
-                {/*
-                  취소 사유는 필수다(SL2-178) — 고르지 않으면 버튼이 잠긴다.
-                  백엔드 @NotBlank 가 400 으로 막으므로 화면에서 먼저 거른다.
-                */}
-                {/* Select 자체가 w-full 이라 폭은 감싸는 쪽에서 준다 */}
-                <div className="w-36">
-                  <Select
-                    aria-label="Cancellation reason"
-                    placeholder="Cancellation reason"
-                    options={cancelOptions}
-                    value={cancelReasonCd}
-                    disabled={saving || !isScheduled}
-                    onChange={(e) => setCancelReasonCd(e.target.value)}
+              <div className="min-h-0 flex-1 overflow-auto">
+                {tab === "consent" ? (
+                  <ConsentPanel key={selected.surgeryId} surgeryId={selected.surgeryId} />
+                ) : null}
+                {tab === "checklist" ? (
+                  <ChecklistPanel key={selected.surgeryId} surgeryId={selected.surgeryId} />
+                ) : null}
+                {tab === "plannedItems" ? (
+                  <PlannedItemsPanel
+                    key={selected.surgeryId}
+                    surgeryId={selected.surgeryId}
                   />
-                </div>
-                <Button
-                  disabled={saving || !isScheduled || !cancelReasonCd}
-                  onClick={() =>
-                    dispatch(
-                      cancelSurgeryRequest(selected.surgeryId, { cancelReasonCd }),
-                    )
-                  }
-                >
-                  Cancel surgery
-                </Button>
+                ) : null}
+                {tab === "anesthesia" ? (
+                  <AnesthesiaRecordPanel
+                    key={selected.surgeryId}
+                    surgeryId={selected.surgeryId}
+                  />
+                ) : null}
+                {tab === "record" ? (
+                  <OperativeRecordPanel
+                    key={selected.surgeryId}
+                    surgeryId={selected.surgeryId}
+                  />
+                ) : null}
               </div>
             </div>
 
-            {isScheduled && cancelOptions.length === 0 ? (
-              <p className="text-xs text-amber-600">
-                Failed to load cancellation reason codes. Please check the admin service.
-              </p>
-            ) : null}
-
-            {/*
-              진행중인데 Sign Out 이 안 끝났으면 종료 버튼이 잠겨 있다.
-              왜 잠겼는지 적어 두지 않으면 버튼이 고장난 것으로 보인다.
-            */}
-            {isInProgress && !signOutDone ? (
-              <p className="text-xs text-amber-700">
-                Complete the Sign Out checklist before ending the surgery.
-              </p>
-            ) : null}
-
-            <div className="flex gap-2">
-              {TABS.map((t) => (
-                <Button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={
-                    tab === t.key ? "border-sky-500 text-sky-600" : undefined
-                  }
+            <div className="grid shrink-0 gap-2 border-t border-slate-200 pt-4">
+              <Select
+                aria-label="Cancellation reason"
+                placeholder="Cancellation reason"
+                options={cancelOptions}
+                value={cancelReasonCd}
+                disabled={saving || !isScheduled}
+                onChange={(e) => setCancelReasonCd(e.target.value)}
+              />
+              <Button
+                variant="danger"
+                disabled={saving || !isScheduled || !cancelReasonCd}
+                onClick={() =>
+                  dispatch(
+                    cancelSurgeryRequest(selected.surgeryId, { cancelReasonCd }),
+                  )
+                }
+                className="w-full"
+              >
+                <svg
+                  aria-hidden="true"
+                  className="mr-2 h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  {t.label}
-                </Button>
-              ))}
-            </div>
-
-            {/*
-              key 로 수술마다 새로 마운트한다 — 이전 수술의 입력값이 남으면
-              엉뚱한 수술에 기록이 저장될 수 있다. LabWorklist 와 같은 방식이다.
-            */}
-            <div className="min-h-0 flex-1 overflow-auto">
-              {tab === "consent" ? (
-                <ConsentPanel key={selected.surgeryId} surgeryId={selected.surgeryId} />
-              ) : null}
-              {tab === "checklist" ? (
-                <ChecklistPanel key={selected.surgeryId} surgeryId={selected.surgeryId} />
-              ) : null}
-              {tab === "anesthesia" ? (
-                <AnesthesiaRecordPanel
-                  key={selected.surgeryId}
-                  surgeryId={selected.surgeryId}
-                />
-              ) : null}
-              {tab === "record" ? (
-                <OperativeRecordPanel
-                  key={selected.surgeryId}
-                  surgeryId={selected.surgeryId}
-                />
-              ) : null}
+                  <circle cx="12" cy="12" r="9" strokeWidth="2" />
+                  <path
+                    d="m9 9 6 6m0-6-6 6"
+                    strokeLinecap="round"
+                    strokeWidth="2"
+                  />
+                </svg>
+                Cancel surgery
+              </Button>
             </div>
           </div>
         )}

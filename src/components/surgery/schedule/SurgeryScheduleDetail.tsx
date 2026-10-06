@@ -13,7 +13,10 @@ import {
 } from "@/components/common";
 import { fetchEmpApi } from "@/features/emp/api/empApi";
 import type { Emp } from "@/features/emp/types/empTypes";
-import { usePatientNames } from "@/features/surgery/common/usePatientNames";
+import {
+  getPatientDisplayName,
+  usePatientNames,
+} from "@/features/surgery/common/usePatientNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   fetchRoomsRequest,
@@ -209,7 +212,7 @@ export default function SurgeryScheduleDetail({ surgeryId }: Props) {
           <div>
             <dt className="text-slate-500">Patient</dt>
             <dd className="text-slate-800">
-              {patientNames[surgery.patientId] ?? surgery.patientId}
+              {getPatientDisplayName(surgery.patientId, patientNames)}
             </dd>
           </div>
           <div>

@@ -4,9 +4,10 @@ import { useEffect, useState, type SubmitEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, ConfirmDialog, FormField, Select } from "@/components/common";
-import CodeSearchInput from "@/components/labimaging/common/CodeSearchInput";
+import CodeSearchInput, { isKnownCode } from "@/components/labimaging/common/CodeSearchInput";
 import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
 import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
+import { formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import type { LabWorklistItem } from "@/features/labimaging/laborder/types";
 import type { LabResultItem } from "@/features/labimaging/labresult/types";
@@ -82,6 +83,8 @@ function formatDateTime(value?: string) {
 export default function MicrobiologyResultWorkPanel({ reception, microItem }: Props) {
   const dispatch = useDispatch<AppDispatch>();
   const { actorId, actorName, signedIn } = useLoginActor();
+  // 입력자·확정자 empId → 이름 표시용. (직원ID 화면 노출 정리, 2026-10-05)
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
 
   const results = useSelector(selectMicrobiologyResults);
   const specimens = useSelector(selectMicrobiologySpecimens);
@@ -152,9 +155,14 @@ export default function MicrobiologyResultWorkPanel({ reception, microItem }: Pr
     if (!signedIn) return "Sign in to record this result.";
     if (!result && !form.specimenId) return "Select a fit specimen.";
     if (!form.cultureStatusCode) return "Select a culture status.";
+    // 목록에 없는 균종코드는 제출을 막는다. (04번 지시서 Phase 4-1)
+    if (!isKnownCode(form.organismCode, organisms.options)) return "Unknown organism code. Please choose one from the list.";
     const codes = form.susceptibilities.map((s) => s.antibioticCode);
     if (codes.some((c) => !c)) return "Enter an antibiotic for every susceptibility row.";
     if (new Set(codes).size !== codes.length) return "The same antibiotic was entered more than once.";
+    if (codes.some((c) => !isKnownCode(c, antibiotics.options))) {
+      return "Unknown antibiotic code. Please choose one from the list.";
+    }
     if (form.susceptibilities.some((s) => !s.susceptibilityResultCode)) return "Select S / I / R for every row.";
     return "";
   }
@@ -323,7 +331,12 @@ export default function MicrobiologyResultWorkPanel({ reception, microItem }: Pr
 
         <FormField label="Recorded By">
           {result ? (
-            <p className="text-sm text-slate-700">{result.recordedById}</p>
+            <p
+              className="text-sm text-slate-700"
+              title={formatStaffName(result.recordedById, staffNameById, staffLoading).title}
+            >
+              {formatStaffName(result.recordedById, staffNameById, staffLoading).text}
+            </p>
           ) : (
             <LoginActorInput name="recordedById" actorName={actorName} signedIn={signedIn} />
           )}
@@ -331,8 +344,12 @@ export default function MicrobiologyResultWorkPanel({ reception, microItem }: Pr
 
         <div className="flex items-end justify-end gap-2">
           {confirmed ? (
-            <span className="text-sm text-slate-500">
-              Confirmed by {result?.confirmedById} at {formatDateTime(result?.confirmedAt)}
+            <span
+              className="text-sm text-slate-500"
+              title={formatStaffName(result?.confirmedById, staffNameById, staffLoading).title}
+            >
+              Confirmed by {formatStaffName(result?.confirmedById, staffNameById, staffLoading).text} at{" "}
+              {formatDateTime(result?.confirmedAt)}
             </span>
           ) : (
             <>

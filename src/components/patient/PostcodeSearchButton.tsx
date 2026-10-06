@@ -51,22 +51,20 @@ export default function PostcodeSearchButton({
   const [scriptError, setScriptError] = useState(false);
   const readinessTimerRef = useRef<number | null>(null);
 
-  useEffect(
-    () => () => {
-      if (readinessTimerRef.current !== null) {
-        window.clearInterval(readinessTimerRef.current);
-      }
-    },
-    [],
-  );
-
   const waitForPostcode = useCallback(() => {
     if (readinessTimerRef.current !== null) {
       window.clearInterval(readinessTimerRef.current);
+      readinessTimerRef.current = null;
+    }
+
+    setScriptError(false);
+
+    if (getPostcodeConstructor()) {
+      setScriptReady(true);
+      return;
     }
 
     setScriptReady(false);
-    setScriptError(false);
 
     let attempts = 0;
     readinessTimerRef.current = window.setInterval(() => {
@@ -86,6 +84,19 @@ export default function PostcodeSearchButton({
       }
     }, 100);
   }, []);
+
+  useEffect(() => {
+    // The script may already be loaded when this component mounts during
+    // client-side navigation, so do not rely only on Script's onReady event.
+    waitForPostcode();
+
+    return () => {
+      if (readinessTimerRef.current !== null) {
+        window.clearInterval(readinessTimerRef.current);
+        readinessTimerRef.current = null;
+      }
+    };
+  }, [waitForPostcode]);
 
   const openPostcodeSearch = () => {
     const Postcode = getPostcodeConstructor();

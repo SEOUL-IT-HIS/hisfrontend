@@ -16,7 +16,10 @@ import {
   type DataTableColumn,
 } from "@/components/common";
 import SurgeryScheduleDetail from "@/components/surgery/schedule/SurgeryScheduleDetail";
-import { usePatientNames } from "@/features/surgery/common/usePatientNames";
+import {
+  getPatientDisplayName,
+  usePatientNames,
+} from "@/features/surgery/common/usePatientNames";
 import { resolveSurgeryMessage } from "@/features/surgery/messages";
 import {
   SURGERY_STATUS,
@@ -182,7 +185,7 @@ export default function SurgeryAssignmentBoard() {
 
         표시는 이름이다. SURGERY 테이블은 patient_id 만 갖고 있어서(§14.1 스냅샷 금지)
         예전에는 UUID 를 그대로 띄웠는데, 사람이 알아볼 수 없는 값이라 목록으로서
-        의미가 없었다. 못 불러오면 ID 로 되돌아간다 — 이름은 표시용이라
+        의미가 없었다. 못 불러오면 안내 문구를 표시한다 — 이름은 표시용이라
         patient-service 가 죽어도 배정 업무는 계속돼야 한다.
       */
       render: (s) => (
@@ -195,7 +198,7 @@ export default function SurgeryAssignmentBoard() {
               : "text-left font-medium text-slate-700 hover:text-sky-600"
           }
         >
-          {patientNames[s.patientId] ?? s.patientId}
+          {getPatientDisplayName(s.patientId, patientNames)}
         </button>
       ),
     },

@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import { selectIsDischarged } from "@/features/emergency/disposition/slice";
+import { Alert, Button } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
+import ActorField from "@/components/emergency/common/ActorField";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   assignBedRequest,
   fetchBedsRequest,
+  fetchCurrentAssignmentRequest,
   releaseBedRequest,
   resetCurrentAssignment,
   selectBeds,
@@ -37,12 +43,13 @@ function zoneLabel(zoneCode: string): string {
  * 병상 배정 패널 (UC-RES-02)
  * - 병상 목록(getBeds)은 접수 건과 무관하게 응급실 전체 현황을 보여준다.
  * - 배정(assignBed)만 이 접수 건(receptionNo)에 연결된다.
- * - 백엔드에 "환자별 배정 이력 조회" API가 없어서, 방금 배정한 결과만
- *   세션 메모리(currentAssignment)로 보여준다. 새로고침하거나 환자를
- *   바꿨다가 돌아오면 다시 알 수 없다(알려진 한계, 위 대화에서 확인함).
+ * - 이 환자의 현재 배정(currentAssignment)은 환자를 고를 때마다 백엔드에서 불러온다
+ *   (GET /bed-assignments/current). 방금 배정한 결과도 같은 자리에 보인다.
+ * - 퇴실 처리가 끝나면 백엔드가 병상을 자동으로 해제한다(해제자 SYSTEM, 병상 EMPTY).
  */
 export default function BedAssignmentPanel({ receptionNo, className = "" }: BedAssignmentPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const discharged = useSelector(selectIsDischarged(receptionNo));
   const beds = useSelector(selectBeds);
   const loading = useSelector(selectBedsLoading);
   const error = useSelector(selectBedsError);
@@ -53,14 +60,20 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
   const [form, setForm] = useState(initialForm);
   const [releaseForm, setReleaseForm] = useState(initialReleaseForm);
   const [lastReceptionNo, setLastReceptionNo] = useState(receptionNo);
+  const assignedById = useActorId(form.assignedById, "STAFF");
+  const releasedById = useActorId(releaseForm.releasedById, "STAFF");
 
   useEffect(() => {
     dispatch(fetchBedsRequest());
   }, [dispatch]);
 
-  // 환자가 바뀌면 이전 환자의 "방금 배정한 병상" 표시를 지운다.
+  // 환자가 바뀌면 이전 환자의 배정 표시를 지우고, 그 환자의 현재 배정을 백엔드에서 다시 불러온다
+  // (새로고침하거나 환자를 바꿨다 돌아와도 Release 가 보이게).
   useEffect(() => {
     dispatch(resetCurrentAssignment());
+    if (receptionNo) {
+      dispatch(fetchCurrentAssignmentRequest(receptionNo));
+    }
   }, [dispatch, receptionNo]);
 
   // 폼 입력값 초기화는 렌더 중 비교로 처리한다 (다른 패널들과 동일한 패턴).
@@ -74,29 +87,20 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
     .filter((bed) => bed.bedStatusCode === BED_STATUS.EMPTY)
     .map((bed) => ({ value: bed.id, label: `${bed.bedNo} (${zoneLabel(bed.zoneCode)})` }));
 
-  function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  }
-
   function handleAssign() {
     if (!form.bedId) return;
     dispatch(
       assignBedRequest({
         encounterId: receptionNo,
         bedId: form.bedId,
-        assignedById: form.assignedById || undefined,
+        assignedById: assignedById || undefined,
       }),
     );
   }
 
-  function handleReleaseChange(e: ChangeEvent<HTMLInputElement>) {
-    setReleaseForm({ releasedById: e.target.value });
-  }
-
   function handleRelease() {
-    if (!currentAssignment || !releaseForm.releasedById) return;
-    dispatch(releaseBedRequest(currentAssignment.id, { releasedById: releaseForm.releasedById }));
+    if (!currentAssignment || !releasedById) return;
+    dispatch(releaseBedRequest(currentAssignment.id, { releasedById }));
   }
 
   return (
@@ -112,27 +116,27 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
       ) : (
         <>
           {currentAssignment ? (
-            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
               <span>
                 {/* 이 환자에게 배정된 병상: {bedNo} ({구역}) · {일시} */}
                 Assigned bed: {currentAssignment.bedNo} ({zoneLabel(currentAssignment.zoneCode)}) ·{" "}
                 {formatDateTime(currentAssignment.assignedAt)}
               </span>
-              {/* 해제자ID */}
-              <Input
+              {/* 해제자 — 기본은 로그인한 사람이고, 실제로 해제한 사람이 다르면 고른다 */}
+              <ActorField
+                label="Released By"
+                role="STAFF"
                 value={releaseForm.releasedById}
-                onChange={handleReleaseChange}
-                placeholder="Released By ID"
+                onChange={(empId) => setReleaseForm({ releasedById: empId })}
                 disabled={submitting}
-                maxLength={36}
-                className="w-[160px]"
+                className="w-[240px] text-slate-700"
               />
               {/* 해제 중... / 해제 */}
               <Button
                 type="button"
                 variant="secondary"
                 onClick={handleRelease}
-                disabled={submitting || !releaseForm.releasedById}
+                disabled={submitting || !releasedById}
               >
                 {submitting ? "Releasing..." : "Release"}
               </Button>
@@ -162,27 +166,31 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
           </div>
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
+          <DischargedNotice receptionNo={receptionNo} />
 
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {/* 병상 */}
-            <FormField label="Bed" required className="w-[220px]">
-              <Select
-                name="bedId"
-                value={form.bedId}
-                onChange={handleChange}
-                options={emptyBedOptions}
-                // 선택 / 빈 병상 없음
-                placeholder={emptyBedOptions.length > 0 ? "Select" : "No empty beds"}
-                disabled={submitting || emptyBedOptions.length === 0}
-              />
-            </FormField>
-            {/* 배정자ID */}
-            <FormField label="Assigned By ID" className="w-[180px]">
-              <Input name="assignedById" value={form.assignedById} onChange={handleChange} disabled={submitting} maxLength={36} />
-            </FormField>
+            <DownSelect
+              label="Bed"
+              required
+              value={form.bedId}
+              onChange={(bedId) => setForm((prev) => ({ ...prev, bedId }))}
+              options={emptyBedOptions}
+              // 선택 / 빈 병상 없음
+              placeholder={emptyBedOptions.length > 0 ? "Select" : "No empty beds"}
+              disabled={submitting || emptyBedOptions.length === 0}
+            />
+            {/* 배정자 */}
+            <ActorField
+              label="Assigned By"
+              role="STAFF"
+              value={form.assignedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, assignedById: empId }))}
+              disabled={submitting}
+            />
           </div>
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleAssign} disabled={submitting || !form.bedId || !receptionNo}>
+            <Button type="button" onClick={handleAssign} disabled={submitting || !form.bedId || !receptionNo || discharged}>
               {/* 배정 중... / 병상 배정 */}
               {submitting ? "Assigning..." : "Assign Bed"}
             </Button>

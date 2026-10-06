@@ -3,7 +3,11 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField, Input } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
+import ActorField from "@/components/emergency/common/ActorField";
+import StaffName from "@/components/emergency/common/StaffName";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createConsentRequest,
@@ -66,6 +70,7 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
   const byCodes = useSelector(selectCommonCodesByGroup(CONSENT_BY_GROUP_CODE));
 
   const [form, setForm] = useState(initialForm);
+  const recordedById = useActorId(form.recordedById, "STAFF");
   const [lastReceptionNo, setLastReceptionNo] = useState(receptionNo);
   const [lastCount, setLastCount] = useState(0);
 
@@ -121,7 +126,7 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
     !!form.consentTypeCode &&
     !!form.consentStatusCode &&
     !!form.consentedByCode &&
-    !!form.recordedById.trim() &&
+    !!recordedById &&
     (!guardianSelected || !!form.consenterName.trim()) &&
     (!deferredSelected || !!form.reason.trim());
 
@@ -142,7 +147,7 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
         reason: form.reason.trim() || undefined,
         // datetime-local 값(초 없음)을 ISO 로컬 일시로 맞춘다. 비우면 서버가 현재 시각으로 기록한다.
         receivedAt: form.receivedAt ? `${form.receivedAt}:00` : undefined,
-        recordedById: form.recordedById.trim(),
+        recordedById,
       }),
     );
   }
@@ -177,7 +182,7 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
                   {item.reason ? <p className="whitespace-pre-wrap text-slate-600">{item.reason}</p> : null}
                   <p className="mt-1 text-xs text-slate-400">
                     {/* 수령 / 기록자 */}
-                    Received {formatDateTime(item.receivedAt)} · Recorded by {item.recordedById}
+                    Received {formatDateTime(item.receivedAt)} · Recorded by <StaffName empId={item.recordedById} />
                   </p>
                 </li>
               ))}
@@ -191,45 +196,42 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {/* 동의서 종류 */}
-            <FormField label="Consent Type" required className="w-[200px]">
-              <Select
-                name="consentTypeCode"
-                value={form.consentTypeCode}
-                onChange={handleChange}
-                options={typeOptions}
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
+            <DownSelect
+              label="Consent Type"
+              required
+              value={form.consentTypeCode}
+              onChange={(consentTypeCode) => setForm((prev) => ({ ...prev, consentTypeCode }))}
+              options={typeOptions}
+              placeholder="Select"
+              disabled={submitting}
+            />
             {/* 동의 여부 */}
-            <FormField label="Consent Status" required className="w-[160px]">
-              <Select
-                name="consentStatusCode"
-                value={form.consentStatusCode}
-                onChange={handleChange}
-                options={statusOptions}
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
+            <DownSelect
+              label="Consent Status"
+              required
+              value={form.consentStatusCode}
+              onChange={(consentStatusCode) => setForm((prev) => ({ ...prev, consentStatusCode }))}
+              options={statusOptions}
+              placeholder="Select"
+              disabled={submitting}
+            />
             {/* 동의자 */}
-            <FormField label="Consented By" required className="w-[160px]">
-              <Select
-                name="consentedByCode"
-                value={form.consentedByCode}
-                onChange={handleChange}
-                options={byOptions}
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
+            <DownSelect
+              label="Consented By"
+              required
+              value={form.consentedByCode}
+              onChange={(consentedByCode) => setForm((prev) => ({ ...prev, consentedByCode }))}
+              options={byOptions}
+              placeholder="Select"
+              disabled={submitting}
+            />
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-3">
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
             {/* 동의자 이름 (보호자일 때 필수) */}
-            <FormField label="Consenter Name" required={guardianSelected} className="w-[220px]">
+            <FormField label="Consenter Name" required={guardianSelected}>
               <Input
                 name="consenterName"
                 value={form.consenterName}
@@ -239,7 +241,7 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
               />
             </FormField>
             {/* 수령 일시 (비우면 지금) */}
-            <FormField label="Received At" hint="Leave empty to use the current time." className="w-[220px]">
+            <FormField label="Received At" hint="Leave empty to use the current time.">
               <Input
                 type="datetime-local"
                 name="receivedAt"
@@ -248,16 +250,15 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
                 disabled={submitting}
               />
             </FormField>
-            {/* 기록자ID */}
-            <FormField label="Recorded By ID" required className="w-[180px]">
-              <Input
-                name="recordedById"
-                value={form.recordedById}
-                onChange={handleChange}
-                disabled={submitting}
-                maxLength={36}
-              />
-            </FormField>
+            {/* 기록자 */}
+            <ActorField
+              label="Recorded By"
+              role="STAFF"
+              required
+              value={form.recordedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, recordedById: empId }))}
+              disabled={submitting}
+            />
           </div>
 
           {/* 사유 (유예일 때 필수) */}

@@ -3,7 +3,12 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import DischargedNotice from "@/components/emergency/common/DischargedNotice";
+import { selectIsDischarged } from "@/features/emergency/disposition/slice";
+import { Alert, Button, FormField, Input } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
+import ActorField from "@/components/emergency/common/ActorField";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createRiskScreeningRequest,
@@ -55,6 +60,7 @@ const SCREEN_TOOL_GUIDE: Record<string, string> = {
  */
 export default function RiskScreeningPanel({ receptionNo, className = "" }: RiskScreeningPanelProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const discharged = useSelector(selectIsDischarged(receptionNo));
   const items = useSelector(selectRiskScreeningItems);
   const loading = useSelector(selectRiskScreeningLoading);
   const error = useSelector(selectRiskScreeningError);
@@ -63,6 +69,8 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
   const vitalsItems = useSelector(selectVitalsItems);
 
   const [form, setForm] = useState(initialForm);
+  // 시행자는 기본이 로그인한 사람이고, 실제로 시행한 사람이 다르면 고른다
+  const screenedById = useActorId(form.screenedById, "STAFF");
   const [lastCount, setLastCount] = useState(0);
   const [localError, setLocalError] = useState("");
   const [fastChecks, setFastChecks] = useState(initialFastChecks);
@@ -175,7 +183,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
         screenType: form.screenType,
         score: form.score.trim() ? Number(form.score) : undefined,
         resultCode: form.resultCode ? form.resultCode : undefined,
-        screenedById: form.screenedById || undefined,
+        screenedById: screenedById || undefined,
       }),
     );
   }
@@ -225,41 +233,44 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
           )}
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
+          <DischargedNotice receptionNo={receptionNo} />
           {localError ? <Alert variant="error">{localError}</Alert> : null}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             {/* 스크리닝 유형 */}
-            <FormField label="Screening Type" required>
-              <Select
-                name="screenType"
-                value={form.screenType}
-                onChange={handleChange}
-                options={[...SCREEN_TYPE_OPTIONS]}
-                // 선택
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
+            <DownSelect
+              label="Screening Type"
+              required
+              value={form.screenType}
+              onChange={(screenType) => setForm((prev) => ({ ...prev, screenType }))}
+              options={[...SCREEN_TYPE_OPTIONS]}
+              // 선택
+              placeholder="Select"
+              disabled={submitting}
+            />
             {/* 점수 (0~3) / 점수 */}
             <FormField label={form.screenType ? "Score (0-3)" : "Score"}>
               <Input type="number" name="score" min={0} max={3} value={form.score} onChange={handleChange} disabled={submitting} />
             </FormField>
             {/* 판정 결과 */}
-            <FormField label="Result">
-              <Select
-                name="resultCode"
-                value={form.resultCode}
-                onChange={handleChange}
-                options={[...SCREEN_RESULT_OPTIONS]}
-                // 선택
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
-            {/* 시행자ID */}
-            <FormField label="Screened By ID">
-              <Input name="screenedById" value={form.screenedById} onChange={handleChange} disabled={submitting} maxLength={36} />
-            </FormField>
+            <DownSelect
+              label="Result"
+              value={form.resultCode}
+              onChange={(resultCode) => setForm((prev) => ({ ...prev, resultCode }))}
+              options={[...SCREEN_RESULT_OPTIONS]}
+              // 선택
+              placeholder="Select"
+              allowClear
+              disabled={submitting}
+            />
+            {/* 시행자 */}
+            <ActorField
+              label="Screened By"
+              role="STAFF"
+              value={form.screenedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, screenedById: empId }))}
+              disabled={submitting}
+            />
           </div>
 
           {form.screenType ? (
@@ -319,7 +330,7 @@ export default function RiskScreeningPanel({ receptionNo, className = "" }: Risk
           ) : null}
 
           <div className="mt-3 flex justify-end">
-            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.screenType || !receptionNo}>
+            <Button type="button" onClick={handleSubmit} disabled={submitting || !form.screenType || !receptionNo || discharged}>
               {/* 저장 중... / 스크리닝 결과 등록 */}
               {submitting ? "Saving..." : "Register Screening Result"}
             </Button>

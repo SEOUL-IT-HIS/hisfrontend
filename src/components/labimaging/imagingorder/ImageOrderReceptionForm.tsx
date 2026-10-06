@@ -4,8 +4,12 @@ import { useEffect, useState, type ChangeEvent, type SubmitEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import DoctorSelect from "@/components/labimaging/common/DoctorSelect";
 import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
 import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
+import { useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
+import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
+import { hasDuplicateItemCode, isUuid, normalizeOrderNo } from "@/features/labimaging/common/validation";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { resolveImageOrderMessage } from "@/features/labimaging/imagingorder/messages";
 import {
@@ -55,6 +59,8 @@ export default function ImageOrderReceptionForm() {
   const systemCodes = useCommonCodeOptions("SYSTEM_SOURCE_CD");
   const treatTypes = useCommonCodeOptions("RCPT_TYPE_CD");
   const imageItems = useCommonCodeOptions("IMG_ITEM_CD");
+  /** 직원 디렉터리를 못 불러오면 Physician 입력이 드롭다운 대신 자유 입력(physicianNo)으로 바뀐다. */
+  const { failed: staffDirectoryFailed } = useStaffDirectory();
 
   const [form, setForm] = useState<FormState>(initialForm);
   const [items, setItems] = useState<ImageOrderItemRequest[]>([
@@ -78,9 +84,23 @@ export default function ImageOrderReceptionForm() {
     setErrors({});
   }
 
+  /*
+   * 입력한 환자ID 가 실제로 누구인지 확인시켜 준다. (LabOrderReceptionForm 과 같은 패턴 — 그쪽 주석 참고)
+   * (04번 지시서 Phase 4-2)
+   */
+  const typedPatientId = form.patientId.trim();
+  const {
+    names: typedPatientNames,
+    loading: typedPatientNameLoading,
+    error: typedPatientNameError,
+  } = usePatientNames(typedPatientId.length === 36 ? [typedPatientId] : []);
+  const typedPatientName = typedPatientNames[typedPatientId];
+
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    // 오더번호는 허용 문자 외 입력을 입력 즉시 제거한다. (04번 지시서 Phase 3-E-1)
+    const nextValue = name === "imageOrderNo" ? normalizeOrderNo(value) : value;
+    setForm((prev) => ({ ...prev, [name]: nextValue }));
   }
 
   function handleItemChange(index: number, value: string) {
@@ -101,11 +121,20 @@ export default function ImageOrderReceptionForm() {
     const next: FieldErrors = {};
     if (!form.imageOrderNo.trim()) next.imageOrderNo = "Order number is required.";
     if (!form.systemCode.trim()) next.systemCode = "System code is required.";
-    if (!form.patientId.trim()) next.patientId = "Patient ID is required.";
+    // 환자ID 검증 — LabOrderReceptionForm 과 같은 기준(그쪽 주석 참고). (04번 지시서 Phase 4-2)
+    if (!typedPatientId) {
+      next.patientId = "Patient ID is required.";
+    } else if (!isUuid(typedPatientId)) {
+      next.patientId = "Patient ID must be a valid UUID.";
+    } else if (!typedPatientNameLoading && !typedPatientNameError && !typedPatientName) {
+      next.patientId = "Patient not found. Check the patient ID.";
+    }
     if (!form.treatTypeCode) next.treatTypeCode = "Select a treatment type.";
     if (!signedIn) next.receivedById = "Sign in to record this action.";
     if (items.every((item) => !item.imageItemCode.trim())) {
       next.orderItems = "Enter at least one imaging item.";
+    } else if (hasDuplicateItemCode(items.map((item) => item.imageItemCode))) {
+      next.orderItems = "The same imaging item was selected more than once.";
     }
     return next;
   }
@@ -150,7 +179,7 @@ export default function ImageOrderReceptionForm() {
             name="imageOrderNo"
             value={form.imageOrderNo}
             onChange={handleChange}
-            maxLength={20}
+            maxLength={36}
             disabled={creating}
             placeholder="e.g. EXT-IO-20260715-001"
           />
@@ -190,27 +219,35 @@ export default function ImageOrderReceptionForm() {
           {errors.patientId ? (
             <span className="text-xs text-rose-500">{errors.patientId}</span>
           ) : null}
+          {/*
+            입력한 UUID 가 누구인지 바로 보여준다. (LabOrderReceptionForm 과 같은 패턴)
+            36자를 다 채웠을 때만 조회하므로 타이핑 중에는 요청이 나가지 않는다.
+          */}
+          {typedPatientName ? (
+            <span className="text-xs text-emerald-600">Patient: {typedPatientName}</span>
+          ) : form.patientId.trim().length === 36 ? (
+            <span className="text-xs text-amber-600">
+              Patient not found. Check the patient ID.
+            </span>
+          ) : null}
         </FormField>
 
-        <FormField label="Physician No.">
-          <Input
-            name="physicianNo"
-            value={form.physicianNo}
-            onChange={handleChange}
-            maxLength={20}
+        {/*
+          physicianId/physicianNo 중 디렉터리 조회 성공 여부에 따라 하나만 쓴다(서로 배타적).
+          LabOrderReceptionForm 과 같은 패턴 — 그쪽 주석 참고.
+        */}
+        <FormField label="Physician" className="sm:col-span-2">
+          <DoctorSelect
+            value={staffDirectoryFailed ? form.physicianNo : form.physicianId}
+            onChange={(value) =>
+              setForm((prev) =>
+                staffDirectoryFailed
+                  ? { ...prev, physicianNo: value, physicianId: "" }
+                  : { ...prev, physicianId: value, physicianNo: "" },
+              )
+            }
             disabled={creating}
-            placeholder="Optional"
-          />
-        </FormField>
-
-        <FormField label="Physician ID">
-          <Input
-            name="physicianId"
-            value={form.physicianId}
-            onChange={handleChange}
-            maxLength={36}
-            disabled={creating}
-            placeholder="Optional"
+            placeholder="Select physician (optional)"
           />
         </FormField>
 

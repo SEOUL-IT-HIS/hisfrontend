@@ -7,6 +7,10 @@ import type { AppDispatch, RootState } from "@/store/store";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { formatBedLabel, formatSexAge } from "@/features/inpatient/displayFormat";
+import { formatDateTime } from "@/features/inpatient/dateLimits";
+import { Alert, Button, Select } from "@/components/common";
+import SectionCard, { InfoRow } from "@/components/inpatient/common/SectionCard";
 
 const STATUS_BADGE: Record<string, string> = {
     EMPTY: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
@@ -19,8 +23,6 @@ const STATUS_LABEL: Record<string, string> = {
     OCCUPIED: "Occupied",
     RESERVED: "Reserved",
 };
-
-const INFO_ROW = "flex justify-between border-b border-slate-100 px-4 py-3 text-sm last:border-b-0";
 
 type BedStatusDetailProps = {
     /** 목록 옆에 끼워 넣을 때 라우트 파라미터 대신 직접 전달 */
@@ -50,13 +52,19 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
         dispatch(fetchPatientDetailRequest(bed.patientId));
     }, [bed?.patientId, dispatch]);
 
-    useEffect(() => {
+    // 서버 값(bed)이 바뀌면 선택 드롭다운 값도 맞춰줌 — effect 대신 "이전 값 기억 → 렌더링 중 비교" 방식
+    // (effect 안에서 setState하면 한 번 더 렌더링되므로 React 권장 방식으로 변경)
+    const [prevRoomTypeCode, setPrevRoomTypeCode] = useState(bed?.roomTypeCode);
+    if (bed?.roomTypeCode !== prevRoomTypeCode) {
+        setPrevRoomTypeCode(bed?.roomTypeCode);
         setRoomTypeCode(bed?.roomTypeCode ?? "");
-    }, [bed?.roomTypeCode]);
+    }
 
-    useEffect(() => {
+    const [prevWardCd, setPrevWardCd] = useState(bed?.wardCd);
+    if (bed?.wardCd !== prevWardCd) {
+        setPrevWardCd(bed?.wardCd);
         setWardCd(bed?.wardCd ?? "");
-    }, [bed?.wardCd]);
+    }
 
     const handleSaveWard = () => {
         if (!bedId || !wardCd) return;
@@ -67,85 +75,75 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
         dispatch({type: "bed/updateBedRoomTypeRequest", payload: { bedId, roomTypeCode }});
     };
     return (
-        <div className="w-full p-6">
-            <div className="mb-6 flex items-center justify-between">
-                <div>
-                    <h1 className="text-lg font-semibold text-slate-800">Bed Status Details</h1>
-                    <p className="mt-1 text-sm text-slate-500">Current usage status of the bed.</p>
-                </div>
-                {onClose && (
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-                    >
-                        Deselect
-                    </button>
-                )}
-            </div>
+        // 목록 옆에 끼워 넣을 때(onClose 있음)는 여백 없이, 단독 화면일 때만 페이지 여백
+        <div className={onClose ? "w-full" : "w-full p-6"}>
+            <SectionCard
+                title="Bed Status Details"
+                // 목록 옆 좁은 패널에서는 설명을 숨겨 제목과 Deselect가 한 줄에 들어가게 함
+                description={onClose ? undefined : "Current usage status of the bed."}
+                padded={false}
+                actions={
+                    onClose && (
+                        <Button variant="secondary" onClick={onClose} className="!h-8 !px-3">
+                            Deselect
+                        </Button>
+                    )
+                }
+            >
+                {loading && <p className="px-5 py-6 text-sm text-slate-400">Loading...</p>}
+                {error && <Alert className="m-4">{error}</Alert>}
 
-            {loading && <p className="text-sm text-slate-500">Loading...</p>}
-            {error && <p className="text-sm text-red-600">{error}</p>}
-
-            {!loading && bed && (
-                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                        <span className="text-sm font-medium text-slate-800">{bed.bedId}</span>
-                        <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-                                STATUS_BADGE[bed.bedStatus] ?? "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
-                            }`}
-                        >
-                            {STATUS_LABEL[bed.bedStatus] ?? bed.bedStatus}
-                        </span>
-                    </div>
+                {!loading && bed && (
                     <div>
-                        <div className={INFO_ROW}>
-                            <span className="text-slate-500">Patient Name</span>
-                            <span className="text-slate-800">
-                                {bed.patientId ? (patientDetail?.patientId === bed.patientId ? patientDetail.patientName : "Loading...") : "None"}
+                        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/60 px-5 py-3">
+                            <span className="text-sm font-semibold text-slate-800">{formatBedLabel(bed.bedId)}</span>
+                            <span
+                                className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
+                                    STATUS_BADGE[bed.bedStatus] ?? "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
+                                }`}
+                            >
+                                {STATUS_LABEL[bed.bedStatus] ?? bed.bedStatus}
                             </span>
                         </div>
-                        <div className={INFO_ROW}>
-                            <span className="text-slate-500">Patient ID</span>
-                            <span className="text-slate-800">{bed.patientId ?? "None"}</span>
-                        </div>
-                        <div className={INFO_ROW}>
-                            <span className="text-slate-500">Room No.</span>
-                            <span className="text-slate-800">{bed.roomNo}</span>
-                        </div>
-                        <div className={INFO_ROW}>
-                            <span className="text-slate-500">Bed No.</span>
-                            <span className="text-slate-800">{bed.bedNo}</span>
-                        </div>
-                        <div className={INFO_ROW}>
-                        <span className="text-slate-500">Room Type</span>
-                        <div className="flex items-center gap-2">
-                        <select value={roomTypeCode} onChange={(e) => setRoomTypeCode(e.target.value)} className="rounded border border-slate-300 px-2 py-1 text-sm">
-                        <option value="">Select</option>
-                        {roomTypeOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                        </select>
-                        <button onClick={handleSaveRoomType} className="rounded bg-sky-600 px-2 py-1 text-xs text-white">Save</button>
-                        </div>
-                        </div>
-                        <div className={INFO_ROW}>
-                        <span className="text-slate-500">Ward</span>
-                        <div className="flex items-center gap-2">
-                        <select value={wardCd} onChange={(e) => setWardCd(e.target.value)} className="rounded border border-slate-300 px-2 py-1 text-sm">
-                        <option value="">Select</option>
-                        {wardOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                        </select>
-                        <button onClick={handleSaveWard} className="rounded bg-sky-600 px-2 py-1 text-xs text-white">Save</button>
-                        </div>
-                        </div>
-
+                        <InfoRow label="Patient Name">
+                            {bed.patientId ? (patientDetail?.patientId === bed.patientId ? patientDetail.patientName : "Loading...") : "None"}
+                        </InfoRow>
+                        <InfoRow label="Gender / Age">
+                            {bed.patientId && patientDetail?.patientId === bed.patientId
+                                ? formatSexAge(patientDetail.genderCd, patientDetail.birthDate)
+                                : "-"}
+                        </InfoRow>
+                        <InfoRow label="Room No.">{bed.roomNo}</InfoRow>
+                        <InfoRow label="Bed No.">{bed.bedNo}</InfoRow>
+                        <InfoRow label="Room Type">
+                            <span className="flex items-center justify-end gap-2">
+                                <Select
+                                    value={roomTypeCode}
+                                    onChange={(e) => setRoomTypeCode(e.target.value)}
+                                    placeholder="Select"
+                                    options={roomTypeOptions}
+                                    className="!h-8 w-40"
+                                />
+                                <Button onClick={handleSaveRoomType} className="!h-8 !px-3">Save</Button>
+                            </span>
+                        </InfoRow>
+                        <InfoRow label="Ward">
+                            <span className="flex items-center justify-end gap-2">
+                                <Select
+                                    value={wardCd}
+                                    onChange={(e) => setWardCd(e.target.value)}
+                                    placeholder="Select"
+                                    options={wardOptions}
+                                    className="!h-8 w-40"
+                                />
+                                <Button onClick={handleSaveWard} className="!h-8 !px-3">Save</Button>
+                            </span>
+                        </InfoRow>
+                        <InfoRow label="Created At">{formatDateTime(bed.createdAt)}</InfoRow>
+                        <InfoRow label="Updated At">{formatDateTime(bed.updatedAt)}</InfoRow>
                     </div>
-                </div>
-            )}
+                )}
+            </SectionCard>
         </div>
     );
 }

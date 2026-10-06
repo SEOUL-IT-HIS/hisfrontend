@@ -6,6 +6,7 @@ import type { AppDispatch } from "@/store/store";
 import {
   Alert,
   Button,
+  ConfirmDialog,
   DataTable,
   FormField,
   Input,
@@ -13,8 +14,10 @@ import {
 } from "@/components/common";
 import LoginActorInput from "@/components/labimaging/common/LoginActorInput";
 import { useLoginActor } from "@/features/labimaging/common/hooks/useLoginActor";
+import { formatStaffName, useStaffDirectory } from "@/features/labimaging/common/hooks/useStaffDirectory";
 import type { DataTableColumn } from "@/components/common";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
+import { todayInputValue } from "@/features/labimaging/common/validation";
 import { resolveConsentMessage } from "@/features/labimaging/imagingconsent/messages";
 import {
   createConsentRequest,
@@ -57,7 +60,6 @@ import {
 
 const initialForm = {
   consentTypeCode: "",
-  documentTemplateId: "",
   consentYn: "Y" as "Y" | "N",
   consentDt: "",
   signedByName: "",
@@ -84,6 +86,12 @@ type ConsentWorkTarget = {
   /** 동의는 접수가 아니라 오더에 붙는다. (CONSENT.image_order_id) */
   imageOrderId: string;
   patientId: string;
+  /**
+   * 동의가 필요한 촬영인지 (06번 지시서 Phase 2-1). 서버(ConsentRequirementPolicy)가 판정해
+   * 내려준 값만 쓴다 — 화면에서 다시 판단하지 않는다(required-mode/required-item-codes 를
+   * 프론트로 복사하지 않는다).
+   */
+  consentRequiredYn: "Y" | "N";
 };
 
 export default function ConsentWorkPanel({
@@ -114,9 +122,13 @@ export default function ConsentWorkPanel({
   const consentTypes = useCommonCodeOptions("CONSENT_TYPE_CD");
   // 철회사유 표시용 (5차 Phase 9-3 — 기존 admin 그룹)
   const withdrawReasons = useCommonCodeOptions("CONSENT_WITHDRAW_CD");
+  // witnessId(확인자 empId) → 이름 표시용. (직원ID 화면 노출 정리, 2026-10-05)
+  const { nameById: staffNameById, loading: staffLoading } = useStaffDirectory();
 
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<FieldErrors>({});
+  /** 제출 전 확인창(04번 지시서 Phase 4-3) — true 면 등록 내용을 보여주고 한 번 더 확인받는다. */
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   /*
    * 선택한 오더가 바뀌면 이전 오더의 이력/결과를 비우고 새로 불러온다.
@@ -150,12 +162,22 @@ export default function ConsentWorkPanel({
   function validate(): FieldErrors {
     const next: FieldErrors = {};
     if (!form.consentTypeCode) next.consentTypeCode = "Consent type is required.";
-    if (!form.documentTemplateId.trim())
-      next.documentTemplateId = "Consent template ID is required.";
-    if (!form.consentDt) next.consentDt = "Consent date is required.";
+    if (!form.consentDt) {
+      next.consentDt = "Consent date is required.";
+    } else if (form.consentDt > todayInputValue()) {
+      // 서버(LAB107)와 같은 기준 — 미래 날짜는 입력할 수 없다. (04번 지시서 Phase 3-B)
+      next.consentDt = "Future dates are not allowed.";
+    }
     if (!form.signedByName.trim()) next.signedByName = "Signer name is required.";
     if (!signedIn) next.witnessId = "Sign in to record this action.";
     return next;
+  }
+
+  /** 제출 직전 확인창에 보여줄 요약. (04번 지시서 Phase 4-3) */
+  function confirmMessage(): string {
+    const typeLabel = consentTypeLabel(form.consentTypeCode);
+    const decision = form.consentYn === "Y" ? "Consented" : "Declined";
+    return `Register ${typeLabel} — ${decision}, signed by ${form.signedByName.trim()} on ${form.consentDt}?`;
   }
 
   function handleSubmit(e: SubmitEvent) {
@@ -163,13 +185,16 @@ export default function ConsentWorkPanel({
     const nextErrors = validate();
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
+    setConfirmOpen(true);
+  }
 
+  function handleConfirmSubmit() {
+    setConfirmOpen(false);
     dispatch(
       createConsentRequest({
         imageOrderId: reception.imageOrderId,
         patientId: reception.patientId,
         consentTypeCode: form.consentTypeCode,
-        documentTemplateId: form.documentTemplateId.trim(),
         consentYn: form.consentYn,
         consentDt: form.consentDt,
         signedByName: form.signedByName.trim(),
@@ -214,7 +239,14 @@ export default function ConsentWorkPanel({
     },
     { key: "consentDt", header: "Consent Date", render: (c) => c.consentDt ?? "-" },
     { key: "signedByName", header: "Signer", render: (c) => c.signedByName },
-    { key: "witnessId", header: "Witness", render: (c) => c.witnessId },
+    {
+      key: "witnessId",
+      header: "Witness",
+      render: (c) => {
+        const display = formatStaffName(c.witnessId, staffNameById, staffLoading);
+        return <span title={display.title}>{display.text}</span>;
+      },
+    },
     {
       key: "withdrawnYn",
       header: "Withdrawal",
@@ -251,8 +283,15 @@ export default function ConsentWorkPanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-5">
-      {/* ---------- 현재 동의 상태 (ZP2-80) ---------- */}
-      {!loaded || listLoading ? null : hasValidConsent(consents) ? (
+      {/* ---------- 현재 동의 상태 (ZP2-80, 06번 지시서 Phase 2-2) ---------- */}
+      {!loaded || listLoading ? null : reception.consentRequiredYn === "N" ? (
+        // 동의가 필요 없는 촬영(required-mode=LISTED, 이 오더의 항목이 목록 밖) — 경고 톤을 쓰지 않는다.
+        // 등록 폼은 그대로 열려 있다 — 자발적으로 동의를 받고 싶으면 등록할 수 있다.
+        <Alert variant="info">
+          Consent is not required for this imaging. You can proceed to imaging. (A consent can
+          still be registered if needed.)
+        </Alert>
+      ) : hasValidConsent(consents) ? (
         <Alert variant="success">A valid consent is on file.</Alert>
       ) : (
         <Alert>No valid consent on file. Consent must be obtained before imaging.</Alert>
@@ -304,6 +343,7 @@ export default function ConsentWorkPanel({
               type="date"
               name="consentDt"
               value={form.consentDt}
+              max={todayInputValue()}
               onChange={handleChange}
               disabled={creating}
             />
@@ -334,9 +374,11 @@ export default function ConsentWorkPanel({
           </FormField>
 
           {/*
-            ⚠ 동의서양식ID 는 admin-service DOCUMENT_TEMPLATE 의 논리 참조인데,
-              양식 목록을 내려주는 API 가 아직 없어 임시로 직접 입력받는다.
-              admin 에 양식 조회 API 가 생기면 Select 로 바꿀 것.
+            ⚠ 동의서양식ID(documentTemplateId) 입력칸은 뺐다. (2026-10-06)
+              동의서를 전자문서가 아니라 종이문서로 보관하기로 확정되면서, admin-service
+              문서양식(DOCUMENT_TEMPLATE)을 참조할 일이 없어졌다. 백엔드도 더 이상 이
+              값을 요구하지 않는다(컬럼은 nullable로 남아 있다) — ConsentCreateRequest
+              에서 아예 보내지 않는다.
           */}
           {form.consentYn === "N" ? (
             <FormField label="Refusal Reason" hint="Optional — saved only for a declined consent">
@@ -350,20 +392,6 @@ export default function ConsentWorkPanel({
               />
             </FormField>
           ) : null}
-
-          <FormField label="Consent Template ID" required>
-            <Input
-              name="documentTemplateId"
-              value={form.documentTemplateId}
-              onChange={handleChange}
-              maxLength={36}
-              disabled={creating}
-              placeholder="admin document template UUID (temporary manual entry)"
-            />
-            {errors.documentTemplateId ? (
-              <span className="text-xs text-rose-500">{errors.documentTemplateId}</span>
-            ) : null}
-          </FormField>
         </div>
 
         <div className="flex justify-end">
@@ -401,6 +429,18 @@ export default function ConsentWorkPanel({
         submitting={withdrawing}
         onConfirm={handleWithdraw}
         onCancel={() => setWithdrawTarget(null)}
+      />
+
+      {/* 제출 전 확인창 — 동의 유형·동의/거부·서명자·일자를 다시 보여준다. (04번 지시서 Phase 4-3) */}
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Confirm Consent Registration"
+        message={confirmMessage()}
+        confirmLabel="Register"
+        cancelLabel="Cancel"
+        submitting={creating}
+        onConfirm={handleConfirmSubmit}
+        onCancel={() => setConfirmOpen(false)}
       />
     </div>
   );

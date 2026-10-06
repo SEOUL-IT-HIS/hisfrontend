@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import DownSelect from "@/components/emergency/common/DownSelect";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   createDispositionRequest,
@@ -54,6 +57,8 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
   const dispositionTypeCodes = useSelector(selectCommonCodesByGroup(DISPOSITION_TYPE_GROUP_CODE));
 
   const [form, setForm] = useState(initialForm);
+  // 퇴실 결정자는 의사 — 직접 안 고르면 로그인한 사람이 의사일 때 그 사람이다
+  const decidedById = useActorId(form.decidedById, "DOCTOR");
   const [lastReceptionNo, setLastReceptionNo] = useState(receptionNo);
   // 결정 변경 폼을 열었는지
   const [changing, setChanging] = useState(false);
@@ -104,18 +109,13 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
     return typeOptions.find((o) => o.value === code)?.label ?? code;
   }
 
-  function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  }
-
   function handleSubmit() {
-    if (!form.dispositionType || !receptionNo) return;
+    if (!form.dispositionType || !decidedById || !receptionNo) return;
     dispatch(
       createDispositionRequest({
         encounterId: receptionNo,
         dispositionType: form.dispositionType,
-        decidedById: form.decidedById || undefined,
+        decidedById,
       }),
     );
   }
@@ -147,29 +147,27 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
         <>
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {/* 퇴실 구분 */}
-            <FormField label="Disposition Type" required className="w-[220px]">
-              <Select
-                name="dispositionType"
-                value={form.dispositionType}
-                onChange={handleChange}
-                options={formOptions}
-                // 선택
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
-            {/* 결정자ID */}
-            <FormField label="Decided By ID" className="w-[180px]">
-              <Input
-                name="decidedById"
-                value={form.decidedById}
-                onChange={handleChange}
-                disabled={submitting}
-                maxLength={36}
-              />
-            </FormField>
+            <DownSelect
+              label="Disposition Type"
+              required
+              value={form.dispositionType}
+              onChange={(dispositionType) => setForm((prev) => ({ ...prev, dispositionType }))}
+              options={formOptions}
+              // 선택
+              placeholder="Select"
+              disabled={submitting}
+            />
+            {/* 결정자(의사) */}
+            <ActorField
+              label="Decided By"
+              role="DOCTOR"
+              required
+              value={form.decidedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, decidedById: empId }))}
+              disabled={submitting}
+            />
           </div>
           <div className="mt-3 flex justify-end gap-2">
             {changing ? (
@@ -181,7 +179,7 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
             <Button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || !form.dispositionType || !receptionNo}
+              disabled={submitting || !form.dispositionType || !decidedById || !receptionNo}
             >
               {/* 등록 중... / 퇴실 결정 변경 / 퇴실 결정 등록 */}
               {submitting ? "Saving..." : changing ? "Change Disposition" : "Register Disposition"}
