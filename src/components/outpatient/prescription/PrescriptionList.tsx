@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { Alert, Button, Input } from "@/components/common";
 import PrescriptionDetail from "@/components/outpatient/prescription/PrescriptionDetail";
+import { useEmpNames } from "@/features/emp/hooks/useEmpNames";
 import { fetchPrescriptionListRequest } from "@/features/outpatient/prescription/slice";
 import type { AppDispatch, RootState } from "@/store/store";
 
 const getStatusText = (status: string) => {
     switch (status) {
-        case 'REQUESTED':
         case 'ORDERED':
+            return 'Ordered'; // 처방됨
+        case 'REQUESTED':
         case 'PENDING':
             return 'Pending'; // 처방대기
         case 'ISSUED':
@@ -32,13 +34,34 @@ const getStatusText = (status: string) => {
 
 const formatDateTime = (value?: string | null) => (value ? value.replace("T", " ").slice(0, 19) : "-");
 
+// 검사결과 배지: null=검사 없음, WAITING=결과 없음, COMPLETE=1건 이상 도착
+const LAB_RESULT_BADGE: Record<string, { label: string; className: string }> = {
+    WAITING: { label: "Waiting", className: "bg-amber-50 text-amber-700 ring-amber-600/20" },
+    COMPLETE: { label: "Complete", className: "bg-emerald-50 text-emerald-700 ring-emerald-600/20" },
+};
+
+const LabResultBadge = ({ value }: { value?: string | null }) => {
+    const badge = value ? LAB_RESULT_BADGE[value] : undefined;
+    if (!badge) return <span className="text-slate-400">-</span>;
+    return (
+        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${badge.className}`}>
+            {badge.label}
+        </span>
+    );
+};
+
 const PrescriptionList = () => {
     const dispatch = useDispatch<AppDispatch>();
 
     const searchParams = useSearchParams();
     const initialKeyword = searchParams.get("keyword") ?? "";
 
+    // 처방자 empId -> 이름 (ADM 직원 목록 기반, 조회 실패 시 ID 그대로 표시)
+    const { names: empNames } = useEmpNames();
+
     const [keywordInput, setKeywordInput] = useState(initialKeyword);
+    // 마지막으로 조회한 검색어 (같은 검색어를 중복 조회하지 않기 위함)
+    const lastKeywordRef = useRef(initialKeyword.trim());
     const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<string | null>(null);
 
     const { loading, error, list } = useSelector(
@@ -55,9 +78,22 @@ const PrescriptionList = () => {
         dispatch(fetchPrescriptionListRequest({ keyword: initialKeyword }));
     }, [dispatch, initialKeyword]);
 
+    // 입력하면 0.3초 뒤 자동 검색 (한 글자만 입력해도 조회)
+    useEffect(() => {
+        const keyword = keywordInput.trim();
+        if (keyword === lastKeywordRef.current) return;
+        const timer = setTimeout(() => {
+            lastKeywordRef.current = keyword;
+            setSelectedPrescriptionId(null);
+            dispatch(fetchPrescriptionListRequest({ keyword }));
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [dispatch, keywordInput]);
+
     // 조회 버튼 클릭 시 keyword 전달
     function handleSearch() {
         const keyword = keywordInput.trim();
+        lastKeywordRef.current = keyword;
         setSelectedPrescriptionId(null);
         dispatch(fetchPrescriptionListRequest({ keyword }));
     }
@@ -72,6 +108,7 @@ const PrescriptionList = () => {
     // 초기화 버튼 클릭 시 검색어 비우기
     function handleReset() {
         setKeywordInput("");
+        lastKeywordRef.current = "";
         setSelectedPrescriptionId(null);
         dispatch(fetchPrescriptionListRequest({ keyword: "" }));
     }
@@ -86,6 +123,7 @@ const PrescriptionList = () => {
                     <div className="flex-1">
                         <Input
                             id="keyword"
+                            autoComplete="off" // 브라우저 이전 입력 기록 제안 끄기
                             value={keywordInput}
                             // 환자명 입력
                             placeholder="Enter patient name"
@@ -114,12 +152,15 @@ const PrescriptionList = () => {
                     <table className="w-full table-fixed text-left border-collapse text-sm">
                         <thead className="bg-slate-100 border-b border-slate-200 text-slate-700">
                         <tr>
-                            {/* 환자명 / 처방자 / 진료구분 / 우선순위 / 상태 / 처방일시 / 관리 */}
-                            <th className="w-[120px] p-3 font-semibold">Patient</th>
-                            <th className="w-[120px] p-3 font-semibold">Prescriber</th>
-                            <th className="w-[120px] p-3 font-semibold">Status</th>
-                            <th className="w-[120px] p-3 font-semibold">Prescribed At</th>
-                            <th className="w-[120px] p-3 font-semibold">Actions</th>
+                            {/* 환자 / 처방자 / 우선순위 / 상태 / 검사 / 일시 / 관리 */}
+                            {/* 7개 컬럼 균등 너비 (진료기록 목록과 동일) */}
+                            <th className="p-3 font-semibold">Patient</th>
+                            <th className="p-3 font-semibold">Prescriber</th>
+                            <th className="p-3 font-semibold">Priority</th>
+                            <th className="p-3 font-semibold">Status</th>
+                            <th className="p-3 font-semibold">Lab Result</th>
+                            <th className="p-3 font-semibold">Prescribed At</th>
+                            <th className="p-3 font-semibold">Actions</th>
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -127,8 +168,12 @@ const PrescriptionList = () => {
                             list.map((prescription) => (
                                 <tr key={prescription.prescriptionId} className="hover:bg-slate-50 transition">
                                     <td className="p-3">{prescription.patientName ?? prescription.patientId}</td>
-                                    <td className="p-3">{prescription.prescribedBy}</td>
+                                    <td className="p-3">
+                                        {empNames[prescription.prescribedBy] ?? prescription.prescribedBy}
+                                    </td>
+                                    <td className="p-3">{prescription.priorityName || prescription.priorityCode || "-"}</td>
                                     <td className="p-3">{getStatusText(prescription.status)}</td>
+                                    <td className="p-3"><LabResultBadge value={prescription.labResultStatus} /></td>
                                     <td className="p-3">{formatDateTime(prescription.prescribedAt)}</td>
                                     <td className="p-3">
                                         <Button
@@ -143,7 +188,7 @@ const PrescriptionList = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={5} className="p-6 text-center text-slate-500">
+                                <td colSpan={7} className="p-6 text-center text-slate-500">
                                     {/* 조회된 처방 내역이 없습니다. */}
                                     No prescriptions found.
                                 </td>
@@ -156,6 +201,7 @@ const PrescriptionList = () => {
 
             <PrescriptionDetail
                 prescriptionId={selectedPrescriptionId}
+                prescriberNames={empNames}
                 onClose={() => setSelectedPrescriptionId(null)}
             />
         </div>

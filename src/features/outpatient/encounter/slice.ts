@@ -15,8 +15,11 @@ const encounterSlice = createSlice({
     name: "encounter",
     initialState,
     reducers: {
-        fetchEncounterListRequest: (state, _action: PayloadAction<EncounterSearchParams>) => {
-            state.listStatus.loading = true;
+        fetchEncounterListRequest: (state, action: PayloadAction<EncounterSearchParams>) => {
+            // 자동 갱신(silent)은 "불러오는 중" 표시 없이 목록만 조용히 바꾼다
+            if (!action.payload.silent) {
+                state.listStatus.loading = true;
+            }
             state.listStatus.error = null;
         },
         fetchEncounterListSuccess: (state, action: PayloadAction<EncounterDto[]>) => {

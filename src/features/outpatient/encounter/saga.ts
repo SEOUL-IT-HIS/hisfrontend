@@ -10,7 +10,8 @@ import type { EncounterDto } from "./types";
 // 목록 조회 GET /api/outpatient/encounters
 function* fetchEncounterListSaga(action: ReturnType<typeof fetchEncounterListRequest>) {
     try {
-        const items: EncounterDto[] = yield call(fetchEncounterList, action.payload);
+        const { silent: _silent, ...params } = action.payload;
+        const items: EncounterDto[] = yield call(fetchEncounterList, params);
         yield put(fetchEncounterListSuccess(items));
     } catch (error) {
         const message = error instanceof Error ? error.message : "Encounter list fetch failed";

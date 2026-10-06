@@ -13,7 +13,14 @@ import type { AppDispatch, RootState } from "@/store/store";
 
 type MedicalRecordDetailProps = {
     recordId: string | null;
+    doctorNames?: Record<string, string>; // empId -> 담당의 이름 (없으면 ID만 표시)
     onClose: () => void;
+};
+
+// 초진/재진 표시 (값이 없으면 "-")
+const VISIT_TYPE_LABEL: Record<string, string> = {
+    INITIAL: "Initial Visit", // 초진
+    REVISIT: "Revisit", // 재진
 };
 
 const formatDateTime = (value?: string) => (value ? value.replace("T", " ").slice(0, 19) : "-");
@@ -26,7 +33,7 @@ const noteFields: { label: string; key: "chiefComplaint" | "examinationNote" | "
     { label: "Treatment Plan", key: "planNote" },
 ];
 
-const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) => {
+const MedicalRecordDetail = ({ recordId, doctorNames, onClose }: MedicalRecordDetailProps) => {
     const dispatch = useDispatch<AppDispatch>();
 
     const record = useSelector((state: RootState) => state.outpatient.medicalrecord.selectedRecord);
@@ -118,6 +125,9 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
         setShowDeactivateConfirm(false);
     }
 
+    // 서버가 이름을 주면 그대로, 없으면 ADM 직원 목록에서 찾은 이름 사용
+    const doctorLabel = record ? record.doctorName || doctorNames?.[record.doctorId] : undefined;
+
     return (
         <>
             <Modal
@@ -153,16 +163,14 @@ const MedicalRecordDetail = ({ recordId, onClose }: MedicalRecordDetailProps) =>
 
                         {/* 기본 정보 */}
                         <div className="grid grid-cols-2 gap-3">
-                            <FormField label="Record Status">
-                                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 font-medium">
-                                    {record.status}
-                                </div>
-                            </FormField>
                             <FormField label="Doctor">
                                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
-                                    {record.doctorName
-                                        ? `${record.doctorName} (${record.doctorId})`
-                                        : record.doctorId}
+                                    {doctorLabel ?? record.doctorId}
+                                </div>
+                            </FormField>
+                            <FormField label="Visit Type">
+                                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
+                                    {record.visitType ? (VISIT_TYPE_LABEL[record.visitType] ?? record.visitType) : "-"}
                                 </div>
                             </FormField>
                         </div>
