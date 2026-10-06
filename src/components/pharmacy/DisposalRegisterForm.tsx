@@ -12,6 +12,7 @@ import {
   Panel,
 } from "@/components/common";
 import type { DataTableColumn } from "@/components/common";
+import MedicationSearchInput from "@/components/pharmacy/MedicationSearchInput";
 
 type DisposalRow = {
   id: number;
@@ -59,13 +60,8 @@ export default function DisposalRegisterForm() {
       />
       <Panel className="max-w-md p-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <FormField label="Medication ID" required>
-            <Input
-              type="text"
-              placeholder="Medication ID"
-              value={medicationId}
-              onChange={(e) => setMedicationId(e.target.value)}
-            />
+          <FormField label="Medication" required>
+            <MedicationSearchInput value={medicationId} onChange={setMedicationId} />
           </FormField>
           <FormField label="Disposal Qty" required>
             <Input

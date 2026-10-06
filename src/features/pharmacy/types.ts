@@ -107,6 +107,42 @@ export interface ReceiptRegisterRequest {
   items: ReceiptItemRegisterRequest[];
 }
 
+/** 공급처 마스터 — 입고 등록 화면의 공급처 선택(Select)이 사용 */
+export interface SupplierDto {
+  supplierId: string;
+  supplierName: string;
+  contactPhone: string | null;
+}
+
+export interface SupplierRegisterRequest {
+  supplierName: string;
+  contactPhone?: string;
+}
+
+/** 보관위치 마스터 — 입고 등록 화면의 보관위치 선택(Select)이 사용 */
+export interface StorageLocationDto {
+  storageLocationId: string;
+  locationName: string;
+}
+
+export interface StorageLocationRegisterRequest {
+  locationName: string;
+}
+
+/** 약품 상세(품목 중심 워크스페이스)의 최근 입출고 내역 — GET /api/pharmacy/inventories/medications/{id}/movements */
+export interface InventoryMovementDto {
+  inventoryMovementId: string;
+  /** PHM_STOCK_TX_TYPE 공통코드 — 01=입고, 02=출고, 03=폐기, 04=조제, 05=조제취소, 06=반납 */
+  stockTxTypeCd: string;
+  movementQty: number;
+  beforeQty: number;
+  afterQty: number;
+  lotNo: string;
+  storageLocationId: string;
+  sourceFormTypeCd: string;
+  movementAt: string;
+}
+
 /** 약품 출고 (HL2-8 등록 / HL2-9 조회) */
 export interface IssuanceDto {
   medicationId: string;
@@ -318,4 +354,26 @@ export interface PharmacyState {
   controlledDrugRecordList: ControlledDrugRecordDto[];
   controlledDrugRecordLoading: boolean;
   controlledDrugRecordError: string | null;
+
+  supplierList: SupplierDto[];
+  supplierLoading: boolean;
+  supplierError: string | null;
+  supplierRegisterLoading: boolean;
+  supplierRegisterError: string | null;
+
+  storageLocationList: StorageLocationDto[];
+  storageLocationLoading: boolean;
+  storageLocationError: string | null;
+  storageLocationRegisterLoading: boolean;
+  storageLocationRegisterError: string | null;
+
+  /** 품목 중심 워크스페이스 — 선택한 약품의 재고(로트·보관위치별) */
+  medicationStockList: InventoryDto[];
+  medicationStockLoading: boolean;
+  medicationStockError: string | null;
+
+  /** 품목 중심 워크스페이스 — 선택한 약품의 최근 입출고 내역 */
+  medicationMovementList: InventoryMovementDto[];
+  medicationMovementLoading: boolean;
+  medicationMovementError: string | null;
 }

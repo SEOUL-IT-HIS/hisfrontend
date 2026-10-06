@@ -10,6 +10,7 @@ import type {
   IssuanceDto,
   IssuanceRegisterRequest,
   InventoryDto,
+  InventoryMovementDto,
   MedicationDto,
   MedicationRegisterRequest,
   MedicationReturnRegisterRequest,
@@ -24,6 +25,10 @@ import type {
   ReleaseRegisterRequest,
   ReleaseRegisterResponse,
   ReturnedDisposalRegisterRequest,
+  StorageLocationDto,
+  StorageLocationRegisterRequest,
+  SupplierDto,
+  SupplierRegisterRequest,
 } from "./types";
 
 // 상대경로만 사용. next.config.ts의 /api/pharmacy rewrite가 실제 서버로 전달.
@@ -60,12 +65,63 @@ export async function importMedicationsFromPublicApi(): Promise<
   return response.data;
 }
 
-/** 재고 목록 (HL2-5) */
-export async function getInventoryList(): Promise<
-  ApiResponse<PageResponse<InventoryDto>>
-> {
+/** 재고 목록 (HL2-5). medicationId를 넘기면 그 품목의 재고(로트·보관위치별)만 조회한다(품목 중심 워크스페이스용). */
+export async function getInventoryList(
+  medicationId?: string
+): Promise<ApiResponse<PageResponse<InventoryDto>>> {
   const response = await apiClient.get<ApiResponse<PageResponse<InventoryDto>>>(
-    "/api/pharmacy/inventories"
+    "/api/pharmacy/inventories",
+    { params: medicationId ? { medicationId } : undefined }
+  );
+  return response.data;
+}
+
+/** 품목 중심 워크스페이스 — 선택한 약품의 최근 입출고 내역 */
+export async function getMedicationMovements(
+  medicationId: string
+): Promise<ApiResponse<InventoryMovementDto[]>> {
+  const response = await apiClient.get<ApiResponse<InventoryMovementDto[]>>(
+    `/api/pharmacy/inventories/medications/${medicationId}/movements`
+  );
+  return response.data;
+}
+
+/** 공급처 목록 — 입고 등록 화면의 공급처 선택(Select)이 사용 */
+export async function getSupplierList(): Promise<ApiResponse<SupplierDto[]>> {
+  const response = await apiClient.get<ApiResponse<SupplierDto[]>>(
+    "/api/pharmacy/admin/suppliers/list"
+  );
+  return response.data;
+}
+
+/** 공급처 등록 */
+export async function createSupplier(
+  request: SupplierRegisterRequest
+): Promise<ApiResponse<void>> {
+  const response = await apiClient.post<ApiResponse<void>>(
+    "/api/pharmacy/admin/suppliers/register",
+    request
+  );
+  return response.data;
+}
+
+/** 보관위치 목록 — 입고 등록 화면의 보관위치 선택(Select)이 사용 */
+export async function getStorageLocationList(): Promise<
+  ApiResponse<StorageLocationDto[]>
+> {
+  const response = await apiClient.get<ApiResponse<StorageLocationDto[]>>(
+    "/api/pharmacy/admin/storage-locations/list"
+  );
+  return response.data;
+}
+
+/** 보관위치 등록 */
+export async function createStorageLocation(
+  request: StorageLocationRegisterRequest
+): Promise<ApiResponse<void>> {
+  const response = await apiClient.post<ApiResponse<void>>(
+    "/api/pharmacy/admin/storage-locations/register",
+    request
   );
   return response.data;
 }

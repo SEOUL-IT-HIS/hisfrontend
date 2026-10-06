@@ -5,6 +5,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { registerControlledDrugReceiptRequest } from "@/features/pharmacy/slice";
 import { FormActions, FormField, Input, PageHeader, Panel, Select } from "@/components/common";
+import MedicationSearchInput from "@/components/pharmacy/MedicationSearchInput";
+import SupplierSelect from "@/components/pharmacy/SupplierSelect";
+import StorageLocationSelect from "@/components/pharmacy/StorageLocationSelect";
 import type { RootState } from "@/store/store";
 import type { ReceiptRegisterRequest } from "@/features/pharmacy/types";
 import { fetchEmpApi } from "@/features/emp/api/empApi";
@@ -125,20 +128,16 @@ export default function ControlledDrugReceiptForm() {
       <Panel className="max-w-xl p-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <p className="text-xs font-semibold text-slate-400">Receipt Info</p>
-          <FormField label="Supplier ID" required>
-            <Input
-              type="text"
-              placeholder="Supplier ID"
+          <FormField label="Supplier" required>
+            <SupplierSelect
               value={receipt.supplierId}
-              onChange={handleReceiptFieldChange("supplierId")}
+              onChange={(e) => setReceipt((prev) => ({ ...prev, supplierId: e.target.value }))}
             />
           </FormField>
-          <FormField label="Storage Location ID" required>
-            <Input
-              type="text"
-              placeholder="Storage Location ID"
+          <FormField label="Storage Location" required>
+            <StorageLocationSelect
               value={receipt.storageLocationId}
-              onChange={handleReceiptFieldChange("storageLocationId")}
+              onChange={(e) => setReceipt((prev) => ({ ...prev, storageLocationId: e.target.value }))}
             />
           </FormField>
           <FormField label="Receipt Date" required>
@@ -158,12 +157,12 @@ export default function ControlledDrugReceiptForm() {
           </FormField>
 
           <p className="mt-2 text-xs font-semibold text-slate-400">Medication Item</p>
-          <FormField label="Medication ID" required>
-            <Input
-              type="text"
-              placeholder="Medication ID"
+          <FormField label="Medication" required>
+            <MedicationSearchInput
               value={item.medicationId}
-              onChange={handleItemChange("medicationId")}
+              onChange={(medicationId) =>
+                setReceipt((prev) => ({ ...prev, items: [{ ...prev.items[0], medicationId }] }))
+              }
             />
           </FormField>
           <FormField label="Lot No." required>

@@ -5,6 +5,7 @@ import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import { registerIssuanceRequest } from "@/features/pharmacy/slice";
 import { Button, FormField, Input, PageHeader, Panel } from "@/components/common";
+import MedicationSearchInput from "@/components/pharmacy/MedicationSearchInput";
 
 export default function IssuanceRegisterForm() {
   const dispatch = useDispatch();
@@ -30,13 +31,8 @@ export default function IssuanceRegisterForm() {
       <PageHeader title="Register Issuance" description="Enter a medication ID and quantity to register an issuance." />
       <Panel className="max-w-md p-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <FormField label="Medication ID" required>
-            <Input
-              type="text"
-              placeholder="Medication ID"
-              value={medicationId}
-              onChange={(e) => setMedicationId(e.target.value)}
-            />
+          <FormField label="Medication" required>
+            <MedicationSearchInput value={medicationId} onChange={setMedicationId} />
           </FormField>
           <FormField label="Issue Qty" required>
             <Input

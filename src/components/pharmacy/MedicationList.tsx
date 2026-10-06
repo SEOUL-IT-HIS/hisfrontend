@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import Link from "next/link";
 import {
   fetchMedicationListRequest,
   importMedicationsRequest,
@@ -20,7 +21,15 @@ const DOSAGE_FORM_LABELS: Record<string, string> = {
 
 const columns: DataTableColumn<MedicationDto>[] = [
   { key: "medicationId", header: "Medication ID", render: (row) => row.medicationId },
-  { key: "medicationName", header: "Product Name", render: (row) => row.medicationName },
+  {
+    key: "medicationName",
+    header: "Product Name",
+    render: (row) => (
+      <Link href={`/pharmacy/medication/${row.medicationId}`} className="text-sky-700 underline">
+        {row.medicationName}
+      </Link>
+    ),
+  },
   { key: "itemSeq", header: "Item Seq", render: (row) => row.itemSeq ?? "-" },
   { key: "itemEngName", header: "Product Eng. Name", render: (row) => row.itemEngName ?? "-" },
   { key: "entpName", header: "Company", render: (row) => row.entpName ?? "-" },

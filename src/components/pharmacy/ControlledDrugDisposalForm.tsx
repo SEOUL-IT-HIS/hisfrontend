@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { registerControlledDrugDisposalRequest } from "@/features/pharmacy/slice";
 import { FormActions, FormField, Input, PageHeader, Panel, Select } from "@/components/common";
+import MedicationSearchInput from "@/components/pharmacy/MedicationSearchInput";
 import type { RootState } from "@/store/store";
 import { fetchEmpApi } from "@/features/emp/api/empApi";
 import type { Emp } from "@/features/emp/types/empTypes";
@@ -71,13 +72,8 @@ export default function ControlledDrugDisposalForm() {
       {employeeLoadError && <p className="text-sm text-rose-500">{employeeLoadError}</p>}
       <Panel className="max-w-md p-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <FormField label="Medication ID" required>
-            <Input
-              type="text"
-              placeholder="Medication ID"
-              value={medicationId}
-              onChange={(e) => setMedicationId(e.target.value)}
-            />
+          <FormField label="Medication" required>
+            <MedicationSearchInput value={medicationId} onChange={setMedicationId} />
           </FormField>
           <FormField label="Disposal Qty" required>
             <Input

@@ -31,6 +31,8 @@ const groups: QuickLinkGroup[] = [
       { label: "Receipt History", href: "/pharmacy/receipt/list" },
       { label: "Register Issuance", href: "/pharmacy/issuance" },
       { label: "Issuance History", href: "/pharmacy/issuance/list" },
+      { label: "Register Supplier", href: "/pharmacy/suppliers/register" },
+      { label: "Register Storage Location", href: "/pharmacy/storage-locations/register" },
     ],
   },
   {
