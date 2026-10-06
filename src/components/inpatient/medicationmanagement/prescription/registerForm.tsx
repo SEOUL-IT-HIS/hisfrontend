@@ -14,9 +14,10 @@ import {
   type PrescriptionItemCreateDTO,
 } from "@/features/inpatient/medicationmanagement/types";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
+import { LABEL, FIELD } from "@/components/inpatient/common/styles";
+import SectionCard from "@/components/inpatient/common/SectionCard";
+import { Alert, Button } from "@/components/common";
 
-const LABEL = "mb-1 block text-sm font-medium text-slate-700";
-const FIELD = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500";
 
 // 외래 처방코어가 알려준 예시값을 기본값으로 둠 — 나머지 코드값은 외래가 아직 검증하지 않아서 그대로 등록됨
 // (운영 코드값이 확정되면 드롭다운으로 바꿀 예정)
@@ -151,29 +152,20 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess, onCancel }: Prescrip
   }, [success]);
 
   return (
-    <div className="w-full">
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <h2 className="text-sm font-semibold text-slate-800">New Prescription Request</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Registered in the outpatient prescription core, then sent to the lab / pharmacy automatically.
-          </p>
-        </div>
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-          >
+    <SectionCard
+      title="New Prescription Request"
+      description="Registered in the outpatient prescription core, then sent to the lab / pharmacy automatically."
+      actions={
+        onCancel && (
+          <Button variant="secondary" className="!h-8 !px-3" onClick={onCancel}>
             Cancel
-          </button>
-        )}
-      </div>
+          </Button>
+        )
+      }
+    >
+      {error && <Alert className="mb-4">{error}</Alert>}
 
-      {loading && <p className="mb-3 text-sm text-slate-500">Sending...</p>}
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-
-      <form onSubmit={onSubmit} className="space-y-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <form onSubmit={onSubmit} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="serviceType" className={LABEL}>Service Type</label>
@@ -201,20 +193,18 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess, onCancel }: Prescrip
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-slate-800">Items</p>
-            <button
-              type="button"
+            <p className="text-sm font-semibold text-slate-800">Items</p>
+            <Button variant="secondary" className="!h-8 !px-3"
               onClick={addItem}
-              className="inline-flex items-center rounded-lg border border-sky-300 px-3 py-1.5 text-sm font-medium text-sky-700 hover:bg-sky-50"
             >
               + Add Item
-            </button>
+            </Button>
           </div>
 
           {items.map((item, index) => {
             const isMedication = item.prescriptionType === PRESCRIPTION_TYPE_MEDICATION;
             return (
-              <div key={index} className="space-y-3 rounded-lg border border-slate-200 p-4">
+              <div key={index} className="space-y-3 rounded-xl border border-slate-200/80 bg-slate-50/50 p-4">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Item {index + 1}</p>
                   {items.length > 1 && (
@@ -304,15 +294,14 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess, onCancel }: Prescrip
           })}
         </div>
 
-        <button
+        <Button className="w-full"
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
         >
           {loading ? "Sending..." : "Send Request"}
-        </button>
+        </Button>
       </form>
-    </div>
+    </SectionCard>
   );
 };
 
