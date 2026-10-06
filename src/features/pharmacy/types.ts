@@ -20,6 +20,8 @@ export interface MedicationDto {
   classNo: string | null;
   className: string | null;
   formCodeName: string | null;
+  /** admin 공통코드 DOSAGE_FORM_CD 값("01" 알약/캡슐·"02" 수액·"03" 주사) */
+  dosageFormCd: string | null;
   chart: string | null;
   itemPermitDate: string | null;
   ediCode: string | null;
@@ -35,6 +37,8 @@ export interface MedicationRegisterRequest {
   classNo?: string;
   className?: string;
   formCodeName?: string;
+  /** admin 공통코드 DOSAGE_FORM_CD 값("01" 알약/캡슐·"02" 수액·"03" 주사) — 필수, 드롭다운으로 선택 */
+  dosageFormCd: string;
   chart?: string;
   itemPermitDate?: string;
   ediCode?: string;
@@ -51,6 +55,7 @@ export interface Medication {
   classNo: string | null;
   className: string | null;
   formCodeName: string | null;
+  dosageFormCd: string | null;
   chart: string | null;
   itemPermitDate: string | null;
   ediCode: string | null;
