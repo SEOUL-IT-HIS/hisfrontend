@@ -29,6 +29,7 @@ import OrderSelect from "@/components/emergency/order/OrderSelect";
 import { fetchOrderRequest, selectOrdersByReception } from "@/features/emergency/order/slice";
 import { ORDER_ITEM_TYPE } from "@/features/emergency/order/types";
 import { hasLoadedItems, orderTitle } from "@/features/emergency/order/utils";
+import { eventTimeBounds, eventTimeError, useEventTimeLimits } from "@/features/emergency/common/eventTime";
 import { formatDateTime } from "@/features/emergency/utils";
 
 const MANUAL_DRUG = "__manual__";
@@ -99,7 +100,9 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
     { value: MANUAL_DRUG, label: "Enter drug code manually..." },
   ];
   // 처방에 약품 항목이 없거나 아직 못 불러왔으면 직접 입력으로 둔다.
-  const drugManualMode = manualDrug || drugItems.length === 0;
+  // 처방을 고르기 전에는 비활성 드롭다운("Select an order first")을 보여주고, 직접 입력은 "Enter drug code manually..."를 고르거나
+  // 고른 처방에 약품 항목이 없을 때만 연다.
+  const drugManualMode = manualDrug || (!!form.orderId && drugItems.length === 0);
 
   function handleOrderChange(orderId: string) {
     setForm((prev) => ({ ...prev, orderId, drugCode: "", orderItemId: "" }));
@@ -122,7 +125,12 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
   }
 
   const routeOptions = toCodeOptions(routeCodes, ADMIN_ROUTE_FALLBACK_OPTIONS);
+  // 투여 시각은 접수 이후·현재 이전이어야 하고, 귀가·사망·자의퇴원이면 퇴실 결정 이전이어야 한다
+  const timeLimits = useEventTimeLimits(receptionNo);
+  const timeBounds = eventTimeBounds(timeLimits);
+  const timeError = eventTimeError(form.administeredAt, timeLimits);
   const canSubmit =
+    !timeError &&
     !!receptionNo &&
     !submitting &&
     !!form.orderId.trim() &&
@@ -140,6 +148,7 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
     !form.dose.trim() && "the dose",
     !form.routeCode && "the route",
     !form.administeredAt && "the administered time",
+    timeError && "an administered time within the stay",
     !administeredById && "who administered it",
   ].filter(Boolean);
 
@@ -220,7 +229,7 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
                 value={form.drugCode}
                 onChange={handleDrugSelect}
                 options={drugOptions}
-                placeholder="Select"
+                placeholder={form.orderId ? "Select" : "Select an order first"}
                 disabled={submitting || !form.orderId}
               />
             )}
@@ -239,13 +248,16 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
               disabled={submitting}
             />
             {/* 투여 일시 */}
-            <FormField label="Administered At" required>
+            <FormField label="Administered At" required hint={timeError || undefined}>
               <Input
                 type="datetime-local"
                 name="administeredAt"
                 value={form.administeredAt}
+                min={timeBounds.min}
+                max={timeBounds.max}
                 onChange={handleChange}
                 disabled={submitting}
+                className={timeError ? "border-rose-400 focus:border-rose-400 focus:ring-rose-100" : ""}
               />
             </FormField>
             {/* 투여자 */}
@@ -259,10 +271,13 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
             />
           </div>
           <div className="mt-3 flex items-center justify-end gap-3">
-            {!submitting && missing.length > 0 ? (
-              <p className="text-xs text-slate-400">Select {missing.join(", ")} to register.</p>
-            ) : null}
-            <Button type="button" onClick={handleSubmit} disabled={!canSubmit}>
+            {/* 막힌 이유는 칸 아래 안내와 버튼에 마우스를 올렸을 때 보이는 말풍선으로 알려 준다(버튼 옆에 긴 문장을 두지 않는다) */}
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              title={!submitting && missing.length > 0 ? `Needed to register: ${missing.join(", ")}.` : undefined}
+            >
               {/* 등록 중... / 투여 기록 등록 */}
               {submitting ? "Saving..." : "Register Administration"}
             </Button>

@@ -179,10 +179,13 @@ export default function TreatmentPanel({ receptionNo, className = "" }: Treatmen
             />
           </FormField>
           <div className="mt-3 flex items-center justify-end gap-3">
-            {!submitting && missing.length > 0 ? (
-              <p className="text-xs text-slate-400">Select {missing.join(", ")} to register.</p>
-            ) : null}
-            <Button type="button" onClick={handleSubmit} disabled={!canSubmit}>
+            {/* 막힌 이유는 칸 아래 안내와 버튼에 마우스를 올렸을 때 보이는 말풍선으로 알려 준다(버튼 옆에 긴 문장을 두지 않는다) */}
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              title={!submitting && missing.length > 0 ? `Needed to register: ${missing.join(", ")}.` : undefined}
+            >
               {/* 등록 중... / 처치 기록 등록 */}
               {submitting ? "Saving..." : "Register Treatment"}
             </Button>

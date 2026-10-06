@@ -8,6 +8,7 @@ import {
   dispatchPharmacy,
   getOrder,
   getOrders,
+  searchMedications,
 } from "@/features/emergency/order/api";
 import {
   cancelOrderRequest,
@@ -26,9 +27,13 @@ import {
   fetchOrderSuccess,
   loadOrderDetailSuccess,
   orderActionFailure,
+  searchMedicationsFailure,
+  searchMedicationsRequest,
+  searchMedicationsSuccess,
 } from "@/features/emergency/order/slice";
 import { isOrderCancelled } from "@/features/emergency/order/utils";
 import type {
+  MedicationItem,
   Order,
   OrderCancelRequest,
   OrderCreateRequest,
@@ -108,6 +113,16 @@ function* cancelOrderSaga(action: PayloadAction<{ orderId: string; request: Orde
   }
 }
 
+function* searchMedicationsSaga(action: PayloadAction<string>) {
+  try {
+    const items: MedicationItem[] = yield call(searchMedications, action.payload.trim());
+    yield put(searchMedicationsSuccess(items));
+  } catch (err) {
+    // 약품 검색에 실패했습니다.
+    yield put(searchMedicationsFailure(errorMessage(err, "Failed to search drugs.")));
+  }
+}
+
 function* confirmVerbalSaga(action: PayloadAction<{ orderId: string; confirmedBy: string }>) {
   try {
     const order: Order = yield call(confirmVerbalOrder, action.payload.orderId, action.payload.confirmedBy);
@@ -142,5 +157,6 @@ export default function* orderSaga() {
   // 취소·전송은 처방마다 따로 진행될 수 있어서 takeEvery
   yield takeEvery(cancelOrderRequest.type, cancelOrderSaga);
   yield takeEvery(dispatchOrderRequest.type, dispatchOrderSaga);
+  yield takeLatest(searchMedicationsRequest.type, searchMedicationsSaga);
   yield takeEvery(confirmVerbalRequest.type, confirmVerbalSaga);
 }

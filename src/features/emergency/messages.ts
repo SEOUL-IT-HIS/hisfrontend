@@ -28,6 +28,10 @@ const CONFLICT_REASON_MESSAGES: ReadonlyArray<readonly [RegExp, string]> = [
   [/^reception cancelled\b/, "This reception was cancelled at reception. New entries cannot be registered."],
   // 퇴실 처리가 끝난 환자에게는 새로 등록할 수 없습니다.
   [/^reception already discharged\b/, "This patient has already been discharged. New entries cannot be registered here."],
+  // 투약·CPR·동의의 시각이 범위(접수 이후, 현재 이전, 귀가·사망·자의퇴원이면 퇴실 이전)를 벗어났습니다.
+  [/must not be in the future$/, "The time cannot be in the future."],
+  [/must not be before the reception time$/, "The time cannot be earlier than the reception time."],
+  [/must not be after the discharge time$/, "The time cannot be later than the discharge time."],
 ];
 
 /**

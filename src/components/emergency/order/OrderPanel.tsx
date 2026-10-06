@@ -20,6 +20,11 @@ import {
   dispatchOrderRequest,
   fetchOrderRequest,
   fetchOrdersRequest,
+  clearMedicationSearch,
+  searchMedicationsRequest,
+  selectMedications,
+  selectMedicationsError,
+  selectMedicationsLoading,
   selectOrderActionError,
   selectOrderBusyId,
   selectOrderListError,
@@ -34,12 +39,14 @@ import {
   PHARMACY_DISPATCH_ENABLED,
   ORDER_PRIORITY_FALLBACK_OPTIONS,
   ORDER_TIMING_FALLBACK_OPTIONS,
+  type MedicationItem,
   type Order,
   type OrderItem,
 } from "@/features/emergency/order/types";
 import {
   abnormalFlagLabel,
   awaitingLabResult,
+  dosageFormFromName,
   isOrderCancelled,
   labItemHasResult,
   labItemReceived,
@@ -86,6 +93,10 @@ const emptyItem = (): ItemForm => ({
 /** 검사 결과를 기다리는 동안 자동으로 다시 불러오는 간격과 최대 횟수(30초 × 20회 = 10분) */
 const RESULT_POLL_INTERVAL_MS = 30000;
 const RESULT_POLL_MAX = 20;
+
+/** 약품 검색: 이 글자 수부터 검색하고, 입력을 멈춘 뒤 이 시간(ms)이 지나면 부른다 */
+const DRUG_SEARCH_MIN_LENGTH = 2;
+const DRUG_SEARCH_DELAY_MS = 400;
 
 const initialForm = { prescribedBy: "", priorityCode: "01", timingCode: "03", verbal: false, dispatchNow: true };
 const initialCancel = { cancelReason: "", userId: "" };
@@ -143,9 +154,16 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
   const dosageFormCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.DOSAGE_FORM));
   const timingCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.ORDER_TIMING));
   const labTestCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.LAB_TEST));
+  const medications = useSelector(selectMedications);
+  const medicationsLoading = useSelector(selectMedicationsLoading);
+  const medicationsError = useSelector(selectMedicationsError);
 
   const [form, setForm] = useState(initialForm);
   const [items, setItems] = useState<ItemForm[]>([emptyItem()]);
+  const [labQuery, setLabQuery] = useState("");
+  const [drugQuery, setDrugQuery] = useState("");
+  // 검색어가 충분히 길고 검색이 실패하지 않았으면 검색 결과를, 아니면 자주 쓰는 약 목록을 보여준다
+  const showSearchResults = drugQuery.trim().length >= DRUG_SEARCH_MIN_LENGTH && !medicationsError;
   const [verbalTarget, setVerbalTarget] = useState("");
   const [verbalDoctor, setVerbalDoctor] = useState("");
   const [cancelTarget, setCancelTarget] = useState("");
@@ -183,11 +201,24 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
     return () => clearInterval(timer);
   }, [dispatch, receptionNo, awaitingResult]);
 
+  // 약품 검색 — 글자를 멈추고 0.4초 뒤에 검색한다. 2글자 미만이면 결과를 비운다(처방코어는 이름 없이는 오류를 낸다).
+  useEffect(() => {
+    const query = drugQuery.trim();
+    if (query.length < DRUG_SEARCH_MIN_LENGTH) {
+      dispatch(clearMedicationSearch());
+      return;
+    }
+    const timer = setTimeout(() => dispatch(searchMedicationsRequest(query)), DRUG_SEARCH_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [dispatch, drugQuery]);
+
   // 환자를 바꾸면 입력 중이던 값과 이전 오류를 지운다.
   if (receptionNo !== lastReceptionNo) {
     setLastReceptionNo(receptionNo);
     setForm(initialForm);
     setItems([emptyItem()]);
+    setLabQuery("");
+    setDrugQuery("");
     setVerbalTarget("");
     setVerbalDoctor("");
     setCancelTarget("");
@@ -213,6 +244,11 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
 
   // 검사 종류는 admin 공통코드 TEST_TYPE_CD(01~08) — 외래·병동·LAB 이 같은 값을 검사 항목 코드로 쓴다. 처방코어의 검사항목 검색을 부르지 않는다.
   const labTestOptions = toCodeOptions(labTestCodes, LAB_TEST_FALLBACK_OPTIONS);
+  // 입력한 글자가 검사 이름에 들어 있는 검사만 보여준다(대소문자 구분 없음). 코드 번호로는 찾지 않는다 — 직원은 코드를 외우지 않는다
+  const labFilter = labQuery.trim().toLowerCase();
+  const shownLabTests = labFilter
+    ? labTestOptions.filter((test) => test.label.toLowerCase().includes(labFilter))
+    : labTestOptions;
 
   const itemsValid = items.every((item) => !!item.itemCode.trim() && !!item.itemName.trim());
   // 퇴실 처리가 끝난 환자에게는 새 처방을 등록하지 않는다(기존 처방의 취소·전송·구두 확정은 가능)
@@ -286,6 +322,19 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
       const emptyIndex = prev.findIndex((p) => !p.itemCode.trim() && !p.itemName.trim());
       if (emptyIndex >= 0) return prev.map((p, i) => (i === emptyIndex ? filled : p));
       return [...prev, filled];
+    });
+  }
+
+  /** 약품 검색 결과를 처방 항목에 추가한다. 용량·횟수·일수는 비워 두고 의료진이 채운다. 제형은 약품 마스터의 제형 이름에서 맞춘다. */
+  function handleAddSearchedDrug(med: MedicationItem) {
+    handleAddCommonDrug({
+      itemCode: med.itemCode,
+      itemName: med.itemName,
+      purpose: "",
+      dosage: "",
+      dosageFormCd: dosageFormFromName(med.formName),
+      frequency: "",
+      durationDays: "",
     });
   }
 
@@ -646,8 +695,19 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
         <p className="text-xs text-slate-400">
           Choose the tests to order. Results of tests marked &quot;No result in ER&quot; are not shown here.
         </p>
-        <ul className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
-          {labTestOptions.map((test) => {
+        <Input
+          className="mt-2"
+          value={labQuery}
+          onChange={(e) => setLabQuery(e.target.value)}
+          placeholder="Filter by test name (e.g. CBC)"
+          disabled={submitting}
+        />
+        {/* 한 번에 4줄만 보이고 나머지는 스크롤 (한 줄 48px × 4 + 줄 간격) */}
+        <ul className="mt-2 max-h-[208px] space-y-1 overflow-y-auto">
+          {shownLabTests.length === 0 ? (
+            <li className="px-1 py-1 text-xs text-slate-400">No lab tests match.</li>
+          ) : null}
+          {shownLabTests.map((test) => {
             const added = items.some((p) => p.prescriptionType === ORDER_ITEM_TYPE.LAB && p.itemCode === test.value);
             return (
               <li key={test.value} className="flex items-center justify-between gap-2 rounded-md bg-white px-3 py-1.5 text-sm">
@@ -670,28 +730,75 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
         </ul>
       </div>
 
-      {/* 자주 쓰는 약 — 약품 검색이 안 되는 동안 고르는 임시 목록(견본 코드, 처방코어는 약품 코드를 검증하지 않는다) */}
+      {/* 약품 — 이름으로 검색한다(처방코어 약품 마스터, 코드는 마스터의 ediCode). 검색칸이 비어 있거나 검색을 쓸 수 없으면 자주 쓰는 약 목록을 보여준다 */}
       <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-        <p className="text-sm font-semibold text-slate-700">Common ER drugs</p>
+        <p className="text-sm font-semibold text-slate-700">Drugs</p>
         <p className="text-xs text-slate-400">
-          Quick-entry list with sample codes (not from a drug master). Check the dosage, frequency and days before registering.
+          Search by drug name ({DRUG_SEARCH_MIN_LENGTH}+ characters). Check the dosage, frequency and days before registering.
         </p>
-        <ul className="mt-2 space-y-1">
-          {COMMON_ER_DRUGS.map((drug) => (
-            <li key={drug.itemCode} className="flex items-center justify-between gap-2 rounded-md bg-white px-3 py-1.5 text-sm">
-              <span className="text-slate-800">
-                {drug.itemName} <span className="text-xs text-slate-400">({drug.itemCode})</span>
-                <span className="text-xs text-slate-500">
-                  {" · "}
-                  {optionLabel(dosageFormOptions, drug.dosageFormCd)} · {drug.purpose}
-                </span>
-              </span>
-              <Button variant="secondary" onClick={() => handleAddCommonDrug(drug)} disabled={submitting}>
-                Add
-              </Button>
-            </li>
-          ))}
-        </ul>
+        <Input
+          className="mt-2"
+          value={drugQuery}
+          onChange={(e) => setDrugQuery(e.target.value)}
+          placeholder="e.g. 타이레놀, 케토"
+          disabled={submitting}
+        />
+        {showSearchResults ? (
+          medicationsLoading ? (
+            <p className="mt-2 text-xs text-slate-400">Searching...</p>
+          ) : medications.length === 0 ? (
+            <p className="mt-2 text-xs text-slate-400">No drugs match.</p>
+          ) : (
+            <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
+              {medications.map((med) => {
+                const added = items.some((p) => p.prescriptionType === ORDER_ITEM_TYPE.DRUG && p.itemCode === med.itemCode);
+                return (
+                  <li key={med.itemCode} className="flex items-center justify-between gap-2 rounded-md bg-white px-3 py-1.5 text-sm">
+                    <span className="min-w-0 truncate text-slate-800">
+                      {med.itemName} <span className="text-xs text-slate-400">({med.itemCode})</span>
+                      <span className="text-xs text-slate-500">
+                        {med.formName ? ` · ${med.formName}` : ""}
+                        {med.manufacturer ? ` · ${med.manufacturer}` : ""}
+                      </span>
+                    </span>
+                    <Button variant="secondary" onClick={() => handleAddSearchedDrug(med)} disabled={submitting || added}>
+                      {added ? "Added" : "Add"}
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )
+        ) : (
+          <>
+            {medicationsError ? (
+              // 약품 검색을 쓸 수 없습니다. 아래 자주 쓰는 약을 쓰거나 코드를 직접 입력하세요.
+              <p className="mt-2 text-xs text-rose-600">
+                Drug search is unavailable right now. Choose from the common drugs below, or enter the code manually.
+              </p>
+            ) : null}
+            <p className="mt-2 text-xs font-medium text-slate-500">Common ER drugs</p>
+            <ul className="mt-1 space-y-1">
+              {COMMON_ER_DRUGS.map((drug) => {
+                const added = items.some((p) => p.prescriptionType === ORDER_ITEM_TYPE.DRUG && p.itemCode === drug.itemCode);
+                return (
+                  <li key={drug.itemCode} className="flex items-center justify-between gap-2 rounded-md bg-white px-3 py-1.5 text-sm">
+                    <span className="text-slate-800">
+                      {drug.itemName} <span className="text-xs text-slate-400">({drug.itemCode})</span>
+                      <span className="text-xs text-slate-500">
+                        {" · "}
+                        {optionLabel(dosageFormOptions, drug.dosageFormCd)} · {drug.purpose}
+                      </span>
+                    </span>
+                    <Button variant="secondary" onClick={() => handleAddCommonDrug(drug)} disabled={submitting || added}>
+                      {added ? "Added" : "Add"}
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
       </div>
 
       <div className="mt-3 space-y-3">

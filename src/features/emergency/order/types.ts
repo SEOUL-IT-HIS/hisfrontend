@@ -97,6 +97,16 @@ export interface OrderCancelRequest {
   userId: string;
 }
 
+/** 약품 검색 결과 — 처방코어 약품 마스터. itemCode 는 마스터의 ediCode(처방 항목 코드로 쓴다) */
+export interface MedicationItem {
+  itemCode: string;
+  itemName: string;
+  /** 제형 이름(예: 정제, 주사제) */
+  formName: string | null;
+  manufacturer: string | null;
+  category: string | null;
+}
+
 export interface OrderDispatch {
   orderId: string;
   /** LAB / PHARMACY */
@@ -132,6 +142,10 @@ export interface OrderState {
   /** 접수별 목록 조회 상태(loading/loaded/error). 아직 안 불러왔으면 키가 없다 */
   listStatusByReception: Record<string, OrderListStatus>;
   listError: string;
+  /** 약품 검색 결과(마지막 검색) */
+  medications: MedicationItem[];
+  medicationsLoading: boolean;
+  medicationsError: string;
   submitting: boolean;
   submitError: string;
   /** 취소·전송·조회를 진행 중인 처방ID (없으면 "") */

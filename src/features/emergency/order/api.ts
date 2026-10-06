@@ -1,6 +1,7 @@
 import apiClient from "@/lib/axios";
 import type { ApiResponse } from "@/features/emergency/types";
 import type {
+  MedicationItem,
   Order,
   OrderCancelRequest,
   OrderCreateRequest,
@@ -30,6 +31,12 @@ export async function getOrder(orderId: string): Promise<Order> {
 /** 처방을 취소한다. 수정 API 는 없다 — 변경은 취소 후 재등록. */
 export async function cancelOrder(orderId: string, request: OrderCancelRequest): Promise<Order> {
   const { data } = await apiClient.patch<ApiResponse<Order>>(`${ORDERS_PATH}/${orderId}/cancel`, request);
+  return data.data;
+}
+
+/** 약품을 이름으로 검색한다(처방코어 약품 마스터). 이름은 필수 — 비면 서버가 400 을 준다. */
+export async function searchMedications(name: string): Promise<MedicationItem[]> {
+  const { data } = await apiClient.get<ApiResponse<MedicationItem[]>>(`${ORDERS_PATH}/medications`, { params: { name } });
   return data.data;
 }
 

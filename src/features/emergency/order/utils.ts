@@ -98,6 +98,15 @@ export function labItemHasResult(item: OrderItem): boolean {
  */
 export const LAB_NO_RESULT_ITEM_CODES: readonly string[] = ["05", "06", "07", "08"];
 
+/** 약품 마스터의 제형 이름(정제, 주사제 …)을 admin 공통코드 DOSAGE_FORM_CD(01 정제·캡슐, 02 수액, 03 주사)로 바꾼다. 모르면 "" */
+export function dosageFormFromName(formName: string | null | undefined): string {
+  if (!formName) return "";
+  if (formName.includes("수액")) return "02";
+  if (formName.includes("주사")) return "03";
+  if (/정|캡슐|산|과립|시럽/.test(formName)) return "01";
+  return "";
+}
+
 /** admin 공통코드 TEST_TYPE_CD 를 못 받을 때의 폴백 */
 export const LAB_TEST_FALLBACK_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   { value: "01", label: "Blood Glucose Test" },
