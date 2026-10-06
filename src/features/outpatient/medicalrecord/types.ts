@@ -8,9 +8,11 @@ export interface MedicalRecordDto {
     assessmentNote: string | null;
     planNote: string | null;
     status: string;
+    visitType?: "INITIAL" | "REVISIT" | null; // 초진/재진 (기존 데이터는 null)
     doctorId: string;
     doctorName?: string | null;
-    departmentName?: string | null;
+    departmentCode?: string | null; // 진료과 코드
+    departmentName?: string | null; // 진료과명
     createdAt: string;
     updatedAt: string | null;
 }
