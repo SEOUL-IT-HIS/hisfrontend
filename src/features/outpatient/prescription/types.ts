@@ -65,6 +65,11 @@ export interface PrescriptionDto {
     discontinuedBy?: string | null;    // 중단자ID
     discontinuedAt?: string | null;    // 중단일시
 
+    receptionId?: string | null;       // 접수ID (응급 경로 전용, 외래 처방은 null)
+
+    // 검사결과 도착상태 (목록 조회용): null=검사 항목 없음, WAITING=결과 없음, COMPLETE=하나라도 도착
+    labResultStatus?: string | null;
+
     // 목록 조회에는 포함되지 않고(N+1 방지) 상세 조회 시에만 채워짐
     items?: PrescriptionItemDto[] | null;
 }

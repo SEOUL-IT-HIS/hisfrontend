@@ -17,7 +17,8 @@ const AdmissionDischargeHome = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("admission");
 
   return (
-    <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-4 p-6">
+    // 화면 높이를 채우고, 아래 탭 내용(목록 + 상세)이 남은 높이를 차지
+    <div className="mx-auto flex h-full w-full max-w-[1800px] flex-col gap-4 p-6">
       <PageHeader
         title="Admission & Discharge Management"
         description="View admission requests and discharge requests in a single screen."

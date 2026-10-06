@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import ActorField from "@/components/emergency/common/ActorField";
@@ -8,7 +8,8 @@ import DischargedNotice from "@/components/emergency/common/DischargedNotice";
 import StaffName from "@/components/emergency/common/StaffName";
 import { useActorId } from "@/features/emergency/common/staff";
 import { selectIsDischarged } from "@/features/emergency/disposition/slice";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField, Input } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import { CODE_GROUP, optionLabel, toCodeOptions } from "@/features/emergency/codes";
 import {
@@ -19,10 +20,6 @@ import {
   dispatchOrderRequest,
   fetchOrderRequest,
   fetchOrdersRequest,
-  searchLabItemsRequest,
-  selectLabItems,
-  selectLabItemsError,
-  selectLabItemsLoading,
   selectOrderActionError,
   selectOrderBusyId,
   selectOrderListError,
@@ -37,7 +34,6 @@ import {
   PHARMACY_DISPATCH_ENABLED,
   ORDER_PRIORITY_FALLBACK_OPTIONS,
   ORDER_TIMING_FALLBACK_OPTIONS,
-  type LabItem,
   type Order,
   type OrderItem,
 } from "@/features/emergency/order/types";
@@ -50,6 +46,7 @@ import {
   labRejectedItems,
   labResultExpected,
   LAB_NO_RESULT_ITEM_CODES,
+  LAB_TEST_FALLBACK_OPTIONS,
   labSendState,
   mayHaveDrug,
   mayHaveLab,
@@ -139,29 +136,26 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
   const submitError = useSelector(selectOrderSubmitError);
   const busyOrderId = useSelector(selectOrderBusyId);
   const actionError = useSelector(selectOrderActionError);
-  const labItems = useSelector(selectLabItems);
-  const labItemsLoading = useSelector(selectLabItemsLoading);
-  const labItemsError = useSelector(selectLabItemsError);
   const listStatus = useSelector(selectOrderListStatus(receptionNo));
   const listError = useSelector(selectOrderListError);
   const commonCodeLoaded = useSelector(selectCommonCodeLoaded);
   const priorityCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.ORDER_PRIORITY));
   const dosageFormCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.DOSAGE_FORM));
   const timingCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.ORDER_TIMING));
+  const labTestCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.LAB_TEST));
 
   const [form, setForm] = useState(initialForm);
   const [items, setItems] = useState<ItemForm[]>([emptyItem()]);
-  const [labQuery, setLabQuery] = useState("");
   const [verbalTarget, setVerbalTarget] = useState("");
   const [verbalDoctor, setVerbalDoctor] = useState("");
   const [cancelTarget, setCancelTarget] = useState("");
   const [cancelForm, setCancelForm] = useState(initialCancel);
   const [lastCount, setLastCount] = useState(0);
   const [lastReceptionNo, setLastReceptionNo] = useState(receptionNo);
-  // 처방의·구두 확정자는 의사 — 직접 안 고르면 로그인한 사람이 의사일 때 그 사람이다. 취소자는 로그인한 사용자다.
+  // 처방의·구두 확정자는 의사 — 직접 안 고르면 로그인한 사람이 의사일 때 그 사람이다. 취소자는 기본이 로그인한 사람이다.
   const prescribedBy = useActorId(form.prescribedBy, "DOCTOR");
   const confirmedBy = useActorId(verbalDoctor, "DOCTOR");
-  const cancelledBy = useActorId(cancelForm.userId);
+  const cancelledBy = useActorId(cancelForm.userId, "STAFF");
 
   useEffect(() => {
     if (!commonCodeLoaded) dispatch(fetchAllCommonCodesRequest());
@@ -189,20 +183,11 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
     return () => clearInterval(timer);
   }, [dispatch, receptionNo, awaitingResult]);
 
-  // 검사항목은 처방코어의 목록에서 고르는 값이라(코드를 외워서 입력할 수 없다) 화면이 열리면 전체 목록을 한 번 불러와 둔다.
-  const labItemsRequested = useRef(false);
-  useEffect(() => {
-    if (!receptionNo || labItemsRequested.current) return;
-    labItemsRequested.current = true;
-    dispatch(searchLabItemsRequest(""));
-  }, [dispatch, receptionNo]);
-
   // 환자를 바꾸면 입력 중이던 값과 이전 오류를 지운다.
   if (receptionNo !== lastReceptionNo) {
     setLastReceptionNo(receptionNo);
     setForm(initialForm);
     setItems([emptyItem()]);
-    setLabQuery("");
     setVerbalTarget("");
     setVerbalDoctor("");
     setCancelTarget("");
@@ -226,12 +211,8 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
   const timingOptions = toCodeOptions(timingCodes, ORDER_TIMING_FALLBACK_OPTIONS);
   const dosageFormOptions = toCodeOptions(dosageFormCodes, DOSAGE_FORM_FALLBACK_OPTIONS);
 
-  // 입력한 글자로 이름·코드를 걸러서 보여준다(대소문자 구분 없음).
-  const labFilter = labQuery.trim().toLowerCase();
-  const shownLabItems = labItems.filter(
-    (item) =>
-      !labFilter || item.itemName.toLowerCase().includes(labFilter) || item.itemCode.toLowerCase().includes(labFilter),
-  );
+  // 검사 종류는 admin 공통코드 TEST_TYPE_CD(01~08) — 외래·병동·LAB 이 같은 값을 검사 항목 코드로 쓴다. 처방코어의 검사항목 검색을 부르지 않는다.
+  const labTestOptions = toCodeOptions(labTestCodes, LAB_TEST_FALLBACK_OPTIONS);
 
   const itemsValid = items.every((item) => !!item.itemCode.trim() && !!item.itemName.trim());
   // 퇴실 처리가 끝난 환자에게는 새 처방을 등록하지 않는다(기존 처방의 취소·전송·구두 확정은 가능)
@@ -252,6 +233,10 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
 
   function handleItemChange(index: number, e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [name]: value } : item)));
+  }
+
+  function setItemField(index: number, name: keyof ItemForm, value: string) {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [name]: value } : item)));
   }
 
@@ -285,11 +270,6 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
     );
   }
 
-  /** 처방코어의 검사항목 전체 목록을 다시 불러온다(입력칸은 이 목록을 걸러서 보여줄 뿐이다). */
-  function handleLabReload() {
-    dispatch(searchLabItemsRequest(""));
-  }
-
   /** 자주 쓰는 약을 처방 항목에 추가한다(맨 앞의 빈 항목 칸이 있으면 그 자리에 채운다). 같은 약이 이미 있으면 다시 넣지 않는다. */
   function handleAddCommonDrug(drug: CommonDrug) {
     setItems((prev) => {
@@ -309,8 +289,8 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
     });
   }
 
-  /** 검색 결과의 검사 항목을 처방 항목에 추가한다(맨 앞의 빈 검사 항목 칸이 있으면 그 자리에 채운다). */
-  function handleAddLabItem(item: LabItem) {
+  /** 고른 검사를 처방 항목에 추가한다(맨 앞의 빈 검사 항목 칸이 있으면 그 자리에 채운다). */
+  function handleAddLabItem(item: { itemCode: string; itemName: string }) {
     setItems((prev) => {
       if (prev.some((p) => p.prescriptionType === ORDER_ITEM_TYPE.LAB && p.itemCode === item.itemCode)) return prev;
       const filled: ItemForm = { ...emptyItem(), prescriptionType: ORDER_ITEM_TYPE.LAB, itemCode: item.itemCode, itemName: item.itemName };
@@ -427,10 +407,6 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                       Pharmacy: {sendLabel(pharmacyState)}
                     </span>
                   ) : null}
-                  <span className="ml-auto text-xs text-slate-400">
-                    {/* 처방ID */}
-                    Order ID: <span className="select-all font-mono">{order.orderId}</span>
-                  </span>
                 </div>
 
                 {orderItems.length > 0 ? (
@@ -576,14 +552,13 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                 ) : null}
 
                 {verbalTarget === order.orderId && !cancelled ? (
-                  <div className="mt-2 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
+                  <div className="mt-2 grid grid-cols-1 items-end gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <ActorField
                       label="Confirmed By (Doctor)"
                       role="DOCTOR"
                       required
                       value={verbalDoctor}
                       onChange={setVerbalDoctor}
-                      className="w-[220px]"
                     />
                     <Button disabled={busy || !confirmedBy} onClick={() => handleVerbalConfirm(order)}>
                       Confirm
@@ -592,8 +567,8 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                 ) : null}
 
                 {cancelTarget === order.orderId && !cancelled ? (
-                  <div className="mt-2 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
-                    <FormField label="Cancel Reason" required className="w-[260px]">
+                  <div className="mt-2 grid grid-cols-1 items-end gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                    <FormField label="Cancel Reason" required>
                       <Input
                         value={cancelForm.cancelReason}
                         onChange={(e) => setCancelForm((prev) => ({ ...prev, cancelReason: e.target.value }))}
@@ -602,10 +577,10 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                     </FormField>
                     <ActorField
                       label="Cancelled By"
+                      role="STAFF"
                       required
                       value={cancelForm.userId}
                       onChange={(empId) => setCancelForm((prev) => ({ ...prev, userId: empId }))}
-                      className="w-[220px]"
                     />
                     <Button
                       variant="danger"
@@ -635,7 +610,7 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
       <DischargedNotice receptionNo={receptionNo} />
       {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {/* 처방의(의사) — 구두처방은 간호사가 로그인해 의사 대신 입력하는 경우가 많아 의사를 직접 고른다 */}
         <ActorField
           label="Prescribed By"
@@ -644,65 +619,55 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
           value={form.prescribedBy}
           onChange={(empId) => setForm((prev) => ({ ...prev, prescribedBy: empId }))}
           disabled={submitting}
-          className="w-[220px]"
         />
         {/* 우선순위 */}
-        <FormField label="Priority" required className="w-[160px]">
-          <Select name="priorityCode" value={form.priorityCode} onChange={handleFormChange} options={priorityOptions} disabled={submitting} />
-        </FormField>
+        <DownSelect
+          label="Priority"
+          required
+          value={form.priorityCode}
+          onChange={(priorityCode) => setForm((prev) => ({ ...prev, priorityCode }))}
+          options={priorityOptions}
+          disabled={submitting}
+        />
         {/* 시점 */}
-        <FormField label="Timing" required className="w-[200px]">
-          <Select name="timingCode" value={form.timingCode} onChange={handleFormChange} options={timingOptions} disabled={submitting} />
-        </FormField>
+        <DownSelect
+          label="Timing"
+          required
+          value={form.timingCode}
+          onChange={(timingCode) => setForm((prev) => ({ ...prev, timingCode }))}
+          options={timingOptions}
+          disabled={submitting}
+        />
       </div>
 
-      {/* 검사항목 — 처방코어의 목록에서 고른다. 글자를 입력하면 이름·코드로 걸러진다(코드·이름을 직접 입력해도 된다) */}
+      {/* 검사 — admin 공통코드 TEST_TYPE_CD 에서 고른다(코드·이름을 아래 항목 칸에 직접 입력해도 된다) */}
       <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-        <div className="flex flex-wrap items-end gap-3">
-          <FormField
-            label="Lab tests"
-            hint="Pick a test from the list and press Add. Type to filter by name or code."
-            className="w-[320px]"
-          >
-            <Input
-              value={labQuery}
-              onChange={(e) => setLabQuery(e.target.value)}
-              placeholder="Filter (e.g. CBC)"
-              disabled={submitting}
-            />
-          </FormField>
-          <Button variant="secondary" onClick={handleLabReload} disabled={submitting || labItemsLoading}>
-            {labItemsLoading ? "Loading..." : "Reload list"}
-          </Button>
-        </div>
-        {labItemsError ? <Alert variant="error">{resolveEmergencyMessage(labItemsError)}</Alert> : null}
-        {!labItemsLoading && !labItemsError ? (
-          labItems.length === 0 ? (
-            <p className="mt-2 text-xs text-slate-400">No lab tests available.</p>
-          ) : shownLabItems.length === 0 ? (
-            <p className="mt-2 text-xs text-slate-400">No lab tests match the filter.</p>
-          ) : (
-            <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto">
-              {shownLabItems.map((item) => (
-                <li key={item.itemCode} className="flex items-center justify-between gap-2 rounded-md bg-white px-3 py-1.5 text-sm">
-                  <span className="text-slate-800">
-                    {item.itemName} <span className="text-xs text-slate-400">({item.itemCode})</span>
-                    <span className="text-xs text-slate-500">
-                      {item.testClassification ? ` · ${item.testClassification}` : ""}
-                      {item.specimenTypes && item.specimenTypes.length > 0 ? ` · ${item.specimenTypes.join("/")}` : ""}
-                    </span>
-                    {LAB_NO_RESULT_ITEM_CODES.includes(item.itemCode) ? (
-                      <span className="text-xs text-amber-600"> · No result in ER</span>
-                    ) : null}
-                  </span>
-                  <Button variant="secondary" onClick={() => handleAddLabItem(item)} disabled={submitting}>
-                    Add
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )
-        ) : null}
+        <p className="text-sm font-semibold text-slate-700">Lab tests</p>
+        <p className="text-xs text-slate-400">
+          Choose the tests to order. Results of tests marked &quot;No result in ER&quot; are not shown here.
+        </p>
+        <ul className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
+          {labTestOptions.map((test) => {
+            const added = items.some((p) => p.prescriptionType === ORDER_ITEM_TYPE.LAB && p.itemCode === test.value);
+            return (
+              <li key={test.value} className="flex items-center justify-between gap-2 rounded-md bg-white px-3 py-1.5 text-sm">
+                <span className="min-w-0 truncate text-slate-800">
+                  {test.label} <span className="text-xs text-slate-400">({test.value})</span>
+                  {LAB_NO_RESULT_ITEM_CODES.includes(test.value) ? (
+                    <span className="text-xs text-amber-600"> · No result in ER</span>
+                  ) : null}
+                </span>
+                <Button
+                  variant="secondary"
+                  onClick={() => handleAddLabItem({ itemCode: test.value, itemName: test.label })}
+                  disabled={submitting || added}
+                >
+                  {added ? "Added" : "Add"}
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
       </div>
 
       {/* 자주 쓰는 약 — 약품 검색이 안 되는 동안 고르는 임시 목록(견본 코드, 처방코어는 약품 코드를 검증하지 않는다) */}
@@ -734,20 +699,19 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
           const isDrug = item.prescriptionType === ORDER_ITEM_TYPE.DRUG;
           return (
             <div key={index} className="rounded-lg border border-slate-200 p-3">
-              <div className="flex flex-wrap gap-3">
-                <FormField label="Type" required className="w-[140px]">
-                  <Select
-                    name="prescriptionType"
-                    value={item.prescriptionType}
-                    onChange={(e) => handleItemChange(index, e)}
-                    options={[...ORDER_ITEM_TYPE_OPTIONS]}
-                    disabled={submitting}
-                  />
-                </FormField>
-                <FormField label="Item Code" required className="w-[160px]">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)_auto]">
+                <DownSelect
+                  label="Type"
+                  required
+                  value={item.prescriptionType}
+                  onChange={(prescriptionType) => setItemField(index, "prescriptionType", prescriptionType)}
+                  options={[...ORDER_ITEM_TYPE_OPTIONS]}
+                  disabled={submitting}
+                />
+                <FormField label="Item Code" required>
                   <Input name="itemCode" value={item.itemCode} onChange={(e) => handleItemChange(index, e)} disabled={submitting} maxLength={50} />
                 </FormField>
-                <FormField label="Item Name" required className="w-[240px]">
+                <FormField label="Item Name" required>
                   <Input name="itemName" value={item.itemName} onChange={(e) => handleItemChange(index, e)} disabled={submitting} maxLength={100} />
                 </FormField>
                 {items.length > 1 ? (
@@ -759,24 +723,22 @@ export default function OrderPanel({ receptionNo, className = "" }: OrderPanelPr
                 ) : null}
               </div>
               {isDrug ? (
-                <div className="mt-3 flex flex-wrap gap-3">
-                  <FormField label="Dosage" className="w-[110px]">
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
+                  <FormField label="Dosage">
                     <Input name="dosage" value={item.dosage} onChange={(e) => handleItemChange(index, e)} disabled={submitting} inputMode="decimal" />
                   </FormField>
-                  <FormField label="Form" className="w-[170px]">
-                    <Select
-                      name="dosageFormCd"
-                      value={item.dosageFormCd}
-                      onChange={(e) => handleItemChange(index, e)}
-                      options={dosageFormOptions}
-                      placeholder="Select"
-                      disabled={submitting}
-                    />
-                  </FormField>
-                  <FormField label="Frequency" className="w-[120px]">
+                  <DownSelect
+                    label="Form"
+                    value={item.dosageFormCd}
+                    onChange={(dosageFormCd) => setItemField(index, "dosageFormCd", dosageFormCd)}
+                    options={dosageFormOptions}
+                    placeholder="Select"
+                    disabled={submitting}
+                  />
+                  <FormField label="Frequency">
                     <Input name="frequency" value={item.frequency} onChange={(e) => handleItemChange(index, e)} disabled={submitting} placeholder="TID" maxLength={20} />
                   </FormField>
-                  <FormField label="Days" className="w-[100px]">
+                  <FormField label="Days">
                     <Input name="durationDays" value={item.durationDays} onChange={(e) => handleItemChange(index, e)} disabled={submitting} maxLength={10} />
                   </FormField>
                 </div>

@@ -3,7 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Select } from "@/components/common";
+import { Alert, Button, FormField } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
 import ActorField from "@/components/emergency/common/ActorField";
 import StaffName from "@/components/emergency/common/StaffName";
 import { useActorId } from "@/features/emergency/common/staff";
@@ -44,7 +45,7 @@ export default function ClinicalNotePanel({ receptionNo, className = "" }: Clini
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
-  const recordedById = useActorId(form.recordedById);
+  const recordedById = useActorId(form.recordedById, "STAFF");
 
   useEffect(() => {
     if (receptionNo) {
@@ -107,16 +108,25 @@ export default function ClinicalNotePanel({ receptionNo, className = "" }: Clini
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
-          <FormField label="Note Type" required className="max-w-[220px]">
-            <Select
-              name="noteTypeCode"
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <DownSelect
+              label="Note Type"
+              required
               value={form.noteTypeCode}
-              onChange={handleChange}
+              onChange={(noteTypeCode) => setForm((prev) => ({ ...prev, noteTypeCode }))}
               options={[...NOTE_TYPE_OPTIONS]}
               placeholder="Select"
               disabled={submitting}
             />
-          </FormField>
+            <ActorField
+              label="Recorded By"
+              role="STAFF"
+              required
+              value={form.recordedById}
+              onChange={(empId) => setForm((prev) => ({ ...prev, recordedById: empId }))}
+              disabled={submitting}
+            />
+          </div>
           <FormField label="Note Content" required className="mt-3">
             <textarea
               name="content"
@@ -126,14 +136,6 @@ export default function ClinicalNotePanel({ receptionNo, className = "" }: Clini
               className="w-full min-h-[80px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
             />
           </FormField>
-          <ActorField
-            label="Recorded By"
-            required
-            value={form.recordedById}
-            onChange={(empId) => setForm((prev) => ({ ...prev, recordedById: empId }))}
-            disabled={submitting}
-            className="mt-3 max-w-[220px]"
-          />
 
           <div className="mt-3 flex justify-end">
             <Button
