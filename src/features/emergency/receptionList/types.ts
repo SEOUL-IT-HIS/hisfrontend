@@ -9,6 +9,8 @@ export type ReceptionListItem = {
     receivedAt: string | null;
     /** KTAS 아직 안 매겨진 접수 건은 null(정상 — "미분류"로 표시). */
     ktasLevelCode: string | null;
+    /** IN_CARE(진료 중) | DONE(퇴실 처리 완료) | CANCELLED(접수에서 취소) */
+    careStatusCode?: string;
     bedNo: string | null;
     zoneCode: string | null;
     /** 접수 시 RCP가 남긴 메모. 없으면 null. */
@@ -21,4 +23,6 @@ export type ReceptionListState = {
     items: ReceptionListItem[];
     loading: boolean;
     error: string;
+    /** 마지막으로 요청한 상태 필터(IN_CARE · DONE · CANCELLED, undefined = 전체) */
+    statusFilter?: string;
 };

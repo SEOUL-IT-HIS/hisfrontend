@@ -3,7 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField, Input } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
 import ActorField from "@/components/emergency/common/ActorField";
 import StaffName from "@/components/emergency/common/StaffName";
 import { useActorId } from "@/features/emergency/common/staff";
@@ -27,7 +28,7 @@ import {
 import OrderSelect from "@/components/emergency/order/OrderSelect";
 import { fetchOrderRequest, selectOrdersByReception } from "@/features/emergency/order/slice";
 import { ORDER_ITEM_TYPE } from "@/features/emergency/order/types";
-import { hasLoadedItems } from "@/features/emergency/order/utils";
+import { hasLoadedItems, orderTitle } from "@/features/emergency/order/utils";
 import { formatDateTime } from "@/features/emergency/utils";
 
 const MANUAL_DRUG = "__manual__";
@@ -105,14 +106,14 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
     setManualDrug(false);
   }
 
-  function handleDrugSelect(e: ChangeEvent<HTMLSelectElement>) {
-    if (e.target.value === MANUAL_DRUG) {
+  function handleDrugSelect(value: string) {
+    if (value === MANUAL_DRUG) {
       setManualDrug(true);
       setForm((prev) => ({ ...prev, drugCode: "", orderItemId: "" }));
       return;
     }
     setManualDrug(false);
-    const picked = drugItems.find((item) => item.itemCode === e.target.value);
+    const picked = drugItems.find((item) => item.itemCode === value);
     setForm((prev) => ({
       ...prev,
       drugCode: picked?.itemCode ?? "",
@@ -130,6 +131,17 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
     !!form.routeCode &&
     !!form.administeredAt &&
     !!administeredById;
+
+  // 버튼이 눌리지 않을 때 무엇이 빠졌는지 알려 준다
+  const missing = [
+    !receptionNo && "a patient",
+    !form.orderId.trim() && "an order (register one in the Order tab first)",
+    !form.drugCode.trim() && "a drug",
+    !form.dose.trim() && "the dose",
+    !form.routeCode && "the route",
+    !form.administeredAt && "the administered time",
+    !administeredById && "who administered it",
+  ].filter(Boolean);
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
@@ -173,7 +185,8 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
                     {item.drugCode} · {item.dose} · {optionLabel(routeOptions, item.routeCode)}
                   </p>
                   <p className="mt-1 text-xs text-slate-400">
-                    {formatDateTime(item.administeredAt)} · <StaffName empId={item.administeredById} /> · Order {item.orderId}
+                    {formatDateTime(item.administeredAt)} · <StaffName empId={item.administeredById} />
+                    {orderTitle(orders, item.orderId) ? ` · ${orderTitle(orders, item.orderId)}` : ""}
                   </p>
                 </li>
               ))}
@@ -185,59 +198,48 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
 
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
 
-          <div className="flex flex-wrap gap-3">
-            {/* 처방 선택 — 이 환자의 처방(Order 탭)에서 고른다. 처방 ID 는 처방코어 prescriptionId */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {/* 처방 선택 — 이 환자의 처방(Order 탭)에서 고른다. 처방 ID 는 처방코어 prescriptionId (처방 항목 ID 는 약품을 고르면 자동으로 채워진다) */}
             <OrderSelect
               receptionNo={receptionNo}
               value={form.orderId}
               onChange={handleOrderChange}
               itemType={ORDER_ITEM_TYPE.DRUG}
               disabled={submitting}
-              className="w-[420px]"
+              className="sm:col-span-3"
             />
-            {/* 처방 항목 ID — 약품 코드를 고르면 자동으로 채워진다(그 처방의 몇 번째 약품인지) */}
-            <FormField label="Order Item ID" hint={drugManualMode ? undefined : "Filled in from the drug you pick below."} className="w-[300px]">
-              <Input
-                name="orderItemId"
-                value={form.orderItemId}
-                onChange={handleChange}
-                disabled={submitting || !drugManualMode}
-                maxLength={36}
-              />
-            </FormField>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-3">
             {/* 약품 코드 — 고른 처방에 약품 항목이 있으면 거기서 고르고, 없으면(또는 Enter manually) 직접 입력 */}
-            <FormField label="Drug Code" required className="w-[220px]">
-              {drugManualMode ? (
+            {drugManualMode ? (
+              <FormField label="Drug Code" required>
                 <Input name="drugCode" value={form.drugCode} onChange={handleChange} disabled={submitting} maxLength={30} />
-              ) : (
-                <Select
-                  value={form.drugCode}
-                  onChange={handleDrugSelect}
-                  options={drugOptions}
-                  placeholder="Select"
-                  disabled={submitting || !form.orderId}
-                />
-              )}
-            </FormField>
+              </FormField>
+            ) : (
+              <DownSelect
+                label="Drug Code"
+                required
+                value={form.drugCode}
+                onChange={handleDrugSelect}
+                options={drugOptions}
+                placeholder="Select"
+                disabled={submitting || !form.orderId}
+              />
+            )}
             {/* 용량 */}
-            <FormField label="Dose" required className="w-[140px]">
+            <FormField label="Dose" required>
               <Input name="dose" value={form.dose} onChange={handleChange} disabled={submitting} maxLength={50} />
             </FormField>
             {/* 투여경로 */}
-            <FormField label="Route" required className="w-[140px]">
-              <Select
-                name="routeCode"
-                value={form.routeCode}
-                onChange={handleChange}
-                options={routeOptions}
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
+            <DownSelect
+              label="Route"
+              required
+              value={form.routeCode}
+              onChange={(routeCode) => setForm((prev) => ({ ...prev, routeCode }))}
+              options={routeOptions}
+              placeholder="Select"
+              disabled={submitting}
+            />
             {/* 투여 일시 */}
-            <FormField label="Administered At" required className="w-[220px]">
+            <FormField label="Administered At" required>
               <Input
                 type="datetime-local"
                 name="administeredAt"
@@ -254,10 +256,12 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
               value={form.administeredById}
               onChange={(empId) => setForm((prev) => ({ ...prev, administeredById: empId }))}
               disabled={submitting}
-              className="w-[220px]"
             />
           </div>
-          <div className="mt-3 flex justify-end">
+          <div className="mt-3 flex items-center justify-end gap-3">
+            {!submitting && missing.length > 0 ? (
+              <p className="text-xs text-slate-400">Select {missing.join(", ")} to register.</p>
+            ) : null}
             <Button type="button" onClick={handleSubmit} disabled={!canSubmit}>
               {/* 등록 중... / 투여 기록 등록 */}
               {submitting ? "Saving..." : "Register Administration"}

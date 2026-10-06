@@ -5,6 +5,7 @@ const initialState: ReceptionListState = {
     items: [],
     loading: false,
     error: "",
+    statusFilter: undefined,
 };
 
 const receptionListSlice = createSlice({
@@ -12,13 +13,20 @@ const receptionListSlice = createSlice({
     initialState,
     reducers: {
         fetchReceptionListRequest: {
-            reducer(state) {
+            reducer(state, action: PayloadAction<string | undefined>) {
                 state.loading = true;
                 state.error = "";
+                // 화면이 마지막으로 요청한 상태 필터(undefined = 전체). 다른 곳의 새로고침이 이 필터로 다시 불러온다.
+                state.statusFilter = action.payload;
             },
             prepare(status?: string) {
                 return { payload: status };
             },
+        },
+        // 필터는 그대로 두고 지금 보고 있는 목록만 다시 불러온다(KTAS 등록 뒤 배지 갱신 등)
+        refreshReceptionListRequest(state) {
+            state.loading = true;
+            state.error = "";
         },
         fetchReceptionListSuccess(state, action: PayloadAction<ReceptionListItem[]>) {
             state.loading = false;
@@ -31,12 +39,17 @@ const receptionListSlice = createSlice({
     },
 });
 
-export const { fetchReceptionListRequest, fetchReceptionListSuccess, fetchReceptionListFailure } =
-    receptionListSlice.actions;
+export const {
+    fetchReceptionListRequest,
+    refreshReceptionListRequest,
+    fetchReceptionListSuccess,
+    fetchReceptionListFailure,
+} = receptionListSlice.actions;
 export default receptionListSlice.reducer;
 
 type ReceptionListRoot = { emergency: { receptionList: ReceptionListState } };
 
 export const selectReceptionListItems = (state: ReceptionListRoot) => state.emergency.receptionList.items;
 export const selectReceptionListLoading = (state: ReceptionListRoot) => state.emergency.receptionList.loading;
+export const selectReceptionListStatusFilter = (state: ReceptionListRoot) => state.emergency.receptionList.statusFilter;
 export const selectReceptionListError = (state: ReceptionListRoot) => state.emergency.receptionList.error;

@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
 import DischargedNotice from "@/components/emergency/common/DischargedNotice";
 import { selectIsDischarged } from "@/features/emergency/disposition/slice";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
 import ActorField from "@/components/emergency/common/ActorField";
-import { useActorId, useLoginUser } from "@/features/emergency/common/staff";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   assignBedRequest,
@@ -59,9 +60,8 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
   const [form, setForm] = useState(initialForm);
   const [releaseForm, setReleaseForm] = useState(initialReleaseForm);
   const [lastReceptionNo, setLastReceptionNo] = useState(receptionNo);
-  const { signedIn } = useLoginUser();
-  const assignedById = useActorId(form.assignedById);
-  const releasedById = useActorId(releaseForm.releasedById);
+  const assignedById = useActorId(form.assignedById, "STAFF");
+  const releasedById = useActorId(releaseForm.releasedById, "STAFF");
 
   useEffect(() => {
     dispatch(fetchBedsRequest());
@@ -87,11 +87,6 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
     .filter((bed) => bed.bedStatusCode === BED_STATUS.EMPTY)
     .map((bed) => ({ value: bed.id, label: `${bed.bedNo} (${zoneLabel(bed.zoneCode)})` }));
 
-  function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  }
-
   function handleAssign() {
     if (!form.bedId) return;
     dispatch(
@@ -101,10 +96,6 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
         assignedById: assignedById || undefined,
       }),
     );
-  }
-
-  function handleReleaseChange(e: ChangeEvent<HTMLInputElement>) {
-    setReleaseForm({ releasedById: e.target.value });
   }
 
   function handleRelease() {
@@ -125,23 +116,21 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
       ) : (
         <>
           {currentAssignment ? (
-            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
               <span>
                 {/* 이 환자에게 배정된 병상: {bedNo} ({구역}) · {일시} */}
                 Assigned bed: {currentAssignment.bedNo} ({zoneLabel(currentAssignment.zoneCode)}) ·{" "}
                 {formatDateTime(currentAssignment.assignedAt)}
               </span>
-              {/* 해제자 — 로그인한 사용자가 해제한다. 로그인 정보가 없는 환경에서만 ID 를 직접 입력한다 */}
-              {!signedIn ? (
-                <Input
-                  value={releaseForm.releasedById}
-                  onChange={handleReleaseChange}
-                  placeholder="Released By (staff ID)"
-                  disabled={submitting}
-                  maxLength={36}
-                  className="w-[160px]"
-                />
-              ) : null}
+              {/* 해제자 — 기본은 로그인한 사람이고, 실제로 해제한 사람이 다르면 고른다 */}
+              <ActorField
+                label="Released By"
+                role="STAFF"
+                value={releaseForm.releasedById}
+                onChange={(empId) => setReleaseForm({ releasedById: empId })}
+                disabled={submitting}
+                className="w-[240px] text-slate-700"
+              />
               {/* 해제 중... / 해제 */}
               <Button
                 type="button"
@@ -179,26 +168,25 @@ export default function BedAssignmentPanel({ receptionNo, className = "" }: BedA
           {submitError ? <Alert variant="error">{resolveEmergencyMessage(submitError)}</Alert> : null}
           <DischargedNotice receptionNo={receptionNo} />
 
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {/* 병상 */}
-            <FormField label="Bed" required className="w-[220px]">
-              <Select
-                name="bedId"
-                value={form.bedId}
-                onChange={handleChange}
-                options={emptyBedOptions}
-                // 선택 / 빈 병상 없음
-                placeholder={emptyBedOptions.length > 0 ? "Select" : "No empty beds"}
-                disabled={submitting || emptyBedOptions.length === 0}
-              />
-            </FormField>
+            <DownSelect
+              label="Bed"
+              required
+              value={form.bedId}
+              onChange={(bedId) => setForm((prev) => ({ ...prev, bedId }))}
+              options={emptyBedOptions}
+              // 선택 / 빈 병상 없음
+              placeholder={emptyBedOptions.length > 0 ? "Select" : "No empty beds"}
+              disabled={submitting || emptyBedOptions.length === 0}
+            />
             {/* 배정자 */}
             <ActorField
               label="Assigned By"
+              role="STAFF"
               value={form.assignedById}
               onChange={(empId) => setForm((prev) => ({ ...prev, assignedById: empId }))}
               disabled={submitting}
-              className="w-[220px]"
             />
           </div>
           <div className="mt-3 flex justify-end">

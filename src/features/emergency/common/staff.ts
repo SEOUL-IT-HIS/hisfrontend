@@ -21,7 +21,8 @@ export interface StaffOption {
 /**
  * 처리자 칸의 종류
  * - DOCTOR: 의사를 골라서 지정한다(처방의·퇴실/격리 결정·구두 확정·전원소견서)
- * - STAFF : 의사·간호사 중에서 고른다. 기본은 로그인한 사람(처치 시행자·투약 투여자·활력징후 측정자·스크리닝 시행자)
+ * - STAFF : 의사·간호사 중에서 고른다. 기본은 로그인한 사람이다. 병원에서는 PC를 여럿이 같이 쓰고 그때마다 로그아웃하지 않으므로
+ *           기록자·시행자·측정자 등도 로그인한 사람으로 고정하지 않고 실제로 한 사람을 고를 수 있게 한다.
  */
 export type ActorKind = "DOCTOR" | "STAFF";
 
@@ -120,11 +121,10 @@ export function useLoginUser() {
 
 /**
  * 기록·처리에 실제로 보낼 처리자 ID.
- * - 기본(kind 없음): 로그인한 사용자. 로그인 정보가 없는 환경(단독 실행 등)에서만 직접 입력한 값(typed)을 쓴다.
  * - "DOCTOR": 드롭다운에서 고른 의사(typed). 아직 안 골랐고 로그인한 사람이 의사면 그 사람이 기본이다.
  * - "STAFF" : 고른 직원(typed). 아직 안 골랐으면 로그인한 사람이 기본이다(의사·간호사 여부와 상관없이).
  */
-export function useActorId(typed: string, kind?: ActorKind): string {
+export function useActorId(typed: string, kind: ActorKind): string {
   const login = useLoginUser();
   const { doctors } = useStaff(kind === "DOCTOR");
   const value = typed.trim();
@@ -132,8 +132,5 @@ export function useActorId(typed: string, kind?: ActorKind): string {
     if (value) return value;
     return login.signedIn && doctors.some((d) => d.empId === login.empId) ? login.empId : "";
   }
-  if (kind === "STAFF") {
-    return value || (login.signedIn ? login.empId : "");
-  }
-  return login.signedIn ? login.empId : value;
+  return value || (login.signedIn ? login.empId : "");
 }

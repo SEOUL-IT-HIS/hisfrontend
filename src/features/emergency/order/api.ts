@@ -1,7 +1,6 @@
 import apiClient from "@/lib/axios";
 import type { ApiResponse } from "@/features/emergency/types";
 import type {
-  LabItem,
   Order,
   OrderCancelRequest,
   OrderCreateRequest,
@@ -31,14 +30,6 @@ export async function getOrder(orderId: string): Promise<Order> {
 /** 처방을 취소한다. 수정 API 는 없다 — 변경은 취소 후 재등록. */
 export async function cancelOrder(orderId: string, request: OrderCancelRequest): Promise<Order> {
   const { data } = await apiClient.patch<ApiResponse<Order>>(`${ORDERS_PATH}/${orderId}/cancel`, request);
-  return data.data;
-}
-
-/** 검사항목을 검색한다(이름·코드 부분일치, name 이 없으면 전체). 처방 등록 때 검사 항목을 고르는 용도. */
-export async function searchLabItems(name?: string): Promise<LabItem[]> {
-  const { data } = await apiClient.get<ApiResponse<LabItem[]>>(`${ORDERS_PATH}/lab-items`, {
-    params: name ? { name } : undefined,
-  });
   return data.data;
 }
 

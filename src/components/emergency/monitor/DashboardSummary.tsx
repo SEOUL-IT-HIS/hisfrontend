@@ -3,8 +3,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, Input } from "@/components/common";
-import { useActorId, useLoginUser } from "@/features/emergency/common/staff";
+import { Alert, Button } from "@/components/common";
+import ActorField from "@/components/emergency/common/ActorField";
+import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
   acknowledgeLosAlertRequest,
@@ -58,9 +59,8 @@ export default function DashboardSummary({
   const acknowledging = useSelector(selectLosAlertAcknowledging);
   const acknowledgeError = useSelector(selectLosAlertAcknowledgeError);
   const [typedAcknowledgedById, setTypedAcknowledgedById] = useState("");
-  const { signedIn } = useLoginUser();
-  // 확인자는 로그인한 사용자다. 로그인 정보가 없는 환경에서만 ID 를 직접 입력한다.
-  const acknowledgedById = useActorId(typedAcknowledgedById);
+  // 확인자는 기본이 로그인한 사람이고, 실제로 확인한 사람이 다르면 고른다.
+  const acknowledgedById = useActorId(typedAcknowledgedById, "STAFF");
 
   useEffect(() => {
     dispatch(fetchDashboardRequest());
@@ -145,15 +145,15 @@ export default function DashboardSummary({
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               {/* 미확인 장기체류 알림 (UC-MON-02, Jira UD2-37) */}
               <h4 className="text-sm font-semibold text-slate-700">Open Long-Stay Alerts</h4>
-              {dashboard.recentLosAlerts.length > 0 && !signedIn ? (
-                // 확인자ID
-                <Input
+              {dashboard.recentLosAlerts.length > 0 ? (
+                // 확인자
+                <ActorField
+                  label="Acknowledged By"
+                  role="STAFF"
                   value={typedAcknowledgedById}
-                  onChange={(e) => setTypedAcknowledgedById(e.target.value)}
-                  placeholder="Acknowledged By (staff ID)"
-                  maxLength={36}
+                  onChange={setTypedAcknowledgedById}
                   disabled={acknowledging}
-                  className="w-[200px]"
+                  className="w-[240px]"
                 />
               ) : null}
             </div>

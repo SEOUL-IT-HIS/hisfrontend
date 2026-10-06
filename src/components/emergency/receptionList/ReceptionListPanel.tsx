@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { SearchBar, Input, Select, DataTable, Pagination } from "@/components/common";
+import { SearchBar, Input, DataTable, Pagination } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
 import type { DataTableColumn } from "@/components/common/DataTable";
 import KtasLevelBadge from "@/components/emergency/receptionList/KtasLevelBadge";
 import {
@@ -22,6 +23,8 @@ const STATUS_OPTIONS = [
     { value: "IN_CARE", label: "In Care" },
     // 퇴실 처리 완료
     { value: "DONE", label: "Done" },
+    // 접수에서 취소한 접수
+    { value: "CANCELLED", label: "Cancelled" },
     // 전체
     { value: "ALL", label: "All" },
 ];
@@ -75,7 +78,19 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
         { key: "ktas", header: "KTAS", render: (r) => <KtasLevelBadge level={r.ktasLevelCode} /> },
 
         // 환자명 — 환자서비스 배치조회 붙기 전까지는 null일 수 있음(정상)
-        { key: "patientName", header: "Patient Name", render: (r) => r.patientName ?? "-" },
+        {
+            key: "patientName",
+            header: "Patient Name",
+            render: (r) => (
+                <span className="inline-flex items-center gap-1.5">
+                    {r.patientName ?? "-"}
+                    {r.careStatusCode === "CANCELLED" ? (
+                        // 접수에서 취소한 접수
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">Cancelled</span>
+                    ) : null}
+                </span>
+            ),
+        },
 
         // 병상/구역 — 외래 "진료과" 컬럼에 대응. 미배정이면 "-"
         {
@@ -96,11 +111,13 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
                 onReset={() => { setKeyword(""); setPage(1); }}
                 resetLabel="Reset"
             >
-                <Select
+                <DownSelect
+                    label="Status"
+                    hideLabel
                     value={status}
-                    onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+                    onChange={(value) => { setStatus(value); setPage(1); }}
                     options={STATUS_OPTIONS}
-                    className="max-w-[130px]"
+                    className="w-[150px]"
                 />
                 <Input
                     // 환자명 검색
@@ -120,7 +137,13 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
                     isRowActive={(r) => r.receptionId === activeReceptionNo}
                     loading={loading}
                     // 오늘 접수된 응급 환자가 없습니다.
-                    emptyMessage={status === "DONE" ? "No discharged patients." : "No emergency patients in care."}
+                    emptyMessage={
+                        status === "DONE"
+                            ? "No discharged patients."
+                            : status === "CANCELLED"
+                              ? "No cancelled receptions."
+                              : "No emergency patients in care."
+                    }
                     minWidthClassName="min-w-0"
                     className="!rounded-b-none !border-b-0 !shadow-none"
                 />

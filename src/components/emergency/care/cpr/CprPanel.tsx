@@ -3,7 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, FormField, Input, Select } from "@/components/common";
+import { Alert, Button, FormField, Input } from "@/components/common";
+import DownSelect from "@/components/emergency/common/DownSelect";
 import ActorField from "@/components/emergency/common/ActorField";
 import StaffName from "@/components/emergency/common/StaffName";
 import { useActorId } from "@/features/emergency/common/staff";
@@ -56,7 +57,7 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
   const [outcomeCode, setOutcomeCode] = useState("");
   const [lastCount, setLastCount] = useState(0);
   const [lastReceptionNo, setLastReceptionNo] = useState(receptionNo);
-  const recordedById = useActorId(draft.recordedById);
+  const recordedById = useActorId(draft.recordedById, "STAFF");
 
   useEffect(() => {
     if (receptionNo) dispatch(fetchCprRequest(receptionNo));
@@ -181,24 +182,23 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
             </ol>
           ) : null}
 
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             {/* 이벤트 종류 */}
-            <FormField label="Event Type" required className="w-[180px]">
-              <Select
-                name="eventTypeCode"
-                value={draft.eventTypeCode}
-                onChange={handleDraftChange}
-                options={eventTypeOptions}
-                placeholder="Select"
-                disabled={submitting}
-              />
-            </FormField>
+            <DownSelect
+              label="Event Type"
+              required
+              value={draft.eventTypeCode}
+              onChange={(eventTypeCode) => setDraft((prev) => ({ ...prev, eventTypeCode }))}
+              options={eventTypeOptions}
+              placeholder="Select"
+              disabled={submitting}
+            />
             {/* 상세 */}
-            <FormField label="Detail" className="w-[220px]">
+            <FormField label="Detail">
               <Input name="detail" value={draft.detail} onChange={handleDraftChange} disabled={submitting} maxLength={500} />
             </FormField>
             {/* 이벤트 시각 (비우면 지금) */}
-            <FormField label="Event At" hint="Leave empty to use the current time." className="w-[220px]">
+            <FormField label="Event At" hint="Leave empty to use the current time.">
               <Input
                 type="datetime-local"
                 name="eventAt"
@@ -210,11 +210,11 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
             {/* 기록자 */}
             <ActorField
               label="Recorded By"
+              role="STAFF"
               required
               value={draft.recordedById}
               onChange={(empId) => setDraft((prev) => ({ ...prev, recordedById: empId }))}
               disabled={submitting}
-              className="w-[220px]"
             />
           </div>
           <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
@@ -224,15 +224,16 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
             </Button>
             <div className="flex items-end gap-3">
               {/* 결과 (선택) */}
-              <FormField label="Outcome" className="w-[160px]">
-                <Select
-                  value={outcomeCode}
-                  onChange={(e) => setOutcomeCode(e.target.value)}
-                  options={outcomeOptions}
-                  placeholder="(optional)"
-                  disabled={submitting}
-                />
-              </FormField>
+              <DownSelect
+                label="Outcome"
+                value={outcomeCode}
+                onChange={setOutcomeCode}
+                options={outcomeOptions}
+                placeholder="(optional)"
+                allowClear
+                disabled={submitting}
+                className="w-[200px]"
+              />
               <Button type="button" onClick={handleSubmit} disabled={!canSubmit}>
                 {/* 등록 중... / CPR 기록 등록 */}
                 {submitting ? "Saving..." : "Register CPR Record"}
