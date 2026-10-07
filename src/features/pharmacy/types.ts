@@ -184,10 +184,20 @@ export interface PrescriptionListItem {
   physicianId: string;
   departmentId: string;
   createdAt: string;
-  /** 처방전 처리 상태 — RECEIVED(접수) / DISPENSED(조제완료) / REJECTED(조제거절) */
+  /** 처방전 처리 상태 — RECEIVED(접수) / DISPENSED(조제완료) / REJECTED(조제거절) / CANCELLED(처방코어가 취소) */
   status: string;
   /** 조제완료 건의 불출 상태 — RELEASED(불출됨) / CANCELLED(불출취소됨) / null(불출 전, 또는 조제완료가 아님) */
   releaseStatusCd: string | null;
+  /** 처방코어의 취소 통보를 받은 시각. 통보가 없었으면 null */
+  cancelRequestedAt: string | null;
+  /** 취소 통보 처리 결과 — APPLIED(취소 반영됨) / REFUSED(불출이 끝나 미반영, 약사 확인 필요) / null(통보 없음) */
+  cancelOutcome: "APPLIED" | "REFUSED" | null;
+  /** 처방 출처 — OPD(외래) / ER(응급) / IP(입원). 보내지 않았으면 null */
+  encounterType: string | null;
+  /** 우선순위 — admin 공통코드 ORDER_PRIORITY_CD: 01 STAT / 02 Urgent / 03 Routine. 보내지 않았으면 null */
+  priorityCode: string | null;
+  /** 구두처방 여부 Y/N. 의사 확정 여부는 약제가 알 수 없다 */
+  verbalYn: string | null;
 }
 
 /** 처방전 목록의 단계 필터 — 백엔드 stage 파라미터 값. ALL이면 전체. */
@@ -197,7 +207,8 @@ export type PrescriptionStage =
   | "DISPENSED"
   | "RELEASED"
   | "RELEASE_CANCELLED"
-  | "REJECTED";
+  | "REJECTED"
+  | "CANCELLED";
 
 export interface PrescriptionListQuery {
   /** 0부터 시작(백엔드 기준) */
@@ -264,6 +275,10 @@ export interface PrescriptionDetail extends PrescriptionListItem {
   dispensedById: string | null;
   /** 조제거절을 처리한 약사의 직원 ID(이전 데이터면 null) */
   rejectedById: string | null;
+  /** 처방코어 취소 사유. 취소 통보가 없었으면 null */
+  cancelReason: string | null;
+  /** 처방코어에서 취소한 사용자 ID. 통보에 없으면 SYSTEM-OPD */
+  cancelledById: string | null;
 }
 
 /** 조제완료 — PATCH /api/pharmacy/prescriptions/{id}/dispense */

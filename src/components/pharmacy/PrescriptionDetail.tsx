@@ -30,6 +30,7 @@ import { useDepartmentNames } from "@/features/commonCode/hooks/useDepartmentNam
 import ReleasePanel from "./ReleasePanel";
 import ReturnCell from "./ReturnCell";
 import PrescriptionSteps from "./PrescriptionSteps";
+import OrderMetaBadges from "./OrderMetaBadges";
 import PrescriptionItemModal from "./PrescriptionItemModal";
 
 // 환자 일괄 조회(POST /api/patient/batch)는 UUID 아닌 값이 하나라도 섞이면 요청 전체가 실패하므로,
@@ -199,6 +200,16 @@ export default function PrescriptionDetail() {
 
       {current && (
         <>
+          {current.cancelOutcome === "REFUSED" && (
+            <div className="shrink-0 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+              <p className="font-semibold">The prescriber cancelled this prescription, but it could not be cancelled automatically.</p>
+              <p className="mt-1">
+                It has already been released, so the pharmacy must check it manually.
+                {current.cancelReason ? ` Reason: ${current.cancelReason}` : ""}
+                {current.cancelRequestedAt ? ` (requested ${formatDateTime(current.cancelRequestedAt)})` : ""}
+              </p>
+            </div>
+          )}
           <Panel className="shrink-0 p-5">
             <PrescriptionSteps
               status={current.status}
@@ -233,13 +244,40 @@ export default function PrescriptionDetail() {
               </div>
               <div>
                 <dt className="text-xs text-slate-400">Status</dt>
-                <dd className="text-slate-700">{current.status}</dd>
+                <dd className="inline-flex flex-wrap items-center gap-1.5 text-slate-700">
+                  {current.status}
+                  <OrderMetaBadges
+                    encounterType={current.encounterType}
+                    priorityCode={current.priorityCode}
+                    verbalYn={current.verbalYn}
+                  />
+                </dd>
               </div>
               {current.dispensedById && (
                 <div>
                   <dt className="text-xs text-slate-400">Dispensed by</dt>
                   <dd className="text-slate-700">{empNames[current.dispensedById] ?? current.dispensedById}</dd>
                 </div>
+              )}
+              {current.status === "CANCELLED" && (
+                <>
+                  <div>
+                    <dt className="text-xs text-slate-400">Cancel Reason</dt>
+                    <dd className="text-slate-700">{current.cancelReason || "-"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-slate-400">Cancelled by</dt>
+                    <dd className="text-slate-700">
+                      {current.cancelledById ? empNames[current.cancelledById] ?? current.cancelledById : "-"}
+                    </dd>
+                  </div>
+                  {current.cancelRequestedAt && (
+                    <div>
+                      <dt className="text-xs text-slate-400">Cancelled At</dt>
+                      <dd className="text-slate-700">{formatDateTime(current.cancelRequestedAt)}</dd>
+                    </div>
+                  )}
+                </>
               )}
               {current.status === "REJECTED" && (
                 <>
