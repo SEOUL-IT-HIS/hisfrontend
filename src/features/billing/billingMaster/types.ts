@@ -1,4 +1,4 @@
-/** 수납 기준정보 */
+/** Billing master */
 export type BillingMaster = {
   billingMasterId: string;
   sourceServiceCode: string;
@@ -12,7 +12,7 @@ export type BillingMaster = {
   useYn: string;
 };
 
-/** 수납 기준정보 등록 요청 */
+/** Billing master create request */
 export type BillingMasterCreateRequest = {
   sourceServiceCode: string;
   feeCode: string;
@@ -22,4 +22,13 @@ export type BillingMasterCreateRequest = {
   insuranceTypeCode: string;
   effectiveFrom: string;
   effectiveTo: string;
+};
+
+/** Billing master update request - only these fields are editable */
+export type BillingMasterUpdateRequest = {
+  feeName: string;
+  defaultPrice: string;
+  effectiveFrom: string;
+  effectiveTo: string;
+  useYn: string;
 };

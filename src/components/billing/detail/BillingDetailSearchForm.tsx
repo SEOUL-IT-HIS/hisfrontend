@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { searchBillingDetailRequest } from "@/features/billing/searchBillingDetail/slice";
@@ -31,6 +31,8 @@ function groupByPatient(results: SearchPatientResult[]): PatientBillingGroup[] {
     return Array.from(groups.values());
 }
 
+const RECENT_UNPAID_LIMIT = 5; // 검색 전 첫 화면에 보여줄 최근 미수납 건 수
+
 type BillingDetailSearchFormProps = {
     selectedPatientId: string | null;
     onSelectPatient: (patientId: string) => void;
@@ -46,9 +48,20 @@ export default function BillingDetailSearchForm({
         (state: RootState) => state.billing.billingDetail,
     );
 
-    const patientGroups = useMemo(() => groupByPatient(searchPatient), [searchPatient]);
+    // 사용자가 직접 검색하기 전에는 최근 미수납 건 일부만 보여줌(검색 결과는 billing_id 내림차순 = 최신순)
+    const [searched, setSearched] = useState(false);
+
+    useEffect(() => {
+        dispatch(searchBillingDetailRequest({ patientName: "" })); // 화면 진입 시 이름 조건 없이 미수납 건 조회
+    }, [dispatch]);
+
+    const patientGroups = useMemo(
+        () => groupByPatient(searched ? searchPatient : searchPatient.slice(0, RECENT_UNPAID_LIMIT)),
+        [searchPatient, searched],
+    );
 
     const onSearch = () => {
+        setSearched(true);
         dispatch(searchBillingDetailRequest({ patientName }));// 환자명을 기준으로 진료비 상세 정보를 검색하는 액션을 디스패치합니다.
     };
 
@@ -57,7 +70,11 @@ export default function BillingDetailSearchForm({
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white px-5 py-4">
                 <div>
                     <h2 className="text-sm font-semibold text-slate-900">Search Patient</h2>
-                    <p className="mt-0.5 text-xs text-slate-400">Click a row to view details on the right</p>
+                    <p className="mt-0.5 text-xs text-slate-400">
+                        {searched
+                            ? "Click a row to view details on the right"
+                            : `Showing the ${RECENT_UNPAID_LIMIT} most recent unpaid bills - search to find others`}
+                    </p>
                 </div>
                 <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white">
                     {patientGroups.length} results

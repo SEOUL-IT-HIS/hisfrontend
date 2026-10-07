@@ -13,6 +13,7 @@ import {
 } from "@/components/common";
 import type { DataTableColumn } from "@/components/common";
 import MedicationSearchInput from "@/components/pharmacy/MedicationSearchInput";
+import { useActor } from "@/features/pharmacy/useActor";
 
 type DisposalRow = {
   id: number;
@@ -29,6 +30,7 @@ const columns: DataTableColumn<DisposalRow>[] = [
 
 export default function DisposalRegisterForm() {
   const dispatch = useDispatch();
+  const { actorId, actorName } = useActor();
   const [medicationId, setMedicationId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [reason, setReason] = useState("");
@@ -36,13 +38,14 @@ export default function DisposalRegisterForm() {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!medicationId || !quantity || !reason) return;
+    if (!medicationId || !quantity || !reason || !actorId) return;
 
     dispatch(
       registerDisposalRequest({
         medicationId,
         quantity: Number(quantity),
         reason,
+        disposedById: actorId,
       })
     );
 
@@ -79,8 +82,11 @@ export default function DisposalRegisterForm() {
               onChange={(e) => setReason(e.target.value)}
             />
           </FormField>
+          <p className="text-xs text-slate-400">Disposed by: {actorName || "-"} (signed-in user)</p>
           <div className="flex justify-end">
-            <Button type="submit">Register</Button>
+            <Button type="submit" disabled={!actorId}>
+              Register
+            </Button>
           </div>
         </form>
       </Panel>

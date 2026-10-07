@@ -27,7 +27,7 @@ function* fetchEmergencyReceptionListSaga() {
   } catch (err) {
     yield put(
       fetchEmergencyReceptionListFailure(
-        errorMessage(err, "응급접수 목록 조회에 실패했습니다."),
+        errorMessage(err, "Failed to load the emergency reception list."),
       ),
     );
   }
@@ -43,7 +43,7 @@ function* registerEmergencyReceptionSaga(
   } catch (err) {
     yield put(
       registerEmergencyReceptionFailure(
-        errorMessage(err, "응급접수 등록에 실패했습니다."),
+        errorMessage(err, "Failed to register the emergency reception."),
       ),
     );
   }

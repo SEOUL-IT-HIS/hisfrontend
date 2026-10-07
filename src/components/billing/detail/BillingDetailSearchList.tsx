@@ -13,15 +13,12 @@ const BILLING_TYPE_LABEL: Record<string, string> = {
     INPATIENT: "Inpatient",
 };
 
-/** 미수납 건들의 구분을 "Outpatient 2 · Inpatient 1" 처럼 요약 */
+/** 미수납 건들의 구분을 "Outpatient, Inpatient" 처럼 중복 없이 요약 (건수는 Status 열에 표시) */
 function summarizeTypes(group: PatientBillingGroup): string {
-    const counts = new Map<string, number>();
-    for (const bill of group.bills) {
-        counts.set(bill.billingType, (counts.get(bill.billingType) ?? 0) + 1);
-    }
-    return Array.from(counts.entries())
-        .map(([type, count]) => `${BILLING_TYPE_LABEL[type] ?? type}${count > 1 ? ` ${count}` : ""}`)
-        .join(" · ");
+    const types = new Set(group.bills.map((bill) => bill.billingType));
+    return Array.from(types)
+        .map((type) => BILLING_TYPE_LABEL[type] ?? type)
+        .join(", ");
 }
 
 // 환자 한 명당 한 줄 - 미수납 건이 여러 개여도 금액은 합산해서 보여주고, 클릭하면 오른쪽에서 한 번에 수납

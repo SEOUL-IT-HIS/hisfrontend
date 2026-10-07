@@ -12,14 +12,22 @@ import {
 } from "@/features/reception/receptionmanagement/slice";
 import type { AppDispatch } from "@/store/store";
 
-const RECEPTION_TYPE_LABEL: Record<string, string> = {
+const VISIT_TYPE_LABEL: Record<string, string> = {
   INITIAL: "Initial Visit",
   REVISIT: "Follow-up Visit",
+};
+
+const RECEPTION_TYPE_LABEL: Record<string, string> = {
+  RESERVATION: "Reservation",
+  WALK_IN: "Walk-in",
+  EMERGENCY: "Emergency",
 };
 
 type ReceptionDetailModalProps = {
   receptionId: string | null;
   onClose: () => void;
+  /** 초진/재진 행 표시 여부 — 응급 접수는 구분이 없어 false 로 숨긴다 */
+  showVisitType?: boolean;
 };
 
 /**
@@ -29,6 +37,7 @@ type ReceptionDetailModalProps = {
 export default function ReceptionDetailModal({
   receptionId,
   onClose,
+  showVisitType = true,
 }: ReceptionDetailModalProps) {
   const dispatch = useDispatch<AppDispatch>();
   const detail = useSelector(selectReceptionDetail);
@@ -68,13 +77,26 @@ export default function ReceptionDetailModal({
           <dd className="col-span-2 text-slate-800">{detail.deptName}</dd>
 
           <dt className="text-slate-400">Doctor</dt>
-          <dd className="col-span-2 text-slate-800">{detail.doctorName}</dd>
+          <dd className="col-span-2 text-slate-800">
+            {detail.doctorName || "-"}
+          </dd>
 
           <dt className="text-slate-400">Reception Type</dt>
           <dd className="col-span-2 text-slate-800">
             {RECEPTION_TYPE_LABEL[detail.receptionType] ??
               detail.receptionType}
           </dd>
+
+          {showVisitType ? (
+            <>
+              <dt className="text-slate-400">Visit Type</dt>
+              <dd className="col-span-2 text-slate-800">
+                {detail.visitType
+                  ? VISIT_TYPE_LABEL[detail.visitType] ?? detail.visitType
+                  : "-"}
+              </dd>
+            </>
+          ) : null}
 
           <dt className="text-slate-400">Reception Date</dt>
           <dd className="col-span-2 text-slate-800">

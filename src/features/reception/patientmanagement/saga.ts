@@ -21,7 +21,7 @@ function* searchPatientsSaga(action: PayloadAction<PatientSearchQuery>) {
     yield put(searchPatientsSuccess(items));
   } catch (err) {
     yield put(
-      searchPatientsFailure(errorMessage(err, "환자 검색에 실패했습니다.")),
+      searchPatientsFailure(errorMessage(err, "Failed to search patients.")),
     );
   }
 }
