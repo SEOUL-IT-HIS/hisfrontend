@@ -550,7 +550,11 @@ export default function LabResultWorkPanel({
                     disabled={confirmed || submitting || !isGeneral(item)}
                     onClick={() => handleSelectItem(item)}
                     className={`flex flex-1 items-center gap-3 text-left ${
-                      confirmed
+                      // ⚠ confirmed 뿐 아니라 !isGeneral(item) 도 같은 "클릭 안 됨" 모양이어야 한다.
+                      //   미생물·병리 항목은 이 목록이 아니라 아래 전용 패널에서 입력한다(disabled
+                      //   위 조건과 같은 기준) — hover 색만 "클릭 가능"처럼 남아 있으면 실제로는
+                      //   막혀 있는데 눌러볼 수 있는 것처럼 보인다. (2026-10-07)
+                      confirmed || !isGeneral(item)
                         ? "cursor-not-allowed text-slate-400"
                         : "text-slate-700 hover:text-sky-600"
                     }`}
