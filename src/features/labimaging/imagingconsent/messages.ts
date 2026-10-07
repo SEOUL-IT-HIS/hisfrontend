@@ -14,7 +14,6 @@ export const CONSENT_MESSAGES = {
   LAB107: "Future dates or times are not allowed.",
   LAB110: "Staff member not found, or no longer active.",
   LAB112: "Unable to verify staff information right now.",
-  LAB115: "Invalid identifier format. (must be a UUID)",
   LAB093: "Consent has been withdrawn.",
   LAB094: "Consent not found.",
   LAB095: "This consent has already been withdrawn.",

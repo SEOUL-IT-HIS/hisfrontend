@@ -11,6 +11,7 @@ import type {
   PatientDeactivateRequest,
   PatientDeathUpdateRequest,
   PatientTemporaryConversionRequest,
+  PatientTemporaryMergeRequest,
   PatientActivateRequest,
 } from "../type/patientType";
 
@@ -45,8 +46,11 @@ type PatientState = {
   temporaryConversionError: string | null;
   temporaryConversionSuccess: boolean;
   conversionDuplicateLoading: boolean;
-  conversionDuplicated: boolean | null;
+  conversionCandidates: PatientListItem[] | null;
   conversionDuplicateError: string | null;
+  temporaryMergeLoading: boolean;
+  temporaryMergeError: string | null;
+  temporaryMergeSuccess: boolean;
   activateLoading: boolean;
   activateError: string | null;
   activateSuccess: boolean;
@@ -82,8 +86,11 @@ const initialState: PatientState = {
   temporaryConversionError: null,
   temporaryConversionSuccess: false,
   conversionDuplicateLoading: false,
-  conversionDuplicated: null,
+  conversionCandidates: null,
   conversionDuplicateError: null,
+  temporaryMergeLoading: false,
+  temporaryMergeError: null,
+  temporaryMergeSuccess: false,
   activateLoading: false,
   activateError: null,
   activateSuccess: false,
@@ -204,24 +211,54 @@ const patientSlice = createSlice({
     ) {
       void _action;
       state.conversionDuplicateLoading = true;
-      state.conversionDuplicated = null;
+      state.conversionCandidates = null;
       state.conversionDuplicateError = null;
     },
 
-    checkConversionDuplicateSuccess(state, action: PayloadAction<boolean>) {
+    checkConversionDuplicateSuccess(state, action: PayloadAction<PatientListItem[]>) {
       state.conversionDuplicateLoading = false;
-      state.conversionDuplicated = action.payload;
+      state.conversionCandidates = action.payload;
     },
 
     checkConversionDuplicateFailure(state, action: PayloadAction<string>) {
       state.conversionDuplicateLoading = false;
+      state.conversionCandidates = null;
       state.conversionDuplicateError = action.payload;
     },
 
     resetConversionDuplicate(state) {
       state.conversionDuplicateLoading = false;
-      state.conversionDuplicated = null;
+      state.conversionCandidates = null;
       state.conversionDuplicateError = null;
+    },
+
+    mergeTemporaryPatientRequest(
+      state,
+      _action: PayloadAction<PatientTemporaryMergeRequest>,
+    ) {
+      void _action;
+      state.temporaryMergeLoading = true;
+      state.temporaryMergeError = null;
+      state.temporaryMergeSuccess = false;
+    },
+
+    mergeTemporaryPatientSuccess(state, action: PayloadAction<PatientDetail>) {
+      state.temporaryMergeLoading = false;
+      state.temporaryMergeError = null;
+      state.temporaryMergeSuccess = true;
+      state.patientDetail = action.payload;
+    },
+
+    mergeTemporaryPatientFailure(state, action: PayloadAction<string>) {
+      state.temporaryMergeLoading = false;
+      state.temporaryMergeError = action.payload;
+      state.temporaryMergeSuccess = false;
+    },
+
+    resetTemporaryPatientMerge(state) {
+      state.temporaryMergeLoading = false;
+      state.temporaryMergeError = null;
+      state.temporaryMergeSuccess = false;
     },
 
     updatePatientDeathRequest(
@@ -395,6 +432,10 @@ export const {
   checkConversionDuplicateSuccess,
   checkConversionDuplicateFailure,
   resetConversionDuplicate,
+  mergeTemporaryPatientRequest,
+  mergeTemporaryPatientSuccess,
+  mergeTemporaryPatientFailure,
+  resetTemporaryPatientMerge,
   activatePatientRequest,
   activatePatientSuccess,
   activatePatientFailure,

@@ -38,7 +38,6 @@ function formatAmountText(value: string): string {
 }
 
 const ITEM_COLUMNS: DataTableColumn<BillingDetailItem>[] = [
-  { key: "occurredAt", header: "Occurred At", render: (row) => row.occurredAt },
   {
     key: "billingType",
     header: "Type",
@@ -157,8 +156,6 @@ const BillingDetailSearchDetail = ({ patientId }: BillingDetailSearchDetailProps
           <p className="py-16 text-center text-sm text-slate-400">No detail information available.</p>
         ) : (
           <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-            <DetailField label="PatientId" value={detail.patientId} />
-            <DetailField label="PatientName" value={detail.patientName} />
             <DetailField label="PhoneNo" value={detail.phoneNo} />
             <DetailField label="Address" value={detail.address} />
             <DetailField label="OutpatientAmount" value={formatAmount(detail.outpatientAmount)} />

@@ -62,5 +62,5 @@ export function getPatientDisplayName(
   patientId: string | null | undefined,
   names: Record<string, string>,
 ): string {
-  return (patientId && names[patientId]?.trim()) || "Patient name unavailable";
+  return (patientId && names[patientId]?.trim()) || "-";
 }

@@ -27,6 +27,8 @@ import type {
   PatientDeathUpdateRequest,
   PatientTemporaryConversionApiResponse,
   PatientTemporaryConversionRequest,
+  PatientTemporaryMergeApiResponse,
+  PatientTemporaryMergeRequest,
   PatientActivateApiResponse,
   PatientActivateRequest,
 } from "../type/patientType";
@@ -91,6 +93,35 @@ export async function convertTemporaryPatientApi(
       },
     );
 
+  return response.data.data;
+}
+
+/** POST /api/patient/duplicate-candidates */
+export async function findTemporaryConversionCandidatesApi(request: {
+  patientId: string;
+  residentRegNo: string;
+}): Promise<PatientListItem[]> {
+  const response = await apiClient.post<ApiResponse<PatientListItem[]>>(
+    "/api/patient/duplicate-candidates",
+    {
+      residentRegNo: request.residentRegNo.trim(),
+      excludePatientId: request.patientId,
+    },
+  );
+  return response.data.data;
+}
+
+/** POST /api/patient/{patientId}/merge */
+export async function mergeTemporaryPatientApi(
+  request: PatientTemporaryMergeRequest,
+): Promise<PatientDetail> {
+  const response = await apiClient.post<PatientTemporaryMergeApiResponse>(
+    `/api/patient/${encodeURIComponent(request.patientId)}/merge`,
+    {
+      targetPatientId: request.targetPatientId,
+      residentRegNo: request.residentRegNo.trim(),
+    },
+  );
   return response.data.data;
 }
 

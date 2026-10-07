@@ -1,5 +1,5 @@
 import axios from "@/lib/axios";
-import { MedicationDto, PrescriptionDto, PrescriptionSearchParams } from "./types";
+import { MedicationDto, MedicationPageDto, PrescriptionDto, PrescriptionSearchParams } from "./types";
 
 // 처방 목록 조회 API
 export const fetchPrescriptionList = async (
@@ -30,6 +30,18 @@ export const deactivatePrescription = async (
     await axios.patch(`/api/outpatient/prescriptions/${prescriptionId}/deactivate`, null, {
         params: { cancelReason, userId },
     });
+};
+
+// 약품 목록 API — name 을 비우면 전체를 이름순으로, size 는 최대 100
+export const fetchMedicationList = async (params: {
+    name?: string;
+    page?: number;
+    size?: number;
+}): Promise<MedicationPageDto> => {
+    const response = await axios.get("/api/outpatient/prescriptions/medications", {
+        params: { name: params.name || undefined, page: params.page ?? 0, size: params.size ?? 100 },
+    });
+    return response.data.data;
 };
 
 // 약 검색 API

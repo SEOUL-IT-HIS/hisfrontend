@@ -22,9 +22,15 @@ import ReceptionCancelModal from "./ReceptionCancelModal";
 const CANCELLED_STATUS = "CANCELLED";
 const STATUS_FILTER_ALL = "ALL";
 
-const RECEPTION_TYPE_LABEL: Record<string, string> = {
+const VISIT_TYPE_LABEL: Record<string, string> = {
   INITIAL: "Initial Visit",
   REVISIT: "Follow-up Visit",
+};
+
+const RECEPTION_TYPE_LABEL: Record<string, string> = {
+  RESERVATION: "Reservation",
+  WALK_IN: "Walk-in",
+  EMERGENCY: "Emergency",
 };
 
 const STATUS_FILTER_OPTIONS = [
@@ -84,6 +90,11 @@ export default function ReceptionListSection({
       key: "receptionType",
       header: "Type",
       render: (r) => RECEPTION_TYPE_LABEL[r.receptionType] ?? r.receptionType,
+    },
+    {
+      key: "visitType",
+      header: "Visit",
+      render: (r) => (r.visitType ? VISIT_TYPE_LABEL[r.visitType] ?? r.visitType : "-"),
     },
     { key: "status", header: "Status", render: (r) => r.status },
     {

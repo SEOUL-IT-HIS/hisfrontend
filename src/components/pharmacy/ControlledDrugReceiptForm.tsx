@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { registerControlledDrugReceiptRequest } from "@/features/pharmacy/slice";
-import { FormActions, FormField, Input, PageHeader, Panel } from "@/components/common";
+import { FormActions, FormField, Input, PageHeader, Panel, Select } from "@/components/common";
+import MedicationSearchInput from "@/components/pharmacy/MedicationSearchInput";
+import SupplierSelect from "@/components/pharmacy/SupplierSelect";
+import StorageLocationSelect from "@/components/pharmacy/StorageLocationSelect";
 import type { RootState } from "@/store/store";
 import type { ReceiptRegisterRequest } from "@/features/pharmacy/types";
+import { fetchEmpApi } from "@/features/emp/api/empApi";
+import type { Emp } from "@/features/emp/types/empTypes";
 
 const initialReceipt: ReceiptRegisterRequest = {
   supplierId: "",
@@ -32,10 +37,35 @@ export default function ControlledDrugReceiptForm() {
   const router = useRouter();
   const [receipt, setReceipt] = useState<ReceiptRegisterRequest>(initialReceipt);
   const [staffId, setStaffId] = useState("");
-  const [witnessStaffIds, setWitnessStaffIds] = useState("");
+  const [witnessStaffIds, setWitnessStaffIds] = useState<string[]>([]);
   const error = useSelector(
     (state: RootState) => state.pharmacy.controlledDrugRegisterError
   );
+
+  // 처리자/입회자/담당자는 자유 텍스트로 받지 않고 admin에 실제 등록된 직원만 고를 수 있게 한다.
+  const [employees, setEmployees] = useState<Emp[]>([]);
+  const [employeeLoadError, setEmployeeLoadError] = useState("");
+  useEffect(() => {
+    let ignore = false;
+    fetchEmpApi()
+      .then((list) => {
+        if (!ignore) setEmployees(list);
+      })
+      .catch((err: unknown) => {
+        if (!ignore) {
+          setEmployeeLoadError(
+            err instanceof Error ? err.message : "Failed to load the employee list."
+          );
+        }
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
+  const employeeOptions = employees.map((employee) => ({
+    value: employee.empId,
+    label: `${employee.empName} (${employee.empNo})`,
+  }));
 
   const item = receipt.items[0];
 
@@ -60,10 +90,6 @@ export default function ControlledDrugReceiptForm() {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const witnesses = witnessStaffIds
-      .split(",")
-      .map((v) => v.trim())
-      .filter((v) => v.length > 0);
     if (
       !receipt.supplierId ||
       !receipt.storageLocationId ||
@@ -75,7 +101,7 @@ export default function ControlledDrugReceiptForm() {
       !item.unitCd ||
       !item.receiptQty ||
       !staffId ||
-      witnesses.length === 0
+      witnessStaffIds.length === 0
     ) {
       return;
     }
@@ -86,7 +112,7 @@ export default function ControlledDrugReceiptForm() {
           items: [{ ...item, manufactureDt: item.manufactureDt || undefined }],
         },
         staffId,
-        witnessStaffIds: witnesses,
+        witnessStaffIds,
       })
     );
     router.push("/pharmacy/controlled/records");
@@ -102,20 +128,16 @@ export default function ControlledDrugReceiptForm() {
       <Panel className="max-w-xl p-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <p className="text-xs font-semibold text-slate-400">Receipt Info</p>
-          <FormField label="Supplier ID" required>
-            <Input
-              type="text"
-              placeholder="Supplier ID"
+          <FormField label="Supplier" required>
+            <SupplierSelect
               value={receipt.supplierId}
-              onChange={handleReceiptFieldChange("supplierId")}
+              onChange={(e) => setReceipt((prev) => ({ ...prev, supplierId: e.target.value }))}
             />
           </FormField>
-          <FormField label="Storage Location ID" required>
-            <Input
-              type="text"
-              placeholder="Storage Location ID"
+          <FormField label="Storage Location" required>
+            <StorageLocationSelect
               value={receipt.storageLocationId}
-              onChange={handleReceiptFieldChange("storageLocationId")}
+              onChange={(e) => setReceipt((prev) => ({ ...prev, storageLocationId: e.target.value }))}
             />
           </FormField>
           <FormField label="Receipt Date" required>
@@ -125,22 +147,22 @@ export default function ControlledDrugReceiptForm() {
               onChange={handleReceiptFieldChange("receiptDt")}
             />
           </FormField>
-          <FormField label="Handler ID" required>
-            <Input
-              type="text"
-              placeholder="Handler ID"
+          <FormField label="Handler" required>
+            <Select
+              placeholder="Select handler"
+              options={employeeOptions}
               value={receipt.receivedById}
-              onChange={handleReceiptFieldChange("receivedById")}
+              onChange={(e) => setReceipt((prev) => ({ ...prev, receivedById: e.target.value }))}
             />
           </FormField>
 
           <p className="mt-2 text-xs font-semibold text-slate-400">Medication Item</p>
-          <FormField label="Medication ID" required>
-            <Input
-              type="text"
-              placeholder="Medication ID"
+          <FormField label="Medication" required>
+            <MedicationSearchInput
               value={item.medicationId}
-              onChange={handleItemChange("medicationId")}
+              onChange={(medicationId) =>
+                setReceipt((prev) => ({ ...prev, items: [{ ...prev.items[0], medicationId }] }))
+              }
             />
           </FormField>
           <FormField label="Lot No." required>
@@ -191,24 +213,30 @@ export default function ControlledDrugReceiptForm() {
           </FormField>
 
           <p className="mt-2 text-xs font-semibold text-slate-400">Staff / Witnesses</p>
-          <FormField label="Staff ID" required hint="The pharmacist handling this transaction.">
-            <Input
-              type="text"
-              placeholder="Staff ID"
+          {employeeLoadError && <p className="text-sm text-rose-500">{employeeLoadError}</p>}
+          <FormField label="Staff" required hint="The pharmacist handling this transaction.">
+            <Select
+              placeholder="Select staff"
+              options={employeeOptions}
               value={staffId}
               onChange={(e) => setStaffId(e.target.value)}
             />
           </FormField>
           <FormField
-            label="Witness Staff IDs"
+            label="Witnesses"
             required
-            hint="At least one witness is required by law. Separate multiple IDs with commas."
+            hint="At least one witness is required by law. Ctrl/Cmd-click to select multiple."
           >
-            <Input
-              type="text"
-              placeholder="e.g. NURSE-001, NURSE-002"
+            <Select
+              multiple
+              options={employeeOptions}
               value={witnessStaffIds}
-              onChange={(e) => setWitnessStaffIds(e.target.value)}
+              onChange={(e) =>
+                setWitnessStaffIds(
+                  Array.from(e.target.selectedOptions, (opt) => opt.value)
+                )
+              }
+              className="h-32"
             />
           </FormField>
 

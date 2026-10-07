@@ -8,17 +8,20 @@ import {
     deactivatePrescriptionRequest,
     fetchPrescriptionDetailRequest,
 } from "@/features/outpatient/prescription/slice";
+import { getServiceTypeLabel } from "@/features/outpatient/prescription/serviceType";
 import type { AppDispatch, RootState } from "@/store/store";
 
 type PrescriptionDetailProps = {
     prescriptionId: string | null;
+    prescriberNames?: Record<string, string>; // empId -> 처방자 이름 (없으면 ID만 표시)
     onClose: () => void;
 };
 
 const getStatusText = (status: string) => {
     switch (status) {
-        case 'REQUESTED':
         case 'ORDERED':
+            return 'Ordered'; // 처방됨
+        case 'REQUESTED':
         case 'PENDING':
             return 'Pending'; // 처방대기
         case 'ISSUED':
@@ -56,7 +59,7 @@ const AbnormalBadge = ({ flag }: { flag?: string | null }) => {
     );
 };
 
-const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps) => {
+const PrescriptionDetail = ({ prescriptionId, prescriberNames, onClose }: PrescriptionDetailProps) => {
     const dispatch = useDispatch<AppDispatch>();
 
     const prescription = useSelector((state: RootState) => state.outpatient.prescription.selectedPrescription);
@@ -121,14 +124,14 @@ const PrescriptionDetail = ({ prescriptionId, onClose }: PrescriptionDetailProps
                                 {getStatusText(prescription.status)}
                             </div>
                         </FormField>
-                        <FormField label="Prescriber ID">
+                        <FormField label="Prescriber">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
-                                {prescription.prescribedBy}
+                                {prescriberNames?.[prescription.prescribedBy] ?? prescription.prescribedBy}
                             </div>
                         </FormField>
                         <FormField label="Service Type">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
-                                {prescription.serviceType ?? "-"}
+                                {getServiceTypeLabel(prescription.serviceType)}
                             </div>
                         </FormField>
                         <FormField label="Priority">

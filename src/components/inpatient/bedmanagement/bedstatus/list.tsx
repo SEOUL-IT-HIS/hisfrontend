@@ -3,7 +3,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
-import { Alert, Button, DataTable, Input, PageHeader, Panel, Select, type DataTableColumn } from "@/components/common";
+import { useRouter } from "next/navigation";
+import { Alert, Button, Input, PageHeader, Pagination, Panel, Select } from "@/components/common";
+import type { SwipeAction } from "@/components/inpatient/common/SwipeRow";
+import SwipeListRow from "@/components/inpatient/common/SwipeListRow";
 import LinkButton from "@/components/inpatient/common/LinkButton";
 import Toolbar from "@/components/inpatient/common/Toolbar";
 import { fetchBedRequest, selectBed, selectBedListStatus } from "@/features/inpatient/bedmanagement/bedstatus/slice";
@@ -31,6 +34,19 @@ const STATUS_LABEL: Record<string, string> = {
   RESERVED: "Reserved",
 };
 
+// 머리글과 각 행이 같은 칸 비율을 씀 (표(table)가 아니라 행 카드 목록이라 직접 맞춤)
+const ROW_GRID = "grid w-full grid-cols-[40px_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1.2fr)_96px] items-center gap-3";
+
+// 한 페이지에 보여줄 병상 수 — 목록이 끝없이 스크롤되지 않도록 끊어서 보여줌
+const PAGE_SIZE = 10;
+
+const AssignIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8v8M8 12h8" />
+  </svg>
+);
+
 type BedStatusListProps = {
   /** 병상관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
   embedded?: boolean;
@@ -40,6 +56,7 @@ type BedStatusListProps = {
 
 const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProps = {}) => {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   // 이름은 bedAssignments지만 selectBed가 반환하는 건 "병상(BED) 목록" 그 자체임 —
   // BED 테이블에 patientId가 이미 들어있어서(배정 시 markBedOccupied가 채워줌),
   // 다른 화면(bedassignment/list.tsx)처럼 admissionId를 거칠 필요 없이 patientId → 이름 1단계면 됨
@@ -84,6 +101,8 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
   const [wardCodes, setWardCodes] = React.useState<CommonCodeItem[]>([]);
   // 목록에서 클릭한 병상ID — 값이 있으면 오른쪽에 상세 패널을 띄움(마스터-디테일)
   const [selectedBedId, setSelectedBedId] = useState<string | null>(null);
+  // 목록 보기의 현재 페이지(1부터) — 필터가 바뀌면 1페이지로 되돌림
+  const [page, setPage] = useState(1);
   // wardCd → 병동명 (필터 드롭다운용으로 불러온 wardCodes 재사용). 공통코드를 못 불러오면 코드값 그대로 표시
   const wardNameByCd = useMemo(
     () => new Map(wardCodes.map((ward) => [ward.codeValue, ward.codeName])),
@@ -117,7 +136,14 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
   const filteredBeds = useMemo(() => filterBeds(searchName), [bedAssignments, searchStatus, searchWard, searchName, patientNameById]);
 
   // 이름 검색 결과가 딱 1건이면 상세 패널을 자동으로 열어 병동/호실/베드를 바로 보여줌
+  // 현재 페이지에 보여줄 병상 — 병상이 줄어 페이지 수를 넘어가면(예: 새로고침 후) 마지막 페이지로 맞춤
+  const totalPages = Math.max(Math.ceil(filteredBeds.length / PAGE_SIZE), 1);
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pagedBeds = filteredBeds.slice(pageStart, pageStart + PAGE_SIZE);
+
   const handleSearchNameChange = (value: string) => {
+    setPage(1);
     setSearchName(value);
     const matches = value.trim() ? filterBeds(value) : [];
     if (matches.length === 1) setSelectedBedId(matches[0].bedId);
@@ -152,29 +178,19 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
       .catch(() => setWardCodes([]));
   }, []);
 
-  const columns: DataTableColumn<BedDTO>[] = [
-    // patientId가 없으면(빈 병상) "None", 있으면 Map에서 이름 조회 (patientLabel 참고)
-    { key: "patient", header: "Patient Name", render: (bed) => <span className="font-medium text-slate-800">{patientLabel(bed.patientId)}</span> },
-    { key: "sexAge", header: "Sex / Age", render: (bed) => (bed.patientId ? sexAgeByPatientId.get(bed.patientId) ?? "-" : "-") },
-    { key: "ward", header: "Ward", render: (bed) => wardLabel(bed.wardCd) },
-    { key: "roomType", header: "Room Type", render: (bed) => (bed.roomTypeCode ? ROOM_TYPE_LABEL[bed.roomTypeCode] ?? bed.roomTypeCode : "-") },
-    { key: "roomNo", header: "Room No.", render: (bed) => bed.roomNo },
-    { key: "bedNo", header: "Bed No.", render: (bed) => bed.bedNo },
-    {
-      key: "status",
-      header: "Bed Status",
-      // STATUS_BADGE/LABEL에 없는 값이 와도 깨지지 않도록 기본(회색) 스타일로 대체
-      render: (bed) => (
-        <span
-          className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
-            STATUS_BADGE[bed.bedStatus] ?? "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
-          }`}
-        >
-          {STATUS_LABEL[bed.bedStatus] ?? bed.bedStatus}
-        </span>
-      ),
-    },
-  ];
+  // 빈 병상에만 "Assign"을 열어 줌 — 병상배정 등록 화면으로 이동하고 그 병상이 미리 선택돼 있음
+  const actionsFor = (bed: BedDTO): SwipeAction[] =>
+    bed.bedStatus === "EMPTY"
+      ? [
+          {
+            id: "assign",
+            label: "Assign",
+            icon: <AssignIcon />,
+            dismiss: false,
+            onSelect: () => router.push(`/inpatient/bedmanagement/bedassignment/create?from=status&bedId=${bed.bedId}`),
+          },
+        ]
+      : [];
 
   return (
     // 화면 아래까지 꽉 채움 — 목록과 상세 패널이 각자 안에서 스크롤 (홈 탭 안에서는 남은 높이를, 단독 페이지에서는 화면 높이를 채움)
@@ -201,18 +217,26 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
         />
         <Select
           value={searchWard}
-          onChange={(e) => setSearchWard(e.target.value)}
+          onChange={(e) => {
+            setSearchWard(e.target.value);
+            setPage(1);
+          }}
           placeholder="All Wards"
           options={wardsWithBeds.map((ward) => ({ value: ward.codeValue, label: ward.codeName }))}
           className="max-w-[180px]"
         />
         <Select
           value={searchStatus}
-          onChange={(e) => setSearchStatus(e.target.value)}
+          onChange={(e) => {
+            setSearchStatus(e.target.value);
+            setPage(1);
+          }}
           placeholder="All"
           options={items.map((item) => ({ value: item.name, label: item.description }))}
           className="max-w-[160px]"
         />
+        {/* 밀어서 여는 동작은 눈에 잘 안 띄어서 안내 문구를 둠 (목록 보기에서만) */}
+        {viewMode === "list" && <span className="text-xs text-slate-400">Swipe an empty bed left to assign a patient</span>}
       </Toolbar>
 
       {listStatus.error && <Alert>{listStatus.error}</Alert>}
@@ -221,17 +245,73 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
         // flex로 좌: 목록, 우: 상세 패널을 나란히 배치 (selectedBedId 없으면 오른쪽은 안 그려짐)
         <div className="flex min-h-[480px] flex-1 gap-4">
           {viewMode === "list" ? (
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-              <DataTable
-                columns={columns}
-                rows={filteredBeds}
-                rowKey={(bed) => bed.bedId}
-                onRowClick={(bed) => setSelectedBedId(bed.bedId)}
-                isRowActive={(bed) => bed.bedId === selectedBedId}
-                loading={listStatus.loading}
-                loadingMessage="Loading..."
-                emptyMessage="No bed data available."
-              />
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+              {/* 머리글 — 아래 행들과 같은 칸 비율 */}
+              <div className={`${ROW_GRID} rounded-xl bg-slate-50/95 px-[17px] py-2.5 text-xs font-medium uppercase tracking-wide text-slate-400`}>
+                <span>No.</span>
+                <span>Patient (Gender / Age)</span>
+                <span>Ward</span>
+                <span>Room Type</span>
+                <span>Room / Bed</span>
+                <span>Bed Status</span>
+              </div>
+
+              <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-1">
+                {listStatus.loading && <p className="py-16 text-center text-sm text-slate-400">Loading...</p>}
+                {!listStatus.loading && filteredBeds.length === 0 && (
+                  <p className="py-16 text-center text-sm text-slate-400">No bed data available.</p>
+                )}
+                {!listStatus.loading &&
+                  pagedBeds.map((bed, index) => (
+                    <SwipeListRow
+                      key={bed.bedId}
+                      label={`Room ${bed.roomNo} Bed ${bed.bedNo}`}
+                      selected={bed.bedId === selectedBedId}
+                      actions={actionsFor(bed)}
+                      actionColor="#0284c7"
+                      onSelect={() => setSelectedBedId(bed.bedId)}
+                    >
+                      <div className={ROW_GRID}>
+                        {/* 페이지가 바뀌어도 이어지는 번호 (2페이지는 11번부터) */}
+                        <span className="text-xs tabular-nums text-slate-400">{pageStart + index + 1}</span>
+                        <div className="min-w-0">
+                          {/* patientId가 없으면(빈 병상) "None", 있으면 Map에서 이름 조회 (patientLabel 참고) */}
+                          <p className="truncate text-sm font-medium text-slate-800">{patientLabel(bed.patientId)}</p>
+                          <p className="truncate text-xs text-slate-400">
+                            {bed.patientId ? sexAgeByPatientId.get(bed.patientId) ?? "-" : "-"}
+                          </p>
+                        </div>
+                        <span className="truncate text-sm text-slate-600">{wardLabel(bed.wardCd)}</span>
+                        <span className="truncate text-sm text-slate-600">
+                          {bed.roomTypeCode ? ROOM_TYPE_LABEL[bed.roomTypeCode] ?? bed.roomTypeCode : "-"}
+                        </span>
+                        <span className="truncate text-sm text-slate-600">
+                          Room {bed.roomNo} · Bed {bed.bedNo}
+                        </span>
+                        <span>
+                          {/* STATUS_BADGE/LABEL에 없는 값이 와도 깨지지 않도록 기본(회색) 스타일로 대체 */}
+                          <span
+                            className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
+                              STATUS_BADGE[bed.bedStatus] ?? "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
+                            }`}
+                          >
+                            {STATUS_LABEL[bed.bedStatus] ?? bed.bedStatus}
+                          </span>
+                        </span>
+                      </div>
+                    </SwipeListRow>
+                  ))}
+              </div>
+
+              {/* 페이지 이동 — 목록은 이 안에서만 스크롤하고, 페이지 막대는 아래에 고정 */}
+              {!listStatus.loading && filteredBeds.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">
+                    {pageStart + 1}–{pageStart + pagedBeds.length} of {filteredBeds.length} beds
+                  </span>
+                  <Pagination page={currentPage} totalPages={totalPages} onPageChange={setPage} prevLabel="Prev" nextLabel="Next" />
+                </div>
+              )}
             </div>
           ) : (
             <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto">
