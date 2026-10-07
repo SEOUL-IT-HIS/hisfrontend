@@ -353,18 +353,20 @@ export default function PrescriptionForm({
                                                     : "No results found."}
                                             </li>
                                         )}
-                                        {visibleDrugs.map((med) => (
-                                            <li
-                                                key={med.medicationId}
-                                                className="cursor-pointer px-3 py-2 text-sm hover:bg-slate-50"
-                                                onMouseDown={() => handleSelectMedication(med)}
-                                            >
-                                                <div className="font-medium text-slate-800">{med.medicationName}</div>
-                                                <div className="text-xs text-slate-400">
-                                                    {med.entpName ?? "-"} · {med.formCodeName ?? "-"}
-                                                </div>
-                                            </li>
-                                        ))}
+                                        {visibleDrugs.map((med) => {
+                                            // 제조사/제형명 중 값이 있는 것만 보여주고, 둘 다 없으면 줄을 숨긴다
+                                            const subInfo = [med.entpName, med.formCodeName].filter(Boolean).join(" · ");
+                                            return (
+                                                <li
+                                                    key={med.medicationId}
+                                                    className="cursor-pointer px-3 py-2 text-sm hover:bg-slate-50"
+                                                    onMouseDown={() => handleSelectMedication(med)}
+                                                >
+                                                    <div className="font-medium text-slate-800">{med.medicationName}</div>
+                                                    {subInfo && <div className="text-xs text-slate-400">{subInfo}</div>}
+                                                </li>
+                                            );
+                                        })}
                                     </ul>
                                 )}
                             </div>                            <OrderField
