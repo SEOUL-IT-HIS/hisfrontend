@@ -120,8 +120,6 @@ const initialForm: PatientRegisterFormState = {
 export default function PatientRegisterForm() {
   const genderCodes = useCommonCodeOptions("GENDER_CD");
   const [form, setForm] = useState<PatientRegisterFormState>(initialForm);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [patientNameTouched, setPatientNameTouched] = useState(false);
@@ -136,30 +134,6 @@ export default function PatientRegisterForm() {
   } = useSelector((state: RootState) => state.patient);
 
   const isTemporaryPatient = form.tempPatientYn === "Y";
-
-  useEffect(() => {
-    return () => {
-      if (imagePreview?.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
-    };
-  }, [imagePreview]);
-
-  const handleImageChange = (file: File | null) => {
-    if (file && !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setValidationError("Choose a JPG, PNG, or WEBP image.");
-      setImageFile(null);
-      setImagePreview(null);
-      return;
-    }
-    if (file && file.size > 5 * 1024 * 1024) {
-      setValidationError("The photo must be 5 MB or smaller.");
-      setImageFile(null);
-      setImagePreview(null);
-      return;
-    }
-    setValidationError(null);
-    setImageFile(file);
-    setImagePreview(file ? URL.createObjectURL(file) : null);
-  };
 
   const residentRegNoError =
     form.residentRegNo.length === 0
@@ -227,8 +201,7 @@ export default function PatientRegisterForm() {
         form.zipCode !== "" ||
         form.address.trim() !== "" ||
         form.addressDetail.trim() !== "" ||
-        form.phoneNo !== "" ||
-        imageFile !== null;
+        form.phoneNo !== "";
 
       if (!hasUnsavedChanges || submitted) {
         return;
@@ -243,7 +216,7 @@ export default function PatientRegisterForm() {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [form, imageFile, submitted]);
+  }, [form, submitted]);
 
   const updateForm = <K extends keyof PatientRegisterFormState>(
     field: K,
@@ -390,7 +363,6 @@ export default function PatientRegisterForm() {
         tempRegisterReason: isTemporaryPatient
           ? form.tempRegisterReason?.trim()
           : undefined,
-        image: imageFile ?? undefined,
       }),
     );
   };
@@ -406,8 +378,7 @@ export default function PatientRegisterForm() {
       form.zipCode !== "" ||
       form.address.trim() !== "" ||
       form.addressDetail.trim() !== "" ||
-      form.phoneNo !== "" ||
-      imageFile !== null;
+      form.phoneNo !== "";
 
     if (
       hasUnsavedChanges &&
@@ -430,8 +401,7 @@ export default function PatientRegisterForm() {
       form.zipCode !== "" ||
       form.address.trim() !== "" ||
       form.addressDetail.trim() !== "" ||
-      form.phoneNo !== "" ||
-      imageFile !== null;
+      form.phoneNo !== "";
 
     if (
       hasUnsavedChanges &&
@@ -441,8 +411,6 @@ export default function PatientRegisterForm() {
     }
 
     setForm(initialForm);
-    setImageFile(null);
-    setImagePreview(null);
     setPatientNameTouched(false);
     setValidationError(null);
     setSubmitted(false);
@@ -500,21 +468,6 @@ export default function PatientRegisterForm() {
             <p className="mt-1 text-xs text-slate-500">
               Use this option to register a patient with minimal information before identity confirmation.
             </p>
-          </FormField>
-
-          <FormField label="Patient Photo" htmlFor="patientPhoto">
-            <input
-              key={imagePreview ?? "patient-photo-empty"}
-              id="patientPhoto"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(event) => handleImageChange(event.target.files?.[0] ?? null)}
-              disabled={registerLoading}
-              className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-sky-700"
-            />
-            {imagePreview ? (
-              <img src={imagePreview} alt="Patient photo preview" className="mt-2 h-20 w-20 rounded-full object-cover" />
-            ) : null}
           </FormField>
 
           {isTemporaryPatient ? (
