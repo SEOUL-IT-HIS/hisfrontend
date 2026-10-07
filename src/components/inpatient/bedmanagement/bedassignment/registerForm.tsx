@@ -28,6 +28,8 @@ const BedAssignmentRegisterForm = () => {
     // 입원 상세 화면의 "병상 배정하기" 링크(?admissionId=...)를 타고 들어왔을 때만 값이 있음.
     // 값이 있으면 입원ID를 고정 표시(아래 JSX 참고), 없으면 직접 드롭다운에서 고르게 함
     const admissionIdParam = searchParams.get("admissionId");
+    // 병상현황에서 빈 병상을 밀어 "Assign"으로 들어오면 그 병상이 미리 선택됨
+    const bedIdParam = searchParams.get("bedId");
     const { loading, error, success } = useSelector((state: RootState) => ({
         loading: state.inpatient.bedmanagement.createStatus.loading,
         error: state.inpatient.bedmanagement.createStatus.error,
@@ -38,7 +40,7 @@ const BedAssignmentRegisterForm = () => {
     // "이미 배정된 입원건"을 걸러내기 위해 배정 목록 전체를 따로 불러옴 (아래 assignedAdmissionIds에서 사용)
     const bedAssignments = useSelector(selectBedAssignments);
     const[form, setForm] = useState({
-        bedId: "",
+        bedId: bedIdParam ?? "",
         // admissionIdParam이 있으면(링크로 진입) 폼 최초값으로 미리 채워둠
         admissionId: admissionIdParam ?? "",
         assignedAt: "",

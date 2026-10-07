@@ -8,9 +8,14 @@ import { fetchBillingMasterDetailRequest } from "@/features/billing/billingMaste
 import { Alert, Button, Panel, StatusBadge } from "@/components/common";
 import type { AppDispatch, RootState } from "@/store/store";
 
+// The API returns "yyyy-MM-ddTHH:mm" - only the date part is needed on screen
+function formatDate(value: string | null | undefined): string {
+  return value ? value.slice(0, 10) : "";
+}
+
 function formatPrice(value: string): string {
   const amount = Number(value);
-  return Number.isNaN(amount) ? value : `${amount.toLocaleString()}원`;
+  return Number.isNaN(amount) ? value : `₩${amount.toLocaleString()}`;
 }
 
 const BillingMasterDetail = () => {
@@ -37,12 +42,21 @@ const BillingMasterDetail = () => {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-semibold tracking-[0.14em] text-sky-600">BILLING</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">수납 기준정보 상세</h1>
-          <p className="mt-1 text-sm text-slate-500">등록된 수가 기준정보의 상세 내용을 확인합니다.</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">Billing Master Detail</h1>
+          <p className="mt-1 text-sm text-slate-500">View the details of a registered fee master.</p>
         </div>
-        <Button variant="secondary" onClick={() => router.push("/billing/statistics")}>
-          목록으로
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => router.push("/billing/statistics")}>
+            Back to List
+          </Button>
+          <Button
+            variant="primary"
+            disabled={!detail}
+            onClick={() => router.push(`/billing/statistics/${billingId}/edit`)}
+          >
+            Edit
+          </Button>
+        </div>
       </header>
 
       {error ? <Alert variant="error">{error}</Alert> : null}
@@ -50,20 +64,21 @@ const BillingMasterDetail = () => {
       <Panel>
         <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
           {loading ? (
-            <p className="py-16 text-center text-sm text-slate-400">상세 정보를 불러오는 중입니다...</p>
+            <p className="py-16 text-center text-sm text-slate-400">Loading detail information...</p>
           ) : !detail ? (
-            <p className="py-16 text-center text-sm text-slate-400">상세 정보가 없습니다.</p>
+            <p className="py-16 text-center text-sm text-slate-400">No detail information available.</p>
           ) : (
             <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-              <DetailField label="서비스 구분 코드" value={detail.sourceServiceCode} />
-              <DetailField label="수가 코드" value={detail.feeCode} />
-              <DetailField label="수가 명칭" value={detail.feeName} />
-              <DetailField label="기본 단가" value={formatPrice(detail.defaultPrice)} emphasize />
-              <DetailField label="분류 코드" value={detail.categoryCode} />
-              <DetailField label="급여/비급여 코드" value={detail.insuranceTypeCode} />
-              <DetailField label="적용 시작일" value={detail.effectiveFrom} />
-              <DetailField label="적용 종료일" value={detail.effectiveTo} />
-              <DetailField label="사용 여부" value={<StatusBadge value={detail.useYn} />} />
+              <DetailField label="Source Service Code" value={detail.sourceServiceCode} />
+              <DetailField label="Fee Code" value={detail.feeCode} />
+              <DetailField label="Fee Name" value={detail.feeName} />
+              <DetailField label="Default Price" value={formatPrice(detail.defaultPrice)} emphasize />
+              <DetailField label="Effective From" value={formatDate(detail.effectiveFrom)} />
+              <DetailField label="Effective To" value={formatDate(detail.effectiveTo)} />
+              <DetailField
+                label="Status"
+                value={<StatusBadge value={detail.useYn} activeLabel="Active" inactiveLabel="Inactive" />}
+              />
             </dl>
           )}
         </div>

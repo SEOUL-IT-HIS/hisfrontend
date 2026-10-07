@@ -170,6 +170,9 @@ const receptionManagementSlice = createSlice({
       state.cancelLoading = false;
       state.cancelError = action.payload;
     },
+    clearCancelError(state) {
+      state.cancelError = null;
+    },
   },
 });
 
@@ -194,6 +197,7 @@ export const {
   cancelReceptionRequest,
   cancelReceptionSuccess,
   cancelReceptionFailure,
+  clearCancelError,
 } = receptionManagementSlice.actions;
 
 export const selectReceptionList = (state: RootState) =>

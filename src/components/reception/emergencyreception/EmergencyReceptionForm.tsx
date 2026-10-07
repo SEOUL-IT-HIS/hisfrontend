@@ -17,6 +17,7 @@ import type {
 import DuplicateActiveReceptionModal from "./DuplicateActiveReceptionModal";
 import type { PatientSearchItem } from "@/features/reception/patientmanagement/types";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
+import { useDeptDoctorOptions } from "@/features/reception/receptionmanagement/useDeptDoctorOptions";
 import type { AppDispatch } from "@/store/store";
 
 /**
@@ -34,7 +35,7 @@ const CONSCIOUSNESS_OPTIONS = [
 type FieldErrors = {
   patient?: string;
   deptId?: string;
-  ktasLevel?: string;
+  doctorId?: string;
   visitMethod?: string;
   chiefComplaint?: string;
   consciousness?: string;
@@ -43,6 +44,7 @@ type FieldErrors = {
 type EmergencyReceptionFormProps = {
   selectedPatient: PatientSearchItem | null;
   onOpenPatientSearch: () => void;
+  onOpenPatientRegister: () => void;
   onClearPatient: () => void;
 };
 
@@ -71,6 +73,7 @@ export default function EmergencyReceptionForm(
 function EmergencyReceptionFormFields({
   selectedPatient,
   onOpenPatientSearch,
+  onOpenPatientRegister,
   onClearPatient,
 }: EmergencyReceptionFormProps) {
   const dispatch = useDispatch<AppDispatch>();
@@ -82,6 +85,7 @@ function EmergencyReceptionFormFields({
 
   const [deptId, setDeptId] = useState("");
   const [doctorId, setDoctorId] = useState("");
+  const doctors = useDeptDoctorOptions(deptId);
   const [ktasLevel, setKtasLevel] = useState("");
   const [visitMethod, setVisitMethod] = useState("");
   const [chiefComplaint, setChiefComplaint] = useState("");
@@ -122,7 +126,8 @@ function EmergencyReceptionFormFields({
     const nextErrors: FieldErrors = {};
     if (!selectedPatient) nextErrors.patient = "Please search for and select a patient.";
     if (!deptId) nextErrors.deptId = "Please select a department.";
-    if (!ktasLevel) nextErrors.ktasLevel = "Please select a KTAS level.";
+    // RECEPTION.DOCTOR_ID 가 NOT NULL 이라 응급도 담당의 필수
+    if (!doctorId) nextErrors.doctorId = "Please select a doctor.";
     if (!visitMethod) nextErrors.visitMethod = "Please select a visit method.";
     if (!chiefComplaint.trim()) nextErrors.chiefComplaint = "Please enter the chief complaint.";
     if (!consciousness) nextErrors.consciousness = "Please select a consciousness level.";
@@ -134,7 +139,8 @@ function EmergencyReceptionFormFields({
       deptId,
       doctorId,
       memo: memo.trim(),
-      ktasLevel: Number(ktasLevel),
+      // KTAS 는 선택값 — 고르지 않으면 null 로 보낸다
+      ktasLevel: ktasLevel ? Number(ktasLevel) : null,
       visitMethod,
       chiefComplaint: chiefComplaint.trim(),
       consciousness,
@@ -170,7 +176,7 @@ function EmergencyReceptionFormFields({
               readOnly
               value={
                 selectedPatient
-                  ? `${selectedPatient.patientName} (${selectedPatient.patientId})`
+                  ? selectedPatient.patientName
                   : ""
               }
               placeholder="Select a patient using the Search Patient button"
@@ -181,6 +187,13 @@ function EmergencyReceptionFormFields({
               onClick={onOpenPatientSearch}
             >
               Search Patient
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onOpenPatientRegister}
+            >
+              Register Patient
             </Button>
           </div>
           {errors.patient && (
@@ -193,7 +206,11 @@ function EmergencyReceptionFormFields({
             id="emgDeptId"
             value={deptId}
             placeholder={departments.loading ? "Loading..." : "Select"}
-            onChange={(e) => setDeptId(e.target.value)}
+            onChange={(e) => {
+              setDeptId(e.target.value);
+              // 진료과가 바뀌면 이전 과의 의사 선택은 무효
+              setDoctorId("");
+            }}
             options={departments.options}
             disabled={departments.loading}
           />
@@ -205,17 +222,33 @@ function EmergencyReceptionFormFields({
           )}
         </FormField>
 
-        {/* admin-service에 의사 role이 아직 없어 목록 조회가 안 되는 동안은 직접 입력 (reception 도메인과 동일) */}
-        <FormField label="Doctor" htmlFor="emgDoctorId">
-          <Input
+        {/* 외래 접수폼과 동일: 진료과 소속 의사만 보여준다. 응급도 담당의 필수 */}
+        <FormField label="Doctor" required htmlFor="emgDoctorId">
+          <Select
             id="emgDoctorId"
             value={doctorId}
-            placeholder="Enter doctor ID"
+            placeholder={
+              !deptId
+                ? "Select a department first"
+                : doctors.loading
+                  ? "Loading..."
+                  : doctors.options.length === 0
+                    ? "No doctors in this department"
+                    : "Select"
+            }
             onChange={(e) => setDoctorId(e.target.value)}
+            options={doctors.options}
+            disabled={!deptId || doctors.loading}
           />
+          {doctors.error ? (
+            <span className="text-xs text-rose-500">{doctors.error}</span>
+          ) : null}
+          {errors.doctorId && (
+            <p className="text-xs text-rose-600">{errors.doctorId}</p>
+          )}
         </FormField>
 
-        <FormField label="KTAS Level" required htmlFor="emgKtasLevel">
+        <FormField label="KTAS Level" htmlFor="emgKtasLevel">
           <Select
             id="emgKtasLevel"
             value={ktasLevel}
@@ -230,9 +263,6 @@ function EmergencyReceptionFormFields({
           {ktasOptions.error ? (
             <span className="text-xs text-rose-500">{ktasOptions.error}</span>
           ) : null}
-          {errors.ktasLevel && (
-            <p className="text-xs text-rose-600">{errors.ktasLevel}</p>
-          )}
         </FormField>
 
         <FormField label="Visit Method" required htmlFor="emgVisitMethod">

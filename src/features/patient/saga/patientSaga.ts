@@ -21,6 +21,8 @@ import {
   deactivatePatientApi,
   updatePatientDeathApi,
   convertTemporaryPatientApi,
+  findTemporaryConversionCandidatesApi,
+  mergeTemporaryPatientApi,
   activatePatientApi,
 } from "../api/patientApi";
 import {
@@ -48,6 +50,9 @@ import {
   convertTemporaryPatientFailure,
   convertTemporaryPatientRequest,
   convertTemporaryPatientSuccess,
+  mergeTemporaryPatientFailure,
+  mergeTemporaryPatientRequest,
+  mergeTemporaryPatientSuccess,
   checkConversionDuplicateFailure,
   checkConversionDuplicateRequest,
   checkConversionDuplicateSuccess,
@@ -75,6 +80,9 @@ const patientErrorTranslations: Record<string, string> = {
   "주민등록번호와 생년월일이 일치하지 않습니다.": "The resident registration number does not match the date of birth.",
   "이미 등록된 주민등록번호입니다.": "This resident registration number is already registered.",
   "임시환자만 정규환자로 전환할 수 있습니다.": "Only a temporary patient can be converted to a regular patient.",
+  "통합 대상은 통합되지 않은 정규환자여야 합니다.": "Choose a regular patient that has not already been merged.",
+  "이미 다른 환자에 통합된 환자입니다.": "This patient has already been merged into another patient.",
+  "선택한 환자의 신원정보가 입력한 정보와 일치하지 않습니다.": "The selected patient's identity does not match the entered information.",
   "사망 상태인 환자는 활성화할 수 없습니다. 먼저 사망정보를 해제해 주세요.": "A deceased patient cannot be activated. Clear the death information first.",
   "환자 정보를 찾을 수 없습니다.": "Patient information was not found.",
   "사망 환자는 사망일시를 입력해야 합니다.": "The date and time of death is required.",
@@ -219,17 +227,33 @@ function* checkConversionDuplicateSaga(
   action: ReturnType<typeof checkConversionDuplicateRequest>,
 ) {
   try {
-    const duplicated: boolean = yield call(
-      checkPatientDuplicateApi,
-      action.payload,
+    const candidates: PatientListItem[] = yield call(
+      findTemporaryConversionCandidatesApi,
+      {
+        patientId: action.payload.excludePatientId!,
+        residentRegNo: action.payload.residentRegNo,
+      },
     );
-    yield put(checkConversionDuplicateSuccess(duplicated));
+    yield put(checkConversionDuplicateSuccess(candidates));
   } catch (error) {
     const message = getPatientErrorMessage(
       error,
       "Failed to check the resident registration number.",
     );
     yield put(checkConversionDuplicateFailure(message));
+  }
+}
+
+function* mergeTemporaryPatientSaga(
+  action: ReturnType<typeof mergeTemporaryPatientRequest>,
+) {
+  try {
+    const patient: PatientDetail = yield call(mergeTemporaryPatientApi, action.payload);
+    yield put(mergeTemporaryPatientSuccess(patient));
+  } catch (error) {
+    yield put(mergeTemporaryPatientFailure(
+      getPatientErrorMessage(error, "Failed to merge the temporary patient."),
+    ));
   }
 }
 
@@ -313,6 +337,7 @@ export default function* patientSaga() {
     convertTemporaryPatientRequest.type,
     convertTemporaryPatientSaga,
   );
+  yield takeLatest(mergeTemporaryPatientRequest.type, mergeTemporaryPatientSaga);
 
   yield takeLatest(updatePatientDeathRequest.type, updatePatientDeathSaga);
 

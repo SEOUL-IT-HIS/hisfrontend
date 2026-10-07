@@ -44,7 +44,8 @@ type EmergencyReceptionListSectionProps = {
 /**
  * 응급 접수 목록 (응급접수홈 전용)
  * - reception 홈 목록(GET /api/reception)과 분리된 GET /api/reception/emergency 를 사용한다.
- *   백엔드가 당일·응급·취소제외로 이미 걸러주고 진료과명/의사명/환자명도 채워서 내려준다.
+ *   백엔드가 당일·응급 건(취소 포함)으로 걸러주고 진료과명/의사명/환자명도 채워서 내려준다.
+ * - 취소 건은 외래 목록과 같이 목록에 남기고, Cancel 버튼만 비활성화한다.
  * - 응급 접수 등록 성공 시 saga 에서 목록을 자동 재조회하고, 여기서도 취소 완료 후 재조회한다.
  */
 export default function EmergencyReceptionListSection({

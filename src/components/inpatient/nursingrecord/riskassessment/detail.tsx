@@ -3,6 +3,7 @@
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
 import { ASSESSMENT_TYPE_OPTIONS, RISK_LEVEL_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
 import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
+import RiskScoreField from "@/components/inpatient/nursingrecord/riskassessment/RiskScoreField";
 import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import {
@@ -173,10 +174,7 @@ const RiskAssessmentDetail = () => {
                               <label htmlFor="assessmentTypeCd" className={LABEL}>Assessment Type</label>
                               <CodeSelect id="assessmentTypeCd" name="assessmentTypeCd" value={editForm.assessmentTypeCd} options={ASSESSMENT_TYPE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                           </div>
-                          <div>
-                              <label htmlFor="score" className={LABEL}>Assessment Score</label>
-                              <input type="number" id="score" name="score" value={editForm.score} onChange={onEditChange} className={FIELD} />
-                          </div>
+                          <RiskScoreField assessmentTypeCd={editForm.assessmentTypeCd} value={editForm.score} onChange={onEditChange} required={false} />
                           <div>
                               <label htmlFor="riskLevelCd" className={LABEL}>Risk Level</label>
                               <CodeSelect id="riskLevelCd" name="riskLevelCd" value={editForm.riskLevelCd} options={RISK_LEVEL_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />

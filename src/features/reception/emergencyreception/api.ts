@@ -12,7 +12,7 @@ const EMERGENCY_RECEPTION_PATH = "/api/reception/emergency";
 /**
  * 응급접수 목록 조회 (응급접수홈 전용)
  * - reception-service ReceptionController.getEmergencyReceptionList()
- * - 당일 접수된 응급 건(취소 제외), 접수일시 최신순. 진료과명/의사명/환자명은 서버가 채워준다.
+ * - 당일 접수된 응급 건(취소 포함), 접수일시 최신순. 진료과명/의사명/환자명은 서버가 채워준다.
  */
 export async function getEmergencyReceptionList(): Promise<
   EmergencyReceptionListItem[]

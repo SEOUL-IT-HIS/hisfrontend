@@ -16,8 +16,12 @@ export interface ConsentCreateRequest {
   patientId: string;
   /** 동의서유형코드 (공통코드 CONSENT_TYPE_CD — 예: CONTRAST, INVASIVE) */
   consentTypeCode: string;
-  /** 동의서양식ID (admin-service DOCUMENT_TEMPLATE 논리 참조) */
-  documentTemplateId: string;
+  /**
+   * 동의서양식ID (admin-service DOCUMENT_TEMPLATE 논리 참조).
+   * ⚠ 더 이상 화면에서 입력받지 않는다(2026-10-06 — 동의서를 종이문서로 보관하기로 결정).
+   *   필드는 백엔드 DTO와의 미러링 관례상 남겨두지만, 항상 생략해서 보낸다.
+   */
+  documentTemplateId?: string;
   /** 동의여부 */
   consentYn: "Y" | "N";
   /** 동의일자 (YYYY-MM-DD) */

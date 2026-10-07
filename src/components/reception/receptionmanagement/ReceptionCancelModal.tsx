@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Alert, FormActions, FormField, Input, Modal, Select } from "@/components/common";
 import {
   cancelReceptionRequest,
+  clearCancelError,
   selectCancelLoading,
   selectCancelError,
 } from "@/features/reception/receptionmanagement/slice";
@@ -40,6 +41,11 @@ export default function ReceptionCancelModal({
 
   /** 이번 취소 시도에 대한 응답을 기다리는 중인지 — 성공 시에만 모달을 닫기 위함 */
   const waitCancel = useRef(false);
+
+  // 모달이 새로 열릴 때 이전 취소 시도의 에러 문구를 지운다.
+  useEffect(() => {
+    if (receptionId !== null) dispatch(clearCancelError());
+  }, [receptionId, dispatch]);
 
   useEffect(() => {
     if (!waitCancel.current) return;

@@ -51,7 +51,7 @@ const DischargeTargetList = ({ embedded = false }: DischargeTargetListProps = {}
 
   const columns: DataTableColumn<AdmissionDTO>[] = [
     { key: "patient", header: "Patient Name", render: (a) => <span className="font-medium text-slate-800">{patientNameById.get(a.patientId) ?? "Looking up..."}</span> },
-    { key: "sexAge", header: "Sex / Age", render: (a) => sexAgeByPatientId.get(a.patientId) ?? "-" },
+    { key: "sexAge", header: "Gender / Age", render: (a) => sexAgeByPatientId.get(a.patientId) ?? "-" },
     { key: "dept", header: "Admission Dept", render: (a) => (a.admissionDeptId ? deptNames[a.admissionDeptId] ?? a.admissionDeptId : "-") },
     { key: "admissionDate", header: "Admission Date", render: (a) => formatDateTime(a.admissionDate) },
     {

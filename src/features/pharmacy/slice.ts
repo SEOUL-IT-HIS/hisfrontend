@@ -9,18 +9,25 @@ import type {
   IssuanceDto,
   IssuanceRegisterRequest,
   InventoryDto,
+  InventoryMovementDto,
   Medication,
   MedicationRegisterForm,
   MedicationReturnRegisterRequest,
   PharmacyState,
   PrescriptionDetail,
+  PrescriptionDispenseRequest,
   PrescriptionListItem,
+  PrescriptionListQuery,
   PrescriptionRejectRequest,
   ReceiptDto,
   ReceiptRegisterRequest,
   ReleaseCancelRequest,
   ReleaseRegisterRequest,
   ReturnedDisposalRegisterRequest,
+  StorageLocationDto,
+  StorageLocationRegisterRequest,
+  SupplierDto,
+  SupplierRegisterRequest,
 } from "./types";
 
 const initialState: PharmacyState = {
@@ -48,6 +55,8 @@ const initialState: PharmacyState = {
   issuanceError: null,
 
   prescriptionList: [],
+  prescriptionTotalElements: 0,
+  prescriptionTotalPages: 0,
   prescriptionLoading: false,
   prescriptionError: null,
 
@@ -74,6 +83,30 @@ const initialState: PharmacyState = {
   controlledDrugRecordList: [],
   controlledDrugRecordLoading: false,
   controlledDrugRecordError: null,
+
+  supplierList: [],
+  supplierLoading: false,
+  supplierError: null,
+  supplierRegisterLoading: false,
+  supplierRegisterError: null,
+
+  storageLocationList: [],
+  storageLocationLoading: false,
+  storageLocationError: null,
+  storageLocationRegisterLoading: false,
+  storageLocationRegisterError: null,
+
+  lowStockList: [],
+  lowStockLoading: false,
+  lowStockError: null,
+
+  medicationStockList: [],
+  medicationStockLoading: false,
+  medicationStockError: null,
+
+  medicationMovementList: [],
+  medicationMovementLoading: false,
+  medicationMovementError: null,
 };
 
 const pharmacySlice = createSlice({
@@ -192,16 +225,22 @@ const pharmacySlice = createSlice({
     },
 
     // ----- 처방전 목록/상세 조회 (HL2-17) -----
-    fetchPrescriptionListRequest(state) {
+    fetchPrescriptionListRequest(state, _action: PayloadAction<PrescriptionListQuery>) {
       state.prescriptionLoading = true;
       state.prescriptionError = null;
     },
     fetchPrescriptionListSuccess(
       state,
-      action: PayloadAction<PrescriptionListItem[]>
+      action: PayloadAction<{
+        items: PrescriptionListItem[];
+        totalElements: number;
+        totalPages: number;
+      }>
     ) {
       state.prescriptionLoading = false;
-      state.prescriptionList = action.payload;
+      state.prescriptionList = action.payload.items;
+      state.prescriptionTotalElements = action.payload.totalElements;
+      state.prescriptionTotalPages = action.payload.totalPages;
     },
     fetchPrescriptionListFailure(state, action: PayloadAction<string>) {
       state.prescriptionLoading = false;
@@ -226,15 +265,16 @@ const pharmacySlice = createSlice({
     },
 
     // ----- 조제완료/조제거절 (HL2-18) -----
-    dispensePrescriptionRequest(state, _action: PayloadAction<string>) {
+    dispensePrescriptionRequest(
+      state,
+      _action: PayloadAction<PrescriptionDispenseRequest>
+    ) {
       state.prescriptionActionLoading = true;
       state.prescriptionActionError = null;
     },
     dispensePrescriptionSuccess(state) {
       state.prescriptionActionLoading = false;
-      if (state.prescriptionDetail) {
-        state.prescriptionDetail.status = "DISPENSED";
-      }
+      // 조제 로트/조제 수량/처리 약사는 서버 값이라, saga가 이어서 상세를 다시 불러와 채운다.
     },
     dispensePrescriptionFailure(state, action: PayloadAction<string>) {
       state.prescriptionActionLoading = false;
@@ -247,12 +287,9 @@ const pharmacySlice = createSlice({
       state.prescriptionActionLoading = true;
       state.prescriptionActionError = null;
     },
-    rejectPrescriptionSuccess(state, action: PayloadAction<string>) {
+    rejectPrescriptionSuccess(state) {
       state.prescriptionActionLoading = false;
-      if (state.prescriptionDetail) {
-        state.prescriptionDetail.status = "REJECTED";
-        state.prescriptionDetail.rejectReason = action.payload;
-      }
+      // 거절 사유/처리 약사는 서버 값이라, saga가 이어서 상세를 다시 불러와 채운다.
     },
     rejectPrescriptionFailure(state, action: PayloadAction<string>) {
       state.prescriptionActionLoading = false;
@@ -397,6 +434,99 @@ const pharmacySlice = createSlice({
       state.controlledDrugRecordLoading = false;
       state.controlledDrugRecordError = action.payload;
     },
+
+    // ----- 공급처 마스터 -----
+    fetchSupplierListRequest(state) {
+      state.supplierLoading = true;
+      state.supplierError = null;
+    },
+    fetchSupplierListSuccess(state, action: PayloadAction<SupplierDto[]>) {
+      state.supplierLoading = false;
+      state.supplierList = action.payload;
+    },
+    fetchSupplierListFailure(state, action: PayloadAction<string>) {
+      state.supplierLoading = false;
+      state.supplierError = action.payload;
+    },
+    registerSupplierRequest(state, _action: PayloadAction<SupplierRegisterRequest>) {
+      state.supplierRegisterLoading = true;
+      state.supplierRegisterError = null;
+    },
+    registerSupplierSuccess(state) {
+      state.supplierRegisterLoading = false;
+    },
+    registerSupplierFailure(state, action: PayloadAction<string>) {
+      state.supplierRegisterLoading = false;
+      state.supplierRegisterError = action.payload;
+    },
+
+    // ----- 보관위치 마스터 -----
+    fetchStorageLocationListRequest(state) {
+      state.storageLocationLoading = true;
+      state.storageLocationError = null;
+    },
+    fetchStorageLocationListSuccess(state, action: PayloadAction<StorageLocationDto[]>) {
+      state.storageLocationLoading = false;
+      state.storageLocationList = action.payload;
+    },
+    fetchStorageLocationListFailure(state, action: PayloadAction<string>) {
+      state.storageLocationLoading = false;
+      state.storageLocationError = action.payload;
+    },
+    registerStorageLocationRequest(
+      state,
+      _action: PayloadAction<StorageLocationRegisterRequest>
+    ) {
+      state.storageLocationRegisterLoading = true;
+      state.storageLocationRegisterError = null;
+    },
+    registerStorageLocationSuccess(state) {
+      state.storageLocationRegisterLoading = false;
+    },
+    registerStorageLocationFailure(state, action: PayloadAction<string>) {
+      state.storageLocationRegisterLoading = false;
+      state.storageLocationRegisterError = action.payload;
+    },
+
+    // ----- 재고부족 조회 -----
+    fetchLowStockRequest(state, _action: PayloadAction<number>) {
+      state.lowStockLoading = true;
+      state.lowStockError = null;
+    },
+    fetchLowStockSuccess(state, action: PayloadAction<InventoryDto[]>) {
+      state.lowStockLoading = false;
+      state.lowStockList = action.payload;
+    },
+    fetchLowStockFailure(state, action: PayloadAction<string>) {
+      state.lowStockLoading = false;
+      state.lowStockError = action.payload;
+    },
+
+    // ----- 품목 중심 워크스페이스: 선택한 약품의 재고/최근 입출고 내역 -----
+    fetchMedicationStockRequest(state, _action: PayloadAction<string>) {
+      state.medicationStockLoading = true;
+      state.medicationStockError = null;
+    },
+    fetchMedicationStockSuccess(state, action: PayloadAction<InventoryDto[]>) {
+      state.medicationStockLoading = false;
+      state.medicationStockList = action.payload;
+    },
+    fetchMedicationStockFailure(state, action: PayloadAction<string>) {
+      state.medicationStockLoading = false;
+      state.medicationStockError = action.payload;
+    },
+    fetchMedicationMovementsRequest(state, _action: PayloadAction<string>) {
+      state.medicationMovementLoading = true;
+      state.medicationMovementError = null;
+    },
+    fetchMedicationMovementsSuccess(state, action: PayloadAction<InventoryMovementDto[]>) {
+      state.medicationMovementLoading = false;
+      state.medicationMovementList = action.payload;
+    },
+    fetchMedicationMovementsFailure(state, action: PayloadAction<string>) {
+      state.medicationMovementLoading = false;
+      state.medicationMovementError = action.payload;
+    },
   },
 });
 
@@ -473,6 +603,31 @@ export const {
   fetchControlledDrugRecordsRequest,
   fetchControlledDrugRecordsSuccess,
   fetchControlledDrugRecordsFailure,
+
+  fetchSupplierListRequest,
+  fetchSupplierListSuccess,
+  fetchSupplierListFailure,
+  registerSupplierRequest,
+  registerSupplierSuccess,
+  registerSupplierFailure,
+
+  fetchStorageLocationListRequest,
+  fetchStorageLocationListSuccess,
+  fetchStorageLocationListFailure,
+  registerStorageLocationRequest,
+  registerStorageLocationSuccess,
+  registerStorageLocationFailure,
+
+  fetchLowStockRequest,
+  fetchLowStockSuccess,
+  fetchLowStockFailure,
+
+  fetchMedicationStockRequest,
+  fetchMedicationStockSuccess,
+  fetchMedicationStockFailure,
+  fetchMedicationMovementsRequest,
+  fetchMedicationMovementsSuccess,
+  fetchMedicationMovementsFailure,
 } = pharmacySlice.actions;
 
 export default pharmacySlice.reducer;

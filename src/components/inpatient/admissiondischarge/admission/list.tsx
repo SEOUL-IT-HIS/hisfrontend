@@ -157,7 +157,7 @@ const AdmissionList = ({ embedded = false }: AdmissionListProps = {}) => {
   const columns: DataTableColumn<AdmissionDTO>[] = [
     // patientId로 Map 조회 → 이름이 아직 없으면(patients 로딩 전) "조회중..." 표시
     { key: "patient", header: "Patient Name", render: (a) => <span className="font-medium text-slate-800">{patientNameById.get(a.patientId) ?? "Looking up..."}</span> },
-    { key: "sexAge", header: "Sex / Age", render: (a) => sexAgeByPatientId.get(a.patientId) ?? "-" },
+    { key: "sexAge", header: "Gender / Age", render: (a) => sexAgeByPatientId.get(a.patientId) ?? "-" },
     { key: "dept", header: "Admission Dept", render: (a) => (a.admissionDeptId ? deptNames[a.admissionDeptId] ?? a.admissionDeptId : "-") },
     {
       key: "route",

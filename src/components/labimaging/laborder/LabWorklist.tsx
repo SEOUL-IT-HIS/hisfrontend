@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, DataTable, Panel } from "@/components/common";
+import { Alert, Button, DataTable, Pagination, Panel } from "@/components/common";
 import type { DataTableColumn } from "@/components/common";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { fetchLabWorklist } from "@/features/labimaging/laborder/api";
@@ -70,6 +70,9 @@ function formatDateTime(value?: string) {
 
 type WorkTab = "schedule" | "specimen" | "acceptance" | "result";
 
+/** 한 페이지에 보여줄 행 수. 시연용 테스트 데이터가 쌓이면서 스크롤이 계속 길어져 페이지 방식으로 바꿨다. */
+const PAGE_SIZE = 10;
+
 const WORK_TABS: ReadonlyArray<{ value: WorkTab; label: string; enabled: boolean }> = [
   { value: "schedule", label: "Schedule", enabled: true },
   { value: "specimen", label: "Specimen", enabled: true },
@@ -88,6 +91,10 @@ export default function LabWorklist() {
   const exclusionError = useSelector(selectExclusionError);
 
   const [filter, setFilter] = useState<WorklistStatusFilter>("ACCEPTED");
+  /** 현재 페이지(1-base). 탭을 바꾸면 1페이지로 되돌린다(아래, 렌더 중 동기화 — effect 아님). */
+  const [page, setPage] = useState(1);
+  /** "마지막으로 반영한 필터" — 바뀐 걸 감지하는 기준이다. (SurgeryWorklist.boundUrlId 와 같은 패턴) */
+  const [pageResetForFilter, setPageResetForFilter] = useState(filter);
   /**
    * 최근 24시간 내 취소된 접수 수 (05번 지시서 Phase 5-2).
    * ⚠ 새 API 를 만들지 않는다 — 기존 워크리스트 조회를 CANCELLED 로 한 번 더 부른다.
@@ -146,6 +153,17 @@ export default function LabWorklist() {
     dispatch(fetchLabWorklistRequest(filter));
   }, [dispatch, filter, lastScheduleId, lastSpecimenId, lastAcceptedId, lastResultId, lastMicrobiologyKey, lastPathologyKey]);
 
+  /*
+   * 탭을 바꾸면 그 탭의 1페이지부터 본다 — 다른 탭에서 보던 페이지 번호가 남아 있으면 안 된다.
+   * ⚠ useEffect 가 아니라 렌더 중에 바로 동기화한다(react-hooks/set-state-in-effect 규칙 —
+   *   SurgeryWorklist.tsx 의 boundUrlId 처리와 같은 이유·같은 패턴). effect 로 하면 필터가 바뀐
+   *   첫 렌더가 "이전 페이지"로 한 번 그려진 뒤에야 1페이지로 다시 그려진다.
+   */
+  if (filter !== pageResetForFilter) {
+    setPageResetForFilter(filter);
+    setPage(1);
+  }
+
   /**
    * 최근 24시간 내 취소 건수 안내용 조회. redux 를 거치지 않고 API 를 바로 부른다
    * (usePatientNames 와 같은 결 — 메인 목록과 독립된 보조 정보라 별도 요청 상태를 두지 않는다).
@@ -193,6 +211,17 @@ export default function LabWorklist() {
       header: "Received",
       render: (r) => (
         <span className="text-slate-500">{formatDateTime(r.receivedAt)}</span>
+      ),
+    },
+    {
+      // 제외일시 — Received(접수일시)와 혼동하기 쉬워서 따로 보여준다. 제외 7일 필터 기준이 이 값이다.
+      // (2026-10-06 — 접수일만 보고 "7일 넘은 게 보인다"고 오해한 적이 있어 추가했다)
+      key: "excludedAt",
+      header: "Excluded At",
+      render: (r) => (
+        <span className="text-slate-500">
+          {r.receptionStatusCode === "EXCLUDED" ? formatDateTime(r.excludedAt) : "-"}
+        </span>
       ),
     },
     {
@@ -294,12 +323,35 @@ export default function LabWorklist() {
     },
   ];
 
-  // 작업이 이미 시작돼 자동 취소되지 못한 건 — Active 탭 상단에 경고로 모아 보여준다.
+  /*
+   * 작업이 이미 시작돼 자동 취소되지 못한 건 — Active 탭 상단에 경고로 모아 보여준다.
+   *
+   * ⚠ receptionStatusCode === "ACCEPTED" 로 명시해서 거른다 (2026-10-07).
+   *   "CANCELLED 가 아니면"으로만 걸렀을 때, 다른 탭에서 Active 탭으로 돌아오는 순간
+   *   worklist 에 이전 탭(예: Excluded)의 데이터가 잠깐 남아 있으면(로딩 중에는 목록을
+   *   비우지 않는다 — 탭 전환마다 "Loading..."로 번쩍이지 않게 하려는 설계) 이미 제외
+   *   처리된 건까지 섞여 경고가 잘못 뜬 적이 있었다. ACCEPTED 로만 거르면 이 건은
+   *   어떤 탭의 잔여 데이터가 섞여도 절대 걸리지 않는다.
+   */
   const cancelWarningCount = worklist.filter(
     (item) =>
-      item.receptionStatusCode !== "CANCELLED" &&
+      item.receptionStatusCode === "ACCEPTED" &&
       (item.cancelOutcome === "REFUSED" || item.cancelOutcome === "PARTIAL"),
   ).length;
+
+  /*
+   * 페이지 분할(클라이언트 사이드). 서버는 필터로 거른 전체 목록을 한 번에 내려주고,
+   * 화면에서 PAGE_SIZE 만큼만 잘라서 보여준다 — 목록이 길어 스크롤이 계속 늘어지는 문제를
+   * 여기서 해결한다(2026-10-06). 데이터량이 지금보다 훨씬 커지면 서버 페이징으로 옮겨야
+   * 하지만, 지금은 필터당 전체 목록을 한 번에 받아도 무리 없는 규모다.
+   *
+   * ⚠ page 를 그대로 쓰지 않고 totalPages 로 한 번 더 clamp 한다(safePage). 다른 탭에서
+   *   보던 페이지 번호가 더 큰 상태로 필터를 바꾸는 중간 프레임이나, 목록이 줄어들어 지금
+   *   페이지가 더는 존재하지 않게 된 경우를 effect 없이 바로 바른 값으로 되돌린다.
+   */
+  const totalPages = Math.max(1, Math.ceil(worklist.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedWorklist = worklist.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <div className="flex min-h-0 flex-1 gap-4">
@@ -357,19 +409,26 @@ export default function LabWorklist() {
 
         <DataTable
           columns={columns}
-          rows={worklist}
+          rows={pagedWorklist}
           rowKey={(r) => r.labReceptionId}
           loading={loading}
-          minWidthClassName="min-w-[680px]"
+          minWidthClassName="min-w-[760px]"
           loadingMessage="Loading..."
           emptyMessage={
             filter === "EXCLUDED"
-              ? "No excluded receptions."
+              ? "No receptions excluded in the last 7 days."
               : filter === "CANCELLED"
                 ? "No cancelled receptions."
                 : "No receptions to process."
           }
         />
+
+        {!loading && worklist.length > 0 ? (
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-500">{worklist.length} total</p>
+            <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
+          </div>
+        ) : null}
       </div>
 
       {/* ================= 오른쪽: 작업 영역 ================= */}

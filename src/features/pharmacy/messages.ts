@@ -20,4 +20,9 @@ export const PHM_MESSAGES = {
   PHM019: 'At least one witness is required for controlled drug transactions.',
   PHM020: 'This dispensing has already been released once and cannot be released again.',
   PHM021: 'This return item has already been disposed.',
+  PHM022: 'Supplier not found.',
+  PHM023: 'Storage location not found.',
+  PHM024: 'The recipient is required: select the receiving ward staff for a ward release, or enter the guardian name for a guardian release.',
+  PHM025: 'This prescription has already been released. Cancel the release first, then cancel the dispensing.',
+  PHM026: 'This release has return records, so it can no longer be cancelled.',
 } as const;

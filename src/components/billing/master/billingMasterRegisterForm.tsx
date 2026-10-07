@@ -52,12 +52,12 @@ const BillingMasterRegisterForm = () => {
   };
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // 화면 새로고침 방지
+    e.preventDefault(); // prevent page reload
     setSubmitted(true);
     dispatch(registerBillingMasterRequest(form));
   };
 
-  // 등록 성공 시 폼/상태 초기화 후 등록 전 목록 화면으로 이동
+  // On success: reset the form/state and go back to the list
   useEffect(() => {
     if (submitted && createSuccess) {
       dispatch(resetBillingMasterCreateStatus());
@@ -71,82 +71,82 @@ const BillingMasterRegisterForm = () => {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-semibold tracking-[0.14em] text-sky-600">BILLING</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">수납 기준정보 등록</h1>
-          <p className="mt-1 text-sm text-slate-500">새로운 수가 기준정보를 등록합니다.</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">Register Billing Master</h1>
+          <p className="mt-1 text-sm text-slate-500">Register new fee master information.</p>
         </div>
       </header>
 
       <Panel>
         <form onSubmit={onSubmit} className="flex flex-col gap-4 px-5 py-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField label="서비스 구분 코드" required htmlFor="sourceServiceCode">
+            <FormField label="Source Service Code" required htmlFor="sourceServiceCode">
               <Input
                 id="sourceServiceCode"
                 name="sourceServiceCode"
-                placeholder="서비스구분코드"
+                placeholder="Source service code"
                 value={form.sourceServiceCode}
                 onChange={onChange}
                 required
               />
             </FormField>
 
-            <FormField label="수가 코드" required htmlFor="feeCode">
+            <FormField label="Fee Code" required htmlFor="feeCode">
               <Input
                 id="feeCode"
                 name="feeCode"
-                placeholder="수가코드"
+                placeholder="Fee code"
                 value={form.feeCode}
                 onChange={onChange}
                 required
               />
             </FormField>
 
-            <FormField label="수가 명칭" required htmlFor="feeName">
+            <FormField label="Fee Name" required htmlFor="feeName">
               <Input
                 id="feeName"
                 name="feeName"
-                placeholder="수가명칭"
+                placeholder="Fee name"
                 value={form.feeName}
                 onChange={onChange}
                 required
               />
             </FormField>
 
-            <FormField label="기본 단가" required htmlFor="defaultPrice">
+            <FormField label="Default Price" required htmlFor="defaultPrice">
               <Input
                 id="defaultPrice"
                 name="defaultPrice"
                 type="number"
-                placeholder="기본단가"
+                placeholder="Default price"
                 value={form.defaultPrice}
                 onChange={onChange}
                 required
               />
             </FormField>
 
-            <FormField label="분류 코드" required htmlFor="categoryCode">
+            <FormField label="Category Code" required htmlFor="categoryCode">
               <Input
                 id="categoryCode"
                 name="categoryCode"
-                placeholder="분류코드"
+                placeholder="Category code"
                 value={form.categoryCode}
                 onChange={onChange}
                 required
               />
             </FormField>
 
-            <FormField label="급여/비급여 코드" required htmlFor="insuranceTypeCode">
+            <FormField label="Insurance Type Code" required htmlFor="insuranceTypeCode">
               <Input
                 id="insuranceTypeCode"
                 name="insuranceTypeCode"
-                placeholder="급여/비급여코드"
+                placeholder="Insurance type code"
                 value={form.insuranceTypeCode}
                 onChange={onChange}
                 required
               />
             </FormField>
 
-            <FormField label="적용 시작일" required htmlFor="effectiveFrom">
+            <FormField label="Effective From" required htmlFor="effectiveFrom">
               <Input
                 id="effectiveFrom"
                 name="effectiveFrom"
@@ -157,7 +157,7 @@ const BillingMasterRegisterForm = () => {
               />
             </FormField>
 
-            <FormField label="적용 종료일" required htmlFor="effectiveTo">
+            <FormField label="Effective To" required htmlFor="effectiveTo">
               <Input
                 id="effectiveTo"
                 name="effectiveTo"
@@ -173,9 +173,10 @@ const BillingMasterRegisterForm = () => {
 
           <FormActions
             onCancel={() => router.push("/billing/statistics")}
-            submitLabel="등록"
+            submitLabel="Register"
+            cancelLabel="Cancel"
             loading={loading}
-            loadingLabel="등록 중..."
+            loadingLabel="Registering..."
           />
         </form>
       </Panel>
