@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDateTime } from "@/features/inpatient/dateLimits";
+import { formatDateTime, toLocalDateTimeString } from "@/features/inpatient/dateLimits";
 import { formatBedLabel } from "@/features/inpatient/displayFormat";
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
 import { fetchBedAssignmentDetailRequest, updateBedAssignmentRequest, resetBedAssignmentUpdateStatus } from "@/features/inpatient/bedmanagement/bedassignment/slice";
@@ -58,12 +58,6 @@ const BedAssignmentDetail = ({ assignmentId: assignmentIdProp, onClose }: BedAss
             dispatch(fetchBedAssignmentDetailRequest(assignmentId)); // assignmentId가 있으면 병상 배정 상세 정보를 다시 가져옵니다.
         }
     }, [updateStatus.success, assignmentId]);  //   병상 배정 업데이트 성공 여부와 assignmentId가 변경될 때마다 병상 배정 상세 정보를 다시 가져옵니다.
-
-    // 퇴상시각은 "로컬(한국) 시각" 문자열로 보내야 함.
-    // toISOString()은 UTC라서 끝의 Z만 떼고 보내면 백엔드 LocalDateTime이 그걸 한국시각으로 받아 9시간 이르게 저장됨
-    // → 시간대 오프셋만큼 보정한 뒤 ISO 문자열로 만들어 "YYYY-MM-DDTHH:mm:ss.sss"(로컬 기준) 형태로 보냄
-    const toLocalDateTimeString = (date: Date) =>
-        new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, -1);
 
     const handleRelease = () => {
         if (!bedAssignment) return;

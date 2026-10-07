@@ -8,8 +8,8 @@ import { RootState } from "@/store/store";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { LABEL, FIELD } from "@/components/inpatient/common/styles";
 import { Alert, Button, PageHeader } from "@/components/common";
+import VitalSignField from "@/components/inpatient/nursingrecord/vitalsign/VitalSignField";
 import { InfoRow } from "@/components/inpatient/common/SectionCard";
 
 const VitalSignDetail = () => {
@@ -145,29 +145,13 @@ const VitalSignDetail = () => {
                     {!readOnly && (
                       <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                           <p className="text-sm font-semibold text-slate-800">Edit Vital Signs</p>
-                          <div>
-                              <label htmlFor="temperature" className={LABEL}>Temperature</label>
-                              <input type="number" id="temperature" name="temperature" value={editForm.temperature} onChange={onEditChange} step="0.1" className={FIELD} />
-                          </div>
-                          <div>
-                              <label htmlFor="pulse" className={LABEL}>Pulse</label>
-                              <input type="number" id="pulse" name="pulse" value={editForm.pulse} onChange={onEditChange} min="60" max="100" className={FIELD} />
-                          </div>
-                          <div>
-                              <label htmlFor="respiration" className={LABEL}>Respiration Rate</label>
-                              <input type="number" id="respiration" name="respiration" value={editForm.respiration} onChange={onEditChange} min="12" max="20" className={FIELD} />
-                          </div>
-                          <div>
-                              <label htmlFor="bpSystolic" className={LABEL}>Systolic Blood Pressure</label>
-                              <input type="number" id="bpSystolic" name="bpSystolic" value={editForm.bpSystolic} onChange={onEditChange} min="0" className={FIELD} />
-                          </div>
-                          <div>
-                              <label htmlFor="bpDiastolic" className={LABEL}>Diastolic Blood Pressure</label>
-                              <input type="number" id="bpDiastolic" name="bpDiastolic" value={editForm.bpDiastolic} onChange={onEditChange} min="0" className={FIELD} />
-                          </div>
-                          <div>
-                              <label htmlFor="spo2" className={LABEL}>SpO2</label>
-                              <input type="number" id="spo2" name="spo2" value={editForm.spo2} onChange={onEditChange} step="0.1" min="0" max="100" className={FIELD} />
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                              <VitalSignField field="temperature" value={editForm.temperature} onChange={onEditChange} required={false} />
+                              <VitalSignField field="pulse" value={editForm.pulse} onChange={onEditChange} required={false} />
+                              <VitalSignField field="respiration" value={editForm.respiration} onChange={onEditChange} required={false} />
+                              <VitalSignField field="spo2" value={editForm.spo2} onChange={onEditChange} required={false} />
+                              <VitalSignField field="bpSystolic" value={editForm.bpSystolic} onChange={onEditChange} required={false} />
+                              <VitalSignField field="bpDiastolic" value={editForm.bpDiastolic} onChange={onEditChange} required={false} />
                           </div>
                           <Button
                               onClick={handleUpdate}

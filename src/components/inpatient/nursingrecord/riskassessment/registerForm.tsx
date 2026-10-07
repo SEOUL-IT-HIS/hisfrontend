@@ -3,6 +3,7 @@
 import { AppDispatch, RootState } from "@/store/store";
 import { ASSESSMENT_TYPE_OPTIONS, RISK_LEVEL_OPTIONS } from "@/features/inpatient/nursingrecord/codes";
 import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
+import RiskScoreField from "@/components/inpatient/nursingrecord/riskassessment/RiskScoreField";
 import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import AdmissionSelect from "@/components/inpatient/nursingrecord/AdmissionSelect";
 import { useDispatch, useSelector } from "react-redux";
@@ -91,10 +92,7 @@ const RiskAssessmentRegisterForm = () => {
                     <label htmlFor="assessmentTypeCd" className={LABEL}>Assessment Type</label>
                     <CodeSelect id="assessmentTypeCd" name="assessmentTypeCd" value={form.assessmentTypeCd} options={ASSESSMENT_TYPE_OPTIONS} onChange={onChange} className={FIELD} />
                 </div>
-                <div>
-                    <label htmlFor="score" className={LABEL}>Assessment Score</label>
-                    <input type="number" id="score" name="score" value={form.score} onChange={onChange} required className={FIELD} />
-                </div>
+                <RiskScoreField assessmentTypeCd={form.assessmentTypeCd} value={form.score} onChange={onChange} />
                 <div>
                     <label htmlFor="riskLevelCd" className={LABEL}>Risk Level</label>
                     <CodeSelect id="riskLevelCd" name="riskLevelCd" value={form.riskLevelCd} options={RISK_LEVEL_OPTIONS} onChange={onChange} className={FIELD} />
