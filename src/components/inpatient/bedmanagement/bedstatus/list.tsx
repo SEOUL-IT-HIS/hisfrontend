@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/store/store";
 import { useRouter } from "next/navigation";
-import { Alert, Button, Input, PageHeader, Panel, Select } from "@/components/common";
+import { Alert, Button, Input, PageHeader, Pagination, Panel, Select } from "@/components/common";
 import type { SwipeAction } from "@/components/inpatient/common/SwipeRow";
 import SwipeListRow from "@/components/inpatient/common/SwipeListRow";
 import LinkButton from "@/components/inpatient/common/LinkButton";
@@ -35,7 +35,10 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 // 머리글과 각 행이 같은 칸 비율을 씀 (표(table)가 아니라 행 카드 목록이라 직접 맞춤)
-const ROW_GRID = "grid w-full grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1.2fr)_96px] items-center gap-3";
+const ROW_GRID = "grid w-full grid-cols-[40px_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1.2fr)_96px] items-center gap-3";
+
+// 한 페이지에 보여줄 병상 수 — 목록이 끝없이 스크롤되지 않도록 끊어서 보여줌
+const PAGE_SIZE = 10;
 
 const AssignIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -98,6 +101,8 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
   const [wardCodes, setWardCodes] = React.useState<CommonCodeItem[]>([]);
   // 목록에서 클릭한 병상ID — 값이 있으면 오른쪽에 상세 패널을 띄움(마스터-디테일)
   const [selectedBedId, setSelectedBedId] = useState<string | null>(null);
+  // 목록 보기의 현재 페이지(1부터) — 필터가 바뀌면 1페이지로 되돌림
+  const [page, setPage] = useState(1);
   // wardCd → 병동명 (필터 드롭다운용으로 불러온 wardCodes 재사용). 공통코드를 못 불러오면 코드값 그대로 표시
   const wardNameByCd = useMemo(
     () => new Map(wardCodes.map((ward) => [ward.codeValue, ward.codeName])),
@@ -131,7 +136,14 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
   const filteredBeds = useMemo(() => filterBeds(searchName), [bedAssignments, searchStatus, searchWard, searchName, patientNameById]);
 
   // 이름 검색 결과가 딱 1건이면 상세 패널을 자동으로 열어 병동/호실/베드를 바로 보여줌
+  // 현재 페이지에 보여줄 병상 — 병상이 줄어 페이지 수를 넘어가면(예: 새로고침 후) 마지막 페이지로 맞춤
+  const totalPages = Math.max(Math.ceil(filteredBeds.length / PAGE_SIZE), 1);
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pagedBeds = filteredBeds.slice(pageStart, pageStart + PAGE_SIZE);
+
   const handleSearchNameChange = (value: string) => {
+    setPage(1);
     setSearchName(value);
     const matches = value.trim() ? filterBeds(value) : [];
     if (matches.length === 1) setSelectedBedId(matches[0].bedId);
@@ -205,14 +217,20 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
         />
         <Select
           value={searchWard}
-          onChange={(e) => setSearchWard(e.target.value)}
+          onChange={(e) => {
+            setSearchWard(e.target.value);
+            setPage(1);
+          }}
           placeholder="All Wards"
           options={wardsWithBeds.map((ward) => ({ value: ward.codeValue, label: ward.codeName }))}
           className="max-w-[180px]"
         />
         <Select
           value={searchStatus}
-          onChange={(e) => setSearchStatus(e.target.value)}
+          onChange={(e) => {
+            setSearchStatus(e.target.value);
+            setPage(1);
+          }}
           placeholder="All"
           options={items.map((item) => ({ value: item.name, label: item.description }))}
           className="max-w-[160px]"
@@ -230,6 +248,7 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
             <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
               {/* 머리글 — 아래 행들과 같은 칸 비율 */}
               <div className={`${ROW_GRID} rounded-xl bg-slate-50/95 px-[17px] py-2.5 text-xs font-medium uppercase tracking-wide text-slate-400`}>
+                <span>No.</span>
                 <span>Patient (Gender / Age)</span>
                 <span>Ward</span>
                 <span>Room Type</span>
@@ -243,7 +262,7 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
                   <p className="py-16 text-center text-sm text-slate-400">No bed data available.</p>
                 )}
                 {!listStatus.loading &&
-                  filteredBeds.map((bed) => (
+                  pagedBeds.map((bed, index) => (
                     <SwipeListRow
                       key={bed.bedId}
                       label={`Room ${bed.roomNo} Bed ${bed.bedNo}`}
@@ -253,6 +272,8 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
                       onSelect={() => setSelectedBedId(bed.bedId)}
                     >
                       <div className={ROW_GRID}>
+                        {/* 페이지가 바뀌어도 이어지는 번호 (2페이지는 11번부터) */}
+                        <span className="text-xs tabular-nums text-slate-400">{pageStart + index + 1}</span>
                         <div className="min-w-0">
                           {/* patientId가 없으면(빈 병상) "None", 있으면 Map에서 이름 조회 (patientLabel 참고) */}
                           <p className="truncate text-sm font-medium text-slate-800">{patientLabel(bed.patientId)}</p>
@@ -281,6 +302,16 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
                     </SwipeListRow>
                   ))}
               </div>
+
+              {/* 페이지 이동 — 목록은 이 안에서만 스크롤하고, 페이지 막대는 아래에 고정 */}
+              {!listStatus.loading && filteredBeds.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">
+                    {pageStart + 1}–{pageStart + pagedBeds.length} of {filteredBeds.length} beds
+                  </span>
+                  <Pagination page={currentPage} totalPages={totalPages} onPageChange={setPage} prevLabel="Prev" nextLabel="Next" />
+                </div>
+              )}
             </div>
           ) : (
             <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto">
