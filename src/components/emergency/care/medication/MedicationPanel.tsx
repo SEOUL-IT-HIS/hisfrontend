@@ -26,9 +26,15 @@ import {
   selectCommonCodesByGroup,
 } from "@/features/emergency/commonCode/slice";
 import OrderSelect from "@/components/emergency/order/OrderSelect";
-import { fetchOrderRequest, selectOrdersByReception } from "@/features/emergency/order/slice";
+import {
+  fetchOrderRequest,
+  searchMedicationsRequest,
+  selectMedications,
+  selectMedicationsLoading,
+  selectOrdersByReception,
+} from "@/features/emergency/order/slice";
 import { ORDER_ITEM_TYPE } from "@/features/emergency/order/types";
-import { hasLoadedItems, orderTitle } from "@/features/emergency/order/utils";
+import { drugNameOf, hasLoadedItems, orderTitle } from "@/features/emergency/order/utils";
 import { eventTimeBounds, eventTimeError, useEventTimeLimits } from "@/features/emergency/common/eventTime";
 import { formatDateTime } from "@/features/emergency/utils";
 
@@ -63,6 +69,9 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
   const routeCodes = useSelector(selectCommonCodesByGroup(CODE_GROUP.ADMIN_ROUTE));
 
   const orders = useSelector(selectOrdersByReception(receptionNo));
+  // 약제 약품 마스터 목록 — 처방에 없는 약을 투여할 때 이름으로 고른다
+  const medications = useSelector(selectMedications);
+  const medicationsLoading = useSelector(selectMedicationsLoading);
 
   const [form, setForm] = useState(initialForm);
   const [lastCount, setLastCount] = useState(0);
@@ -95,18 +104,31 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
   }
 
   const drugItems = (selectedOrder?.items ?? []).filter((item) => item.prescriptionType === ORDER_ITEM_TYPE.DRUG);
+  // 약은 이름으로만 고른다(직원은 약품 코드를 알 수 없다). 코드는 고른 약에서 자동으로 채워진다
   const drugOptions = [
-    ...drugItems.map((item) => ({ value: item.itemCode, label: `${item.itemName} (${item.itemCode})` })),
-    { value: MANUAL_DRUG, label: "Enter drug code manually..." },
+    ...drugItems.map((item) => ({ value: item.itemCode, label: item.itemName })),
+    { value: MANUAL_DRUG, label: "Another drug..." },
   ];
-  // 처방에 약품 항목이 없거나 아직 못 불러왔으면 직접 입력으로 둔다.
-  // 처방을 고르기 전에는 비활성 드롭다운("Select an order first")을 보여주고, 직접 입력은 "Enter drug code manually..."를 고르거나
-  // 고른 처방에 약품 항목이 없을 때만 연다.
+  // 처방에 약품 항목이 없거나 "Another drug..."를 고르면 약제 약품 목록에서 이름으로 고른다.
+  // 처방을 고르기 전에는 비활성 드롭다운("Select an order first")을 보여준다.
   const drugManualMode = manualDrug || (!!form.orderId && drugItems.length === 0);
+  const masterDrugOptions = medications.map((med) => ({ value: med.itemCode, label: med.itemName }));
+
+  // 약제 약품 목록이 필요할 때(처방 밖의 약을 고를 때)만 불러온다
+  useEffect(() => {
+    if (drugManualMode && medications.length === 0 && !medicationsLoading) {
+      dispatch(searchMedicationsRequest(""));
+    }
+  }, [dispatch, drugManualMode, medications.length, medicationsLoading]);
 
   function handleOrderChange(orderId: string) {
     setForm((prev) => ({ ...prev, orderId, drugCode: "", orderItemId: "" }));
     setManualDrug(false);
+  }
+
+  /** 약제 약품 목록에서 고른 약 — 처방 항목이 아니므로 항목 ID 는 비운다 */
+  function handleMasterDrugSelect(value: string) {
+    setForm((prev) => ({ ...prev, drugCode: value, orderItemId: "" }));
   }
 
   function handleDrugSelect(value: string) {
@@ -191,7 +213,7 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
               {items.map((item) => (
                 <li key={item.id} className="rounded-lg bg-slate-50 p-3 text-sm">
                   <p className="text-xs font-medium text-sky-600">
-                    {item.drugCode} · {item.dose} · {optionLabel(routeOptions, item.routeCode)}
+                    {drugNameOf(orders, item.orderId, item.drugCode, medications)} · {item.dose} · {optionLabel(routeOptions, item.routeCode)}
                   </p>
                   <p className="mt-1 text-xs text-slate-400">
                     {formatDateTime(item.administeredAt)} · <StaffName empId={item.administeredById} />
@@ -217,14 +239,20 @@ export default function MedicationPanel({ receptionNo, className = "" }: Medicat
               disabled={submitting}
               className="sm:col-span-3"
             />
-            {/* 약품 코드 — 고른 처방에 약품 항목이 있으면 거기서 고르고, 없으면(또는 Enter manually) 직접 입력 */}
+            {/* 약 — 고른 처방에 약품 항목이 있으면 거기서 이름으로 고르고, 없으면(또는 Another drug) 약제 약품 목록에서 이름으로 고른다 */}
             {drugManualMode ? (
-              <FormField label="Drug Code" required>
-                <Input name="drugCode" value={form.drugCode} onChange={handleChange} disabled={submitting} maxLength={30} />
-              </FormField>
+              <DownSelect
+                label="Drug"
+                required
+                value={form.drugCode}
+                onChange={handleMasterDrugSelect}
+                options={masterDrugOptions}
+                placeholder={medicationsLoading ? "Loading drugs..." : "Select"}
+                disabled={submitting || medicationsLoading}
+              />
             ) : (
               <DownSelect
-                label="Drug Code"
+                label="Drug"
                 required
                 value={form.drugCode}
                 onChange={handleDrugSelect}

@@ -86,6 +86,52 @@ export function visiblePharmacyState(order: Order): string | null {
   return mayHaveDrug(order) ? state : null;
 }
 
+/**
+ * 약품의 횟수(하루 몇 회)·일수로 쓸 수 있는 값인지 — 1 이상 999 이하의 정수. 약제는 숫자가 아니면 1로 계산해 총량이 틀어지므로
+ * 숫자만 받는다(백엔드도 같은 규칙으로 400 을 준다).
+ */
+export function isWholeNumber(value: string): boolean {
+  return /^[1-9][0-9]{0,2}$/.test(value.trim());
+}
+
+/** 약품 항목을 등록할 수 있는지: 용량이 0보다 크고 횟수·일수가 정수 */
+export function isDrugItemComplete(item: { dosage: string; frequency: string; durationDays: string }): boolean {
+  const dosage = Number(item.dosage);
+  return item.dosage.trim() !== "" && Number.isFinite(dosage) && dosage > 0 && isWholeNumber(item.frequency) && isWholeNumber(item.durationDays);
+}
+
+/**
+ * 약제의 조제 진행 상태 배지 — 약제가 알려준 값(서버가 조회해 붙임)을 화면 문구로. 약제가 아직 모르면 null.
+ * 거절 사유는 응급에서 보여주지 않는다(약제 화면에서 확인).
+ */
+export function pharmacyProgress(order: Order): { label: string; tone: "info" | "good" | "bad" | "muted" } | null {
+  switch (order.pharmacyStatus) {
+    case "RECEIVED":
+      return { label: "Received", tone: "info" };
+    case "DISPENSED":
+      return order.pharmacyReleaseStatus === "RELEASED"
+        ? { label: "Dispensed · Released", tone: "good" }
+        : { label: "Dispensed", tone: "good" };
+    case "REJECTED":
+      return { label: "Rejected (see the pharmacy for the reason)", tone: "bad" };
+    case "CANCELLED":
+      return { label: "Cancelled", tone: "muted" };
+    default:
+      return null;
+  }
+}
+
+/** 취소한 처방에 대해 약제가 알려준 반영 결과 문구. 알려준 것이 없으면 null */
+export function pharmacyCancelNote(order: Order): { text: string; tone: "good" | "bad" } | null {
+  if (order.pharmacyCancelOutcome === "REFUSED") {
+    return { text: "The pharmacy did not apply this cancel because the medication was already released. Check with the pharmacy.", tone: "bad" };
+  }
+  if (order.pharmacyCancelOutcome === "APPLIED") {
+    return { text: "The pharmacy applied this cancel.", tone: "good" };
+  }
+  return null;
+}
+
 /** 결과가 도착한 검사 항목인지(결과 시각이 있거나 결과 줄에 값이 있다) */
 export function labItemHasResult(item: OrderItem): boolean {
   return !!item.resultReportedAt || (item.resultDetails ?? []).some((d) => d.resultValue != null && d.resultValue !== "");
@@ -97,6 +143,12 @@ export function labItemHasResult(item: OrderItem): boolean {
  * 01 Blood Glucose, 02 CBC, 03 Liver Function, 04 Urinalysis 만 결과를 받는다. 수술·영상은 이번 범위에서 제외했다.
  */
 export const LAB_NO_RESULT_ITEM_CODES: readonly string[] = ["05", "06", "07", "08"];
+
+/** 약품의 제형 코드 — 마스터의 제형 코드(01/02/03)를 우선 쓰고, 없으면 제형 이름에서 맞춘다. 모르면 "" */
+export function dosageFormOf(med: { dosageFormCd?: string | null; formName?: string | null }): string {
+  if (med.dosageFormCd === "01" || med.dosageFormCd === "02" || med.dosageFormCd === "03") return med.dosageFormCd;
+  return dosageFormFromName(med.formName);
+}
 
 /** 약품 마스터의 제형 이름(정제, 주사제 …)을 admin 공통코드 DOSAGE_FORM_CD(01 정제·캡슐, 02 수액, 03 주사)로 바꾼다. 모르면 "" */
 export function dosageFormFromName(formName: string | null | undefined): string {
@@ -137,6 +189,20 @@ export function abnormalFlagLabel(flag: string | null | undefined): { text: stri
   if (value === "H" || value === "HIGH") return { text: "High", tone: "high" };
   if (value === "" || value === "N" || value === "NORMAL") return { text: "Normal", tone: "normal" };
   return { text: value, tone: "other" };
+}
+
+/**
+ * 투여 기록에 보여줄 약 이름 — 그 처방의 약품 항목에서 찾고, 없으면 약제 목록에서, 그래도 없으면 코드를 그대로 쓴다.
+ * 직원은 약품 코드를 알 수 없으므로 화면에는 이름을 보여준다.
+ */
+export function drugNameOf(
+  orders: Order[],
+  orderId: string,
+  drugCode: string,
+  medications: ReadonlyArray<{ itemCode: string; itemName: string }> = [],
+): string {
+  const fromOrder = orders.find((o) => o.orderId === orderId)?.items?.find((item) => item.itemCode === drugCode);
+  return fromOrder?.itemName ?? medications.find((med) => med.itemCode === drugCode)?.itemName ?? drugCode;
 }
 
 /** 처방ID 앞 8자 — 선택 목록에서 처방을 구분하는 용도 */

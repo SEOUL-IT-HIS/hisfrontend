@@ -32,6 +32,8 @@ const CONFLICT_REASON_MESSAGES: ReadonlyArray<readonly [RegExp, string]> = [
   [/must not be in the future$/, "The time cannot be in the future."],
   [/must not be before the reception time$/, "The time cannot be earlier than the reception time."],
   [/must not be after the discharge time$/, "The time cannot be later than the discharge time."],
+  // 취소된 처방은 약제로 보낼 수 없습니다(처방코어 OPD005).
+  [/^order core conflict \(dispatch pharmacy\)/, "The pharmacy cannot accept this order (it may already be cancelled)."],
 ];
 
 /**

@@ -12,12 +12,11 @@ export const ORDER_ITEM_TYPE = {
 export type OrderItemType = (typeof ORDER_ITEM_TYPE)[keyof typeof ORDER_ITEM_TYPE];
 
 /**
- * 약제(PHM) 전송을 화면에서 쓰는지. 약제 서비스가 이번 범위에서 빠져 false 다 —
- * 전송해도 받는 곳이 없는데 처방코어는 SENT 로 표시해서 약제로 넘어간 것처럼 보인다.
- * 약제 서비스가 돌아오면 백엔드 app.order.pharmacy-enabled 와 함께 true 로 바꾼다.
+ * 약제(PHM) 전송을 화면에서 쓰는지. 2026-10-07 처방코어·약제와 합의해 켰다(백엔드 app.order.pharmacy-enabled 와 같이 바꾼다).
+ * 약제 서비스가 다시 빠지면 false 로 되돌린다 — 전송해도 받는 곳이 없는데 처방코어는 SENT 로 표시한다.
  * 약품 처방 등록과 투약(MAR) 기록은 이 값과 상관없이 그대로 쓴다.
  */
-export const PHARMACY_DISPATCH_ENABLED = false;
+export const PHARMACY_DISPATCH_ENABLED = true;
 
 export interface OrderItem {
   prescriptionType: string;
@@ -74,6 +73,15 @@ export interface Order {
   /** 처방코어가 알려주는 전송 상태(목록·조회): 검사는 항목 요약, 약제는 처방 단위. PENDING / SENT / FAILED. 검사 항목이 없으면 labSendStatus 는 null */
   labSendStatus: string | null;
   pharmacySendStatus: string | null;
+  /**
+   * 약제가 알려주는 조제 상태 — 약제로 전송(SENT)된 처방을 읽을 때 서버가 약제에서 조회해 붙인다(저장하지 않음).
+   * 약제에 처방이 아직 없거나 약제에 연결하지 못하면 비어 있다.
+   * pharmacyStatus: RECEIVED(접수) / DISPENSED(조제완료) / REJECTED(거절) / CANCELLED(취소), pharmacyReleaseStatus: RELEASED(불출) 등,
+   * pharmacyCancelOutcome: APPLIED(취소 반영) / REFUSED(불출 이후라 미반영)
+   */
+  pharmacyStatus?: string | null;
+  pharmacyReleaseStatus?: string | null;
+  pharmacyCancelOutcome?: string | null;
   /** 등록 때 dispatchNow=true 인 경우만: SENT / FAILED / NOT_APPLICABLE */
   labDispatchStatus: string | null;
   pharmacyDispatchStatus: string | null;
@@ -97,10 +105,12 @@ export interface OrderCancelRequest {
   userId: string;
 }
 
-/** 약품 검색 결과 — 처방코어 약품 마스터. itemCode 는 마스터의 ediCode(처방 항목 코드로 쓴다) */
+/** 약품 목록 한 건 — 약제 약품 마스터(EDI 코드가 있는 약품만). itemCode 는 마스터의 ediCode(처방 항목 코드로 쓴다) */
 export interface MedicationItem {
   itemCode: string;
   itemName: string;
+  /** 제형 코드 01(알약·캡슐) / 02(수액) / 03(주사) — 마스터에 비어 있으면 null */
+  dosageFormCd?: string | null;
   /** 제형 이름(예: 정제, 주사제) */
   formName: string | null;
   manufacturer: string | null;
