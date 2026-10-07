@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
+  MedicationItem,
   Order,
   OrderCancelRequest,
   OrderCreateRequest,
@@ -12,6 +13,9 @@ const initialState: OrderState = {
   ordersByReceptionId: {},
   listStatusByReception: {},
   listError: "",
+  medications: [],
+  medicationsLoading: false,
+  medicationsError: "",
   submitting: false,
   submitError: "",
   busyOrderId: "",
@@ -151,6 +155,32 @@ const orderSlice = createSlice({
       });
     },
 
+    /** 약품 검색(처방 등록의 약품 선택). name 은 약품명 일부(필수) */
+    searchMedicationsRequest: {
+      reducer(state) {
+        state.medicationsLoading = true;
+        state.medicationsError = "";
+      },
+      prepare(name: string) {
+        return { payload: name };
+      },
+    },
+    searchMedicationsSuccess(state, action: PayloadAction<MedicationItem[]>) {
+      state.medicationsLoading = false;
+      state.medications = action.payload;
+    },
+    searchMedicationsFailure(state, action: PayloadAction<string>) {
+      state.medicationsLoading = false;
+      state.medications = [];
+      state.medicationsError = action.payload;
+    },
+    /** 검색어를 지웠을 때 이전 결과와 오류를 비운다 */
+    clearMedicationSearch(state) {
+      state.medicationsLoading = false;
+      state.medications = [];
+      state.medicationsError = "";
+    },
+
     /** 구두처방 사후 확정 */
     confirmVerbalRequest: {
       reducer(state, action: PayloadAction<{ orderId: string; confirmedBy: string }>) {
@@ -219,6 +249,10 @@ export const {
   loadOrderDetailSuccess,
   cancelOrderRequest,
   cancelOrderSuccess,
+  searchMedicationsRequest,
+  searchMedicationsSuccess,
+  searchMedicationsFailure,
+  clearMedicationSearch,
   confirmVerbalRequest,
   confirmVerbalSuccess,
   dispatchOrderRequest,
@@ -238,6 +272,9 @@ export const selectOrdersByReception = (receptionId: string) => (state: OrderRoo
   state.emergency.order.ordersByReceptionId[receptionId] ?? NO_ORDERS;
 export const selectOrderListStatus = (receptionId: string) => (state: OrderRoot) =>
   state.emergency.order.listStatusByReception[receptionId];
+export const selectMedications = (state: OrderRoot) => state.emergency.order.medications;
+export const selectMedicationsLoading = (state: OrderRoot) => state.emergency.order.medicationsLoading;
+export const selectMedicationsError = (state: OrderRoot) => state.emergency.order.medicationsError;
 export const selectOrderListError = (state: OrderRoot) => state.emergency.order.listError;
 export const selectOrderSubmitting = (state: OrderRoot) => state.emergency.order.submitting;
 export const selectOrderSubmitError = (state: OrderRoot) => state.emergency.order.submitError;
