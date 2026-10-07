@@ -38,7 +38,6 @@ function formatAmountText(value: string): string {
 }
 
 const ITEM_COLUMNS: DataTableColumn<BillingDetailItem>[] = [
-  { key: "occurredAt", header: "Occurred At", render: (row) => row.occurredAt },
   {
     key: "billingType",
     header: "Type",
