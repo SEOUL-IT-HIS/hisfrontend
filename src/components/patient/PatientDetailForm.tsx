@@ -19,7 +19,6 @@ import {
   deactivatePatientRequest,
   convertTemporaryPatientRequest,
   fetchPatientDetailRequest,
-  fetchPatientDetailSuccess,
   resetPatientDeactivation,
   resetPatientActivation,
   resetConversionDuplicate,
@@ -33,7 +32,6 @@ import { getGenderLabel } from "@/features/patient/util/genderCode";
 import type { AppDispatch, RootState } from "@/store/store";
 import PatientSafetyPanel from "./PatientSafetyPanel";
 import PatientContactPanel from "./PatientContactPanel";
-import { updatePatientPhotoApi } from "@/features/patient/api/patientApi";
 
 type PatientDetailFormProps = {
   patientId: string;
@@ -109,10 +107,6 @@ export default function PatientDetailForm({
   const [conversionBirthDate, setConversionBirthDate] = useState("");
   const [conversionGenderCd, setConversionGenderCd] = useState<"01" | "02" | "03" | "04">("03");
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [photoSaving, setPhotoSaving] = useState(false);
-  const [photoError, setPhotoError] = useState<string | null>(null);
   const {
     patientDetail,
     detailLoading,
@@ -138,46 +132,6 @@ export default function PatientDetailForm({
   } = useSelector((state: RootState) => state.patient);
 
   const isEditing = editing && !updateSuccess;
-
-  useEffect(() => {
-    return () => {
-      if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
-    };
-  }, [photoPreview]);
-
-  const selectPatientPhoto = (file: File | null) => {
-    if (file && !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setPhotoError("Choose a JPG, PNG, or WEBP image.");
-      setPhotoFile(null);
-      setPhotoPreview(null);
-      return;
-    }
-    if (file && file.size > 5 * 1024 * 1024) {
-      setPhotoError("The photo must be 5 MB or smaller.");
-      setPhotoFile(null);
-      setPhotoPreview(null);
-      return;
-    }
-    setPhotoError(null);
-    setPhotoFile(file);
-    setPhotoPreview(file ? URL.createObjectURL(file) : null);
-  };
-
-  const savePatientPhoto = async () => {
-    if (!photoFile) return;
-    setPhotoSaving(true);
-    setPhotoError(null);
-    try {
-      const updatedPatient = await updatePatientPhotoApi(patientId, photoFile);
-      dispatch(fetchPatientDetailSuccess(updatedPatient));
-      setPhotoFile(null);
-      setPhotoPreview(null);
-    } catch (error) {
-      setPhotoError(error instanceof Error ? error.message : "Failed to update the patient photo.");
-    } finally {
-      setPhotoSaving(false);
-    }
-  };
 
   useEffect(() => {
     dispatch(resetPatientUpdate());
@@ -441,8 +395,6 @@ export default function PatientDetailForm({
         <Alert variant="error">{validationError}</Alert>
       ) : null}
 
-      {photoError ? <Alert variant="error">{photoError}</Alert> : null}
-
       {updateError ? <Alert variant="error">{updateError}</Alert> : null}
 
       {updateSuccess ? (
@@ -492,41 +444,6 @@ export default function PatientDetailForm({
 
       {patientDetail ? (
         <Panel>
-          <section className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center">
-            {photoPreview || patientDetail.profileImageUrl ? (
-              <img
-                src={photoPreview ?? patientDetail.profileImageUrl ?? undefined}
-                alt={`${patientDetail.patientName} photo`}
-                className="h-24 w-24 rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-slate-100 text-xs text-slate-500">
-                No photo
-              </div>
-            )}
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-slate-700">Patient Photo</div>
-              <input
-                key={photoPreview ?? "patient-photo-empty"}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(event) => selectPatientPhoto(event.target.files?.[0] ?? null)}
-                disabled={photoSaving}
-                className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-sky-700"
-              />
-              <p className="text-xs text-slate-500">JPG, PNG, or WEBP; up to 5 MB.</p>
-              {photoFile ? (
-                <div className="flex gap-2">
-                  <Button type="button" variant="primary" onClick={savePatientPhoto} disabled={photoSaving}>
-                    {photoSaving ? "Saving..." : "Save Photo"}
-                  </Button>
-                  <Button type="button" variant="secondary" onClick={() => selectPatientPhoto(null)} disabled={photoSaving}>
-                    Cancel
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          </section>
           <form onSubmit={submitUpdate}>
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <div className="flex flex-wrap items-center gap-2">

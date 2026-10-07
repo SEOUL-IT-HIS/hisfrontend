@@ -116,20 +116,19 @@ export default function BillingDetailSearchForm({
                             <th className="px-5 py-3 font-medium">Phone</th>
                             <th className="px-5 py-3 font-medium">Type</th>
                             <th className="px-5 py-3 text-right font-medium">Amount</th>
-                            <th className="px-5 py-3 font-medium">Created At</th>
                             <th className="px-5 py-3 font-medium">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={7} className="px-5 py-20 text-center text-slate-400">
+                                <td colSpan={6} className="px-5 py-20 text-center text-slate-400">
                                     Loading...
                                 </td>
                             </tr>
                         ) : patientGroups.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="px-5 py-20 text-center text-slate-400">
+                                <td colSpan={6} className="px-5 py-20 text-center text-slate-400">
                                     No results found.
                                 </td>
                             </tr>

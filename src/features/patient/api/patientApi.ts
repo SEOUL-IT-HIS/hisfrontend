@@ -1,5 +1,5 @@
 import apiClient from "@/lib/axios";
-import type { ApiResponse, PatientDetail, PatientPage, PatientPageRequest } from "../type/patientType";
+import type { ApiResponse, PatientPage, PatientPageRequest } from "../type/patientType";
 
 export async function fetchPatientPageApi(request: PatientPageRequest): Promise<PatientPage> {
   const response = await apiClient.get<ApiResponse<PatientPage>>("/api/patient/list/page", {
@@ -10,6 +10,7 @@ export async function fetchPatientPageApi(request: PatientPageRequest): Promise<
 }
 import type {
   Patient,
+  PatientDetail,
   PatientDetailApiResponse,
   PatientDuplicateCheckApiResponse,
   PatientDuplicateCheckRequest,
@@ -70,21 +71,6 @@ export async function updatePatientApi(
     },
   );
 
-  return response.data.data;
-}
-
-/** PUT /api/patient/{patientId}/photo */
-export async function updatePatientPhotoApi(
-  patientId: string,
-  image: File,
-): Promise<PatientDetail> {
-  const formData = new FormData();
-  formData.append("image", image);
-  const response = await apiClient.put<ApiResponse<PatientDetail>>(
-    `/api/patient/${encodeURIComponent(patientId)}/photo`,
-    formData,
-    { headers: { "Content-Type": undefined } },
-  );
   return response.data.data;
 }
 
@@ -149,29 +135,18 @@ export async function activatePatientApi(
 export async function registerPatientApi(
   patientData: PatientRegisterRequest,
 ): Promise<Patient> {
-  const { image, ...patientFields } = patientData;
-  const dto = {
-    ...patientFields,
-    patientName: patientFields.patientName.trim() || null,
-    birthDate: patientFields.birthDate || null,
-    residentRegNo: patientFields.residentRegNo.trim() || null,
-    tempRegisterReason:
-      patientFields.tempPatientYn === "Y"
-        ? patientFields.tempRegisterReason?.trim() || null
-        : null,
-  };
-  let requestBody: typeof dto | FormData = dto;
-  if (image) {
-    const formData = new FormData();
-    formData.append("dto", new Blob([JSON.stringify(dto)], { type: "application/json" }));
-    formData.append("image", image);
-    requestBody = formData;
-  }
-
   const response = await apiClient.post<PatientRegisterApiResponse>(
     "/api/patient/register",
-    requestBody,
-    image ? { headers: { "Content-Type": undefined } } : undefined,
+    {
+      ...patientData,
+      patientName: patientData.patientName.trim() || null,
+      birthDate: patientData.birthDate || null,
+      residentRegNo: patientData.residentRegNo.trim() || null,
+      tempRegisterReason:
+        patientData.tempPatientYn === "Y"
+          ? patientData.tempRegisterReason?.trim() || null
+          : null,
+    },
   );
 
   const patient = response.data.data;
