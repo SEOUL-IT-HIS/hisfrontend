@@ -53,10 +53,11 @@ const STATUS_FILTER_OPTIONS = [
     { value: STATUS_FILTER_ALL, label: 'All' }, // 전체
 ];
 
-// 접수(RCP)에서 받은 초진/재진, 예약/당일 값을 화면 라벨로 변경 (값이 없거나 모르는 값이면 원본/"-")
+// 접수(RCP)에서 받은 초진/재진, 예약/당일 값을 화면 라벨로 변경
+// (값이 없으면 "-", 모르는 값이면 원본 표시)
 const VISIT_TYPE_LABEL: Record<string, string> = {
     INITIAL: 'Initial Visit', // 초진
-    REVISIT: 'Follow-up Visit', // 재진
+    REVISIT: 'Revisit', // 재진
 };
 const RECEPTION_TYPE_LABEL: Record<string, string> = {
     RESERVATION: 'Reservation', // 예약
@@ -93,7 +94,7 @@ const EncounterList = () => {
         (enc) => statusFilter === STATUS_FILTER_ALL || normalizeStatus(enc.status) === statusFilter
     );
 
-    // 선택한 환자의 최신 상태 (저장 후 목록이 갱신되면 선택 당시 값이 아닌 새 상태를 쓴다)
+    // 선택한 환자의 최신 상태 (저장 후 목록이 갱신되면 새 상태를 쓴다)
     const currentStatus = selectedEncounter
         ? (list ?? []).find((enc) => enc.receptionId === selectedEncounter.receptionId)?.status ?? selectedEncounter.status
         : null;
@@ -107,6 +108,12 @@ const EncounterList = () => {
     const [assessmentNote, setAssessmentNote] = useState("");
     const [planNote, setPlanNote] = useState("");
     const [saveMessage, setSaveMessage] = useState<string | null>(null);
+    // 저장을 시도했는지 (필수 항목 안내를 저장 시도 후에만 보여준다)
+    const [saveAttempted, setSaveAttempted] = useState(false);
+    // 처방 입력칸에 Add 안 누른 항목이 있는지 (PrescriptionForm 이 알려줌)
+    const [orderPending, setOrderPending] = useState(false);
+    const chiefComplaintMissing = saveAttempted && !chiefComplaint.trim();
+    const assessmentNoteMissing = saveAttempted && !assessmentNote.trim();
 
     // 처방 정보 (약제/검사/수술)
     const [prescriptionItems, setPrescriptionItems] = useState<PrescriptionItemInput[]>([]);
@@ -116,7 +123,7 @@ const EncounterList = () => {
         dispatch(fetchEncounterListRequest({}));
     }, [dispatch]);
 
-    // 접수에서 새로 들어온 환자/취소를 새로고침 없이 반영하기 위해 주기적으로 목록을 다시 조회
+    // 접수에서 들어온 환자/취소를 새로고침 없이 반영하려고 주기적으로 재조회
     // (화면이 보일 때만 조회하고, 다시 보이는 순간 한 번 바로 조회한다)
     useEffect(() => {
         const refresh = () => {
@@ -141,8 +148,10 @@ const EncounterList = () => {
             setAssessmentNote("");
             setPlanNote("");
             setPrescriptionItems([]);
+            setSaveAttempted(false);
             setSaveMessage("Medical record saved."); // 진료 기록이 저장되었습니다.
-            dispatch(fetchEncounterListRequest({ silent: true })); // 진료완료로 바뀐 상태를 목록에 반영
+            // 진료완료로 바뀐 상태를 목록에 반영
+            dispatch(fetchEncounterListRequest({ silent: true }));
         }
         prevCreateLoading.current = createLoading;
     }, [createLoading, createError, dispatch]);
@@ -157,12 +166,19 @@ const EncounterList = () => {
         setPlanNote('');
         setPrescriptionItems([]);
         setSaveMessage(null);
+        setSaveAttempted(false);
     };
 
     // 진료 저장버튼 눌렀을때 - 진료기록 + 처방을 한 번에 저장
     const handleSaveChart = () => {
         if (!selectedEncounter) return;
         setSaveMessage(null);
+
+        // 필수값 누락, 또는 Add 안 누른 처방 입력이 남았으면 저장 안 하고 안내
+        if (!chiefComplaint.trim() || !assessmentNote.trim() || orderPending) {
+            setSaveAttempted(true);
+            return;
+        }
 
         dispatch(saveConsultationRequest({
             // encounterId가 없으면 receptionId를 대신 사용하도록 안전장치 추가
@@ -208,7 +224,7 @@ const EncounterList = () => {
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
                             aria-label="Status filter"
-                            className="min-w-[120px] rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-normal text-slate-700 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                            className="h-10 min-w-[120px] rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal text-slate-800 shadow-sm outline-none transition-colors focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                         >
                             {STATUS_FILTER_OPTIONS.map((option) => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -305,7 +321,7 @@ const EncounterList = () => {
 
                     {/* 환자 정보 헤더 ("오늘 진료 작성" 탭에서만 노출) */}
                     {selectedEncounter && activeTab === 'FORM' && (
-                        <div className="mb-4 shrink-0 rounded-2xl border border-slate-200/80 bg-[var(--background)] p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                        <div className="mb-4 shrink-0 rounded-2xl border border-sky-100 bg-sky-50 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
                             <div className="flex items-baseline justify-between">
                                 <h3 className="text-lg font-semibold tracking-tight text-slate-900">
                                     {selectedEncounter.patientName}
@@ -340,9 +356,9 @@ const EncounterList = () => {
                             <div className="flex h-full min-h-[300px] flex-col items-center justify-center gap-3 text-slate-500 text-sm">
                                 {saveMessage && <Alert variant="success">{saveMessage}</Alert>}
                                 {currentStatus === 'CANCELLED'
-                                    // 접수가 취소된 환자는 진료기록을 작성할 수 없습니다.
+                                    // 접수 취소된 환자는 진료기록 작성 불가
                                     ? "This reception was cancelled. Medical records cannot be created."
-                                    // 이미 진료가 완료된 환자입니다. 내용 수정은 Medical Records 탭에서 하세요.
+                                    // 이미 진료 완료된 환자. 수정은 Medical Records 탭에서
                                     : "This visit is already completed. To change the record, use the Medical Records tab."}
                             </div>
                         ) : selectedEncounter ? (
@@ -359,8 +375,13 @@ const EncounterList = () => {
                                         onChange={(e) => setChiefComplaint(e.target.value)}
                                         // 예: 기침 및 발열 증상 (3일 전부터 시작)
                                         placeholder="e.g., Cough and fever (started 3 days ago)"
-                                        className="w-full rounded-md border border-slate-300 p-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                        className={`w-full rounded-md border p-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 ${
+                                            chiefComplaintMissing ? 'border-rose-400' : 'border-slate-300'
+                                        }`}
                                     />
+                                    {chiefComplaintMissing && (
+                                        <p className="mt-1 text-xs text-rose-500">Chief Complaint is required.</p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -388,8 +409,13 @@ const EncounterList = () => {
                                         onChange={(e) => setAssessmentNote(e.target.value)}
                                         // 진단명 및 평가 소견을 작성해 주세요.
                                         placeholder="Enter the diagnosis and assessment."
-                                        className="w-full rounded-md border border-slate-300 p-2 text-sm min-h-[80px] outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                        className={`w-full rounded-md border p-2 text-sm min-h-[80px] outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 ${
+                                            assessmentNoteMissing ? 'border-rose-400' : 'border-slate-300'
+                                        }`}
                                     />
+                                    {assessmentNoteMissing && (
+                                        <p className="mt-1 text-xs text-rose-500">Diagnosis is required.</p>
+                                    )}
                                 </div>
 
                                 <div className="flex-1 flex flex-col">
@@ -406,7 +432,14 @@ const EncounterList = () => {
                                     />
                                 </div>
 
-                                <PrescriptionForm items={prescriptionItems} onChange={setPrescriptionItems} />
+                                {/* key: 환자를 바꾸면 처방 입력칸도 초기화 */}
+                                <PrescriptionForm
+                                    key={selectedEncounter.receptionId}
+                                    items={prescriptionItems}
+                                    onChange={setPrescriptionItems}
+                                    onPendingChange={setOrderPending}
+                                    showPendingWarning={saveAttempted}
+                                />
 
                                 {createError && <Alert variant="error">{createError}</Alert>}
                                 {saveMessage && <Alert variant="success">{saveMessage}</Alert>}

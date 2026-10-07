@@ -6,14 +6,20 @@ import type { BillingMaster } from "@/features/billing/billingMaster/types";
 
 type BillingMasterRowProps = {
   billingMaster: BillingMaster;
+  no: number; // row number shown in front of the fee name / code
 };
 
 function formatPrice(value: string): string {
   const amount = Number(value);
-  return Number.isNaN(amount) ? value : `${amount.toLocaleString()}원`;
+  return Number.isNaN(amount) ? value : `₩${amount.toLocaleString()}`;
 }
 
-const BillingMasterRow = ({ billingMaster }: BillingMasterRowProps) => {
+// The API returns "yyyy-MM-ddTHH:mm" - only the date part is needed on screen
+function formatDate(value: string | null | undefined): string {
+  return value ? value.slice(0, 10) : "";
+}
+
+const BillingMasterRow = ({ billingMaster, no }: BillingMasterRowProps) => {
   const router = useRouter();
 
   return (
@@ -21,18 +27,17 @@ const BillingMasterRow = ({ billingMaster }: BillingMasterRowProps) => {
       onClick={() => router.push(`/billing/statistics/${billingMaster.billingMasterId}`)}
       className="cursor-pointer border-t border-slate-50 transition-colors hover:bg-slate-50"
     >
+      <td className="px-5 py-3.5 text-slate-400">{no}</td>
       <td className="px-5 py-3.5">
         <span className="font-semibold text-slate-800">{billingMaster.feeName}</span>
         <span className="ml-1.5 text-xs text-slate-400">{billingMaster.feeCode}</span>
       </td>
-      <td className="px-5 py-3.5 text-slate-600">{formatPrice(billingMaster.defaultPrice)}</td>
-      <td className="px-5 py-3.5 text-slate-600">{billingMaster.categoryCode}</td>
-      <td className="px-5 py-3.5 text-slate-600">{billingMaster.insuranceTypeCode}</td>
+      <td className="px-5 py-3.5 text-right text-slate-600">{formatPrice(billingMaster.defaultPrice)}</td>
       <td className="px-5 py-3.5 text-slate-600">
-        {billingMaster.effectiveFrom} ~ {billingMaster.effectiveTo}
+        {formatDate(billingMaster.effectiveFrom)} ~ {formatDate(billingMaster.effectiveTo)}
       </td>
       <td className="px-5 py-3.5">
-        <StatusBadge value={billingMaster.useYn} />
+        <StatusBadge value={billingMaster.useYn} activeLabel="Active" inactiveLabel="Inactive" />
       </td>
     </tr>
   );

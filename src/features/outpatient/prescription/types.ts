@@ -67,7 +67,7 @@ export interface PrescriptionDto {
 
     receptionId?: string | null;       // 접수ID (응급 경로 전용, 외래 처방은 null)
 
-    // 검사결과 도착상태 (목록 조회용): null=검사 항목 없음, WAITING=결과 없음, COMPLETE=하나라도 도착
+    // 검사결과 상태(목록용): null=검사 없음, WAITING=결과 없음, COMPLETE=1건 이상 도착
     labResultStatus?: string | null;
 
     // 목록 조회에는 포함되지 않고(N+1 방지) 상세 조회 시에만 채워짐
@@ -106,4 +106,17 @@ export interface MedicationDto {
     itemPermitDate?: string | null;
     ediCode: string;
     stdCd?: string | null;
+    dosageFormCd?: string | null; // 제형 코드 (01 알약, 02 수액, 03 주사, 미분류 null)
+}
+
+// 약품 목록(페이지) 응답 — 약가코드가 없는 약은 서버에서 이미 뺐다.
+// 그래서 content 가 요청한 size 보다 적을 수 있고, totalElements/totalPages/last 는 거르기 전 값이다.
+export interface MedicationPageDto {
+    content: MedicationDto[];
+    totalElements: number;
+    totalPages: number;
+    number: number; // 0부터 시작하는 페이지 번호
+    size: number;
+    first: boolean;
+    last: boolean;
 }

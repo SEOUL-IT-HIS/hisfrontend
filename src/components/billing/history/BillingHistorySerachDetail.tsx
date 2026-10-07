@@ -147,8 +147,6 @@ const BillingHistorySearchDetail = ({ billingId }: BillingHistorySearchDetailPro
                 ) : (
                     <>
                         <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-                            <DetailField label="PatientId" value={detail.patientId} />
-                            <DetailField label="PatientName" value={detail.patientName} />
                             <DetailField label="BirthDate" value={detail.birthDate} />
                             <DetailField label="PhoneNo" value={detail.phoneNo} />
                             <DetailField

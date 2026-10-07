@@ -52,5 +52,13 @@ export const useNowInput = () => useSyncExternalStore(noopSubscribe, nowLocalInp
 export const futureTimeError = (value: string, label: string) =>
     value && value.slice(0, 16) > nowLocalInput() ? `${label} cannot be later than the current time.` : null;
 
+/**
+ * 퇴상 같은 "지금 시각"을 서버로 보낼 때 쓰는 로컬(한국) 시각 문자열 — "YYYY-MM-DDTHH:mm:ss.sss"
+ * toISOString()은 UTC라서 끝의 Z만 떼고 보내면 백엔드 LocalDateTime이 그걸 한국시각으로 받아 9시간 이르게 저장됨
+ * → 시간대 오프셋만큼 보정한 뒤 ISO 문자열로 만들어 로컬 기준으로 보냄
+ */
+export const toLocalDateTimeString = (date: Date) =>
+    new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, -1);
+
 /** 서버 날짜 문자열을 목록 표시용으로 — "2026-10-01T09:54:29.288676" → "2026-10-01 09:54", 없으면 "-" */
 export const formatDateTime = (value: string | null | undefined) => (value ? value.replace("T", " ").slice(0, 16) : "-");

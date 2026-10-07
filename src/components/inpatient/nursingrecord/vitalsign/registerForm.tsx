@@ -4,12 +4,12 @@ import { AppDispatch, RootState } from "@/store/store";
 import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import AdmissionSelect from "@/components/inpatient/nursingrecord/AdmissionSelect";
 import { useDispatch, useSelector, shallowEqual } from "react-redux";
-import { isOutOfNormalRange,  VITAL_SIGN_NORMAL_RANGES } from "@/features/inpatient/nursingrecord/vitalsign/validation";
+import VitalSignField from "@/components/inpatient/nursingrecord/vitalsign/VitalSignField";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDayEnd, futureTimeError, useNowInput } from "@/features/inpatient/dateLimits";
 import { createVitalSignRequest, resetVitalSignCreateStatus } from "@/features/inpatient/nursingrecord/vitalsign/slice";
-import { LABEL, FIELD, WARNING } from "@/components/inpatient/common/styles";
+import { LABEL, FIELD } from "@/components/inpatient/common/styles";
 import { Alert, Button, PageHeader } from "@/components/common";
 
 
@@ -100,60 +100,13 @@ const VitalSignRegisterForm = () => {
                     <label htmlFor="measuredAt" className={LABEL}>Measured At</label>
                     <input type="datetime-local" id="measuredAt" name="measuredAt" max={maxRecordAt} value={form.measuredAt} onChange={onChange} required className={FIELD} />
                 </div>
-                <div>
-                    <label htmlFor="temperature" className={LABEL}>Temperature (°C)</label>
-                    <input type="number" id="temperature" name="temperature" value={form.temperature} onChange={onChange} step="0.1" min="30" max="45" required className={FIELD} />
-                    {form.temperature && isOutOfNormalRange("temperature", Number(form.temperature)) && (
-                        <p className={WARNING}>
-                            Outside normal range ({VITAL_SIGN_NORMAL_RANGES.temperature.min}~{VITAL_SIGN_NORMAL_RANGES.temperature.max}{VITAL_SIGN_NORMAL_RANGES.temperature.unit})
-                        </p>
-                    )}
-                </div>
-
-                <div>
-                    <label htmlFor="pulse" className={LABEL}>Pulse (beats/min)</label>
-                    <input type="number" id="pulse" name="pulse" value={form.pulse} onChange={onChange} min="50" max="150" required className={FIELD} />
-                    {form.pulse && isOutOfNormalRange("pulse", Number(form.pulse)) && (
-                        <p className={WARNING}>
-                            Outside normal range ({VITAL_SIGN_NORMAL_RANGES.pulse.min}~{VITAL_SIGN_NORMAL_RANGES.pulse.max}{VITAL_SIGN_NORMAL_RANGES.pulse.unit})
-                        </p>
-                    )}
-                </div>
-                <div>
-                    <label htmlFor="respiration" className={LABEL}>Respiration Rate (breaths/min)</label>
-                    <input type="number" id="respiration" name="respiration" value={form.respiration} onChange={onChange} min="12" max="20" required className={FIELD} />
-                    {form.respiration && isOutOfNormalRange("respiration", Number(form.respiration)) && (
-                        <p className={WARNING}>
-                            Outside normal range ({VITAL_SIGN_NORMAL_RANGES.respiration.min}~{VITAL_SIGN_NORMAL_RANGES.respiration.max}{VITAL_SIGN_NORMAL_RANGES.respiration.unit})
-                        </p>
-                    )}
-                </div>
-                <div>
-                    <label htmlFor="bpSystolic" className={LABEL}>Systolic Blood Pressure (mmHg)</label>
-                    <input type="number" id="bpSystolic" name="bpSystolic" value={form.bpSystolic} onChange={onChange} min="0" required className={FIELD} />
-                    {form.bpSystolic && isOutOfNormalRange("bpSystolic", Number(form.bpSystolic)) && (
-                        <p className={WARNING}>
-                            Outside normal range ({VITAL_SIGN_NORMAL_RANGES.bpSystolic.min}~{VITAL_SIGN_NORMAL_RANGES.bpSystolic.max}{VITAL_SIGN_NORMAL_RANGES.bpSystolic.unit})
-                        </p>
-                    )}
-                </div>
-                <div>
-                    <label htmlFor="bpDiastolic" className={LABEL}>Diastolic Blood Pressure (mmHg)</label>
-                    <input type="number" id="bpDiastolic" name="bpDiastolic" value={form.bpDiastolic} onChange={onChange} min="0" required className={FIELD} />
-                    {form.bpDiastolic && isOutOfNormalRange("bpDiastolic", Number(form.bpDiastolic)) && (
-                        <p className={WARNING}>
-                            Outside normal range ({VITAL_SIGN_NORMAL_RANGES.bpDiastolic.min}~{VITAL_SIGN_NORMAL_RANGES.bpDiastolic.max}{VITAL_SIGN_NORMAL_RANGES.bpDiastolic.unit})
-                        </p>
-                    )}
-                </div>
-                <div>
-                    <label htmlFor="spo2" className={LABEL}>SpO2 (%)</label>
-                    <input type="number" id="spo2" name="spo2" value={form.spo2} onChange={onChange} step="0.1" min="0" max="100" required className={FIELD} />
-                    {form.spo2 && isOutOfNormalRange("spo2", Number(form.spo2)) && (
-                        <p className={WARNING}>
-                            Outside normal range ({VITAL_SIGN_NORMAL_RANGES.spo2.min}~{VITAL_SIGN_NORMAL_RANGES.spo2.max}{VITAL_SIGN_NORMAL_RANGES.spo2.unit})
-                        </p>
-                    )}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <VitalSignField field="temperature" value={form.temperature} onChange={onChange} />
+                    <VitalSignField field="pulse" value={form.pulse} onChange={onChange} />
+                    <VitalSignField field="respiration" value={form.respiration} onChange={onChange} />
+                    <VitalSignField field="spo2" value={form.spo2} onChange={onChange} />
+                    <VitalSignField field="bpSystolic" value={form.bpSystolic} onChange={onChange} />
+                    <VitalSignField field="bpDiastolic" value={form.bpDiastolic} onChange={onChange} />
                 </div>
                 <div>
                     <label htmlFor="recorderId" className={LABEL}>Recorder (Nurse)</label>

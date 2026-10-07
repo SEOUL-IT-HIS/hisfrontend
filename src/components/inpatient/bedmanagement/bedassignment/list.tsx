@@ -5,11 +5,15 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch,RootState } from "@/store/store";
 import {
   fetchBedAssignmentsRequest,
+  updateBedAssignmentRequest,
   selectBedAssignments,
   selectBedAssignmentListStatus,
+  selectBedAssignmentUpdateStatus,
 } from "@/features/inpatient/bedmanagement/bedassignment/slice";
 import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
-import { Alert, DataTable, PageHeader, type DataTableColumn } from "@/components/common";
+import { Alert, ConfirmDialog, PageHeader } from "@/components/common";
+import type { SwipeAction } from "@/components/inpatient/common/SwipeRow";
+import SwipeListRow from "@/components/inpatient/common/SwipeListRow";
 import LinkButton from "@/components/inpatient/common/LinkButton";
 import Toolbar from "@/components/inpatient/common/Toolbar";
 import type { BedAssignmentDTO } from "@/features/inpatient/bedmanagement/types";
@@ -18,11 +22,22 @@ import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import { fetchBedRequest, selectBed } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import BedAssignmentDetail from "@/components/inpatient/bedmanagement/bedassignment/detail";
-import { formatDateTime, useDayStart } from "@/features/inpatient/dateLimits";
+import { formatDateTime, toLocalDateTimeString, useDayStart } from "@/features/inpatient/dateLimits";
 import { formatBedLabel } from "@/features/inpatient/displayFormat";
 
 // 기본 보기: 배정 중 + 최근 7일 안에 퇴상된 건 (그보다 오래된 이력은 "전체 이력 보기"로)
 const RECENT_RELEASE_DAYS = 7;
+
+// 머리글과 각 행이 같은 칸 비율을 씀 (표(table)가 아니라 행 카드 목록이라 직접 맞춤)
+const ROW_GRID = "grid w-full grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.3fr)_minmax(0,1.3fr)_96px] items-center gap-3";
+
+const ReleaseIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <path d="M16 17l5-5-5-5" />
+    <path d="M21 12H9" />
+  </svg>
+);
 
 type BedAssignmentListProps = {
   /** 병상관리 홈 탭 안에 끼워 넣을 때 true — 자체 제목/여백을 생략 */
@@ -42,6 +57,9 @@ const BedAssignmentList = ({ embedded = false }: BedAssignmentListProps = {}) =>
   const [selectedId, setSelectedId] = useState<number | null>(
   highlightParam ? Number(highlightParam) : null
   );
+  const updateStatus = useSelector(selectBedAssignmentUpdateStatus);
+  // 밀어서 연 "Release" → 확인창에 띄울 배정 (null이면 확인창 닫힘)
+  const [releaseTarget, setReleaseTarget] = useState<BedAssignmentDTO | null>(null);
 
   
 // 1단계: admissionId → patientId
@@ -106,46 +124,20 @@ const wardNameByCd = useMemo(
     dispatch(fetchBedRequest());
   }, [dispatch]);
 
-  const columns: DataTableColumn<BedAssignmentDTO>[] = [
-    {
-      key: "patient",
-      header: "Patient Name",
-      render: (a) => (
-        <span className="font-medium text-slate-800">
-          {patientNameById.get(patientIdByAdmissionId.get(a.admissionId) ?? "") ?? "Unknown"}
-        </span>
-      ),
-    },
-    {
-      key: "ward",
-      header: "Ward",
-      render: (a) => {
-        const wardCd = wardCdByBedId.get(a.bedId);
-        return wardCd ? wardNameByCd.get(wardCd) ?? wardCd : "-";
-      },
-    },
-    { key: "bed", header: "Bed", render: (a) => formatBedLabel(a.bedId) },
-    { key: "assignedAt", header: "Assigned At", render: (a) => formatDateTime(a.assignedAt) },
-    { key: "releasedAt", header: "Released At", render: (a) => formatDateTime(a.releasedAt) },
-    {
-      key: "status",
-      header: "Status",
-      render: (a) => {
-        const isActive = a.releasedAt === null;
-        return (
-          <span
-            className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
-              isActive
-                ? "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200"
-                : "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
-            }`}
-          >
-            {isActive ? "Assigned" : "Released"}
-          </span>
-        );
-      },
-    },
-  ];
+  const patientNameOf = (a: BedAssignmentDTO) =>
+    patientNameById.get(patientIdByAdmissionId.get(a.admissionId) ?? "") ?? "Unknown";
+
+  // 배정 중인 행에만 "Release"를 열어 줌 — 상세 패널의 Release Bed 와 같은 요청
+  const actionsFor = (a: BedAssignmentDTO): SwipeAction[] =>
+    a.releasedAt === null
+      ? [{ id: "release", label: "Release", icon: <ReleaseIcon />, dismiss: false, onSelect: () => setReleaseTarget(a) }]
+      : [];
+
+  const handleReleaseConfirm = () => {
+    if (!releaseTarget) return;
+    dispatch(updateBedAssignmentRequest({ ...releaseTarget, releasedAt: toLocalDateTimeString(new Date()) }));
+    setReleaseTarget(null);
+  };
 
   return (
     // 화면 아래까지 꽉 채움 — 목록과 상세 패널이 각자 안에서 스크롤 (홈 탭 안에서는 남은 높이를, 단독 페이지에서는 화면 높이를 채움)
@@ -171,27 +163,70 @@ const wardNameByCd = useMemo(
             <span className="text-xs text-slate-400">({hiddenCount} older releases hidden)</span>
           )}
         </label>
+        {/* 밀어서 여는 동작은 눈에 잘 안 띄어서 안내 문구를 둠 (같은 동작이 상세 패널에도 있음) */}
+        <span className="text-xs text-slate-400">Swipe an assigned row left to release the bed</span>
       </Toolbar>
 
       {listStatus.error && <Alert>{listStatus.error}</Alert>}
+      {updateStatus.error && <Alert>{updateStatus.error}</Alert>}
 
       {!listStatus.error && (
         <div className="flex min-h-[480px] flex-1 gap-4">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            <DataTable
-              columns={columns}
-              rows={visibleAssignments}
-              rowKey={(a) => a.assignmentId}
-              onRowClick={(a) => setSelectedId(a.assignmentId)}
-              isRowActive={(a) => a.assignmentId === selectedId}
-              loading={listStatus.loading}
-              loadingMessage="Loading..."
-              emptyMessage={
-                bedAssignments.length === 0
-                  ? "No assignment data available."
-                  : `No current assignments or releases in the last ${RECENT_RELEASE_DAYS} days.`
-              }
-            />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+            {/* 머리글 — 아래 행들과 같은 칸 비율 */}
+            <div className={`${ROW_GRID} rounded-xl bg-slate-50/95 px-[17px] py-2.5 text-xs font-medium uppercase tracking-wide text-slate-400`}>
+              <span>Patient Name</span>
+              <span>Ward</span>
+              <span>Bed</span>
+              <span>Assigned At</span>
+              <span>Released At</span>
+              <span>Status</span>
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-1">
+              {listStatus.loading && <p className="py-16 text-center text-sm text-slate-400">Loading...</p>}
+              {!listStatus.loading && visibleAssignments.length === 0 && (
+                <p className="py-16 text-center text-sm text-slate-400">
+                  {bedAssignments.length === 0
+                    ? "No assignment data available."
+                    : `No current assignments or releases in the last ${RECENT_RELEASE_DAYS} days.`}
+                </p>
+              )}
+              {!listStatus.loading &&
+                visibleAssignments.map((a) => {
+                  const isActive = a.releasedAt === null;
+                  const wardCd = wardCdByBedId.get(a.bedId);
+                  return (
+                    <SwipeListRow
+                      key={a.assignmentId}
+                      label={`Bed assignment for ${patientNameOf(a)}`}
+                      selected={a.assignmentId === selectedId}
+                      actions={actionsFor(a)}
+                      actionColor="#d97706"
+                      onSelect={() => setSelectedId(a.assignmentId)}
+                    >
+                      <div className={ROW_GRID}>
+                        <span className="truncate text-sm font-medium text-slate-800">{patientNameOf(a)}</span>
+                        <span className="truncate text-sm text-slate-600">{wardCd ? wardNameByCd.get(wardCd) ?? wardCd : "-"}</span>
+                        <span className="truncate text-sm text-slate-600">{formatBedLabel(a.bedId)}</span>
+                        <span className="truncate text-sm text-slate-600">{formatDateTime(a.assignedAt)}</span>
+                        <span className="truncate text-sm text-slate-600">{formatDateTime(a.releasedAt)}</span>
+                        <span>
+                          <span
+                            className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
+                              isActive
+                                ? "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200"
+                                : "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
+                            }`}
+                          >
+                            {isActive ? "Assigned" : "Released"}
+                          </span>
+                        </span>
+                      </div>
+                    </SwipeListRow>
+                  );
+                })}
+            </div>
           </div>
 
           {selectedId !== null && (
@@ -201,6 +236,20 @@ const wardNameByCd = useMemo(
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={releaseTarget !== null}
+        title="Release bed"
+        message={
+          releaseTarget
+            ? `Release ${formatBedLabel(releaseTarget.bedId)} for ${patientNameOf(releaseTarget)}? The bed becomes available again.`
+            : ""
+        }
+        confirmLabel="Release Bed"
+        submitting={updateStatus.loading}
+        onConfirm={handleReleaseConfirm}
+        onCancel={() => setReleaseTarget(null)}
+      />
     </div>
   );
 };
