@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button, DataTable, Panel } from "@/components/common";
+import { Alert, Button, DataTable, Pagination, Panel } from "@/components/common";
 import type { DataTableColumn } from "@/components/common";
 import { usePatientNames } from "@/features/labimaging/common/hooks/usePatientNames";
 import { resolveImageOrderMessage } from "@/features/labimaging/imagingorder/messages";
@@ -66,6 +66,9 @@ import ImageReadingWorkPanel from "@/components/labimaging/imaginginterpretation
 
 type WorkTab = "schedule" | "consent" | "acquisition" | "reading";
 
+/** 한 페이지에 보여줄 행 수. 검사 워크리스트(LabWorklist)와 같은 값·같은 방식이다. */
+const PAGE_SIZE = 10;
+
 const WORK_TABS: ReadonlyArray<{ value: WorkTab; label: string; enabled: boolean }> = [
   { value: "schedule", label: "Schedule", enabled: true },
   { value: "consent", label: "Consent", enabled: true },
@@ -92,6 +95,10 @@ export default function ImageWorklist() {
   const [filter, setFilter] = useState<ImageWorklistStatusFilter>("ACCEPTED");
   const [tab, setTab] = useState<WorkTab>("schedule");
   const [excludeTarget, setExcludeTarget] = useState<string | null>(null);
+  /** 현재 페이지(1-base). 탭을 바꾸면 1페이지로 되돌린다(아래, 렌더 중 동기화 — effect 아님). */
+  const [page, setPage] = useState(1);
+  /** "마지막으로 반영한 필터" — 바뀐 걸 감지하는 기준이다. (SurgeryWorklist.boundUrlId 와 같은 패턴) */
+  const [pageResetForFilter, setPageResetForFilter] = useState(filter);
 
   /*
    * 목록을 다시 부르는 지점은 이 효과 하나로 모은다.
@@ -124,6 +131,15 @@ export default function ImageWorklist() {
     lastImageFileId,
     lastSubmittedReadingId,
   ]);
+
+  /*
+   * 탭을 바꾸면 그 탭의 1페이지부터 본다 — LabWorklist 와 같은 이유·같은 패턴이다.
+   * useEffect 가 아니라 렌더 중에 바로 동기화한다(react-hooks/set-state-in-effect 규칙).
+   */
+  if (filter !== pageResetForFilter) {
+    setPageResetForFilter(filter);
+    setPage(1);
+  }
 
   /*
    * 목록에 보이는 환자들의 이름을 한 번에 불러온다. (POST /api/patient/batch)
@@ -221,6 +237,14 @@ export default function ImageWorklist() {
     },
   ];
 
+  /*
+   * 페이지 분할(클라이언트 사이드). LabWorklist 와 같은 방식·같은 이유 —
+   * 서버가 필터로 거른 전체 목록을 한 번에 내려주고, 화면에서 PAGE_SIZE 만큼만 잘라 보여준다.
+   */
+  const totalPages = Math.max(1, Math.ceil(worklist.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedWorklist = worklist.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   return (
     <div className="flex min-h-0 flex-1 gap-4">
       {/* ================= 왼쪽: 접수 워크리스트 ================= */}
@@ -254,7 +278,7 @@ export default function ImageWorklist() {
 
         <DataTable
           columns={columns}
-          rows={worklist}
+          rows={pagedWorklist}
           rowKey={(r) => r.imageReceptionId}
           loading={loading}
           loadingMessage="Loading..."
@@ -265,6 +289,13 @@ export default function ImageWorklist() {
               : "No receptions to process."
           }
         />
+
+        {!loading && worklist.length > 0 ? (
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-500">{worklist.length} total</p>
+            <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
+          </div>
+        ) : null}
       </div>
 
       {/* ================= 오른쪽: 작업 영역 ================= */}
