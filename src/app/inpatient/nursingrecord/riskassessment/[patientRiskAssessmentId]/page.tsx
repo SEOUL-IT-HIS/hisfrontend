@@ -3,7 +3,7 @@ import RiskAssessmentDetail from "@/components/inpatient/nursingrecord/riskasses
 const RiskAssessmentDetailPage = () => {
     return (
         <div>
-            <h1>위험도평가상세페이지</h1>
+            
             <RiskAssessmentDetail />
         </div>
     );

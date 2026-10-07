@@ -3,6 +3,7 @@
 import { AppDispatch, RootState } from "@/store/store";
 import { ALL_IO_ROUTE_OPTIONS, IO_ROUTE_OPTIONS, IO_TYPE_OPTIONS } from "@/features/inpatient/nursingrecord/codes";
 import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
+import IoAmountField from "@/components/inpatient/nursingrecord/iandorecord/IoAmountField";
 import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import AdmissionSelect from "@/components/inpatient/nursingrecord/AdmissionSelect";
 import { useDispatch, useSelector } from "react-redux";
@@ -99,10 +100,7 @@ const IandORecordRegisterForm = () => {
                     <label htmlFor="routeCd" className={LABEL}>Route</label>
                     <CodeSelect id="routeCd" name="routeCd" value={form.routeCd} options={IO_ROUTE_OPTIONS[form.ioTypeCd] ?? ALL_IO_ROUTE_OPTIONS} onChange={onChange} className={FIELD} />
                 </div>
-                <div>
-                    <label htmlFor="amountMl" className={LABEL}>Amount (mL)</label>
-                    <input type="number" id="amountMl" name="amountMl" value={form.amountMl} onChange={onChange} required className={FIELD} />
-                </div>
+                <IoAmountField routeCd={form.routeCd} value={form.amountMl} onChange={onChange} />
                 <div>
                     <label htmlFor="recorderId" className={LABEL}>Recorder (Nurse)</label>
                     <NurseSelect id="recorderId" name="recorderId" value={form.recorderId} onChange={onChange} className={FIELD} />
