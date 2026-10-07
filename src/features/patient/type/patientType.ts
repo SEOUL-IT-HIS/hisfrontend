@@ -34,6 +34,7 @@ export type PatientRegisterRequest = {
   genderCd: GenderCd;
   tempPatientYn: Yn;
   tempRegisterReason?: string;
+  image?: File;
 };
 
 /** POST /api/patient/register 응답 데이터 */
@@ -76,6 +77,7 @@ export type PatientDetail = {
   deathDtm: string | null;
   createdAt: string;
   updatedAt: string;
+  profileImageUrl: string | null;
 };
 
 /** POST /api/patient/duplicate-check 요청 */

@@ -99,6 +99,8 @@ export default function PatientRegisterModal({
 }: PatientRegisterModalProps) {
   const genderCodes = useCommonCodeOptions("GENDER_CD");
   const [form, setForm] = useState<PatientRegisterFormState>(initialForm);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [patientNameTouched, setPatientNameTouched] = useState(false);
@@ -143,14 +145,42 @@ export default function PatientRegisterModal({
   const isRegistrationDisabled =
     registerLoading || registrationDisabledReason !== null;
 
+  useEffect(() => {
+    return () => {
+      if (imagePreview?.startsWith("blob:")) URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
+
+  const handleImageChange = (file: File | null) => {
+    if (file && !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setValidationError("Choose a JPG, PNG, or WEBP image.");
+      setImageFile(null);
+      setImagePreview(null);
+      return;
+    }
+    if (file && file.size > 5 * 1024 * 1024) {
+      setValidationError("The photo must be 5 MB or smaller.");
+      setImageFile(null);
+      setImagePreview(null);
+      return;
+    }
+    setValidationError(null);
+    setImageFile(file);
+    setImagePreview(file ? URL.createObjectURL(file) : null);
+  };
+
   /** 모달을 열 때마다 이전 시도의 상태/입력값을 깨끗이 비운다 */
   useEffect(() => {
     if (!open) return;
+    /* eslint-disable react-hooks/set-state-in-effect */
     dispatch(resetPatientRegistration());
     setForm(initialForm);
+    setImageFile(null);
+    setImagePreview(null);
     setValidationError(null);
     setSubmitted(false);
     setPatientNameTouched(false);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [open, dispatch]);
 
   useEffect(() => {
@@ -249,6 +279,7 @@ export default function PatientRegisterModal({
         residentRegNo: form.residentRegNo.trim(),
         genderCd: form.genderCd as GenderCd,
         tempPatientYn: form.tempPatientYn,
+        image: imageFile ?? undefined,
       }),
     );
   };
@@ -257,7 +288,8 @@ export default function PatientRegisterModal({
     const hasUnsavedChanges =
       form.patientName.trim() !== "" ||
       form.residentRegNo !== "" ||
-      form.genderCd !== "";
+      form.genderCd !== "" ||
+      imageFile !== null;
 
     if (
       registerLoading ||
@@ -424,6 +456,21 @@ export default function PatientRegisterModal({
             />
             Register as temporary patient
           </label>
+        </FormField>
+
+        <FormField label="Patient Photo" htmlFor="modalPatientPhoto">
+          <input
+            key={imagePreview ?? "patient-photo-empty"}
+            id="modalPatientPhoto"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(event) => handleImageChange(event.target.files?.[0] ?? null)}
+            disabled={registerLoading}
+            className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-sky-700"
+          />
+          {imagePreview ? (
+            <img src={imagePreview} alt="Patient photo preview" className="mt-2 h-20 w-20 rounded-full object-cover" />
+          ) : null}
         </FormField>
 
         {registrationDisabledReason ? (
