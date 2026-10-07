@@ -8,6 +8,7 @@ import {
     deactivatePrescriptionRequest,
     fetchPrescriptionDetailRequest,
 } from "@/features/outpatient/prescription/slice";
+import { getServiceTypeLabel } from "@/features/outpatient/prescription/serviceType";
 import type { AppDispatch, RootState } from "@/store/store";
 
 type PrescriptionDetailProps = {
@@ -130,7 +131,7 @@ const PrescriptionDetail = ({ prescriptionId, prescriberNames, onClose }: Prescr
                         </FormField>
                         <FormField label="Service Type">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
-                                {prescription.serviceType ?? "-"}
+                                {getServiceTypeLabel(prescription.serviceType)}
                             </div>
                         </FormField>
                         <FormField label="Priority">
