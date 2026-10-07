@@ -1,5 +1,5 @@
 type PrescriptionStepsProps = {
-  /** RECEIVED / DISPENSED / REJECTED */
+  /** RECEIVED / DISPENSED / REJECTED / CANCELLED */
   status: string;
   /** 불출 상태 — RELEASED / CANCELLED / null(불출 전) */
   releaseStatusCd: string | null;
@@ -17,6 +17,12 @@ type Step = {
  * "불출까지 하면 끝나는 건지" 헷갈리지 않게 한다. 반납은 불출된 뒤 환자가 약을 되가져올 때만 생기는 선택 단계다.
  */
 function buildSteps({ status, releaseStatusCd, hasReturns }: PrescriptionStepsProps): Step[] {
+  if (status === "CANCELLED") {
+    return [
+      { label: "Received", state: "done" },
+      { label: "Cancelled by prescriber", state: "failed" },
+    ];
+  }
   if (status === "REJECTED") {
     return [
       { label: "Received", state: "done" },

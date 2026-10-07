@@ -25,4 +25,5 @@ export const PHM_MESSAGES = {
   PHM024: 'The recipient is required: select the receiving ward staff for a ward release, or enter the guardian name for a guardian release.',
   PHM025: 'This prescription has already been released. Cancel the release first, then cancel the dispensing.',
   PHM026: 'This release has return records, so it can no longer be cancelled.',
+  PHM027: 'This prescription was cancelled by the prescriber and can no longer be processed.',
 } as const;

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
 import { fetchPrescriptionListRequest } from "@/features/pharmacy/slice";
+import { getPrescriptionList } from "@/features/pharmacy/api";
+import OrderMetaBadges from "./OrderMetaBadges";
 import type { RootState } from "@/store/store";
 import { DataTable, PageHeader, Pagination, Panel, Select } from "@/components/common";
 import type { DataTableColumn, SelectOption } from "@/components/common";
@@ -19,12 +21,18 @@ const STAGE_OPTIONS: SelectOption[] = [
   { value: "RELEASED", label: "Released" },
   { value: "RELEASE_CANCELLED", label: "Release cancelled" },
   { value: "REJECTED", label: "Rejected" },
+  { value: "CANCELLED", label: "Cancelled by prescriber" },
 ];
+
+/** 목록 자동 갱신 주기. 약사가 화면을 열어 둔 사이에 처방코어가 취소해도 알아챌 수 있게 한다. */
+const LIST_POLL_INTERVAL_MS = 30_000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** 처리 상태 + 불출 상태를 한 줄로 — 조제완료 건은 불출 여부까지 같이 보여줘야 "할 일"이 남았는지 알 수 있다 */
 function stageOf(row: PrescriptionListItem): { label: string; className: string } {
   if (row.status === "RECEIVED") return { label: "Received", className: "bg-sky-50 text-sky-700" };
   if (row.status === "REJECTED") return { label: "Rejected", className: "bg-rose-50 text-rose-600" };
+  if (row.status === "CANCELLED") return { label: "Cancelled by prescriber", className: "bg-rose-50 text-rose-600" };
   if (row.releaseStatusCd === "RELEASED") return { label: "Released", className: "bg-emerald-50 text-emerald-700" };
   if (row.releaseStatusCd === "CANCELLED") return { label: "Release cancelled", className: "bg-slate-100 text-slate-600" };
   return { label: "Dispensed - awaiting release", className: "bg-amber-50 text-amber-700" };
@@ -55,6 +63,45 @@ export default function PrescriptionList() {
   useEffect(() => {
     dispatch(fetchPrescriptionListRequest({ page: page - 1, stage }));
   }, [dispatch, page, stage]);
+
+  // 탭이 보일 때만 주기적으로 다시 불러온다(응급 접수 목록과 같은 방식).
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        dispatch(fetchPrescriptionListRequest({ page: page - 1, stage }));
+      }
+    }, LIST_POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [dispatch, page, stage]);
+
+  // 최근 24시간 내 처방코어가 취소한 건수 안내. 새 API 없이 stage=CANCELLED 목록을 한 번 더 부른다.
+  // 정보성 안내라 redux에 올리지 않고, 실패해도 메인 목록에는 영향이 없다. 첫 페이지만 보므로 건수가 많으면 일부만 센다.
+  const [recentCancelledCount, setRecentCancelledCount] = useState(0);
+  useEffect(() => {
+    let ignore = false;
+    const load = () =>
+      getPrescriptionList({ page: 0, stage: "CANCELLED" })
+        .then((res) => {
+          if (ignore) return;
+          const dayAgo = Date.now() - DAY_MS;
+          const count = res.data.content.filter(
+            (row) => row.cancelRequestedAt && new Date(row.cancelRequestedAt).getTime() >= dayAgo
+          ).length;
+          setRecentCancelledCount(count);
+        })
+        .catch(() => {
+          // 조회 실패는 무시한다 — 정보성 안내일 뿐이다.
+        });
+    load();
+    const timer = setInterval(load, LIST_POLL_INTERVAL_MS);
+    return () => {
+      ignore = true;
+      clearInterval(timer);
+    };
+  }, []);
+
+  // 불출이 끝나 자동 취소하지 못한 건(약사 확인 필요) — 지금 보이는 목록 기준
+  const cancelWarningCount = prescriptionList.filter((row) => row.cancelOutcome === "REFUSED").length;
 
   // 환자명/의사명/진료과명은 각 서비스에 ID로만 저장돼 있어(약제 백엔드도 patientId/physicianId/
   // departmentId만 갖고 있음 — MSA 원칙상 다른 서비스 데이터를 직접 조인하지 않음), 화면에서
@@ -108,8 +155,23 @@ export default function PrescriptionList() {
         render: (row) => {
           const stageInfo = stageOf(row);
           return (
-            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${stageInfo.className}`}>
-              {stageInfo.label}
+            <span className="inline-flex items-center gap-1.5">
+              <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${stageInfo.className}`}>
+                {stageInfo.label}
+              </span>
+              <OrderMetaBadges
+                encounterType={row.encounterType}
+                priorityCode={row.priorityCode}
+                verbalYn={row.verbalYn}
+              />
+              {row.cancelOutcome === "REFUSED" && (
+                <span
+                  className="rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700"
+                  title="The prescriber cancelled this prescription, but it was already released. Check it manually."
+                >
+                  Cancel requested
+                </span>
+              )}
             </span>
           );
         },
@@ -137,6 +199,18 @@ export default function PrescriptionList() {
         </div>
         <span className="text-sm text-slate-500">{totalElements} prescription(s)</span>
       </Panel>
+      {(recentCancelledCount > 0 || cancelWarningCount > 0) && (
+        <div className="flex flex-col gap-1 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+          {recentCancelledCount > 0 && (
+            <span>{recentCancelledCount} prescription(s) were cancelled by the prescriber in the last 24 hours.</span>
+          )}
+          {cancelWarningCount > 0 && (
+            <span>
+              {cancelWarningCount} prescription(s) on this page were cancelled by the prescriber after release and need a manual check.
+            </span>
+          )}
+        </div>
+      )}
       <Panel className="min-h-0 flex-1 p-4">
         <DataTable
           columns={columns}
