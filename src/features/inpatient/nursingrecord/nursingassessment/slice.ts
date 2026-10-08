@@ -17,7 +17,7 @@ const nursingassessmentSlice = createSlice({
     name: "nursingassessment",
     initialState,
     reducers: {
-        fetchNursingAssessmentsRequest(state) {
+        fetchNursingAssessmentsRequest(state, _action: PayloadAction<string | undefined>) {
             state.listStatus = { ...initialStatus, loading: true };
         },
         fetchNursingAssessmentsSuccess(state, action: PayloadAction<NursingAssessmentDTO[]>) {
