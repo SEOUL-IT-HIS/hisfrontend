@@ -33,7 +33,7 @@ export const store = configureStore({
           "emp/fetchEmpRegisterRequest",
           "emp/fetchEmpUpdateRequest",
         ],
-        ignoredActionPaths: ["payload.image"],
+        ignoredActionPaths: ["payload.image", "payload.file"],
       },
     }).concat(sagaMiddleware),
 });
