@@ -3,6 +3,7 @@ import type { RootState } from "@/store/store";
 import type {
   BillingMaster,
   BillingMasterCreateRequest,
+  BillingMasterUpdateRequest,
 } from "@/features/billing/billingMaster/types";
 
 
@@ -15,10 +16,12 @@ type BillingMasterState = {
   list: BillingMaster[];
   detail: BillingMaster | null;
   createSuccess: boolean;
+  updateSuccess: boolean;
 
   listStatus: Status;
   detailStatus: Status;
   createStatus: Status;
+  updateStatus: Status;
 };
 
 const initialStatus: Status = { loading: false, error: "" };
@@ -27,17 +30,19 @@ const initialState: BillingMasterState = {
   list: [],
   detail: null,
   createSuccess: false,
+  updateSuccess: false,
 
   listStatus: { ...initialStatus },
   detailStatus: { ...initialStatus },
   createStatus: { ...initialStatus },
+  updateStatus: { ...initialStatus },
 };
 
 const billingMasterSlice = createSlice({
   name: "billingMaster",
   initialState,
   reducers: {
-    // 목록 조회
+    // List
     fetchBillingMasterRequest(state) {
       state.listStatus = { ...initialStatus, loading: true };
     },
@@ -49,7 +54,7 @@ const billingMasterSlice = createSlice({
       state.listStatus = { loading: false, error: action.payload };
     },
 
-    // 상세 조회
+    // Detail
     fetchBillingMasterDetailRequest(state, _action: PayloadAction<string>) {
       state.detailStatus = { ...initialStatus, loading: true };
       state.detail = null;
@@ -62,7 +67,7 @@ const billingMasterSlice = createSlice({
       state.detailStatus = { loading: false, error: action.payload };
     },
 
-    // 등록
+    // Create
     registerBillingMasterRequest(state, _action: PayloadAction<BillingMasterCreateRequest>) {
       state.createStatus = { ...initialStatus, loading: true };
       state.createSuccess = false;
@@ -79,6 +84,27 @@ const billingMasterSlice = createSlice({
       state.createStatus = { ...initialStatus };
       state.createSuccess = false;
     },
+
+    // Update
+    updateBillingMasterRequest(
+      state,
+      _action: PayloadAction<{ billingMasterId: string; payload: BillingMasterUpdateRequest }>,
+    ) {
+      state.updateStatus = { ...initialStatus, loading: true };
+      state.updateSuccess = false;
+    },
+    updateBillingMasterSuccess(state) {
+      state.updateStatus = { ...initialStatus };
+      state.updateSuccess = true;
+    },
+    updateBillingMasterFailure(state, action: PayloadAction<string>) {
+      state.updateStatus = { loading: false, error: action.payload };
+      state.updateSuccess = false;
+    },
+    resetBillingMasterUpdateStatus(state) {
+      state.updateStatus = { ...initialStatus };
+      state.updateSuccess = false;
+    },
   },
 });
 
@@ -93,11 +119,15 @@ export const {
   registerBillingMasterSuccess,
   registerBillingMasterFailure,
   resetBillingMasterCreateStatus,
+  updateBillingMasterRequest,
+  updateBillingMasterSuccess,
+  updateBillingMasterFailure,
+  resetBillingMasterUpdateStatus,
 } = billingMasterSlice.actions;
 
 export default billingMasterSlice.reducer;
 
-// ----- Selector (가이드 10.4: 컴포넌트에서 state.xxx.yyy 깊게 파지 않기) -----
+// ----- Selectors (avoid reaching deep into state.xxx.yyy inside components) -----
 
 type BillingMasterRoot = { billing: { billingMaster: BillingMasterState } };
 
@@ -111,3 +141,7 @@ export const selectBillingMasterCreateStatus = (state: BillingMasterRoot) =>
   state.billing.billingMaster.createStatus;
 export const selectBillingMasterCreateSuccess = (state: BillingMasterRoot) =>
   state.billing.billingMaster.createSuccess;
+export const selectBillingMasterUpdateStatus = (state: BillingMasterRoot) =>
+  state.billing.billingMaster.updateStatus;
+export const selectBillingMasterUpdateSuccess = (state: BillingMasterRoot) =>
+  state.billing.billingMaster.updateSuccess;

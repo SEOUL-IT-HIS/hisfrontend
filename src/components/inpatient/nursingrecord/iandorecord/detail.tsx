@@ -3,6 +3,7 @@
 import { fetchAdmissionDetailRequest } from "@/features/inpatient/admissiondischarge/slice";
 import { ALL_IO_ROUTE_OPTIONS, IO_ROUTE_OPTIONS, IO_TYPE_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
 import CodeSelect from "@/components/inpatient/nursingrecord/CodeSelect";
+import IoAmountField from "@/components/inpatient/nursingrecord/iandorecord/IoAmountField";
 import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import NurseSelect from "@/components/inpatient/nursingrecord/NurseSelect";
 import {
@@ -162,10 +163,7 @@ const IandORecordDetail = () => {
                               <label htmlFor="routeCd" className={LABEL}>Route</label>
                               <CodeSelect id="routeCd" name="routeCd" value={editForm.routeCd} options={IO_ROUTE_OPTIONS[editForm.ioTypeCd] ?? ALL_IO_ROUTE_OPTIONS} onChange={onEditChange} className={FIELD} required={false} />
                           </div>
-                          <div>
-                              <label htmlFor="amountMl" className={LABEL}>Amount (mL)</label>
-                              <input type="number" id="amountMl" name="amountMl" value={editForm.amountMl} onChange={onEditChange} className={FIELD} />
-                          </div>
+                          <IoAmountField routeCd={editForm.routeCd} value={editForm.amountMl} onChange={onEditChange} required={false} />
                           <div>
                               <label htmlFor="recorderId" className={LABEL}>Recorder (Nurse)</label>
                               <NurseSelect id="recorderId" name="recorderId" value={editForm.recorderId} onChange={onEditChange} className={FIELD} required={false} />

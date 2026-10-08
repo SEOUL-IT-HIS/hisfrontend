@@ -128,11 +128,19 @@ const PrescriptionDetail = ({ prescriptionId }: PrescriptionDetailProps) => {
                       </span>
                       <SendBadge status={item.sendStatus} />
                     </div>
-                    <p className="text-xs text-slate-500">
-                      {isMedication && `${item.dosage ?? "-"} ${item.dosageFormCd ?? ""} · `}
-                      {item.frequency || "-"} · {item.durationDays || "-"} day(s)
-                      {item.sentAt && ` · sent ${formatDateTime(item.sentAt)}`}
-                    </p>
+                    {/* 용량·횟수·일수는 약품에만 있음 (검사는 받지 않음) — 보여줄 내용이 없으면 줄 자체를 생략 */}
+                    {(isMedication || item.sentAt) && (
+                      <p className="text-xs text-slate-500">
+                        {[
+                          isMedication && `${item.dosage ?? "-"} ${item.dosageFormCd ?? ""}`.trim(),
+                          isMedication && (item.frequency || "-"),
+                          isMedication && `${item.durationDays || "-"} day(s)`,
+                          item.sentAt && `sent ${formatDateTime(item.sentAt)}`,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    )}
                     {/* 검사 결과 — 검사서비스 결과 이벤트가 도착하면 표시 */}
                     {!isMedication && (
                       item.resultStatus ? (

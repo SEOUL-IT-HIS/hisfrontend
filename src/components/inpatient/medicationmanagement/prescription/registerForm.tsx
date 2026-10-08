@@ -19,12 +19,14 @@ import SectionCard from "@/components/inpatient/common/SectionCard";
 import { Alert, Button } from "@/components/common";
 
 
-// 외래 처방코어가 알려준 예시값을 기본값으로 둠 — 나머지 코드값은 외래가 아직 검증하지 않아서 그대로 등록됨
-// (운영 코드값이 확정되면 드롭다운으로 바꿀 예정)
+// 외래 처방코어가 알려준 예시값을 기본값으로 둠
+// - serviceType(ADMISSION), orderMethod(EMR): 입원 화면에서 보내는 처방은 항상 같은 값이라 입력칸 없이 고정으로 보냄
+//   (외래 화면도 같은 방식 — serviceType "OP", orderMethod "EMR" 고정. serviceType 은 공통코드에도 해당 그룹이 없음)
+// - priorityCode / timingCode: 공통코드 숫자 코드 (외래·응급과 같은 체계) — 드롭다운으로 고름
 const DEFAULT_HEADER = {
   serviceType: "ADMISSION",
   orderMethod: "EMR",
-  priorityCode: "ROUTINE",
+  priorityCode: "03", // 공통코드 ORDER_PRIORITY_CD: 01 STAT / 02 Urgent / 03 Routine
   timingCode: "01", // 공통코드 ORDER_TIMING_CD: 01 Scheduled / 02 As Needed (PRN) / 03 Once (외래 요청으로 숫자 코드 사용)
 };
 
@@ -77,6 +79,15 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess, onCancel }: Prescrip
         { value: "02", label: "As Needed (PRN)" },
         { value: "03", label: "Once" },
       ];
+  // 처방 우선순위: ORDER_PRIORITY_CD (01 / 02 / 03) — 공통코드를 못 불러오면 등록된 값과 같은 기본 목록 사용
+  const { options: loadedPriorityOptions } = useCommonCodeOptions("ORDER_PRIORITY_CD");
+  const priorityOptions = loadedPriorityOptions.length > 0
+    ? loadedPriorityOptions
+    : [
+        { value: "01", label: "STAT" },
+        { value: "02", label: "Urgent" },
+        { value: "03", label: "Routine" },
+      ];
 
   // 폼을 열 때 이전 요청의 에러 메시지를 지움 (다른 환자 폼에 이전 에러가 남지 않도록)
   useEffect(() => {
@@ -124,10 +135,11 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess, onCancel }: Prescrip
         prescriptionType: item.prescriptionType,
         itemCode: item.itemCode,
         itemName: item.itemName,
-        frequency: item.frequency || undefined,
-        durationDays: item.durationDays || undefined,
         detailInfo: item.detailInfo || undefined,
+        // 횟수·일수는 약품에만 보냄 (검사로 바꾸기 전에 입력해 둔 값이 남아 있어도 검사에는 실리지 않게)
         ...(isMedication && {
+          frequency: item.frequency || undefined,
+          durationDays: item.durationDays || undefined,
           dosage: item.dosage ? Number(item.dosage) : undefined,
           dosageFormCd: item.dosageFormCd || undefined,
         }),
@@ -167,17 +179,16 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess, onCancel }: Prescrip
 
       <form onSubmit={onSubmit} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="serviceType" className={LABEL}>Service Type</label>
-            <input type="text" id="serviceType" name="serviceType" value={form.serviceType} onChange={onFormChange} required className={FIELD} />
-          </div>
-          <div>
-            <label htmlFor="orderMethod" className={LABEL}>Order Method</label>
-            <input type="text" id="orderMethod" name="orderMethod" value={form.orderMethod} onChange={onFormChange} required className={FIELD} />
-          </div>
+          {/* Service Type(ADMISSION)과 Order Method(EMR)는 입원 처방이면 항상 같은 값이라 입력칸 없이 고정으로 보냄 */}
           <div>
             <label htmlFor="priorityCode" className={LABEL}>Priority Code</label>
-            <input type="text" id="priorityCode" name="priorityCode" value={form.priorityCode} onChange={onFormChange} required className={FIELD} />
+            <select id="priorityCode" name="priorityCode" value={form.priorityCode} onChange={onFormChange} required className={FIELD}>
+              {priorityOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label} ({opt.value})
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label htmlFor="timingCode" className={LABEL}>Timing Code</label>
@@ -253,19 +264,19 @@ const PrescriptionRegisterForm = ({ admissionId, onSuccess, onCancel }: Prescrip
                       </select>
                     </div>
                   )}
-                  <div>
-                    <label className={LABEL}>Frequency</label>
-                    <input type="text" name="frequency" value={item.frequency} onChange={(e) => onItemChange(index, e)}
-                      placeholder={isMedication ? "e.g. TID" : "e.g. 1회"} className={FIELD} />
-                  </div>
-                  <div>
-                    <label className={LABEL}>Duration Days</label>
-                    <input type="text" name="durationDays" value={item.durationDays} onChange={(e) => onItemChange(index, e)}
-                      placeholder={isMedication ? "e.g. 3" : "e.g. 1"} className={FIELD} />
-                  </div>
-                  {/* 용량/제형은 약품에만 해당 */}
+                  {/* 횟수·일수·용량·제형은 약품에만 해당 — 검사는 횟수/일수를 받지 않음 (외래·응급 처방도 약품에만 받고, 검사서비스도 쓰지 않음) */}
                   {isMedication && (
                     <>
+                      <div>
+                        <label className={LABEL}>Frequency</label>
+                        <input type="text" name="frequency" value={item.frequency} onChange={(e) => onItemChange(index, e)}
+                          placeholder="e.g. TID" className={FIELD} />
+                      </div>
+                      <div>
+                        <label className={LABEL}>Duration Days</label>
+                        <input type="text" name="durationDays" value={item.durationDays} onChange={(e) => onItemChange(index, e)}
+                          placeholder="e.g. 3" className={FIELD} />
+                      </div>
                       <div>
                         <label className={LABEL}>Dosage</label>
                         <input type="number" step="0.1" name="dosage" value={item.dosage} onChange={(e) => onItemChange(index, e)}

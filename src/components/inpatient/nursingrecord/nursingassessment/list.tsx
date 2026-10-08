@@ -4,12 +4,11 @@ import { useEffect, useMemo } from "react";
 import { MENTAL_STATUS_OPTIONS, YN_OPTIONS, codeLabel } from "@/features/inpatient/nursingrecord/codes";
 import { useNurseOptions } from "@/features/inpatient/admissiondischarge/useDoctorOptions";
 import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch, RootState } from "@/store/store";
+import type { AppDispatch } from "@/store/store";
 import Link from "next/link";
-import { fetchAdmissionsRequest, selectAdmissions } from "@/features/inpatient/admissiondischarge/slice";
-import { fetchPatientListRequest } from "@/features/patient/slice/patientSlice";
 import { fetchNursingAssessmentsRequest, selectNursingAssessments, selectNursingAssessmentListStatus } from "@/features/inpatient/nursingrecord/nursingassessment/slice";
 import { Alert, DataTable, PageHeader, type DataTableColumn } from "@/components/common";
+import { usePatientNameByAdmission } from "@/features/inpatient/nursingrecord/usePatientNameByAdmission";
 import Toolbar from "@/components/inpatient/common/Toolbar";
 import LinkButton from "@/components/inpatient/common/LinkButton";
 
@@ -28,34 +27,21 @@ const NursingAssessmentList = ({ embedded = false, admissionId = null, readOnly 
   const dispatch = useDispatch<AppDispatch>();
   const nursingAssessments = useSelector(selectNursingAssessments);
   const listStatus = useSelector(selectNursingAssessmentListStatus);
-  const admissions = useSelector(selectAdmissions);
-  const patients = useSelector((state: RootState) => state.patient.patients);
+  // 기록의 입원 건 → 환자 이름 (입원·환자 목록은 홈이 이미 불러와 두므로 비어 있을 때만 요청)
+  const { patientNameOf } = usePatientNameByAdmission();
 
-  const patientIdByAdmissionId = useMemo(() => {
-    return new Map(admissions.map((admission) => [admission.admissionId, admission.patientId]));
-  }, [admissions]);
-
-  const patientNameById = useMemo(() => {
-    return new Map(patients.map((patient) => [patient.patientId, patient.patientName]));
-  }, [patients]);
-
-  // 지금은 백엔드가 전체 목록만 주므로 프론트에서 admissionId로 걸러냄 (백엔드에 입원 건별 조회 API가 생기면 이 filter는 제거)
+  // 서버가 이미 이 입원 건의 기록만 주지만(?admissionId=), 서버가 예전 버전이면 전체가 올 수 있어서
+  // 다른 환자의 기록이 섞여 보이지 않도록 한 번 더 거름 (이미 걸러진 목록이라 비용은 거의 없음)
   const visibleNursingAssessments = useMemo(
     () => (admissionId ? nursingAssessments.filter((nursingAssessment) => nursingAssessment.admissionId === admissionId) : nursingAssessments),
     [nursingAssessments, admissionId],
   );
 
+  // 선택한 입원 건의 기록만 서버에서 받음 (admissionId 가 없으면 전체 — 단독 목록 페이지). 환자가 바뀌면 다시 받음
   useEffect(() => {
-    dispatch(fetchNursingAssessmentsRequest());
-    dispatch(fetchAdmissionsRequest());
-    dispatch(fetchPatientListRequest({}));
-  }, [dispatch]);
+    dispatch(fetchNursingAssessmentsRequest(admissionId ?? undefined));
+  }, [dispatch, admissionId]);
 
-  // 입원 건 → 환자 이름 (기록에는 admissionId만 있어서 두 단계로 찾음)
-  const patientNameOf = (recordAdmissionId: string) => {
-    const patientId = patientIdByAdmissionId.get(recordAdmissionId);
-    return patientId ? patientNameById.get(patientId) ?? "Loading..." : "None";
-  };
 
   const columns: DataTableColumn<(typeof visibleNursingAssessments)[number]>[] = [
     { key: "patientname", header: "Patient Name", render: (nursingAssessment) => <span className="font-medium text-slate-800">{patientNameOf(nursingAssessment.admissionId)}</span> },

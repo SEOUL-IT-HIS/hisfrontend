@@ -21,7 +21,7 @@ const vitalSignSlice = createSlice({
     name: "vitalSign",
     initialState,
     reducers: {
-        fetchVitalSignsRequest(state) {
+        fetchVitalSignsRequest(state, _action: PayloadAction<string | undefined>) {
             state.listStatus = { ...initialStatus, loading: true };
         },
         fetchVitalSignsSuccess(state, action: PayloadAction<VitalSignDTO[]>) {

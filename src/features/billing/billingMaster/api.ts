@@ -3,21 +3,30 @@ import type { ApiResponse } from "@/features/billing/types";
 import type {
   BillingMaster,
   BillingMasterCreateRequest,
+  BillingMasterUpdateRequest,
 } from "@/features/billing/billingMaster/types";
 
 const BILLING_MASTER_PATH = "/api/billing/statistics";
 
-// 전체조회
+// List
 export const fetchBillingMasterAPI = () => {
   return api.get<ApiResponse<BillingMaster[]>>(BILLING_MASTER_PATH);
 };
 
-// 단일 조회
+// Detail
 export const fetchBillingMasterDetailAPI = (billingMasterId: string) => {
   return api.get<ApiResponse<BillingMaster>>(`${BILLING_MASTER_PATH}/${billingMasterId}`);
 };
 
-// 등록
+// Create
 export const createBillingMasterAPI = (payload: BillingMasterCreateRequest) => {
   return api.post<ApiResponse<BillingMaster>>(BILLING_MASTER_PATH, payload);
+};
+
+// Update
+export const updateBillingMasterAPI = (
+  billingMasterId: string,
+  payload: BillingMasterUpdateRequest,
+) => {
+  return api.put<ApiResponse<BillingMaster>>(`${BILLING_MASTER_PATH}/${billingMasterId}`, payload);
 };

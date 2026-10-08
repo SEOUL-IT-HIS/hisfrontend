@@ -18,6 +18,7 @@ import {
   checkConversionDuplicateRequest,
   deactivatePatientRequest,
   convertTemporaryPatientRequest,
+  mergeTemporaryPatientRequest,
   fetchPatientDetailRequest,
   resetPatientDeactivation,
   resetPatientActivation,
@@ -25,6 +26,7 @@ import {
   resetPatientDeathUpdate,
   resetPatientUpdate,
   resetTemporaryPatientConversion,
+  resetTemporaryPatientMerge,
   updatePatientDeathRequest,
   updatePatientRequest,
 } from "@/features/patient/slice/patientSlice";
@@ -106,6 +108,7 @@ export default function PatientDetailForm({
   const [conversionResidentRegNo, setConversionResidentRegNo] = useState("");
   const [conversionBirthDate, setConversionBirthDate] = useState("");
   const [conversionGenderCd, setConversionGenderCd] = useState<"01" | "02" | "03" | "04">("03");
+  const [selectedMergeTargetId, setSelectedMergeTargetId] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const {
     patientDetail,
@@ -124,8 +127,11 @@ export default function PatientDetailForm({
     temporaryConversionError,
     temporaryConversionSuccess,
     conversionDuplicateLoading,
-    conversionDuplicated,
     conversionDuplicateError,
+    conversionCandidates,
+    temporaryMergeLoading,
+    temporaryMergeError,
+    temporaryMergeSuccess,
     activateLoading,
     activateError,
     activateSuccess,
@@ -139,6 +145,7 @@ export default function PatientDetailForm({
     dispatch(resetPatientActivation());
     dispatch(resetPatientDeathUpdate());
     dispatch(resetTemporaryPatientConversion());
+    dispatch(resetTemporaryPatientMerge());
     dispatch(resetConversionDuplicate());
     dispatch(fetchPatientDetailRequest(patientId));
   }, [dispatch, patientId]);
@@ -167,7 +174,7 @@ export default function PatientDetailForm({
   };
 
   const startDeathEditing = () => {
-    if (!patientDetail) {
+    if (!patientDetail || patientDetail.mergedToPatientId) {
       return;
     }
 
@@ -194,7 +201,9 @@ export default function PatientDetailForm({
     setConversionGenderCd(patientDetail.genderCd);
     setValidationError(null);
     dispatch(resetTemporaryPatientConversion());
+    dispatch(resetTemporaryPatientMerge());
     dispatch(resetConversionDuplicate());
+    setSelectedMergeTargetId(null);
     setConversionEditing(true);
   };
 
@@ -203,6 +212,8 @@ export default function PatientDetailForm({
     setValidationError(null);
     dispatch(resetTemporaryPatientConversion());
     dispatch(resetConversionDuplicate());
+    dispatch(resetTemporaryPatientMerge());
+    setSelectedMergeTargetId(null);
   };
 
   const checkConversionDuplicate = () => {
@@ -217,6 +228,7 @@ export default function PatientDetailForm({
     }
 
     setValidationError(null);
+    setSelectedMergeTargetId(null);
     dispatch(
       checkConversionDuplicateRequest({
         residentRegNo: conversionResidentRegNo,
@@ -226,13 +238,6 @@ export default function PatientDetailForm({
   };
 
   const submitTemporaryConversion = () => {
-    const normalizedName = conversionPatientName.trim();
-
-    if (normalizedName.length < 2 || normalizedName.length > 100) {
-      setValidationError("Patient name must be between 2 and 100 characters.");
-      return;
-    }
-
     if (!/^\d{13}$/.test(conversionResidentRegNo)) {
       setValidationError("Please enter all 13 digits of the resident registration number.");
       return;
@@ -247,8 +252,35 @@ export default function PatientDetailForm({
       return;
     }
 
-    if (conversionDuplicated !== false) {
+    if (conversionCandidates === null) {
       setValidationError("Please check the resident registration number before converting.");
+      return;
+    }
+
+    if (conversionCandidates.length > 0) {
+      const target = conversionCandidates.find(
+        (candidate) => candidate.patientId === selectedMergeTargetId,
+      );
+      if (!target) {
+        setValidationError("Select the existing patient to merge into.");
+        return;
+      }
+      if (!window.confirm(
+        `Merge this temporary patient into ${target.patientName} (${target.patientId})? The existing patient's information will be kept.`,
+      )) return;
+
+      setValidationError(null);
+      dispatch(mergeTemporaryPatientRequest({
+        patientId,
+        targetPatientId: target.patientId,
+        residentRegNo: conversionResidentRegNo,
+      }));
+      return;
+    }
+
+    const normalizedName = conversionPatientName.trim();
+    if (normalizedName.length < 2 || normalizedName.length > 100) {
+      setValidationError("Patient name must be between 2 and 100 characters.");
       return;
     }
 
@@ -435,10 +467,30 @@ export default function PatientDetailForm({
         <Alert variant="success">Patient converted to a regular patient successfully.</Alert>
       ) : null}
 
-      {patientDetail?.tempPatientYn === "Y" ? (
+      {temporaryMergeError ? <Alert variant="error">{temporaryMergeError}</Alert> : null}
+
+      {temporaryMergeSuccess ? (
+        <Alert variant="success">
+          Temporary patient merged into {patientDetail?.patientName}.{" "}
+          <Link className="font-medium underline" href={`/reception/patientmanagement/${patientDetail?.patientId}`}>
+            Open the regular patient record
+          </Link>
+        </Alert>
+      ) : null}
+
+      {patientDetail?.tempPatientYn === "Y" && !patientDetail.mergedToPatientId ? (
         <Alert>
           This is a temporary patient whose identity has not been confirmed. Convert
           the patient after identity confirmation.
+        </Alert>
+      ) : null}
+
+      {patientDetail?.mergedToPatientId ? (
+        <Alert>
+          This temporary patient has been merged into another patient.{" "}
+          <Link className="font-medium underline" href={`/reception/patientmanagement/${patientDetail.mergedToPatientId}`}>
+            Open the regular patient record
+          </Link>
         </Alert>
       ) : null}
 
@@ -450,7 +502,7 @@ export default function PatientDetailForm({
                 <h2 className="text-base font-semibold text-slate-800">
                   Patient Information — {patientDetail.patientName}
                 </h2>
-                {patientDetail.tempPatientYn === "Y" ? (
+                {patientDetail.tempPatientYn === "Y" && !patientDetail.mergedToPatientId ? (
                   <span className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
                     Temporary
                   </span>
@@ -462,9 +514,9 @@ export default function PatientDetailForm({
                 ) : null}
               </div>
 
-              {!isEditing ? (
+              {!isEditing && !patientDetail.mergedToPatientId ? (
                 <div className="flex gap-2">
-                  {patientDetail.tempPatientYn === "Y" ? (
+                  {patientDetail.tempPatientYn === "Y" && !patientDetail.mergedToPatientId ? (
                     <Button
                       type="button"
                       variant="secondary"
@@ -563,7 +615,7 @@ export default function PatientDetailForm({
                 value={patientDetail.deathYn === "Y" ? "Deceased" : "No Death Record"}
               />
 
-              {patientDetail.tempPatientYn === "Y" ? (
+              {patientDetail.tempPatientYn === "Y" && !patientDetail.mergedToPatientId ? (
                 <DetailItem
                   label="Temporary Registration Reason"
                   value={patientDetail.tempRegisterReason ?? "-"}
@@ -629,38 +681,43 @@ export default function PatientDetailForm({
             ) : null}
           </form>
 
-          {patientDetail.patientId === patientId ? (
+          {patientDetail.patientId === patientId && !patientDetail.mergedToPatientId ? (
             <PatientContactPanel
               patientId={patientId}
               patientName={patientDetail.patientName}
             />
           ) : null}
 
-          {patientDetail.patientId === patientId ? (
+          {patientDetail.patientId === patientId && !patientDetail.mergedToPatientId ? (
             <PatientSafetyPanel patientId={patientId} patientName={patientDetail.patientName} />
           ) : null}
 
-          {conversionEditing && patientDetail.tempPatientYn === "Y" ? (
+          {conversionEditing && patientDetail.tempPatientYn === "Y" && !patientDetail.mergedToPatientId ? (
             <div className="border-t border-slate-200">
               <div className="px-5 py-4">
                 <h2 className="text-base font-semibold text-slate-800">
                   Convert to Regular Patient
                 </h2>
                 <p className="mt-1 text-xs text-slate-500">
-                  The patient ID and existing records will be retained. Only the temporary patient status will be removed.
+                  {conversionCandidates && conversionCandidates.length > 0
+                    ? "The selected regular patient will remain the representative patient. The temporary patient record will be retained as a merged record."
+                    : "If no existing patient is found, this patient ID and existing records will be retained while the temporary status is removed."}
                 </p>
               </div>
 
               <div className="grid gap-4 border-t border-slate-100 p-5 sm:grid-cols-2">
-                <FormField label="Confirmed Patient Name" required>
+                <FormField
+                  label="Confirmed Patient Name"
+                  required={conversionCandidates === null || conversionCandidates.length === 0}
+                >
                   <Input
                     value={conversionPatientName}
                     onChange={(event) => {
                       setConversionPatientName(event.target.value);
                       setValidationError(null);
                     }}
-                    disabled={temporaryConversionLoading}
-                    minLength={2}
+                    disabled={temporaryConversionLoading || temporaryMergeLoading}
+                    minLength={conversionCandidates && conversionCandidates.length > 0 ? undefined : 2}
                     maxLength={100}
                     autoFocus
                   />
@@ -676,6 +733,7 @@ export default function PatientDetailForm({
                           .slice(0, 13);
                         const genderCd = getGenderFromResidentRegNo(residentRegNo);
                         setConversionResidentRegNo(residentRegNo);
+                        setSelectedMergeTargetId(null);
                         setConversionBirthDate(
                           getBirthDateFromResidentRegNo(residentRegNo) ?? "",
                         );
@@ -684,7 +742,7 @@ export default function PatientDetailForm({
                         dispatch(resetConversionDuplicate());
                       }}
                       disabled={
-                        temporaryConversionLoading || conversionDuplicateLoading
+                        temporaryConversionLoading || temporaryMergeLoading || conversionDuplicateLoading
                       }
                       inputMode="numeric"
                       maxLength={13}
@@ -699,20 +757,16 @@ export default function PatientDetailForm({
                       disabled={
                         conversionResidentRegNo.length !== 13 ||
                         temporaryConversionLoading ||
+                        temporaryMergeLoading ||
                         conversionDuplicateLoading
                       }
                     >
                       {conversionDuplicateLoading ? "Checking..." : "Check Duplicate"}
                     </Button>
                   </div>
-                  {conversionDuplicated === false ? (
+                  {conversionCandidates?.length === 0 ? (
                     <p className="mt-1 text-sm text-emerald-600">
                       This resident registration number is available.
-                    </p>
-                  ) : null}
-                  {conversionDuplicated === true ? (
-                    <p className="mt-1 text-sm text-red-600">
-                      This resident registration number is already registered.
                     </p>
                   ) : null}
                   {conversionDuplicateError ? (
@@ -721,6 +775,47 @@ export default function PatientDetailForm({
                     </p>
                   ) : null}
                 </FormField>
+
+                {conversionCandidates && conversionCandidates.length > 0 ? (
+                  <div className="space-y-2 sm:col-span-2">
+                    <p className="text-sm font-medium text-amber-700">
+                      Existing patient found. Select the patient to merge into.
+                    </p>
+                    {conversionCandidates.map((candidate) => (
+                      <label
+                        key={candidate.patientId}
+                        className={`flex cursor-pointer items-start gap-3 rounded border p-3 ${selectedMergeTargetId === candidate.patientId ? "border-sky-500 bg-sky-50" : "border-slate-200"}`}
+                      >
+                        <input
+                          type="radio"
+                          name="temporaryPatientMergeTarget"
+                          checked={selectedMergeTargetId === candidate.patientId}
+                          onChange={() => {
+                            setSelectedMergeTargetId(candidate.patientId);
+                            setValidationError(null);
+                          }}
+                          disabled={temporaryMergeLoading || temporaryConversionLoading || candidate.birthDate !== conversionBirthDate}
+                          className="mt-1"
+                        />
+                        <span className="min-w-0 text-sm">
+                          <span className="block font-semibold text-slate-800">
+                            {candidate.patientName} · {candidate.residentRegNo}
+                          </span>
+                          <span className="mt-1 block text-slate-600">
+                            DOB {candidate.birthDate ?? "Unknown"} · {getGenderLabel(candidate.genderCd)} · {candidate.statusCd}
+                            {candidate.deathYn === "Y" ? " · Deceased" : ""}
+                          </span>
+                          <span className="block break-all text-xs text-slate-500">Patient ID: {candidate.patientId}</span>
+                          {candidate.birthDate !== conversionBirthDate ? (
+                            <span className="mt-1 block text-xs font-medium text-red-600">
+                              Birth date does not match the resident registration number. Manual review is required.
+                            </span>
+                          ) : null}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ) : null}
 
                 <FormField
                   label="Date of Birth"
@@ -731,7 +826,7 @@ export default function PatientDetailForm({
                     type="date"
                     value={conversionBirthDate}
                     readOnly
-                    disabled={temporaryConversionLoading}
+                    disabled={temporaryConversionLoading || temporaryMergeLoading}
                   />
                 </FormField>
 
@@ -749,7 +844,7 @@ export default function PatientDetailForm({
                       { value: "03", label: "Unknown" },
                       { value: "04", label: "Other" },
                     ]}
-                    disabled={temporaryConversionLoading}
+                    disabled={temporaryConversionLoading || temporaryMergeLoading}
                   />
                 </FormField>
 
@@ -758,7 +853,7 @@ export default function PatientDetailForm({
                     type="button"
                     variant="secondary"
                     onClick={cancelTemporaryConversion}
-                    disabled={temporaryConversionLoading}
+                    disabled={temporaryConversionLoading || temporaryMergeLoading}
                   >
                     Cancel
                   </Button>
@@ -768,11 +863,19 @@ export default function PatientDetailForm({
                     onClick={submitTemporaryConversion}
                     disabled={
                       temporaryConversionLoading ||
+                      temporaryMergeLoading ||
                       conversionDuplicateLoading ||
-                      conversionDuplicated !== false
+                      conversionCandidates === null ||
+                      (conversionCandidates.length > 0 && !selectedMergeTargetId)
                     }
                   >
-                    {temporaryConversionLoading ? "Converting..." : "Convert"}
+                    {temporaryMergeLoading
+                      ? "Merging..."
+                      : temporaryConversionLoading
+                        ? "Converting..."
+                        : conversionCandidates && conversionCandidates.length > 0
+                          ? "Merge into Selected Patient"
+                          : "Convert"}
                   </Button>
                 </div>
               </div>
@@ -790,7 +893,7 @@ export default function PatientDetailForm({
                   type="button"
                   variant="secondary"
                   onClick={startDeathEditing}
-                  disabled={deathUpdateLoading}
+                  disabled={deathUpdateLoading || !!patientDetail.mergedToPatientId}
                 >
                   Edit Death Information
                 </Button>

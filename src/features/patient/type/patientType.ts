@@ -76,6 +76,8 @@ export type PatientDetail = {
   deathDtm: string | null;
   createdAt: string;
   updatedAt: string;
+  mergedToPatientId: string | null;
+  mergedAt: string | null;
 };
 
 /** POST /api/patient/duplicate-check 요청 */
@@ -96,6 +98,12 @@ export type PatientTemporaryConversionRequest = {
   residentRegNo: string;
   birthDate: string;
   genderCd: GenderCd;
+};
+
+export type PatientTemporaryMergeRequest = {
+  patientId: string;
+  targetPatientId: string;
+  residentRegNo: string;
 };
 
 /** PATCH /api/patient/{patientId}/death-status 요청 */
@@ -136,3 +144,5 @@ export type PatientActivateApiResponse = ApiResponse<PatientDetail>;
 export type PatientDeathUpdateApiResponse = ApiResponse<PatientDetail>;
 
 export type PatientTemporaryConversionApiResponse = ApiResponse<PatientDetail>;
+
+export type PatientTemporaryMergeApiResponse = ApiResponse<PatientDetail>;

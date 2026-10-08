@@ -1,5 +1,6 @@
 "use client";
 
+import { cancelStartConsultation, startConsultation } from "@/features/outpatient/encounter/api";
 import { fetchEncounterListRequest } from "@/features/outpatient/encounter/slice";
 import type { EncounterDto } from "@/features/outpatient/encounter/types";
 import { useEmpNames } from "@/features/emp/hooks/useEmpNames";
@@ -39,6 +40,7 @@ const normalizeStatus = (status: string) => (status === 'PENDING' ? 'WAITING' : 
 // 상태별 뱃지 색상
 const STATUS_BADGE_CLASS: Record<string, string> = {
     WAITING: 'bg-sky-50 text-sky-800 border-sky-200',
+    IN_PROGRESS: 'bg-amber-50 text-amber-700 border-amber-200',
     COMPLETED: 'bg-slate-100 text-slate-700 border-slate-200',
     CANCELLED: 'bg-red-50 text-red-600 border-red-200',
 };
@@ -48,15 +50,17 @@ const DEFAULT_BADGE_CLASS = 'bg-slate-100 text-slate-600 border-slate-200';
 const STATUS_FILTER_ALL = 'ALL';
 const STATUS_FILTER_OPTIONS = [
     { value: 'WAITING', label: 'Waiting' }, // 대기중
+    { value: 'IN_PROGRESS', label: 'In Progress' }, // 진료중
     { value: 'COMPLETED', label: 'Completed' }, // 진료완료
     { value: 'CANCELLED', label: 'Cancelled' }, // 취소
     { value: STATUS_FILTER_ALL, label: 'All' }, // 전체
 ];
 
-// 접수(RCP)에서 받은 초진/재진, 예약/당일 값을 화면 라벨로 변경 (값이 없거나 모르는 값이면 원본/"-")
+// 접수(RCP)에서 받은 초진/재진, 예약/당일 값을 화면 라벨로 변경
+// (값이 없으면 "-", 모르는 값이면 원본 표시)
 const VISIT_TYPE_LABEL: Record<string, string> = {
     INITIAL: 'Initial Visit', // 초진
-    REVISIT: 'Follow-up Visit', // 재진
+    REVISIT: 'Revisit', // 재진
 };
 const RECEPTION_TYPE_LABEL: Record<string, string> = {
     RESERVATION: 'Reservation', // 예약
@@ -93,7 +97,7 @@ const EncounterList = () => {
         (enc) => statusFilter === STATUS_FILTER_ALL || normalizeStatus(enc.status) === statusFilter
     );
 
-    // 선택한 환자의 최신 상태 (저장 후 목록이 갱신되면 선택 당시 값이 아닌 새 상태를 쓴다)
+    // 선택한 환자의 최신 상태 (저장 후 목록이 갱신되면 새 상태를 쓴다)
     const currentStatus = selectedEncounter
         ? (list ?? []).find((enc) => enc.receptionId === selectedEncounter.receptionId)?.status ?? selectedEncounter.status
         : null;
@@ -107,16 +111,28 @@ const EncounterList = () => {
     const [assessmentNote, setAssessmentNote] = useState("");
     const [planNote, setPlanNote] = useState("");
     const [saveMessage, setSaveMessage] = useState<string | null>(null);
+    // 저장을 시도했는지 (필수 항목 안내를 저장 시도 후에만 보여준다)
+    const [saveAttempted, setSaveAttempted] = useState(false);
+    // 처방 입력칸에 Add 안 누른 항목이 있는지 (PrescriptionForm 이 알려줌)
+    const [orderPending, setOrderPending] = useState(false);
+    const chiefComplaintMissing = saveAttempted && !chiefComplaint.trim();
+    const assessmentNoteMissing = saveAttempted && !assessmentNote.trim();
 
     // 처방 정보 (약제/검사/수술)
     const [prescriptionItems, setPrescriptionItems] = useState<PrescriptionItemInput[]>([]);
+
+    // 진료 시작/시작 취소 요청 상태
+    const [startLoading, setStartLoading] = useState(false);
+    const [startError, setStartError] = useState<string | null>(null);
+    // 진료 시작을 안 누르고 저장을 시도했는지 (진료 시작 안내를 저장 시도 후에만 보여준다)
+    const [startRequired, setStartRequired] = useState(false);
 
     //백엔드에 환자목록 달라고 요청
     useEffect(() => {
         dispatch(fetchEncounterListRequest({}));
     }, [dispatch]);
 
-    // 접수에서 새로 들어온 환자/취소를 새로고침 없이 반영하기 위해 주기적으로 목록을 다시 조회
+    // 접수에서 들어온 환자/취소를 새로고침 없이 반영하려고 주기적으로 재조회
     // (화면이 보일 때만 조회하고, 다시 보이는 순간 한 번 바로 조회한다)
     useEffect(() => {
         const refresh = () => {
@@ -141,8 +157,12 @@ const EncounterList = () => {
             setAssessmentNote("");
             setPlanNote("");
             setPrescriptionItems([]);
+            setSaveAttempted(false);
             setSaveMessage("Medical record saved."); // 진료 기록이 저장되었습니다.
-            dispatch(fetchEncounterListRequest({ silent: true })); // 진료완료로 바뀐 상태를 목록에 반영
+            // 진료중 필터를 보고 있었다면 다음 환자를 볼 수 있게 대기중으로 되돌린다
+            setStatusFilter((prev) => (prev === 'IN_PROGRESS' ? 'WAITING' : prev));
+            // 진료완료로 바뀐 상태를 목록에 반영
+            dispatch(fetchEncounterListRequest({ silent: true }));
         }
         prevCreateLoading.current = createLoading;
     }, [createLoading, createError, dispatch]);
@@ -157,12 +177,48 @@ const EncounterList = () => {
         setPlanNote('');
         setPrescriptionItems([]);
         setSaveMessage(null);
+        setSaveAttempted(false);
+        setStartError(null);
+        setStartRequired(false);
+    };
+
+    // 진료 시작 / 시작 취소 (진료 중인 환자는 접수에서 취소할 수 없다)
+    const handleToggleConsultation = async (start: boolean) => {
+        if (!selectedEncounter || startLoading) return;
+        setStartLoading(true);
+        setStartError(null);
+        setStartRequired(false);
+        try {
+            const encounterId = selectedEncounter.encounterId || selectedEncounter.receptionId;
+            await (start ? startConsultation(encounterId) : cancelStartConsultation(encounterId));
+            // 선택한 환자가 목록에서 사라지지 않게 상태 필터를 환자의 새 상태로 옮긴다
+            setStatusFilter(start ? 'IN_PROGRESS' : 'WAITING');
+        } catch (e) {
+            setStartError(e instanceof Error ? e.message : "Failed to update the consultation status.");
+        } finally {
+            setStartLoading(false);
+            // 성공/실패와 상관없이 서버의 최신 상태를 목록에 반영
+            dispatch(fetchEncounterListRequest({ silent: true }));
+        }
     };
 
     // 진료 저장버튼 눌렀을때 - 진료기록 + 처방을 한 번에 저장
     const handleSaveChart = () => {
         if (!selectedEncounter) return;
+        // 접수가 취소된 환자는 저장하지 않는다 (입력 내용은 그대로 둔다)
+        if (currentStatus === 'CANCELLED') return;
+        // 진료를 시작하지 않았으면 저장하지 않고 진료 시작 안내만 띄운다
+        if (normalizeStatus(currentStatus ?? '') === 'WAITING') {
+            setStartRequired(true);
+            return;
+        }
         setSaveMessage(null);
+
+        // 필수값 누락, 또는 Add 안 누른 처방 입력이 남았으면 저장 안 하고 안내
+        if (!chiefComplaint.trim() || !assessmentNote.trim() || orderPending) {
+            setSaveAttempted(true);
+            return;
+        }
 
         dispatch(saveConsultationRequest({
             // encounterId가 없으면 receptionId를 대신 사용하도록 안전장치 추가
@@ -208,7 +264,7 @@ const EncounterList = () => {
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
                             aria-label="Status filter"
-                            className="min-w-[120px] rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-normal text-slate-700 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                            className="h-10 min-w-[120px] rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal text-slate-800 shadow-sm outline-none transition-colors focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                         >
                             {STATUS_FILTER_OPTIONS.map((option) => (
                                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -266,6 +322,16 @@ const EncounterList = () => {
                 {/* 환자 상세 및 진료 작성 / 과거 기록 영역 (너비 약 60%) */}
                 <div className="w-9/12 flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm p-4 overflow-y-auto">
 
+                    {/* 선택한 환자의 접수가 취소됐다는 안내 (탭과 상관없이 항상 노출) */}
+                    {selectedEncounter && currentStatus === 'CANCELLED' && (
+                        <div className="mb-4">
+                            {/* 이 접수는 접수에서 취소되었습니다. 진료기록을 저장할 수 없습니다. 다른 환자를 선택해 주세요. */}
+                            <Alert variant="error">
+                                This reception was cancelled at reception. The record cannot be saved. Please select another patient.
+                            </Alert>
+                        </div>
+                    )}
+
                     {/* 우측 상단 탭 메뉴 (항상 노출) */}
                     <div className="flex border-b border-slate-200 gap-2 mb-4">
                         <button
@@ -305,11 +371,18 @@ const EncounterList = () => {
 
                     {/* 환자 정보 헤더 ("오늘 진료 작성" 탭에서만 노출) */}
                     {selectedEncounter && activeTab === 'FORM' && (
-                        <div className="mb-4 shrink-0 rounded-2xl border border-slate-200/80 bg-[var(--background)] p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                            <div className="flex items-baseline justify-between">
-                                <h3 className="text-lg font-semibold tracking-tight text-slate-900">
-                                    {selectedEncounter.patientName}
-                                </h3>
+                        <div className="mb-4 shrink-0 rounded-2xl border border-sky-100 bg-sky-50 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-lg font-semibold tracking-tight text-slate-900">
+                                        {selectedEncounter.patientName}
+                                    </h3>
+                                    {currentStatus === 'IN_PROGRESS' && (
+                                        <span className={`rounded-full border px-2 py-0.5 text-xs ${STATUS_BADGE_CLASS.IN_PROGRESS}`}>
+                                            {getStatusText('IN_PROGRESS')}
+                                        </span>
+                                    )}
+                                </div>
                                 <span className="text-xs text-slate-500">Visit Date: {selectedEncounter.visitDate}</span>
                             </div>
                             <div className="mt-3 grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
@@ -325,25 +398,49 @@ const EncounterList = () => {
                                     <div className="text-xs text-slate-500">Visit Type</div>
                                     <div className="mt-0.5 text-slate-800">{getLabel(VISIT_TYPE_LABEL, selectedEncounter.visitType)}</div>
                                 </div>
-                                <div>
-                                    <div className="text-xs text-slate-500">Reception Type</div>
-                                    <div className="mt-0.5 text-slate-800">{getLabel(RECEPTION_TYPE_LABEL, selectedEncounter.receptionType)}</div>
+                                <div className="flex items-end justify-between gap-3">
+                                    <div>
+                                        <div className="text-xs text-slate-500">Reception Type</div>
+                                        <div className="mt-0.5 text-slate-800">{getLabel(RECEPTION_TYPE_LABEL, selectedEncounter.receptionType)}</div>
+                                    </div>
+                                    {/* 진료 시작 / 시작 취소 (진료 중인 환자는 접수에서 취소할 수 없다) */}
+                                    {currentStatus === 'IN_PROGRESS' ? (
+                                        <Button
+                                            variant="secondary"
+                                            onClick={() => handleToggleConsultation(false)}
+                                            disabled={startLoading}
+                                        >
+                                            {/* 진료 시작 취소 */}
+                                            Cancel Start
+                                        </Button>
+                                    ) : normalizeStatus(currentStatus ?? '') === 'WAITING' ? (
+                                        <Button
+                                            variant="primary"
+                                            onClick={() => handleToggleConsultation(true)}
+                                            disabled={startLoading}
+                                        >
+                                            {/* 진료 시작 */}
+                                            Start Consultation
+                                        </Button>
+                                    ) : null}
                                 </div>
                             </div>
+                        </div>
+                    )}
+                    {startError && activeTab === 'FORM' && (
+                        <div className="mb-4">
+                            <Alert variant="error">{startError}</Alert>
                         </div>
                     )}
 
                     {/* 탭에 따른 본문 콘텐츠 분기 */}
                     {activeTab === 'FORM' ? (
                         /* 오늘 진료 작성 탭 */
-                        selectedEncounter && (currentStatus === 'CANCELLED' || currentStatus === 'COMPLETED') ? (
+                        selectedEncounter && currentStatus === 'COMPLETED' ? (
                             <div className="flex h-full min-h-[300px] flex-col items-center justify-center gap-3 text-slate-500 text-sm">
                                 {saveMessage && <Alert variant="success">{saveMessage}</Alert>}
-                                {currentStatus === 'CANCELLED'
-                                    // 접수가 취소된 환자는 진료기록을 작성할 수 없습니다.
-                                    ? "This reception was cancelled. Medical records cannot be created."
-                                    // 이미 진료가 완료된 환자입니다. 내용 수정은 Medical Records 탭에서 하세요.
-                                    : "This visit is already completed. To change the record, use the Medical Records tab."}
+                                {/* 이미 진료 완료된 환자. 수정은 Medical Records 탭에서 */}
+                                This visit is already completed. To change the record, use the Medical Records tab.
                             </div>
                         ) : selectedEncounter ? (
                             <div className="flex flex-col gap-4 flex-1">
@@ -359,8 +456,13 @@ const EncounterList = () => {
                                         onChange={(e) => setChiefComplaint(e.target.value)}
                                         // 예: 기침 및 발열 증상 (3일 전부터 시작)
                                         placeholder="e.g., Cough and fever (started 3 days ago)"
-                                        className="w-full rounded-md border border-slate-300 p-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                        className={`w-full rounded-md border p-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 ${
+                                            chiefComplaintMissing ? 'border-rose-400' : 'border-slate-300'
+                                        }`}
                                     />
+                                    {chiefComplaintMissing && (
+                                        <p className="mt-1 text-xs text-rose-500">Chief Complaint is required.</p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -388,8 +490,13 @@ const EncounterList = () => {
                                         onChange={(e) => setAssessmentNote(e.target.value)}
                                         // 진단명 및 평가 소견을 작성해 주세요.
                                         placeholder="Enter the diagnosis and assessment."
-                                        className="w-full rounded-md border border-slate-300 p-2 text-sm min-h-[80px] outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                        className={`w-full rounded-md border p-2 text-sm min-h-[80px] outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 ${
+                                            assessmentNoteMissing ? 'border-rose-400' : 'border-slate-300'
+                                        }`}
                                     />
+                                    {assessmentNoteMissing && (
+                                        <p className="mt-1 text-xs text-rose-500">Diagnosis is required.</p>
+                                    )}
                                 </div>
 
                                 <div className="flex-1 flex flex-col">
@@ -406,13 +513,26 @@ const EncounterList = () => {
                                     />
                                 </div>
 
-                                <PrescriptionForm items={prescriptionItems} onChange={setPrescriptionItems} />
+                                {/* key: 환자를 바꾸면 처방 입력칸도 초기화 */}
+                                <PrescriptionForm
+                                    key={selectedEncounter.receptionId}
+                                    items={prescriptionItems}
+                                    onChange={setPrescriptionItems}
+                                    onPendingChange={setOrderPending}
+                                    showPendingWarning={saveAttempted}
+                                />
 
+                                {startRequired && normalizeStatus(currentStatus ?? '') === 'WAITING' && (
+                                    // 진료를 시작한 뒤에 저장할 수 있습니다. 진료 시작 버튼을 눌러 주세요.
+                                    <Alert variant="error">
+                                        Please click Start Consultation before saving the record.
+                                    </Alert>
+                                )}
                                 {createError && <Alert variant="error">{createError}</Alert>}
                                 {saveMessage && <Alert variant="success">{saveMessage}</Alert>}
 
                                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
-                                    <Button variant="primary" onClick={handleSaveChart} disabled={createLoading}>
+                                    <Button variant="primary" onClick={handleSaveChart} disabled={createLoading || currentStatus === 'CANCELLED'}>
                                         {/* 저장 중... / 진료 저장 */}
                                         {createLoading ? "Saving..." : "Save Record"}
                                     </Button>

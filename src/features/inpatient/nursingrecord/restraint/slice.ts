@@ -17,7 +17,7 @@ const restraintSlice = createSlice({
     name: "restraint",
     initialState,
     reducers: {
-        fetchRestraintsRequest(state) {
+        fetchRestraintsRequest(state, _action: PayloadAction<string | undefined>) {
             state.listStatus = { ...initialStatus, loading: true };
         },
         fetchRestraintsSuccess(state, action: PayloadAction<RestraintDTO[]>) {
