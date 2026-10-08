@@ -40,6 +40,16 @@ const ROW_GRID = "grid w-full grid-cols-[40px_minmax(0,1.3fr)_minmax(0,1fr)_minm
 // 한 페이지에 보여줄 병상 수 — 목록이 끝없이 스크롤되지 않도록 끊어서 보여줌
 const PAGE_SIZE = 10;
 
+// 병상 정렬 기준: 병동코드 → 병실번호(숫자) → 병상번호
+// - 서버가 주는 순서(DB에 들어간 순서)는 규칙이 없어서, 화면에서 항상 같은 순서로 정렬함
+// - 병동이 곧 층이라(내과 2층 … 소아과 6층) 결과적으로 201호부터 605호 순서가 됨
+// - 병실번호는 숫자로 비교 ("1001"이 "201"보다 앞에 오지 않게), 병상번호는 A, B, C… 순
+// - 병동이 없는 병상은 맨 뒤
+const compareBeds = (a: BedDTO, b: BedDTO) =>
+  (a.wardCd ?? "￿").localeCompare(b.wardCd ?? "￿") ||
+  a.roomNo.localeCompare(b.roomNo, undefined, { numeric: true }) ||
+  a.bedNo.localeCompare(b.bedNo, undefined, { numeric: true });
+
 const AssignIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <circle cx="12" cy="12" r="9" />
@@ -129,7 +139,7 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
         if (!name.toLowerCase().includes(normalized)) return false;
       }
       return true;
-    });
+    }).sort(compareBeds); // filter가 새 배열을 만들어서 sort 해도 store의 원본 순서는 바뀌지 않음
   };
   // useMemo를 쓰면 필터 조건이 바뀔 때만 필터링이 다시 계산됨. 아니면 매 렌더링마다 filter가 실행되어 성능 저하 가능
   // eslint-disable-next-line react-hooks/exhaustive-deps -- filterBeds는 아래 deps 값들만 사용

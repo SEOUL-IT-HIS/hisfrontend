@@ -34,6 +34,7 @@ import {
   selectCommonCodeLoaded,
   selectCommonCodesByGroup,
 } from "@/features/emergency/commonCode/slice";
+import { eventTimeBounds, eventTimeError, useEventTimeLimits } from "@/features/emergency/common/eventTime";
 import { formatDateTime } from "@/features/emergency/utils";
 
 type ConsentPanelProps = {
@@ -120,7 +121,12 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
 
   const guardianSelected = form.consentedByCode === CONSENT_BY_GUARDIAN;
   const deferredSelected = form.consentStatusCode === CONSENT_STATUS_DEFERRED;
+  // 수령 일시는 접수 이후·현재 이전이어야 하고, 귀가·사망·자의퇴원이면 퇴실 결정 이전이어야 한다(비우면 지금)
+  const timeLimits = useEventTimeLimits(receptionNo);
+  const timeBounds = eventTimeBounds(timeLimits);
+  const timeError = eventTimeError(form.receivedAt, timeLimits);
   const canSubmit =
+    !timeError &&
     !!receptionNo &&
     !submitting &&
     !!form.consentTypeCode &&
@@ -241,13 +247,16 @@ export default function ConsentPanel({ receptionNo, className = "" }: ConsentPan
               />
             </FormField>
             {/* 수령 일시 (비우면 지금) */}
-            <FormField label="Received At" hint="Leave empty to use the current time.">
+            <FormField label="Received At" hint={timeError || "Leave empty to use the current time."}>
               <Input
                 type="datetime-local"
                 name="receivedAt"
                 value={form.receivedAt}
+                min={timeBounds.min}
+                max={timeBounds.max}
                 onChange={handleChange}
                 disabled={submitting}
+                className={timeError ? "border-rose-400 focus:border-rose-400 focus:ring-rose-100" : ""}
               />
             </FormField>
             {/* 기록자 */}

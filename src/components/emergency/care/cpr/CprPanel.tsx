@@ -29,6 +29,7 @@ import {
   selectCommonCodeLoaded,
   selectCommonCodesByGroup,
 } from "@/features/emergency/commonCode/slice";
+import { eventTimeBounds, eventTimeError, useEventTimeLimits } from "@/features/emergency/common/eventTime";
 import { formatDateTime } from "@/features/emergency/utils";
 
 type CprPanelProps = { receptionNo: string; className?: string };
@@ -88,7 +89,11 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
 
   const eventTypeOptions = toCodeOptions(eventTypeCodes, CPR_EVENT_TYPE_FALLBACK_OPTIONS);
   const outcomeOptions = toCodeOptions(outcomeCodes, CPR_OUTCOME_FALLBACK_OPTIONS);
-  const canAdd = !!draft.eventTypeCode && !!recordedById;
+  // 이벤트 시각은 접수 이후·현재 이전이어야 하고, 귀가·사망·자의퇴원이면 퇴실 결정 이전이어야 한다(비우면 지금)
+  const timeLimits = useEventTimeLimits(receptionNo);
+  const timeBounds = eventTimeBounds(timeLimits);
+  const timeError = eventTimeError(draft.eventAt, timeLimits);
+  const canAdd = !!draft.eventTypeCode && !!recordedById && !timeError;
   const canSubmit = !!receptionNo && !submitting && events.length > 0;
 
   function handleDraftChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -198,13 +203,16 @@ export default function CprPanel({ receptionNo, className = "" }: CprPanelProps)
               <Input name="detail" value={draft.detail} onChange={handleDraftChange} disabled={submitting} maxLength={500} />
             </FormField>
             {/* 이벤트 시각 (비우면 지금) */}
-            <FormField label="Event At" hint="Leave empty to use the current time.">
+            <FormField label="Event At" hint={timeError || "Leave empty to use the current time."}>
               <Input
                 type="datetime-local"
                 name="eventAt"
                 value={draft.eventAt}
+                min={timeBounds.min}
+                max={timeBounds.max}
                 onChange={handleDraftChange}
                 disabled={submitting}
+                className={timeError ? "border-rose-400 focus:border-rose-400 focus:ring-rose-100" : ""}
               />
             </FormField>
             {/* 기록자 */}

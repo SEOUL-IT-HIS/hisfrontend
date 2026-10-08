@@ -13,9 +13,9 @@ function extractErrorMessage(error: unknown): string {
   return "알 수 없는 오류가 발생했습니다.";
 }
 
-function  *fetchVitalSignsSaga() {
+function* fetchVitalSignsSaga(action: PayloadAction<string | undefined>) {
   try {
-    const vitalSigns: VitalSignDTO[] = yield call(fetchVitalSignApi);
+    const vitalSigns: VitalSignDTO[] = yield call(fetchVitalSignApi, action.payload);
     yield put({ type: "vitalSign/fetchVitalSignsSuccess", payload: vitalSigns ?? [] });
     } catch (e:unknown) {
         yield put({ type: "vitalSign/fetchVitalSignsFailure", payload: extractErrorMessage(e) });
