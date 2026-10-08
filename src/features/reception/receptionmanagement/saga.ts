@@ -49,6 +49,8 @@ const CANCEL_ERROR_MESSAGES: Record<string, string> = {
   RCP002: "This reception has already been cancelled.",
   RCP009: "This reception cannot be cancelled because treatment has already started in the emergency department.",
   RCP010: "Unable to verify whether the emergency reception can be cancelled. Please try again later.",
+  RCP014: "This reception cannot be cancelled because the consultation has already started in the outpatient department.",
+  RCP015: "Unable to verify the outpatient consultation status. Please try again later.",
 };
 
 /**
