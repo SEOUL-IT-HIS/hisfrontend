@@ -2,8 +2,9 @@ import { ApiResponse } from "@/features/billing/types";
 import apiClient from "@/lib/axios";
 import { IandORecordDTO, RegisterIandORecordRequest, UpdateIandORecordRequest } from "../types";
 
-export async function fetchIandORecordApi() {
-  const { data } = await apiClient.get<ApiResponse<IandORecordDTO[]>>("/api/inpatient/nursingrecord/iandorecord");
+/** admissionId가 있으면 그 입원 건의 기록만, 없으면 전체 (axios는 undefined 파라미터를 보내지 않음) */
+export async function fetchIandORecordApi(admissionId?: string) {
+  const { data } = await apiClient.get<ApiResponse<IandORecordDTO[]>>("/api/inpatient/nursingrecord/iandorecord", { params: { admissionId } });
 
   return data.data;
 }

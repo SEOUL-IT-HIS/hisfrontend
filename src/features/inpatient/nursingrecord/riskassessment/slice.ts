@@ -17,7 +17,7 @@ const riskAssessmentSlice = createSlice({
     name: "riskAssessment",
     initialState,
     reducers: {
-        fetchRiskAssessmentsRequest(state) {
+        fetchRiskAssessmentsRequest(state, _action: PayloadAction<string | undefined>) {
             state.listStatus = { ...initialStatus, loading: true };
         },
         fetchRiskAssessmentsSuccess(state, action: PayloadAction<RiskAssessmentDTO[]>) {

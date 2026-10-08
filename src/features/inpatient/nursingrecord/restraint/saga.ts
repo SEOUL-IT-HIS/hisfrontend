@@ -12,9 +12,9 @@ function extractErrorMessage(error: unknown): string {
   return "알 수 없는 오류가 발생했습니다.";
 }
 
-function  *fetchRestraintSaga() {
+function* fetchRestraintSaga(action: PayloadAction<string | undefined>) {
   try {
-    const restraints: RestraintDTO[] = yield call(fetchRestraintApi);
+    const restraints: RestraintDTO[] = yield call(fetchRestraintApi, action.payload);
     yield put({ type: "restraint/fetchRestraintsSuccess", payload: restraints ?? [] });
     } catch (e:unknown) {
         yield put({ type: "restraint/fetchRestraintsFailure", payload: extractErrorMessage(e) });

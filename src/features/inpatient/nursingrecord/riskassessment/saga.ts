@@ -12,9 +12,9 @@ function extractErrorMessage(error: unknown): string {
   return "알 수 없는 오류가 발생했습니다.";
 }
 
-function  *fetchRiskAssessmentSaga() {
+function* fetchRiskAssessmentSaga(action: PayloadAction<string | undefined>) {
   try {
-    const riskAssessments: RiskAssessmentDTO[] = yield call(fetchRiskAssessmentApi);
+    const riskAssessments: RiskAssessmentDTO[] = yield call(fetchRiskAssessmentApi, action.payload);
     yield put({ type: "riskAssessment/fetchRiskAssessmentsSuccess", payload: riskAssessments ?? [] });
     } catch (e:unknown) {
         yield put({ type: "riskAssessment/fetchRiskAssessmentsFailure", payload: extractErrorMessage(e) });

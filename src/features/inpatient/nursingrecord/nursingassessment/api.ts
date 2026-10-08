@@ -2,8 +2,9 @@ import { ApiResponse } from "@/features/billing/types";
 import apiClient from "@/lib/axios";
 import { NursingAssessmentDTO, RegisterNursingAssessmentRequest, UpdateNursingAssessmentRequest } from "../types";
 
-export async function fetchNursingAssessmentApi() {
-  const { data } = await apiClient.get<ApiResponse<NursingAssessmentDTO[]>>("/api/inpatient/nursingrecord/nursingassessment");
+/** admissionId가 있으면 그 입원 건의 기록만, 없으면 전체 (axios는 undefined 파라미터를 보내지 않음) */
+export async function fetchNursingAssessmentApi(admissionId?: string) {
+  const { data } = await apiClient.get<ApiResponse<NursingAssessmentDTO[]>>("/api/inpatient/nursingrecord/nursingassessment", { params: { admissionId } });
 
   return data.data;
 }

@@ -12,9 +12,9 @@ function extractErrorMessage(error: unknown): string {
   return "알 수 없는 오류가 발생했습니다.";
 }
 
-function  *fetchNursingAssessmentSaga() {
+function* fetchNursingAssessmentSaga(action: PayloadAction<string | undefined>) {
   try {
-    const nursingAssessments: NursingAssessmentDTO[] = yield call(fetchNursingAssessmentApi);
+    const nursingAssessments: NursingAssessmentDTO[] = yield call(fetchNursingAssessmentApi, action.payload);
     yield put({ type: "nursingassessment/fetchNursingAssessmentsSuccess", payload: nursingAssessments ?? [] });
     } catch (e:unknown) {
         yield put({ type: "nursingassessment/fetchNursingAssessmentsFailure", payload: extractErrorMessage(e) });
