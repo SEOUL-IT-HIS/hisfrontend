@@ -18,6 +18,7 @@ import {
   selectPatientSearchError,
 } from "@/features/reception/patientmanagement/slice";
 import type { PatientSearchItem } from "@/features/reception/patientmanagement/types";
+import { getPatientDisplayName } from "@/features/patient/util/patientName";
 import type { AppDispatch } from "@/store/store";
 
 type PatientSearchModalProps = {
@@ -58,7 +59,12 @@ export default function PatientSearchModal({
   }
 
   const columns: DataTableColumn<PatientSearchItem>[] = [
-    { key: "patientName", header: "Patient Name", render: (p) => p.patientName },
+    {
+      key: "patientName",
+      header: "Patient Name",
+      render: (p) =>
+        getPatientDisplayName(p.patientName, p.tempPatientNo, p.tempPatientYn),
+    },
     { key: "birthDate", header: "Date of Birth", render: (p) => p.birthDate },
     { key: "genderCd", header: "Gender", render: (p) => p.genderCd },
     {

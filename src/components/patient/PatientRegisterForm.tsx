@@ -363,6 +363,10 @@ export default function PatientRegisterForm() {
         tempRegisterReason: isTemporaryPatient
           ? form.tempRegisterReason?.trim()
           : undefined,
+        zipCode: form.zipCode.trim() || undefined,
+        address: form.address.trim() || undefined,
+        addressDetail: form.addressDetail.trim() || undefined,
+        phoneNo: normalizedPhoneNo || undefined,
       }),
     );
   };

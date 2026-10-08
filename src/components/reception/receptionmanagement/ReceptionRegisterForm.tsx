@@ -18,6 +18,7 @@ import {
 } from "@/features/reception/receptionmanagement/slice";
 import type { ReservationItem, VisitType } from "@/features/reception/receptionmanagement/types";
 import type { PatientSearchItem } from "@/features/reception/patientmanagement/types";
+import { getPatientDisplayName } from "@/features/patient/util/patientName";
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
 import { useDeptDoctorOptions } from "@/features/reception/receptionmanagement/useDeptDoctorOptions";
 import type { AppDispatch } from "@/store/store";
@@ -184,7 +185,11 @@ function ReceptionRegisterFormFields({
               readOnly
               value={
                 selectedPatient
-                  ? selectedPatient.patientName
+                  ? getPatientDisplayName(
+                      selectedPatient.patientName,
+                      selectedPatient.tempPatientNo,
+                      selectedPatient.tempPatientYn,
+                    )
                   : ""
               }
               placeholder="Select a patient using the Search Patient button"
