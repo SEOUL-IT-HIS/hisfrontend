@@ -60,6 +60,19 @@ const NursingRecordHome = () => {
     TABS.some((tab) => tab.key === tabParam) ? (tabParam as TabKey) : "vitalsign",
   );
   const [selectedAdmissionId, setSelectedAdmissionId] = useState<string | null>(searchParams.get("admissionId"));
+  // 한 번 열어 본 탭은 닫지 않고 숨기기만 함 — 탭을 오갈 때마다 기록을 다시 불러오지 않게
+  // (안 열어 본 탭은 만들지 않아서 처음부터 5종을 다 불러오지는 않음. 환자를 바꾸면 처음부터 다시 시작)
+  const [visitedTabs, setVisitedTabs] = useState<Set<TabKey>>(() => new Set([activeTab]));
+
+  const openTab = (key: TabKey) => {
+    setActiveTab(key);
+    setVisitedTabs((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
+  };
+
+  const selectAdmission = (admissionId: string) => {
+    setSelectedAdmissionId(admissionId);
+    setVisitedTabs(new Set([activeTab])); // 다른 환자의 기록이 남아 있지 않게, 지금 보는 탭만 새로 열어 시작
+  };
   // 퇴원 완료 환자도 목록에 보이기 — 간호기록은 보존 의무가 있는 의료 기록이라 퇴원 후에도 조회는 가능해야 함 (작성은 불가)
   const [showDischarged, setShowDischarged] = useState(false);
 
@@ -107,7 +120,7 @@ const NursingRecordHome = () => {
           loading={admissionListStatus.loading}
           error={admissionListStatus.error}
           selectedAdmissionId={selectedAdmissionId}
-          onSelect={setSelectedAdmissionId}
+          onSelect={selectAdmission}
           patientLabel={patientLabel}
           statusLabel={STATUS_LABEL}
           headerExtra={
@@ -140,16 +153,36 @@ const NursingRecordHome = () => {
                 </div>
               )}
 
-              <InpatientTabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
+              <InpatientTabs tabs={TABS} active={activeTab} onChange={openTab} />
 
               {/* 탭 내용 — 이 영역 안에서만 스크롤 */}
               <div className="min-h-0 flex-1 overflow-y-auto">
-                {/* 모든 탭 목록에 선택한 입원 건을 넘겨서 그 환자 기록만 표시 */}
-                {activeTab === "vitalsign" && <VitalSignList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
-                {activeTab === "riskassessment" && <RiskAssessmentList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
-                {activeTab === "restraint" && <RestraintList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
-                {activeTab === "nursingassessment" && <NursingAssessmentList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
-                {activeTab === "iandorecord" && <IandORecordList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />}
+                {/* 모든 탭 목록에 선택한 입원 건을 넘겨서 그 환자 기록만 표시. 열어 본 탭은 hidden 으로만 숨겨서 다시 받지 않음 */}
+                {visitedTabs.has("vitalsign") && (
+                  <div className={activeTab === "vitalsign" ? "" : "hidden"}>
+                    <VitalSignList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />
+                  </div>
+                )}
+                {visitedTabs.has("riskassessment") && (
+                  <div className={activeTab === "riskassessment" ? "" : "hidden"}>
+                    <RiskAssessmentList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />
+                  </div>
+                )}
+                {visitedTabs.has("restraint") && (
+                  <div className={activeTab === "restraint" ? "" : "hidden"}>
+                    <RestraintList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />
+                  </div>
+                )}
+                {visitedTabs.has("nursingassessment") && (
+                  <div className={activeTab === "nursingassessment" ? "" : "hidden"}>
+                    <NursingAssessmentList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />
+                  </div>
+                )}
+                {visitedTabs.has("iandorecord") && (
+                  <div className={activeTab === "iandorecord" ? "" : "hidden"}>
+                    <IandORecordList embedded admissionId={selectedAdmissionId} readOnly={readOnly} />
+                  </div>
+                )}
               </div>
             </>
           )}

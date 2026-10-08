@@ -17,7 +17,7 @@ const iandorecordSlice = createSlice({
     name: "iandorecord",
     initialState,
     reducers: {
-        fetchIandORecordsRequest(state) {
+        fetchIandORecordsRequest(state, _action: PayloadAction<string | undefined>) {
             state.listStatus = { ...initialStatus, loading: true };
         },
         fetchIandORecordsSuccess(state, action: PayloadAction<IandORecordDTO[]>) {

@@ -1,8 +1,9 @@
 import apiClient from "@/lib/axios";
 import type { ApiResponse, VitalSignDTO, VitalSignHistoryDTO } from "../types";
 import type { RegisterVitalSignRequest, UpdateVitalSignRequest } from "../types";
-export async function fetchVitalSignApi() {
-  const { data } = await apiClient.get<ApiResponse<VitalSignDTO[]>>("/api/inpatient/nursingrecord/vitalsign");
+/** admissionId가 있으면 그 입원 건의 기록만, 없으면 전체 (axios는 undefined 파라미터를 보내지 않음) */
+export async function fetchVitalSignApi(admissionId?: string) {
+  const { data } = await apiClient.get<ApiResponse<VitalSignDTO[]>>("/api/inpatient/nursingrecord/vitalsign", { params: { admissionId } });
 
   return data.data;
 }
