@@ -36,6 +36,12 @@ export const updateBedWardApi = async (bedId: string, wardCd: string) => {
   return data.data;
 }
 
+/** 청소 완료 — 점검중(MAINTENANCE) 병상을 빈 병상(EMPTY)으로 되돌림. 점검중이 아니면 서버가 409로 거절 */
+export const makeBedAvailableApi = async (bedId: string) => {
+  const { data } = await apiClient.patch<ApiResponse<BedDTO>>(`/api/inpatient/bed/${bedId}/ready`);
+  return data.data;
+};
+
 /** 병동별 병상 집계(전체/빈/재원/예약/정비) — 대시보드 탭에서 병동마다 호출 */
 export const fetchWardBedStatusApi = async (wardCd: string) => {
   const { data } = await apiClient.get<ApiResponse<WardBedStatusDTO>>("/api/inpatient/bed/dashboard", {
