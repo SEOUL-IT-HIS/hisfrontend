@@ -107,6 +107,17 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
     const currentPage = Math.min(page, totalPages);
     const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
+    // 같은 환자의 진행 중(IN_CARE) 접수가 둘 이상이면 중복 접수가 의심된다 — 목록에서 눈에 띄게 표시한다
+    const duplicatePatientIds = new Set<string>();
+    {
+        const seen = new Set<string>();
+        for (const item of items) {
+            if (item.careStatusCode !== "IN_CARE" || !item.patientId) continue;
+            if (seen.has(item.patientId)) duplicatePatientIds.add(item.patientId);
+            seen.add(item.patientId);
+        }
+    }
+
     const columns: DataTableColumn<ReceptionListItem>[] = [
         { key: "ktas", header: "KTAS", render: (r) => <KtasLevelBadge level={r.ktasLevelCode} /> },
 
@@ -120,6 +131,15 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
                     {r.careStatusCode === "CANCELLED" ? (
                         // 접수에서 취소한 접수
                         <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">Cancelled</span>
+                    ) : null}
+                    {r.careStatusCode === "IN_CARE" && r.patientId && duplicatePatientIds.has(r.patientId) ? (
+                        // 같은 환자의 진행 중 접수가 둘 이상 — 중복 접수 의심
+                        <span
+                            className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700"
+                            title="This patient has more than one reception in care. It may be a duplicate registration."
+                        >
+                            Duplicate?
+                        </span>
                     ) : null}
                 </span>
             ),
