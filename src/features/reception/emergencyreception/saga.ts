@@ -5,6 +5,7 @@ import {
   fetchEmergencyReceptionListRequest,
   fetchEmergencyReceptionListSuccess,
   fetchEmergencyReceptionListFailure,
+  refreshEmergencyReceptionList,
   registerEmergencyReceptionRequest,
   registerEmergencyReceptionSuccess,
   registerEmergencyReceptionFailure,
@@ -33,6 +34,16 @@ function* fetchEmergencyReceptionListSaga() {
   }
 }
 
+/** 주기적 갱신 — 실패해도 화면에 오류를 띄우지 않고 직전 목록을 그대로 둔다 */
+function* refreshEmergencyReceptionListSaga() {
+  try {
+    const items: EmergencyReceptionListItem[] = yield call(getEmergencyReceptionList);
+    yield put(fetchEmergencyReceptionListSuccess(items));
+  } catch {
+    // 다음 주기에 다시 시도한다.
+  }
+}
+
 function* registerEmergencyReceptionSaga(
   action: PayloadAction<EmergencyReceptionRequest>,
 ) {
@@ -50,6 +61,7 @@ function* registerEmergencyReceptionSaga(
 }
 
 export default function* emergencyReceptionSaga() {
+  yield takeLatest(refreshEmergencyReceptionList.type, refreshEmergencyReceptionListSaga);
   yield takeLatest(
     fetchEmergencyReceptionListRequest.type,
     fetchEmergencyReceptionListSaga,

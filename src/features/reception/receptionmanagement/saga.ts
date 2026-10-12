@@ -9,6 +9,7 @@ import {
   cancelReception,
 } from "./api";
 import { fetchPatientsByIds } from "@/features/reception/patientmanagement/api";
+import { fetchEmergencyReceptionListRequest } from "@/features/reception/emergencyreception/slice";
 import type { PatientBatchItem } from "@/features/reception/patientmanagement/types";
 import {
   fetchReceptionListRequest,
@@ -162,8 +163,11 @@ function* registerReceptionSaga(
 function* cancelReceptionSaga(action: PayloadAction<ReceptionCancelRequest>) {
   try {
     yield call(cancelReception, action.payload);
-    yield put(cancelReceptionSuccess());
+    yield put(cancelReceptionSuccess(action.payload.receptionId));
+    // 취소한 접수가 외래 건인지 응급 건인지 여기서는 구분하지 않고 두 목록을 모두 다시 조회한다
+    // (취소 모달은 외래 접수 화면과 응급 접수 화면이 같이 쓴다)
     yield put(fetchReceptionListRequest());
+    yield put(fetchEmergencyReceptionListRequest());
   } catch (err) {
     const message = errorMessage(err, "Failed to cancel the reception.");
     yield put(cancelReceptionFailure(CANCEL_ERROR_MESSAGES[message] ?? message));

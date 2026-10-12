@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
@@ -9,12 +9,10 @@ import {
   PageHeader,
   type DataTableColumn,
 } from "@/components/common";
-import {
-  selectCancelLoading,
-  selectCancelError,
-} from "@/features/reception/receptionmanagement/slice";
+import { useAutoRefresh } from "@/features/reception/useAutoRefresh";
 import {
   fetchEmergencyReceptionListRequest,
+  refreshEmergencyReceptionList,
   selectEmergencyReceptionList,
   selectEmergencyReceptionListLoading,
   selectEmergencyReceptionListError,
@@ -55,26 +53,17 @@ export default function EmergencyReceptionListSection({
   const list = useSelector(selectEmergencyReceptionList);
   const listLoading = useSelector(selectEmergencyReceptionListLoading);
   const listError = useSelector(selectEmergencyReceptionListError);
-  const cancelLoading = useSelector(selectCancelLoading);
-  const cancelError = useSelector(selectCancelError);
   const [statusFilter, setStatusFilter] = useState(STATUS_FILTER_ALL);
   const [cancelReceptionId, setCancelReceptionId] = useState<string | null>(
     null,
   );
 
-  const prevCancelLoading = useRef(cancelLoading);
-
   useEffect(() => {
     dispatch(fetchEmergencyReceptionListRequest());
   }, [dispatch]);
 
-  // 취소 요청이 끝나면(true → false) 에러가 없을 때 목록을 재조회한다.
-  useEffect(() => {
-    if (prevCancelLoading.current && !cancelLoading && !cancelError) {
-      dispatch(fetchEmergencyReceptionListRequest());
-    }
-    prevCancelLoading.current = cancelLoading;
-  }, [cancelLoading, cancelError, dispatch]);
+  // 응급이 오접수로 닫아 접수가 자동 취소되는 등 화면 밖에서 바뀐 상태를 새로고침 없이 반영한다.
+  useAutoRefresh(() => dispatch(refreshEmergencyReceptionList()));
 
   const filteredList = useMemo(() => {
     return list.filter((r) => {
