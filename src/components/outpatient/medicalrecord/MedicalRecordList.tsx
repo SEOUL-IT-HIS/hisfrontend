@@ -133,11 +133,11 @@ const MedicalRecordList = () => {
                 <p className="p-4 text-center text-slate-500">Loading medical records...</p>
             ) : (
                 <div className="min-h-[450px] overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-                    <table className="w-full table-fixed text-left border-collapse text-sm">
+                    <table className="w-full table-fixed text-center border-collapse text-sm">
                         <thead className="bg-slate-100 border-b border-slate-200 text-slate-700">
                         <tr>
                             {/* 환자 / 의사 / 진료과 / 주호소 / 초재진 / 일시 / 관리 */}
-                            {/* 7개 컬럼 균등 너비 (처방 목록과 동일) */}
+                            {/* 7개 컬럼 균등 너비 (처방 목록과 동일), 모든 열 가운데 정렬 */}
                             <th className="p-3 font-semibold">Patient</th>
                             <th className="p-3 font-semibold">Doctor</th>
                             <th className="p-3 font-semibold">Department</th>
@@ -159,7 +159,7 @@ const MedicalRecordList = () => {
                                     <td className="p-3 truncate">{record.chiefComplaint ?? "-"}</td>
                                     <td className="p-3"><VisitTypeBadge value={record.visitType} /></td>
                                     <td className="p-3">{formatDateTime(record.createdAt)}</td>
-                                    <td className="p-3 text-left">
+                                    <td className="p-3">
                                         <Button
                                             variant="primary"
                                             onClick={() => setSelectedRecordId(record.recordId)}
