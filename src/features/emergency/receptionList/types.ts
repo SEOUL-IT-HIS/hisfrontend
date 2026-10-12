@@ -19,6 +19,12 @@ export type ReceptionListItem = {
     memo: string | null;
     /** 접수 시 입력된 주호소 원문(구조화 전). 없으면 null. */
     chiefComplaintRaw: string | null;
+    /** 최신 퇴실 결정의 유형(01 귀가 · 02 입원 …). 결정이 없으면 비어 있다 — 목록의 입원 배지용 */
+    dispositionTypeCode?: string | null;
+    /** 입원이면 가장 최근 입원요청의 상태(01 요청됨 · 02 병상 배정 · 03 거부). 요청을 아직 보내지 않았으면 비어 있다 */
+    admissionStatusCode?: string | null;
+    /** 병동이 배정한 병동 코드(WARD_CD) */
+    assignedWardCode?: string | null;
 };
 
 /** "취소 아님"으로 확인한 결과를 다시 묻기까지의 시간(그 사이 접수에서 취소될 수 있다) */
