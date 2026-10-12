@@ -10,6 +10,8 @@ export default function Page() {
                 <li><Link href="/outpatient/encounter">Today&apos;s Patient List</Link></li>
                 {/* 진료기록 조회 */}
                 <li><Link href="/outpatient/medicalrecord">Medical Records</Link></li>
+                {/* 입원요청 목록 */}
+                <li><Link href="/outpatient/admissionrequest">Admission Requests</Link></li>
             </ul>
         </div>
     );

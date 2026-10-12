@@ -4,6 +4,7 @@ import { watchMedicalRecordSaga } from "@/features/outpatient/medicalrecord/saga
 import { watchOutpatientCommonCodeSaga } from "@/features/outpatient/commonCode/saga";
 import { watchPrescriptionSaga } from "@/features/outpatient/prescription/saga";
 import { watchConsultationSaga } from "@/features/outpatient/consultation/saga";
+import { watchAdmissionRequestSaga } from "@/features/outpatient/admissionrequest/saga";
 
 
 export default function* outpatientSaga() {
@@ -13,5 +14,6 @@ export default function* outpatientSaga() {
         fork(watchOutpatientCommonCodeSaga),
         fork(watchPrescriptionSaga),
         fork(watchConsultationSaga),
+        fork(watchAdmissionRequestSaga),
     ]);
 }
