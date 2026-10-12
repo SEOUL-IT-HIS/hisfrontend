@@ -17,6 +17,7 @@ import {
 } from "@/components/common";
 import { fetchPatientPageRequest } from "@/features/patient/slice/patientSlice";
 import { getGenderLabel } from "@/features/patient/util/genderCode";
+import { getPatientDisplayName } from "@/features/patient/util/patientName";
 import type {
   PatientListItem,
   PatientSearchCondition,
@@ -41,7 +42,11 @@ const getColumns = (returnTo: string): DataTableColumn<PatientListItem>[] => [
         href={`/reception/patientmanagement/${patient.patientId}?returnTo=${encodeURIComponent(returnTo)}`}
         className="font-medium text-blue-600 hover:underline"
       >
-        {patient.patientName}
+        {getPatientDisplayName(
+          patient.patientName,
+          patient.tempPatientNo,
+          patient.tempPatientYn,
+        )}
       </Link>
     ),
   },

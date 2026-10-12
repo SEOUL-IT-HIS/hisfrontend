@@ -115,6 +115,7 @@ const initialForm: PatientRegisterFormState = {
   address: "",
   addressDetail: "",
   phoneNo: "",
+  primaryYn: "N",
 };
 
 export default function PatientRegisterForm() {
@@ -201,7 +202,8 @@ export default function PatientRegisterForm() {
         form.zipCode !== "" ||
         form.address.trim() !== "" ||
         form.addressDetail.trim() !== "" ||
-        form.phoneNo !== "";
+        form.phoneNo !== "" ||
+        form.primaryYn !== initialForm.primaryYn;
 
       if (!hasUnsavedChanges || submitted) {
         return;
@@ -363,6 +365,11 @@ export default function PatientRegisterForm() {
         tempRegisterReason: isTemporaryPatient
           ? form.tempRegisterReason?.trim()
           : undefined,
+        zipCode: form.zipCode.trim() || undefined,
+        address: form.address.trim() || undefined,
+        addressDetail: form.addressDetail.trim() || undefined,
+        phoneNo: normalizedPhoneNo || undefined,
+        primaryYn: form.primaryYn,
       }),
     );
   };
@@ -378,7 +385,8 @@ export default function PatientRegisterForm() {
       form.zipCode !== "" ||
       form.address.trim() !== "" ||
       form.addressDetail.trim() !== "" ||
-      form.phoneNo !== "";
+      form.phoneNo !== "" ||
+      form.primaryYn !== initialForm.primaryYn;
 
     if (
       hasUnsavedChanges &&
@@ -401,7 +409,8 @@ export default function PatientRegisterForm() {
       form.zipCode !== "" ||
       form.address.trim() !== "" ||
       form.addressDetail.trim() !== "" ||
-      form.phoneNo !== "";
+      form.phoneNo !== "" ||
+      form.primaryYn !== initialForm.primaryYn;
 
     if (
       hasUnsavedChanges &&
@@ -698,6 +707,14 @@ export default function PatientRegisterForm() {
                   autoComplete="tel"
                 />
               </FormField>
+              <Button
+                type="button"
+                variant={form.primaryYn === "Y" ? "primary" : "secondary"}
+                disabled={registerLoading}
+                onClick={() => updateForm("primaryYn", form.primaryYn === "Y" ? "N" : "Y")}
+              >
+                {form.primaryYn === "Y" ? "📌 Primary" : "📌 Set as Primary"}
+              </Button>
             </div>
           </div>
 

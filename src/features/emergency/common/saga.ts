@@ -17,6 +17,7 @@ import dispositionFollowUpSaga from "@/features/emergency/disposition/followup/s
 import congestionSaga from "@/features/emergency/resource/congestion/saga";
 import dashboardSaga from "@/features/emergency/monitor/saga";
 import orderSaga from "@/features/emergency/order/saga";
+import referenceDocumentSaga from "@/features/emergency/reference/saga";
 
 /**
  * emergency 도메인 결합 saga
@@ -42,5 +43,6 @@ export default function* emergencySaga() {
     fork(congestionSaga),
     fork(dashboardSaga),
     fork(orderSaga),
+    fork(referenceDocumentSaga),
   ]);
 }

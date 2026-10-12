@@ -39,6 +39,7 @@ export async function createPatientContactApi({
     address,
     addressDetail,
     phoneNo,
+    primaryYn,
 }: PatientContactCreateRequest): Promise<PatientContact> {
     const response = await apiClient.post<ApiResponse<PatientContact>>(
         baseUrl(patientId),
@@ -47,6 +48,7 @@ export async function createPatientContactApi({
             address,
             addressDetail,
             phoneNo,
+            primaryYn,
         },
     );
 

@@ -34,12 +34,18 @@ export type PatientRegisterRequest = {
   genderCd: GenderCd;
   tempPatientYn: Yn;
   tempRegisterReason?: string;
+  zipCode?: string;
+  address?: string;
+  addressDetail?: string;
+  phoneNo?: string;
+  primaryYn?: Yn;
 };
 
 /** POST /api/patient/register 응답 데이터 */
 export type Patient = {
   patientId: string;
   patientName: string;
+  tempPatientNo?: number | null;
   birthDate: string;
   genderCd: GenderCd;
   statusCd: PatientStatus;
@@ -51,6 +57,7 @@ export type Patient = {
 export type PatientListItem = {
   patientId: string;
   patientName: string;
+  tempPatientNo?: number | null;
   /** 마스킹된 주민등록번호 (예: 000813-4******) */
   residentRegNo: string;
   birthDate: string | null;
@@ -66,6 +73,7 @@ export type PatientListItem = {
 export type PatientDetail = {
   patientId: string;
   patientName: string;
+  tempPatientNo?: number | null;
   residentRegNo: string;
   birthDate: string | null;
   genderCd: GenderCd;

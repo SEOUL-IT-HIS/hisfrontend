@@ -1,6 +1,8 @@
 export interface PatientSearchItem {
   patientId: string;
   patientName: string;
+  tempPatientNo?: number | null;
+  tempPatientYn?: "Y" | "N";
   birthDate: string;
   genderCd: string;
   /** ACTIVE / INACTIVE — 검색 응답에만 있고, 신규등록 직후 선택 등에서는 없을 수 있다 */

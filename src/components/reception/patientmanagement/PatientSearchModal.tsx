@@ -18,6 +18,7 @@ import {
   selectPatientSearchError,
 } from "@/features/reception/patientmanagement/slice";
 import type { PatientSearchItem } from "@/features/reception/patientmanagement/types";
+import { getPatientDisplayName } from "@/features/patient/util/patientName";
 import type { GenderCd } from "@/features/patient/type/patientType";
 import { getGenderLabel } from "@/features/patient/util/genderCode";
 import { fetchPatientContactListApi } from "@/features/patient/api/patientContactApi";
@@ -115,7 +116,12 @@ export default function PatientSearchModal({
   }
 
   const columns: DataTableColumn<PatientSearchItem>[] = [
-    { key: "patientName", header: "Patient Name", render: (p) => p.patientName },
+    {
+      key: "patientName",
+      header: "Patient Name",
+      render: (p) =>
+        getPatientDisplayName(p.patientName, p.tempPatientNo, p.tempPatientYn),
+    },
     { key: "birthDate", header: "Date of Birth", render: (p) => p.birthDate },
     // 코드(01, 02…) 대신 환자 목록 화면과 같은 이름(Male/Female/Unknown/Other)으로 보여준다
     { key: "genderCd", header: "Gender", render: (p) => getGenderLabel(p.genderCd as GenderCd) },

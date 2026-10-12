@@ -183,10 +183,12 @@ const PrescriptionDetail = ({ prescriptionId }: PrescriptionDetailProps) => {
               </div>
 
               {/* 취소를 막지는 않음 — 등록 직후 자동 전송되므로 막으면 사실상 모든 처방이 취소 불가가 됨 */}
+              {/* 외래 처방코어는 검사·약제에 취소를 "통보"하지만, 이미 진행·완료된 건은 거절될 수 있고 통보 실패 시 재시도는 없음 (외래 담당 확인) */}
               {showCancel && sentItems.length > 0 && (
                 <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                   Already sent to the lab / pharmacy: {sentItems.map((item) => item.itemName).join(", ")}.
-                  Cancelling here does not withdraw those orders — please notify the lab / pharmacy separately.
+                  The cancellation is forwarded to them, but orders already in progress or completed may not be withdrawn —
+                  please confirm with the lab / pharmacy.
                 </p>
               )}
               {showCancel && (

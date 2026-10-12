@@ -1,3 +1,4 @@
+import Link from "next/link";
 import TriagePanelHost from "@/components/emergency/common/TriagePanelHost";
 
 /**
@@ -8,8 +9,17 @@ import TriagePanelHost from "@/components/emergency/common/TriagePanelHost";
 export default function EmergencyPage() {
   return (
     <div className="h-full w-full p-6">
-      {/* 응급관리 */}
-      <h1 className="mb-6 text-lg font-semibold text-slate-800">Emergency</h1>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        {/* 응급관리 */}
+        <h1 className="text-lg font-semibold text-slate-800">Emergency</h1>
+        {/* 프로토콜·지침·서식 파일 라이브러리(환자와 무관) */}
+        <Link
+          href="/emergency/reference"
+          className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+        >
+          Reference Documents
+        </Link>
+      </div>
       <TriagePanelHost />
     </div>
   );
