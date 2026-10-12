@@ -44,25 +44,35 @@ function zoneLabel(zoneCode: string): string {
 }
 
 /**
- * 입원으로 결정한 환자의 목록 배지 — 병동 회신을 기다리는지, 거부됐는지, 어느 병동에 배정됐는지를 환자를 열지 않고 알아보게 한다.
- * 입원이 아니거나 접수에서 취소한 접수는 배지가 없다. 거부는 재요청·결정 변경이 필요해 눈에 띄게 표시한다.
+ * 목록의 "Status" 열 값 — 접수의 진행 상태를 환자를 열지 않고 알아보게 한다.
+ * 접수에서 취소한 접수는 Cancelled, 입원으로 결정한 환자는 병동 회신을 기다리는지·거부됐는지·어느 병동에 배정됐는지를 보인다.
+ * 그 밖에는 값이 없다("-"). 거부는 재요청·결정 변경이 필요해 눈에 띄게 표시한다.
+ * 같은 환자의 중복 접수 의심(Duplicate?)은 환자 식별에 관한 표시라 이름 옆에 둔다.
  */
-function admissionBadge(
+function statusCell(
     item: ReceptionListItem,
     wardOptions: ReadonlyArray<{ value: string; label: string }>,
 ): { text: string; className: string; title: string } | null {
-    if (item.dispositionTypeCode !== DISPOSITION.ADMIT || item.careStatusCode === "CANCELLED") return null;
+    if (item.careStatusCode === "CANCELLED") {
+        return {
+            text: "Cancelled",
+            className: "bg-slate-100 text-slate-500",
+            // 접수에서 취소한 접수입니다.
+            title: "This reception was cancelled at reception.",
+        };
+    }
+    if (item.dispositionTypeCode !== DISPOSITION.ADMIT) return null;
     switch (item.admissionStatusCode) {
         case ADMISSION_STATUS.REQUESTED:
             return {
-                text: "Admit · Waiting",
+                text: "Waiting",
                 className: "bg-sky-50 text-sky-700",
                 // 입원요청을 보냈고 병동의 회신을 기다리는 중입니다.
                 title: "Admission request sent. Waiting for the ward's reply.",
             };
         case ADMISSION_STATUS.REJECTED:
             return {
-                text: "Admit · Rejected",
+                text: "Rejected",
                 className: "bg-rose-50 text-rose-700",
                 // 병동이 입원요청을 거부했습니다. 다시 요청하거나 퇴실 결정을 바꾸세요.
                 title: "The ward rejected the admission request. Request again or change the disposition.",
@@ -70,7 +80,7 @@ function admissionBadge(
         case ADMISSION_STATUS.BED_ASSIGNED: {
             const ward = item.assignedWardCode ? optionLabel(wardOptions, item.assignedWardCode) : "";
             return {
-                text: ward ? `Admit · ${ward}` : "Admit · Assigned",
+                text: ward || "Assigned",
                 className: "bg-emerald-50 text-emerald-700",
                 // 병동이 병상을 배정했습니다.
                 title: "The ward assigned a bed.",
@@ -78,13 +88,17 @@ function admissionBadge(
         }
         default:
             return {
-                text: "Admit · Not requested",
+                text: "Request not sent",
                 className: "bg-amber-50 text-amber-700",
                 // 입원으로 결정했지만 입원요청을 아직 보내지 않았습니다.
                 title: "Admit was decided but the admission request has not been sent yet.",
             };
     }
 }
+
+/** 목록 칸 — 왼쪽 목록 폭이 좁아(최소 320px) 칸 여백을 줄이고(!px-2), 긴 값은 줄바꿈을 허용해(!whitespace-normal) 가로 스크롤을 막는다 */
+const CELL_COMPACT = "!px-1.5";
+const CELL_WRAP = "!px-2 !whitespace-normal";
 
 const PAGE_SIZE = 10;
 
@@ -178,28 +192,16 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
     }
 
     const columns: DataTableColumn<ReceptionListItem>[] = [
-        { key: "ktas", header: "KTAS", render: (r) => <KtasLevelBadge level={r.ktasLevelCode} /> },
+        { key: "ktas", header: "KTAS", className: CELL_COMPACT, render: (r) => <KtasLevelBadge level={r.ktasLevelCode} /> },
 
         // 환자명 — 환자서비스 배치조회 붙기 전까지는 null일 수 있음(정상)
         {
             key: "patientName",
             header: "Patient Name",
+            className: CELL_WRAP,
             render: (r) => (
-                <span className="inline-flex items-center gap-1.5">
+                <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                     {r.patientName ?? "-"}
-                    {r.careStatusCode === "CANCELLED" ? (
-                        // 접수에서 취소한 접수
-                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">Cancelled</span>
-                    ) : null}
-                    {(() => {
-                        const badge = admissionBadge(r, wardOptions);
-                        return badge ? (
-                            // 입원으로 결정한 환자 — 병동 회신 대기·거부·배정 병동
-                            <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${badge.className}`} title={badge.title}>
-                                {badge.text}
-                            </span>
-                        ) : null;
-                    })()}
                     {r.careStatusCode === "IN_CARE" && r.patientId && duplicatePatientIds.has(r.patientId) ? (
                         // 같은 환자의 진행 중 접수가 둘 이상 — 중복 접수 의심
                         <span
@@ -217,7 +219,26 @@ export default function ReceptionListPanel({ onSelect, activeReceptionNo }: Rece
         {
             key: "bed",
             header: "Bed / Zone",
-            render: (r) => (r.bedNo ? `${r.bedNo} (${zoneLabel(r.zoneCode ?? "")})` : "-"),
+            className: CELL_WRAP,
+            render: (r) =>
+                r.bedNo ? `${r.bedNo} (${zoneLabel(r.zoneCode ?? "")})` : <span className="text-slate-400">-</span>,
+        },
+
+        // 상태 — 접수 취소, 입원으로 결정한 환자의 병동 회신 상태(대기·거부·배정 병동·요청 전). 그 밖에는 "-"
+        {
+            key: "status",
+            header: "Status",
+            className: CELL_WRAP,
+            render: (r) => {
+                const cell = statusCell(r, wardOptions);
+                return cell ? (
+                    <span className={`inline-block rounded px-1.5 py-0.5 text-[11px] font-medium ${cell.className}`} title={cell.title}>
+                        {cell.text}
+                    </span>
+                ) : (
+                    <span className="text-slate-400">-</span>
+                );
+            },
         },
 
 
