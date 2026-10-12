@@ -40,6 +40,9 @@ import { formatDateTime } from "@/features/emergency/utils";
 
 const initialForm = { title: "", category: "", uploadedById: "" };
 
+/** 분류 선택 목록의 "새 분류" 항목 값(실제 분류 이름과 겹치지 않는 값) */
+const NEW_CATEGORY_VALUE = "__new_category__";
+
 /**
  * 응급 참고 문서 라이브러리 — 프로토콜·지침·서식 파일을 찾아 보고, 올리고, 목록에서 뺀다.
  * - 환자·접수와 무관한 자료라 환자를 고르지 않아도 쓴다(그래서 환자 탭이 아니라 별도 화면이다).
@@ -65,6 +68,8 @@ export default function ReferenceDocumentPanel() {
   const [fileInputKey, setFileInputKey] = useState(0);
   const [pendingDelete, setPendingDelete] = useState<ReferenceDocument | null>(null);
   const [wasUploading, setWasUploading] = useState(false);
+  // 분류를 목록에서 고르지 않고 직접 입력하는 중인지
+  const [newCategory, setNewCategory] = useState(false);
   const actorId = useActorId(form.uploadedById, "STAFF");
   const loadedOnce = useRef(false);
 
@@ -83,12 +88,15 @@ export default function ReferenceDocumentPanel() {
       setFile(null);
       setFileError("");
       setFileInputKey((key) => key + 1);
+      setNewCategory(false);
     }
   }
 
   const categories = useMemo(() => categoriesOf(items), [items]);
   const visible = useMemo(() => filterReferenceDocuments(items, keyword, categoryFilter), [items, keyword, categoryFilter]);
   const categoryOptions = categories.map((category) => ({ value: category, label: category }));
+  // 있던 분류가 없으면 목록 대신 바로 입력칸을 보여 준다
+  const typingCategory = categories.length === 0 || newCategory;
   const filtering = keyword.trim() !== "" || categoryFilter !== "";
 
   const canUpload = !!file && !fileError && !!actorId && !uploading;
@@ -118,9 +126,9 @@ export default function ReferenceDocumentPanel() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+    <div className="grid min-h-[38rem] flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] lg:grid-rows-[minmax(0,1fr)]">
       {/* 문서 목록 */}
-      <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-4">
+      <section className="flex min-h-0 min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-4">
         {/* 문서 목록 */}
         <h2 className="mb-1 text-sm font-semibold text-slate-800">Documents</h2>
         {/* 프로토콜·지침·서식을 찾아 봅니다. 환자와 무관한 자료입니다. */}
@@ -160,7 +168,7 @@ export default function ReferenceDocumentPanel() {
             {filtering ? "No documents match your search." : "No reference documents yet."}
           </p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto">
             {visible.map((item) => {
               const deleting = deletingId === item.id;
               return (
@@ -207,7 +215,7 @@ export default function ReferenceDocumentPanel() {
       </section>
 
       {/* 업로드 */}
-      <section className="h-fit rounded-xl border border-slate-200 bg-white p-4">
+      <section className="rounded-xl border border-slate-200 bg-white p-4">
         {/* 문서 올리기 */}
         <h2 className="mb-1 text-sm font-semibold text-slate-800">Upload Document</h2>
         {/* 10MB 이하 pdf·이미지·Office·한글 파일 */}
@@ -229,6 +237,16 @@ export default function ReferenceDocumentPanel() {
           </FormField>
           {fileError ? <p className="-mt-2 text-xs text-rose-600">{fileError}</p> : null}
 
+          {/* 올린 사람·삭제한 사람 */}
+          <ActorField
+            label="Staff"
+            role="STAFF"
+            required
+            value={form.uploadedById}
+            onChange={(empId) => setForm((prev) => ({ ...prev, uploadedById: empId }))}
+            disabled={uploading}
+          />
+
           {/* 제목 (비우면 파일 이름) */}
           <FormField label="Title" hint="Leave empty to use the file name.">
             <Input
@@ -239,31 +257,50 @@ export default function ReferenceDocumentPanel() {
             />
           </FormField>
 
-          {/* 분류 (자유 입력, 있던 분류는 제안) */}
-          <FormField label="Category" hint="Free text. Existing categories are suggested.">
-            <Input
-              list="reference-document-categories"
+          {/* 분류: 있던 분류에서 고르거나 "새 분류"로 직접 입력(분류가 아직 없으면 바로 입력) */}
+          {typingCategory ? (
+            <div>
+              <FormField label="Category" hint="New category, up to 50 characters.">
+                <Input
+                  value={form.category}
+                  onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
+                  maxLength={REFERENCE_DOCUMENT_CATEGORY_MAX}
+                  disabled={uploading}
+                />
+              </FormField>
+              {categories.length > 0 ? (
+                <button
+                  type="button"
+                  className="mt-1 text-xs font-medium text-sky-700 hover:underline disabled:opacity-50"
+                  disabled={uploading}
+                  onClick={() => {
+                    setNewCategory(false);
+                    setForm((prev) => ({ ...prev, category: "" }));
+                  }}
+                >
+                  {/* 있던 분류에서 고르기 */}
+                  Choose from existing categories
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <DownSelect
+              label="Category"
               value={form.category}
-              onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-              maxLength={REFERENCE_DOCUMENT_CATEGORY_MAX}
+              onChange={(value) => {
+                if (value === NEW_CATEGORY_VALUE) {
+                  setNewCategory(true);
+                  setForm((prev) => ({ ...prev, category: "" }));
+                } else {
+                  setForm((prev) => ({ ...prev, category: value }));
+                }
+              }}
+              options={[...categories.map((category) => ({ value: category, label: category })), { value: NEW_CATEGORY_VALUE, label: "+ New category..." }]}
+              placeholder="(optional)"
+              allowClear
               disabled={uploading}
             />
-            <datalist id="reference-document-categories">
-              {categories.map((category) => (
-                <option key={category} value={category} />
-              ))}
-            </datalist>
-          </FormField>
-
-          {/* 올린 사람·삭제한 사람 */}
-          <ActorField
-            label="Staff"
-            role="STAFF"
-            required
-            value={form.uploadedById}
-            onChange={(empId) => setForm((prev) => ({ ...prev, uploadedById: empId }))}
-            disabled={uploading}
-          />
+          )}
         </div>
 
         <div className="mt-4 flex justify-end">
@@ -277,7 +314,7 @@ export default function ReferenceDocumentPanel() {
       <ConfirmDialog
         open={pendingDelete !== null}
         title="Delete document"
-        message={`Remove "${pendingDelete?.title ?? ""}" from the list? The file is kept on the server.`}
+        message={`Remove "${pendingDelete?.title ?? ""}" from the list? The file will be deleted from the server.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         danger

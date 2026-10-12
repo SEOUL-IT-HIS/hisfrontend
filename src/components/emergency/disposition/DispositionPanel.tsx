@@ -7,6 +7,7 @@ import { Alert, Button, FormField, Input } from "@/components/common";
 import ActorField from "@/components/emergency/common/ActorField";
 import DownSelect from "@/components/emergency/common/DownSelect";
 import UnconfirmedVerbalNotice from "@/components/emergency/disposition/UnconfirmedVerbalNotice";
+import VoidOpenOrdersNotice from "@/components/emergency/disposition/VoidOpenOrdersNotice";
 import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
@@ -223,6 +224,8 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
                 This closes the reception as erroneous / duplicate and asks the reception service to cancel it. Clinical records
                 are kept, and this decision cannot be changed afterwards.
               </Alert>
+              {/* 취소하지 않은 처방이 있으면 먼저 취소하도록 알린다(06 으로 닫아도 검사·약제로 나간 처방은 취소되지 않는다) */}
+              <VoidOpenOrdersNotice receptionNo={receptionNo} />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <DownSelect
                   label="Reason Type"

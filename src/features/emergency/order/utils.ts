@@ -20,6 +20,14 @@ export function pendingVerbalOrders(orders: Order[]): Order[] {
   return orders.filter((o) => o.verbalYn === "Y" && !isOrderCancelled(o) && hasLoadedItems(o) && !isVerbalConfirmed(o));
 }
 
+/**
+ * 아직 취소하지 않았고 끝나지도 않은 처방 — 오접수·중복 접수(06)로 닫을 때 먼저 취소할지 알려 주는 대상.
+ * 이미 완료된 처방(처방코어 상태가 COMPLET 로 시작)은 되돌릴 것이 없어 제외한다.
+ */
+export function openOrders(orders: Order[]): Order[] {
+  return orders.filter((o) => !isOrderCancelled(o) && !/^COMPLET/i.test(o.status ?? ""));
+}
+
 /** 취소된 처방인지 — 취소 시각이 있거나 처방코어 상태가 CANCEL 또는 DEACTIV 로 시작한다. */
 export function isOrderCancelled(order: Order): boolean {
   return !!order.cancelledAt || /^(CANCEL|DEACTIV)/i.test(order.status ?? "");
