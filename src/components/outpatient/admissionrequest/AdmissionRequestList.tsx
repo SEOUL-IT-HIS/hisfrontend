@@ -174,7 +174,7 @@ const AdmissionRequestList = ({ embedded = false }: AdmissionRequestListProps) =
             {error && <Alert variant="error">{error}</Alert>}
 
             <DataTable
-                // 모든 열의 제목과 내용을 가운데 정렬해 열마다 양옆 여백을 같게 한다
+                // 모든 열의 제목과 내용을 가운데 정렬한다
                 columns={columns.map((column) => ({ ...column, className: "text-center" }))}
                 rows={pageList.content}
                 rowKey={(row) => row.admissionRequestId}

@@ -216,8 +216,8 @@ const PrescriptionList = () => {
                             {/* 8개 컬럼 균등 너비, 모든 열 가운데 정렬 */}
                             <th className="p-3 font-semibold">Patient</th>
                             <th className="p-3 font-semibold">Prescriber</th>
-                            <th className="p-3 font-semibold"><span className="inline-block min-w-[4.5rem] text-center">Service Type</span></th>
-                            <th className="p-3 font-semibold"><span className="inline-block w-20 text-center">Priority</span></th>
+                            <th className="p-3 font-semibold">Service Type</th>
+                            <th className="p-3 font-semibold">Priority</th>
                             <th className="p-3 font-semibold">Status</th>
                             <th className="p-3 font-semibold">Lab Result</th>
                             <th className="p-3 font-semibold">Prescribed At</th>
@@ -232,7 +232,7 @@ const PrescriptionList = () => {
                                     <td className="p-3">
                                         {empNames[prescription.prescribedBy] ?? prescription.prescribedBy}
                                     </td>
-                                    <td className="p-3"><span className="inline-block min-w-[4.5rem] text-center">{getServiceTypeLabel(prescription.serviceType)}</span></td>
+                                    <td className="p-3">{getServiceTypeLabel(prescription.serviceType)}</td>
                                     <td className="p-3">
                                         <PriorityCell name={prescription.priorityName} code={prescription.priorityCode} />
                                     </td>
