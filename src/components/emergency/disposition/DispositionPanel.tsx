@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store/store";
-import { Alert, Button } from "@/components/common";
+import { Alert, Button, FormField, Input } from "@/components/common";
 import ActorField from "@/components/emergency/common/ActorField";
 import DownSelect from "@/components/emergency/common/DownSelect";
+import UnconfirmedVerbalNotice from "@/components/emergency/disposition/UnconfirmedVerbalNotice";
 import { useActorId } from "@/features/emergency/common/staff";
 import { resolveEmergencyMessage } from "@/features/emergency/messages";
 import {
@@ -24,7 +25,11 @@ import {
 import {
   DISPOSITION_TYPE_FALLBACK_OPTIONS,
   DISPOSITION_TYPE_GROUP_CODE,
+  DISPOSITION_VOID_CODE,
+  VOID_REASON_MAX_LENGTH,
+  VOID_REASON_TYPE_OPTIONS,
 } from "@/features/emergency/disposition/types";
+import { selectReceptionListItems } from "@/features/emergency/receptionList/slice";
 import {
   fetchAllCommonCodesRequest,
   selectCommonCodeLoaded,
@@ -37,7 +42,7 @@ type DispositionPanelProps = {
   className?: string;
 };
 
-const initialForm = { dispositionType: "", decidedById: "" };
+const initialForm = { dispositionType: "", decidedById: "", voidReasonType: "", voidReason: "", keptReceptionId: "" };
 
 /**
  * 응급 퇴실 결정 패널 (UC-DISP-01, Jira UD2-39)
@@ -56,6 +61,7 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
   const commonCodeLoaded = useSelector(selectCommonCodeLoaded);
   const dispositionTypeCodes = useSelector(selectCommonCodesByGroup(DISPOSITION_TYPE_GROUP_CODE));
 
+  const receptionItems = useSelector(selectReceptionListItems);
   const [form, setForm] = useState(initialForm);
   // 퇴실 결정자는 의사 — 직접 안 고르면 로그인한 사람이 의사일 때 그 사람이다
   const decidedById = useActorId(form.decidedById, "DOCTOR");
@@ -109,13 +115,43 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
     return typeOptions.find((o) => o.value === code)?.label ?? code;
   }
 
+  // 오접수·중복 접수(06): 사유 유형과 사유가 필수이고, 중복이면 남길 접수를 고를 수 있다
+  const voiding = form.dispositionType === DISPOSITION_VOID_CODE;
+  const duplicate = form.voidReasonType === "DUPLICATE";
+  const voidReady = !voiding || (!!form.voidReasonType && form.voidReason.trim().length > 0);
+  const currentPatientId = receptionItems.find((item) => item.receptionId === receptionNo)?.patientId ?? null;
+  // 같은 환자의 다른 접수(취소된 접수 제외) — 중복일 때 남길 접수 후보
+  const keptOptions = currentPatientId
+    ? receptionItems
+        .filter((item) => item.patientId === currentPatientId && item.receptionId !== receptionNo && item.careStatusCode !== "CANCELLED")
+        .map((item) => ({
+          value: item.receptionId,
+          label: `${item.patientName ?? "-"} · ${item.receivedAt ? formatDateTime(item.receivedAt) : "-"}`,
+        }))
+    : [];
+
   function handleSubmit() {
-    if (!form.dispositionType || !decidedById || !receptionNo) return;
+    if (!form.dispositionType || !decidedById || !receptionNo || !voidReady) return;
+    if (voiding) {
+      // 되돌릴 수 없는 결정이다 — 접수에 알려 접수가 취소 처리된다(응급 기록은 그대로 남는다)
+      const ok = window.confirm(
+        "Close this reception as erroneous / duplicate?\n\nThe reception service will be asked to cancel it. " +
+          "Clinical records are kept. This cannot be changed afterwards.",
+      );
+      if (!ok) return;
+    }
     dispatch(
       createDispositionRequest({
         encounterId: receptionNo,
         dispositionType: form.dispositionType,
         decidedById,
+        ...(voiding
+          ? {
+              voidReasonType: form.voidReasonType,
+              voidReason: form.voidReason.trim(),
+              keptReceptionId: duplicate && form.keptReceptionId ? form.keptReceptionId : undefined,
+            }
+          : {}),
       }),
     );
   }
@@ -124,6 +160,9 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
     <section className={`rounded-xl border border-slate-200 bg-white p-4 ${className}`}>
       {/* 퇴실 결정 */}
       <h3 className="mb-3 text-sm font-semibold text-slate-800">Disposition Decision</h3>
+
+      {/* 확정되지 않은 구두처방 안내 — 퇴실을 막지는 않는다 */}
+      <UnconfirmedVerbalNotice receptionNo={receptionNo} />
 
       {loading && !disposition ? (
         // 퇴실 결정을 불러오는 중입니다...
@@ -136,6 +175,14 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
             {/* 퇴실 구분: {구분} · {결정일시} */}
             Disposition: {typeLabel(disposition.dispositionTypeCode)} · {formatDateTime(disposition.decidedAt)}
           </span>
+          {disposition.dispositionTypeCode === DISPOSITION_VOID_CODE && disposition.voidReason ? (
+            // 오접수·중복 접수의 사유
+            <span className="w-full text-xs text-emerald-800">
+              {VOID_REASON_TYPE_OPTIONS.find((o) => o.value === disposition.voidReasonType)?.label ?? disposition.voidReasonType}
+              {" — "}
+              {disposition.voidReason}
+            </span>
+          ) : null}
           {disposition.changeable ? (
             // 결정 변경 (예: 병동이 입원을 거부해 전원·귀가로 바꿀 때)
             <Button type="button" variant="secondary" onClick={() => setChanging(true)}>
@@ -169,6 +216,48 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
               disabled={submitting}
             />
           </div>
+          {voiding ? (
+            <div className="mt-3 space-y-3">
+              <Alert variant="info">
+                {/* 접수를 닫고 접수 서비스에 알려 접수가 취소 처리합니다. 응급 기록은 그대로 남고 이 결정은 바꿀 수 없습니다. */}
+                This closes the reception as erroneous / duplicate and asks the reception service to cancel it. Clinical records
+                are kept, and this decision cannot be changed afterwards.
+              </Alert>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <DownSelect
+                  label="Reason Type"
+                  required
+                  value={form.voidReasonType}
+                  onChange={(voidReasonType) =>
+                    setForm((prev) => ({ ...prev, voidReasonType, keptReceptionId: voidReasonType === "DUPLICATE" ? prev.keptReceptionId : "" }))
+                  }
+                  options={[...VOID_REASON_TYPE_OPTIONS]}
+                  placeholder="Select"
+                  disabled={submitting}
+                />
+                {duplicate ? (
+                  <DownSelect
+                    label="Kept Reception"
+                    value={form.keptReceptionId}
+                    onChange={(keptReceptionId) => setForm((prev) => ({ ...prev, keptReceptionId }))}
+                    options={keptOptions}
+                    placeholder={keptOptions.length > 0 ? "Select (optional)" : "No other reception of this patient"}
+                    disabled={submitting || keptOptions.length === 0}
+                  />
+                ) : null}
+              </div>
+              <FormField label="Reason" required hint={`${form.voidReason.length} / ${VOID_REASON_MAX_LENGTH}`}>
+                <Input
+                  name="voidReason"
+                  value={form.voidReason}
+                  onChange={(e) => setForm((prev) => ({ ...prev, voidReason: e.target.value }))}
+                  maxLength={VOID_REASON_MAX_LENGTH}
+                  disabled={submitting}
+                  placeholder="e.g. The same patient was registered twice"
+                />
+              </FormField>
+            </div>
+          ) : null}
           <div className="mt-3 flex justify-end gap-2">
             {changing ? (
               // 변경 취소
@@ -179,7 +268,7 @@ export default function DispositionPanel({ receptionNo, className = "" }: Dispos
             <Button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || !form.dispositionType || !decidedById || !receptionNo}
+              disabled={submitting || !form.dispositionType || !decidedById || !receptionNo || !voidReady}
             >
               {/* 등록 중... / 퇴실 결정 변경 / 퇴실 결정 등록 */}
               {submitting ? "Saving..." : changing ? "Change Disposition" : "Register Disposition"}

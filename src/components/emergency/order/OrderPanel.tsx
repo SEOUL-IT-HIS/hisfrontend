@@ -47,6 +47,7 @@ import {
   dosageFormOf,
   isDrugItemComplete,
   isOrderCancelled,
+  isVerbalConfirmed,
   labItemHasResult,
   labItemReceived,
   labRejectedItems,
@@ -97,11 +98,6 @@ const RESULT_POLL_MAX = 20;
 
 const initialForm = { prescribedBy: "", priorityCode: "01", timingCode: "03", verbal: false, dispatchNow: true };
 const initialCancel = { cancelReason: "", userId: "" };
-
-/** 구두처방을 확정한 처방인지 */
-function isVerbalConfirmed(order: Order): boolean {
-  return !!order.verbalConfirmedAt || !!order.verbalConfirmedBy;
-}
 
 /** 처방 상태 문구 — 처방코어가 돌려준 상태를 그대로 보여준다(예: ORDERED, CANCELLED) */
 function statusStyle(status: string | null): string {
