@@ -103,7 +103,8 @@ const AdmissionRequestList = ({ embedded = false }: AdmissionRequestListProps) =
         {
             key: "department",
             header: "Department",
-            render: (row) => row.admissionDeptName ?? row.admissionDeptCode,
+            // 열 너비가 균등해서 긴 진료과명은 잘리지 않고 줄바꿈되게 한다
+            render: (row) => <span className="whitespace-normal">{row.admissionDeptName ?? row.admissionDeptCode}</span>,
         },
         {
             key: "requestedBy",
@@ -114,12 +115,12 @@ const AdmissionRequestList = ({ embedded = false }: AdmissionRequestListProps) =
             key: "status",
             header: "Status",
             render: (row) => (
-                <div className="flex flex-col items-start gap-1">
+                <div className="flex flex-col items-center gap-1">
                     <AdmissionRequestStatusBadge status={row.requestStatus} name={row.requestStatusName} />
                     {/* 회신을 기다리는데 병동으로 전송이 안 된 요청은 따로 알려준다 (진료 화면에서 재전송) */}
                     {row.requestStatus === ADMISSION_REQUEST_STATUS.REQUESTED &&
                         row.sendStatus !== ADMISSION_SEND_STATUS.SENT && (
-                            <span className="text-xs font-medium text-red-600">Not sent to the ward</span>
+                            <span className="whitespace-normal text-xs font-medium text-red-600">Not sent to the ward</span>
                         )}
                 </div>
             ),
@@ -127,7 +128,9 @@ const AdmissionRequestList = ({ embedded = false }: AdmissionRequestListProps) =
         {
             key: "assignedWard",
             header: "Assigned Ward",
-            render: (row) => row.assignedWardName ?? row.assignedWardCode ?? "-",
+            render: (row) => (
+                <span className="whitespace-normal">{row.assignedWardName ?? row.assignedWardCode ?? "-"}</span>
+            ),
         },
         {
             key: "note",
@@ -171,7 +174,8 @@ const AdmissionRequestList = ({ embedded = false }: AdmissionRequestListProps) =
             {error && <Alert variant="error">{error}</Alert>}
 
             <DataTable
-                columns={columns}
+                // 모든 열의 제목과 내용을 가운데 정렬한다
+                columns={columns.map((column) => ({ ...column, className: "text-center" }))}
                 rows={pageList.content}
                 rowKey={(row) => row.admissionRequestId}
                 loading={loading}
@@ -179,7 +183,9 @@ const AdmissionRequestList = ({ embedded = false }: AdmissionRequestListProps) =
                 loadingMessage="Loading admission requests..."
                 // 조회된 입원 요청이 없습니다.
                 emptyMessage="No admission requests found."
-                minWidthClassName="min-w-[860px]"
+                // 7개 열을 같은 너비로 맞춘다 (좁아지면 가로 스크롤)
+                equalColumns
+                minWidthClassName="min-w-[1100px]"
             />
 
             <p className="text-xs text-slate-500">{countLabel}</p>

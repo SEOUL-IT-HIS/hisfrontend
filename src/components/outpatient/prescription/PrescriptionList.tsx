@@ -209,16 +209,16 @@ const PrescriptionList = () => {
                 <p className="p-4 text-center text-slate-500">Loading prescriptions...</p>
             ) : (
                 <div className="min-h-[450px] overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-                    <table className="w-full table-fixed text-left border-collapse text-sm">
+                    <table className="w-full table-fixed text-center border-collapse text-sm">
                         <thead className="bg-slate-100 border-b border-slate-200 text-slate-700">
                         <tr>
                             {/* 환자 / 처방자 / 구분 / 순위 / 상태 / 검사 / 일시 / 관리 */}
-                            {/* 8개 컬럼 균등 너비 */}
+                            {/* 8개 컬럼 균등 너비, 모든 열 가운데 정렬 */}
                             <th className="p-3 font-semibold">Patient</th>
                             <th className="p-3 font-semibold">Prescriber</th>
-                            <th className="p-3 font-semibold"><span className="inline-block min-w-[4.5rem] text-center">Service Type</span></th>
-                            <th className="p-3 font-semibold"><span className="inline-block w-20 text-center">Priority</span></th>
-                            <th className="p-3 pl-6 font-semibold">Status</th>
+                            <th className="p-3 font-semibold">Service Type</th>
+                            <th className="p-3 font-semibold">Priority</th>
+                            <th className="p-3 font-semibold">Status</th>
                             <th className="p-3 font-semibold">Lab Result</th>
                             <th className="p-3 font-semibold">Prescribed At</th>
                             <th className="p-3 font-semibold"><span className="sr-only">Actions</span></th>
@@ -232,18 +232,18 @@ const PrescriptionList = () => {
                                     <td className="p-3">
                                         {empNames[prescription.prescribedBy] ?? prescription.prescribedBy}
                                     </td>
-                                    <td className="p-3"><span className="inline-block min-w-[4.5rem] text-center">{getServiceTypeLabel(prescription.serviceType)}</span></td>
+                                    <td className="p-3">{getServiceTypeLabel(prescription.serviceType)}</td>
                                     <td className="p-3">
                                         <PriorityCell name={prescription.priorityName} code={prescription.priorityCode} />
                                     </td>
-                                    <td className="p-3 pl-6">
+                                    <td className="p-3">
                                         <span className={STATUS_TEXT_CLASS[prescription.status]}>
                                             {getStatusText(prescription.status)}
                                         </span>
                                     </td>
                                     <td className="p-3"><LabResultBadge value={prescription.labResultStatus} /></td>
                                     <td className="p-3">{formatDateTime(prescription.prescribedAt)}</td>
-                                    <td className="p-3 text-left">
+                                    <td className="p-3">
                                         <Button
                                             variant="primary"
                                             onClick={() => setSelectedPrescriptionId(prescription.prescriptionId)}

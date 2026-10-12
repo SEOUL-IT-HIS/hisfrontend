@@ -137,14 +137,15 @@ const MedicalRecordList = () => {
                         <thead className="bg-slate-100 border-b border-slate-200 text-slate-700">
                         <tr>
                             {/* 환자 / 의사 / 진료과 / 주호소 / 초재진 / 일시 / 관리 */}
-                            {/* 7개 컬럼 균등 너비 (처방 목록과 동일) */}
-                            <th className="p-3 font-semibold">Patient</th>
-                            <th className="p-3 font-semibold">Doctor</th>
-                            <th className="p-3 font-semibold">Department</th>
-                            <th className="p-3 font-semibold">Chief Complaint</th>
-                            <th className="p-3 font-semibold"><span className="inline-block w-24 text-center">Visit Type</span></th>
-                            <th className="p-3 font-semibold">Created At</th>
-                            <th className="p-3 font-semibold"><span className="sr-only">Actions</span></th>
+                            {/* 7개 컬럼 균등 너비 (처방 목록과 동일). 글(이름·진료과·주호소)은 왼쪽, 배지·일시·버튼은 가운데 정렬 */}
+                            {/* 이름이 짧은 환자·의사 열은 조금 좁게, 나머지 5개 열은 남는 너비를 균등하게 나눈다 */}
+                            <th className="w-[13%] p-3 font-semibold">Patient</th>
+                            <th className="w-[13%] p-3 pl-0 font-semibold">Doctor</th>
+                            <th className="p-3 pl-0 font-semibold">Department</th>
+                            <th className="p-3 pl-6 font-semibold">Chief Complaint</th>
+                            <th className="p-3 text-center font-semibold">Visit Type</th>
+                            <th className="p-3 text-center font-semibold">Created At</th>
+                            <th className="p-3 text-center font-semibold"><span className="sr-only">Actions</span></th>
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -152,14 +153,14 @@ const MedicalRecordList = () => {
                             list.map((record) => (
                                 <tr key={record.recordId} className="hover:bg-slate-50 transition">
                                     <td className="p-3">{record.patientName ?? "Unknown"}</td>
-                                    <td className="p-3">
+                                    <td className="p-3 pl-0">
                                         {record.doctorName || empNames[record.doctorId] || record.doctorId || "-"}
                                     </td>
-                                    <td className="p-3">{record.departmentName || record.departmentCode || "-"}</td>
-                                    <td className="p-3 truncate">{record.chiefComplaint ?? "-"}</td>
-                                    <td className="p-3"><VisitTypeBadge value={record.visitType} /></td>
-                                    <td className="p-3">{formatDateTime(record.createdAt)}</td>
-                                    <td className="p-3 text-left">
+                                    <td className="p-3 pl-0">{record.departmentName || record.departmentCode || "-"}</td>
+                                    <td className="p-3 pl-6 truncate">{record.chiefComplaint ?? "-"}</td>
+                                    <td className="p-3 text-center"><VisitTypeBadge value={record.visitType} /></td>
+                                    <td className="p-3 text-center">{formatDateTime(record.createdAt)}</td>
+                                    <td className="p-3 text-center">
                                         <Button
                                             variant="primary"
                                             onClick={() => setSelectedRecordId(record.recordId)}
