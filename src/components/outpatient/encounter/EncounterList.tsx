@@ -10,6 +10,9 @@ import { AppDispatch, RootState } from "@/store/store";
 import { useEffect, useRef, useState } from "react";
 import { shallowEqual, useDispatch, useSelector } from "react-redux";
 import { Alert, Button } from "@/components/common";
+import AdmissionRequestList from "../admissionrequest/AdmissionRequestList";
+import AdmissionRequestPanel from "../admissionrequest/AdmissionRequestPanel";
+import AdmissionRequestStatusBadge from "../admissionrequest/AdmissionRequestStatusBadge";
 import MedicalRecordList from "../medicalrecord/MedicalRecordList";
 import PrescriptionList from "../prescription/PrescriptionList";
 import PrescriptionForm from "./PrescriptionForm";
@@ -103,7 +106,9 @@ const EncounterList = () => {
         : null;
 
     // 우측 화면 탭 상태
-    const [activeTab, setActiveTab] = useState<'FORM' | 'PRESCRIPTION' | 'HISTORY'>('FORM');
+    const [activeTab, setActiveTab] = useState<'FORM' | 'PRESCRIPTION' | 'HISTORY' | 'ADMISSION'>('FORM');
+    // 입원 요청 탭에서 선택한 환자의 요청을 볼지, 모든 의사의 입원요청 목록을 볼지 (환자를 선택하지 않으면 항상 전체 목록)
+    const [admissionView, setAdmissionView] = useState<'PATIENT' | 'ALL'>('PATIENT');
 
     // 오늘 진료 작성 폼 상태
     const [chiefComplaint, setChiefComplaint] = useState("");
@@ -171,6 +176,7 @@ const EncounterList = () => {
     const handleSelectPatient = (enc: EncounterDto) => {
         setSelectedEncounter(enc);
         setActiveTab('FORM');
+        setAdmissionView('PATIENT');
         setChiefComplaint('');
         setExaminationNote('');
         setAssessmentNote('');
@@ -279,10 +285,11 @@ const EncounterList = () => {
                             <table className="w-full text-left border-collapse text-sm">
                                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 sticky top-0">
                                 <tr>
-                                    {/* 환자명 / 진료과 / 상태 */}
-                                    <th className="w-[100px] p-3 font-semibold">Patient</th>
-                                    <th className="w-[100px] p-3 font-semibold">Department</th>
+                                    {/* 환자명 / 진료과 / 진료 상태 / 입원요청 상태 */}
+                                    <th className="w-[80px] p-3 font-semibold">Patient</th>
+                                    <th className="w-[110px] p-3 font-semibold">Department</th>
                                     <th className="w-[100px] p-3 font-semibold">Status</th>
+                                    <th className="w-[110px] p-3 font-semibold">Admission</th>
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -301,6 +308,17 @@ const EncounterList = () => {
                                                     <span className={`rounded-full px-2 py-1 text-xs border ${STATUS_BADGE_CLASS[normalizeStatus(enc.status)] ?? DEFAULT_BADGE_CLASS}`}>
                                                         {getStatusText(enc.status)}
                                                     </span>
+                                                </td>
+                                                <td className="p-3">
+                                                    {/* 입원요청이 있으면 병동 회신 상태(요청됨/병상 배정/거부)를 보여준다 */}
+                                                    {enc.admissionRequestStatus ? (
+                                                        <AdmissionRequestStatusBadge
+                                                            status={enc.admissionRequestStatus}
+                                                            name={enc.admissionRequestStatusName}
+                                                        />
+                                                    ) : (
+                                                        <span className="text-slate-300">-</span>
+                                                    )}
                                                 </td>
                                             </tr>
                                         );
@@ -366,6 +384,17 @@ const EncounterList = () => {
                         >
                             {/* 처방 조회 */}
                             Prescriptions
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('ADMISSION')}
+                            className={`py-2 px-4 font-semibold text-sm border-b-2 transition ${
+                                activeTab === 'ADMISSION'
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                            }`}
+                        >
+                            {/* 입원 요청 */}
+                            Admission Request
                         </button>
                     </div>
 
@@ -548,6 +577,40 @@ const EncounterList = () => {
                         /* 처방조회 탭 - 환자 선택 여부와 상관없이 바로 렌더링 */
                         <div className="flex-1 overflow-y-auto">
                             <PrescriptionList />
+                        </div>
+                    ) : activeTab === 'ADMISSION' ? (
+                        /* 입원 요청 탭 - 환자를 선택하면 그 환자의 입원 요청/이력, 선택하지 않았거나 "All"이면 모든 의사의 입원요청 목록 */
+                        <div className="flex-1 overflow-y-auto">
+                            {selectedEncounter && (
+                                <div className="mb-3 flex gap-2">
+                                    <Button
+                                        variant={admissionView === 'PATIENT' ? 'primary' : 'secondary'}
+                                        className="h-8 px-3"
+                                        onClick={() => setAdmissionView('PATIENT')}
+                                    >
+                                        {/* 선택한 환자 */}
+                                        Selected Patient
+                                    </Button>
+                                    <Button
+                                        variant={admissionView === 'ALL' ? 'primary' : 'secondary'}
+                                        className="h-8 px-3"
+                                        onClick={() => setAdmissionView('ALL')}
+                                    >
+                                        {/* 전체 요청 */}
+                                        All Requests
+                                    </Button>
+                                </div>
+                            )}
+                            {selectedEncounter && admissionView === 'PATIENT' ? (
+                                /* key: 환자를 바꾸면 입력 내용도 초기화 */
+                                <AdmissionRequestPanel
+                                    key={selectedEncounter.receptionId}
+                                    encounter={selectedEncounter}
+                                    encounterStatus={normalizeStatus(currentStatus ?? selectedEncounter.status)}
+                                />
+                            ) : (
+                                <AdmissionRequestList embedded />
+                            )}
                         </div>
                     ) : (
                         /* 과거 진료기록 조회 탭 (환자 선택과 무관) */
