@@ -38,6 +38,7 @@ export type PatientRegisterRequest = {
   address?: string;
   addressDetail?: string;
   phoneNo?: string;
+  primaryYn?: Yn;
 };
 
 /** POST /api/patient/register 응답 데이터 */

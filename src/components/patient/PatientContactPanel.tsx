@@ -269,7 +269,7 @@ export default function PatientContactPanel({
 
                                     {item.primaryYn === "Y" ? (
                                         <span className="rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">
-                                            ★ Primary
+                                            📌 Primary
                                         </span>
                                     ) : null}
                                 </div>
@@ -303,7 +303,7 @@ export default function PatientContactPanel({
                                                     disabled={busy}
                                                     onClick={() => setPrimary(item)}
                                                 >
-                                                    Set as Primary
+                                                    📌 Set as Primary
                                                 </Button>
                                             ) : null}
 
