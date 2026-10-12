@@ -34,7 +34,7 @@ export async function uploadReferenceDocument(payload: ReferenceDocumentUploadPa
   return data.data;
 }
 
-/** 참고 문서를 목록에서 뺀다(상태 변경 — 파일은 서버에 남는다). */
+/** 참고 문서를 목록에서 뺀다(상태 변경 — 서버가 저장소의 파일 본문도 지운다). */
 export async function deleteReferenceDocument(id: string, deletedById: string): Promise<void> {
   await apiClient.delete<ApiResponse<null>>(`${REFERENCE_PATH}/${encodeURIComponent(id)}`, {
     params: { deletedById },
