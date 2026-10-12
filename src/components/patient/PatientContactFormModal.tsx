@@ -15,6 +15,7 @@ export type PatientContactFormValues = {
     address: string;
     addressDetail: string;
     phoneNo: string;
+    primaryYn: "Y" | "N";
 };
 
 type Props = {
@@ -51,6 +52,7 @@ export default function PatientContactFormModal({
         item?.addressDetail ?? "",
     );
     const [phoneNo, setPhoneNo] = useState(item?.phoneNo ?? "");
+    const [primaryYn, setPrimaryYn] = useState<"Y" | "N">("N");
     const [validationError, setValidationError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -119,6 +121,7 @@ export default function PatientContactFormModal({
             address: address.trim(),
             addressDetail: addressDetail.trim(),
             phoneNo: normalizedPhoneNo,
+            primaryYn,
         });
     }
 
@@ -230,6 +233,18 @@ export default function PatientContactFormModal({
                         />
                     </FormField>
                 </div>
+
+                {mode === "create" ? (
+                    <Button
+                        type="button"
+                        className="mt-4"
+                        variant={primaryYn === "Y" ? "primary" : "secondary"}
+                        disabled={submitting}
+                        onClick={() => setPrimaryYn((value) => value === "Y" ? "N" : "Y")}
+                    >
+                        {primaryYn === "Y" ? "📌 Primary" : "📌 Set as Primary"}
+                    </Button>
+                ) : null}
 
                 {validationError ? (
                     <Alert className="mt-4">{validationError}</Alert>

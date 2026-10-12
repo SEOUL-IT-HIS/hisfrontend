@@ -331,6 +331,10 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
             <div>
               <InfoRow label="Admission Dept">{admission.admissionDeptId ? deptNames[admission.admissionDeptId] ?? admission.admissionDeptId : "-"}</InfoRow>
               <InfoRow label="Admission Route">{admission.admissionRoute}</InfoRow>
+              {/* 외래 등 응급이 아닌 요청 건 — 응급은 별도 카드(emergencyCard)에서 보여주므로 여기선 숨김 */}
+              {!admission.dispositionId && admission.requestedBy && (
+                <InfoRow label="Requested By">{doctorNameById.get(admission.requestedBy) ?? admission.requestedBy}</InfoRow>
+              )}
               <InfoRow label="Admission Date">{formatDateTime(admission.admissionDate)}</InfoRow>
               <InfoRow label="Gender / Age">{patient ? formatSexAge(patient.genderCd, patient.birthDate) : "-"}</InfoRow>
               <DoctorRow
@@ -360,6 +364,12 @@ const AdmissionDetail = ({ admissionId: admissionIdProp, onClose }: AdmissionDet
               {assignment && <InfoRow label="Bed Assigned At">{formatDateTime(assignment.assignedAt)}</InfoRow>}
               {assignment?.releasedAt && <InfoRow label="Bed Released At">{formatDateTime(assignment.releasedAt)}</InfoRow>}
               <InfoRow label="Updated At">{formatDateTime(admission.updatedAt)}</InfoRow>
+              {!admission.dispositionId && admission.note && (
+                <div className="border-b border-slate-100 px-5 py-3 text-sm last:border-b-0">
+                  <p className="mb-1 text-slate-400">Note</p>
+                  <p className="whitespace-pre-wrap text-slate-800">{admission.note}</p>
+                </div>
+              )}
             </div>
           </div>
 

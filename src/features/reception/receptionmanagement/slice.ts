@@ -163,8 +163,15 @@ const receptionManagementSlice = createSlice({
         return { payload: request };
       },
     },
-    cancelReceptionSuccess(state) {
-      state.cancelLoading = false;
+    cancelReceptionSuccess: {
+      reducer(state, action: PayloadAction<string>) {
+        state.cancelLoading = false;
+        // action.payload(receptionId)는 응급 목록 slice 가 취소된 행을 바로 바꾸는 데 쓴다. 외래 목록은 saga 의 재조회로 갱신한다.
+        void action;
+      },
+      prepare(receptionId: string) {
+        return { payload: receptionId };
+      },
     },
     cancelReceptionFailure(state, action: PayloadAction<string>) {
       state.cancelLoading = false;

@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { cancelReceptionSuccess } from "@/features/reception/receptionmanagement/slice";
 import type { RootState } from "@/store/store";
 import type {
   EmergencyReceptionListItem,
@@ -46,6 +47,11 @@ const emergencyReceptionSlice = createSlice({
       state.listError = action.payload;
     },
 
+    /** 화면에서 주기적으로 조용히 갱신 — 로딩 표시·오류 문구 없이 saga 가 목록만 바꾼다 */
+    refreshEmergencyReceptionList() {
+      /* saga 가 처리한다 */
+    },
+
     registerEmergencyReceptionRequest: {
       reducer(state) {
         state.registerLoading = true;
@@ -64,12 +70,20 @@ const emergencyReceptionSlice = createSlice({
       state.registerError = action.payload;
     },
   },
+  extraReducers: (builder) => {
+    // 접수 취소(응급 접수 화면의 Cancel 포함)가 성공하면 목록을 다시 불러오기 전에 그 행을 바로 취소로 보여준다.
+    builder.addCase(cancelReceptionSuccess, (state, action) => {
+      const target = state.list.find((r) => r.receptionId === action.payload);
+      if (target) target.status = "CANCELLED";
+    });
+  },
 });
 
 export const {
   fetchEmergencyReceptionListRequest,
   fetchEmergencyReceptionListSuccess,
   fetchEmergencyReceptionListFailure,
+  refreshEmergencyReceptionList,
   registerEmergencyReceptionRequest,
   registerEmergencyReceptionSuccess,
   registerEmergencyReceptionFailure,

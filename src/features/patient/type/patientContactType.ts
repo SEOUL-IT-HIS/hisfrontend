@@ -22,6 +22,7 @@ export type PatientContactCreateRequest = {
     address: string;
     addressDetail: string;
     phoneNo: string;
+    primaryYn: "Y" | "N";
 };
 
 export type PatientContactUpdateRequest =

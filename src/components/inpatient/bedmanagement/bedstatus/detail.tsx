@@ -1,7 +1,7 @@
 "use client";
 
 import { useCommonCodeOptions } from "@/features/commonCode/hooks/useCommonCodeOptions";
-import { fetchBedDetailRequest, selectBedDetail, selectBedDetailStatus } from "@/features/inpatient/bedmanagement/bedstatus/slice";
+import { fetchBedDetailRequest, makeBedAvailableRequest, selectBedDetail, selectBedDetailStatus, selectMakeAvailableStatus } from "@/features/inpatient/bedmanagement/bedstatus/slice";
 import { fetchPatientDetailRequest } from "@/features/patient/slice/patientSlice";
 import type { AppDispatch, RootState } from "@/store/store";
 import { useParams } from "next/navigation";
@@ -16,12 +16,14 @@ const STATUS_BADGE: Record<string, string> = {
     EMPTY: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
     OCCUPIED: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
     RESERVED: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+    MAINTENANCE: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
 };
 
 const STATUS_LABEL: Record<string, string> = {
     EMPTY: "Empty",
     OCCUPIED: "Occupied",
     RESERVED: "Reserved",
+    MAINTENANCE: "Maintenance",
 };
 
 type BedStatusDetailProps = {
@@ -37,6 +39,7 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
     const bedId = bedIdProp ?? routeParams.bedId ?? "";
     const bed = useSelector(selectBedDetail);
     const { loading, error } = useSelector(selectBedDetailStatus);
+    const { loading: makeAvailableLoading, error: makeAvailableError } = useSelector(selectMakeAvailableStatus);
     const patientDetail = useSelector((state: RootState) => state.patient.patientDetail);
     const { options: roomTypeOptions } = useCommonCodeOptions("ROOM_TYPE_CD");
     const { options: wardOptions } = useCommonCodeOptions("WARD_CD");
@@ -74,6 +77,11 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
         if (!bedId || !roomTypeCode) return;
         dispatch({type: "bed/updateBedRoomTypeRequest", payload: { bedId, roomTypeCode }});
     };
+    // 청소 완료 — 퇴상 후 점검중(MAINTENANCE)이 된 병상을 빈 병상으로 되돌림
+    const handleMakeAvailable = () => {
+        if (!bedId) return;
+        dispatch(makeBedAvailableRequest(bedId));
+    };
     return (
         // 목록 옆에 끼워 넣을 때(onClose 있음)는 여백 없이, 단독 화면일 때만 페이지 여백
         <div className={onClose ? "w-full" : "w-full p-6"}>
@@ -105,6 +113,18 @@ const BedStatusDetail = ({ bedId: bedIdProp, onClose }: BedStatusDetailProps = {
                                 {STATUS_LABEL[bed.bedStatus] ?? bed.bedStatus}
                             </span>
                         </div>
+                        {/* 점검중(퇴상 후 청소 대기) 병상에만 노출 — 누르면 빈 병상(Empty)이 되어 다시 배정할 수 있음 */}
+                        {bed.bedStatus === "MAINTENANCE" && (
+                            <div className="border-b border-slate-100 bg-violet-50/40 px-5 py-3">
+                                <p className="text-sm text-slate-600">
+                                    This bed is under maintenance after the patient left. Mark it available once cleaning is done.
+                                </p>
+                                <Button onClick={handleMakeAvailable} disabled={makeAvailableLoading} className="mt-2 !h-8 !px-3">
+                                    {makeAvailableLoading ? "Saving..." : "Make Available"}
+                                </Button>
+                                {makeAvailableError && <p className="mt-1 text-xs text-rose-600">{makeAvailableError}</p>}
+                            </div>
+                        )}
                         <InfoRow label="Patient Name">
                             {bed.patientId ? (patientDetail?.patientId === bed.patientId ? patientDetail.patientName : "Loading...") : "None"}
                         </InfoRow>

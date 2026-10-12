@@ -25,6 +25,7 @@ const STATUS_BADGE: Record<string, string> = {
   EMPTY: "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200",
   OCCUPIED: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
   RESERVED: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+  MAINTENANCE: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
 };
 
 // 병상 상태 코드 → 화면에 보여줄 한글 라벨
@@ -32,6 +33,7 @@ const STATUS_LABEL: Record<string, string> = {
   EMPTY: "Empty",
   OCCUPIED: "Occupied",
   RESERVED: "Reserved",
+  MAINTENANCE: "Maintenance",
 };
 
 // 머리글과 각 행이 같은 칸 비율을 씀 (표(table)가 아니라 행 카드 목록이라 직접 맞춤)
@@ -100,6 +102,7 @@ const BedStatusList = ({ embedded = false, initialWard = "" }: BedStatusListProp
     {id:1, name: 'EMPTY', description: 'Empty Bed'},
     {id:2, name: 'OCCUPIED', description: 'Occupied Bed'},
     {id:3, name: 'RESERVED', description: 'Reserved Bed'},
+    {id:4, name: 'MAINTENANCE', description: 'Maintenance Bed'},
   ];
 
 

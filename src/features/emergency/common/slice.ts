@@ -17,6 +17,7 @@ import followUpReducer from "@/features/emergency/disposition/followup/slice";
 import congestionReducer from "@/features/emergency/resource/congestion/slice";
 import dashboardReducer from "@/features/emergency/monitor/slice";
 import orderReducer from "@/features/emergency/order/slice";
+import referenceDocumentReducer from "@/features/emergency/reference/slice";
 
 /**
  * emergency 도메인 결합 reducer
@@ -43,6 +44,7 @@ const emergencyReducer = combineReducers({
   congestion: congestionReducer,
   dashboard: dashboardReducer,
   order: orderReducer,
+  referenceDocument: referenceDocumentReducer,
 });
 
 export default emergencyReducer;

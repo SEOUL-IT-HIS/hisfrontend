@@ -6,6 +6,28 @@ import {
   type OrderItemType,
 } from "@/features/emergency/order/types";
 
+/** 구두처방을 의사가 확정했는지 — 확정 일시나 확정 의사가 있으면 확정된 것 */
+export function isVerbalConfirmed(order: Order): boolean {
+  return !!order.verbalConfirmedAt || !!order.verbalConfirmedBy;
+}
+
+/**
+ * 의사가 아직 확정하지 않은 구두처방(취소된 것은 제외).
+ * 확정 정보는 목록 응답에 빠질 수 있어, 확정한 처방을 미확정으로 잘못 알리지 않도록 **항목까지 읽어 온 처방**(단건 조회를 마친 것)만 판단한다.
+ * 처방 목록을 불러오면 saga 가 상세를 조용히 채워 두므로 따로 호출하지 않는다.
+ */
+export function pendingVerbalOrders(orders: Order[]): Order[] {
+  return orders.filter((o) => o.verbalYn === "Y" && !isOrderCancelled(o) && hasLoadedItems(o) && !isVerbalConfirmed(o));
+}
+
+/**
+ * 아직 취소하지 않았고 끝나지도 않은 처방 — 오접수·중복 접수(06)로 닫을 때 먼저 취소할지 알려 주는 대상.
+ * 이미 완료된 처방(처방코어 상태가 COMPLET 로 시작)은 되돌릴 것이 없어 제외한다.
+ */
+export function openOrders(orders: Order[]): Order[] {
+  return orders.filter((o) => !isOrderCancelled(o) && !/^COMPLET/i.test(o.status ?? ""));
+}
+
 /** 취소된 처방인지 — 취소 시각이 있거나 처방코어 상태가 CANCEL 또는 DEACTIV 로 시작한다. */
 export function isOrderCancelled(order: Order): boolean {
   return !!order.cancelledAt || /^(CANCEL|DEACTIV)/i.test(order.status ?? "");

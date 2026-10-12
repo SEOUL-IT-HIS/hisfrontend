@@ -31,6 +31,7 @@ import {
   updatePatientRequest,
 } from "@/features/patient/slice/patientSlice";
 import { getGenderLabel } from "@/features/patient/util/genderCode";
+import { getPatientDisplayName } from "@/features/patient/util/patientName";
 import type { AppDispatch, RootState } from "@/store/store";
 import PatientSafetyPanel from "./PatientSafetyPanel";
 import PatientContactPanel from "./PatientContactPanel";
@@ -471,7 +472,11 @@ export default function PatientDetailForm({
 
       {temporaryMergeSuccess ? (
         <Alert variant="success">
-          Temporary patient merged into {patientDetail?.patientName}.{" "}
+          Temporary patient merged into {getPatientDisplayName(
+            patientDetail?.patientName,
+            patientDetail?.tempPatientNo,
+            patientDetail?.tempPatientYn,
+          )}.{" "}
           <Link className="font-medium underline" href={`/reception/patientmanagement/${patientDetail?.patientId}`}>
             Open the regular patient record
           </Link>
@@ -500,7 +505,11 @@ export default function PatientDetailForm({
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-base font-semibold text-slate-800">
-                  Patient Information — {patientDetail.patientName}
+                  Patient Information — {getPatientDisplayName(
+                    patientDetail.patientName,
+                    patientDetail.tempPatientNo,
+                    patientDetail.tempPatientYn,
+                  )}
                 </h2>
                 {patientDetail.tempPatientYn === "Y" && !patientDetail.mergedToPatientId ? (
                   <span className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
@@ -589,7 +598,14 @@ export default function PatientDetailForm({
                   </dd>
                 </div>
               ) : (
-                <DetailItem label="Patient Name" value={patientDetail.patientName} />
+                <DetailItem
+                  label="Patient Name"
+                  value={getPatientDisplayName(
+                    patientDetail.patientName,
+                    patientDetail.tempPatientNo,
+                    patientDetail.tempPatientYn,
+                  )}
+                />
               )}
 
               <div>
@@ -684,12 +700,23 @@ export default function PatientDetailForm({
           {patientDetail.patientId === patientId && !patientDetail.mergedToPatientId ? (
             <PatientContactPanel
               patientId={patientId}
-              patientName={patientDetail.patientName}
+              patientName={getPatientDisplayName(
+                patientDetail.patientName,
+                patientDetail.tempPatientNo,
+                patientDetail.tempPatientYn,
+              )}
             />
           ) : null}
 
           {patientDetail.patientId === patientId && !patientDetail.mergedToPatientId ? (
-            <PatientSafetyPanel patientId={patientId} patientName={patientDetail.patientName} />
+            <PatientSafetyPanel
+              patientId={patientId}
+              patientName={getPatientDisplayName(
+                patientDetail.patientName,
+                patientDetail.tempPatientNo,
+                patientDetail.tempPatientYn,
+              )}
+            />
           ) : null}
 
           {conversionEditing && patientDetail.tempPatientYn === "Y" && !patientDetail.mergedToPatientId ? (
