@@ -1,5 +1,5 @@
 import { all, call, put, takeLatest } from "redux-saga/effects";
-import { fetchBedApi, fetchBedDetailApi, updateBedRoomTypeApi, updateBedWardApi } from "./api";
+import { fetchBedApi, fetchBedDetailApi, makeBedAvailableApi, updateBedRoomTypeApi, updateBedWardApi } from "./api";
 import { fetchBedFailure } from "./slice";
 import { BedDTO } from "../types";
 import { PayloadAction } from "@reduxjs/toolkit";
@@ -45,11 +45,21 @@ function* updateBedWardSaga(action: PayloadAction<{ bedId: string; wardCd: strin
   }
 }
 
+function* makeBedAvailableSaga(action: PayloadAction<string>) {
+  try {
+    const bed: BedDTO = yield call(makeBedAvailableApi, action.payload);
+    yield put({ type: "bed/makeBedAvailableSuccess", payload: bed });
+  } catch (e: unknown) {
+    yield put({ type: "bed/makeBedAvailableFailure", payload: extractErrorMessage(e) });
+  }
+}
+
 export default function* bedSaga() {
   yield all([
     takeLatest("bed/fetchBedRequest", fetchBedSaga),
     takeLatest("bed/fetchBedDetailRequest", fetchBedDetailSaga),
     takeLatest("bed/updateBedRoomTypeRequest", updateBedRoomTypeSaga),
     takeLatest("bed/updateBedWardRequest", updateBedWardSaga),
+    takeLatest("bed/makeBedAvailableRequest", makeBedAvailableSaga),
   ]);
 }

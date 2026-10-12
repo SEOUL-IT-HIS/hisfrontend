@@ -10,6 +10,7 @@ const initialState: BedState = {
     detailStatus: { ...initialStatus },
     updateRoomTypeStatus: { ...initialStatus },
     updateWardStatus: { ...initialStatus },
+    makeAvailableStatus: { ...initialStatus },
 };
 
 const bedSlice = createSlice({
@@ -56,6 +57,18 @@ const bedSlice = createSlice({
         updateBedWardFailure(state, action: PayloadAction<string>) {
         state.updateWardStatus = { ...initialStatus, error: action.payload };
         },
+        // 청소 완료(MAINTENANCE → EMPTY) — 상세와 목록의 같은 병상을 함께 갱신해서 목록을 다시 안 불러와도 바로 반영됨
+        makeBedAvailableRequest(state, _action: PayloadAction<string>) {
+        state.makeAvailableStatus = { ...initialStatus, loading: true };
+        },
+        makeBedAvailableSuccess(state, action: PayloadAction<BedDTO>) {
+        state.detail = action.payload;
+        state.list = state.list.map((bed) => (bed.bedId === action.payload.bedId ? action.payload : bed));
+        state.makeAvailableStatus = { ...initialStatus, success: true };
+        },
+        makeBedAvailableFailure(state, action: PayloadAction<string>) {
+        state.makeAvailableStatus = { ...initialStatus, error: action.payload };
+        },
     },
 });
 
@@ -72,6 +85,9 @@ export const {
     updateBedWardRequest,
     updateBedWardSuccess,
     updateBedWardFailure,
+    makeBedAvailableRequest,
+    makeBedAvailableSuccess,
+    makeBedAvailableFailure,
 } = bedSlice.actions;
 export default bedSlice.reducer;
 
@@ -85,3 +101,4 @@ export const selectBedDetail = (state: BedRoot) => state.inpatient.bed.detail;
 export const selectBedDetailStatus = (state: BedRoot) => state.inpatient.bed.detailStatus;
 export const selectUpdateRoomTypeStatus = (state: BedRoot) => state.inpatient.bed.updateRoomTypeStatus;
 export const selectUpdateWardStatus = (state: BedRoot) => state.inpatient.bed.updateWardStatus;
+export const selectMakeAvailableStatus = (state: BedRoot) => state.inpatient.bed.makeAvailableStatus;
