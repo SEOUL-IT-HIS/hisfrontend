@@ -4,6 +4,7 @@ import medicalRecordReducer from "@/features/outpatient/medicalrecord/slice";
 import commonCodeReducer from "@/features/outpatient/commonCode/slice";
 import prescriptionReducer from "@/features/outpatient/prescription/slice";
 import consultationReducer from "@/features/outpatient/consultation/slice";
+import admissionRequestReducer from "@/features/outpatient/admissionrequest/slice";
 
 
 const outpatientReducer = combineReducers({
@@ -12,6 +13,7 @@ const outpatientReducer = combineReducers({
     commonCode: commonCodeReducer,
     prescription: prescriptionReducer,
     consultation: consultationReducer,
+    admissionrequest: admissionRequestReducer,
 });
 
 export default outpatientReducer;

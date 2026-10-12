@@ -12,6 +12,9 @@ export interface EncounterDto {
     visitType?: string | null; // 초진/재진 (INITIAL / REVISIT, 기존 데이터는 null)
     receptionType?: string | null; // 예약/당일 (RESERVATION / WALK_IN, 기존 데이터는 null)
     createdAt: string;
+    // 목록 배지용 — 이 진료의 최신 입원요청 상태 (입원요청이 없으면 null)
+    admissionRequestStatus?: string | null; // 입원요청 상태코드 (ADMISSION_REQUEST_STATUS 값)
+    admissionRequestStatusName?: string | null; // 입원요청 상태명 (ADM 공통코드 연동)
 }
 
 export interface EncounterSearchParams {
