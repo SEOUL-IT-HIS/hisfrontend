@@ -40,15 +40,16 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # 그래서 실행할 때(docker run -e ...) 넣으면 이미 굳은 뒤라 아무 효과가 없다. 여기 빌드 단계에서 넣는다.
 #
 # ARG 로 적은 값은 바로 아래 RUN npm run build 안에서 환경변수로 보인다.
-# 기본값은 원격 서버 compose 안에서의 컨테이너 주소다 (http://서비스이름:808번호).
-# 프론트 컨테이너가 같은 compose 안의 서비스들을 부르기 때문에, 바깥 포트(1808번호)가 아니라 이 주소를 쓴다.
-#   포트 규칙: admin 00 · billing 01 · pharmacy 02 · reception 03 · surgery 04
-#              labimaging 05 · inpatient 06 · patient 07 · outpatient 08 · emergency 09  →  808번호
+# 기본값은 쿠버네티스 안에서의 Service 주소다 (http://서비스이름:포트).
+# 프론트 Pod 가 같은 클러스터 안의 서비스들을 부르기 때문에, 바깥 포트가 아니라 이 주소를 쓴다.
+# 그래서 각 백엔드의 Service 이름과 port 를 아래 값과 똑같이 만들어야 한다.
+#   admin 9191 · billing 8081 · pharmacy 8082 · reception 8083 · surgery 8084
+#   labimaging 8085 · inpatient 8086 · patient 8087 · outpatient 8088 · emergency 8089
 # 기본값을 넣어두는 이유: 값이 비면 next.config.ts 가 빈 주소로 rewrite 를 만들어 전부 깨진다.
 #
 # 다른 주소로 만들고 싶으면 빌드할 때 덮어쓴다.
-#   docker build --build-arg PATIENT_API_ORIGIN=http://192.168.1.149:8087 -t kwonsugeun/hisfrontend:v2.1 .
-ARG ADMIN_API_ORIGIN=http://admin:8080
+#   docker build --build-arg PATIENT_API_ORIGIN=http://192.168.1.149:8087 -t kwonsugeun/hisfrontend:v2.2 .
+ARG ADMIN_API_ORIGIN=http://admin:9191
 ARG BILLING_API_ORIGIN=http://billing:8081
 ARG PHARMACY_API_ORIGIN=http://pharmacy:8082
 ARG RECEPTION_API_ORIGIN=http://reception:8083
@@ -93,25 +94,26 @@ CMD ["node", "server.js"]
 # ══════════════ 사용법 ══════════════
 #
 # 이미지 만들기 (이 파일이 있는 폴더에서)
-#   docker build -t kwonsugeun/hisfrontend:v2.1 .
-#   서비스 주소는 2단계의 ARG 기본값(compose 컨테이너 주소)으로 들어간다.
-#   태그는 배포 버전 하나만 붙인다 (v2.0, v2.1 …). latest 는 쓰지 않는다.
+#   docker build -t kwonsugeun/hisfrontend:v2.2 .
+#   서비스 주소는 2단계의 ARG 기본값(쿠버네티스 Service 주소)으로 들어간다.
+#   태그는 배포 버전 하나만 붙인다 (v2.0, v2.1, v2.2 …). latest 는 쓰지 않는다.
+#   같은 태그를 덮어쓰지 말고 새 태그로 올린다. 쿠버네티스는 같은 태그면 바뀐 줄 모른다.
 #
-# 서버로 옮기기 (Docker Hub 계정이 없으면 tar 로)
-#   docker save -o hisfrontend-v2.1.tar kwonsugeun/hisfrontend:v2.1
-#   서버에서: docker load -i hisfrontend-v2.1.tar
+# 서버로 옮기기 (Docker Hub)
+#   docker login -u kwonsugeun        (Password 칸에는 Read & Write 액세스 토큰)
+#   docker push kwonsugeun/hisfrontend:v2.2
+#   서버의 쿠버네티스가 YAML 의 image 이름으로 Docker Hub 에서 직접 받아간다. 서버에서 따로 pull 하지 않는다.
 #
-# 실행하기 (원격 서버) — 원격 서버 docker-compose.yml 의 hisfront 서비스로 띄운다
-#   docker compose up -d hisfront
-#   브라우저: http://192.168.1.126:28080
+# 실행하기 (서버의 쿠버네티스)
+#   kubectl apply -f 30-hisfrontend.yaml
+#   브라우저: http://seoulit.pe.kr:18090   (실제 서버는 192.168.1.126)
 #
-#   ※ 실행할 때 -e / compose environment 로 서비스 주소를 넣어도 반영되지 않는다. rewrite 주소는 빌드할 때 굳는다.
+#   ※ 실행할 때 환경변수로 서비스 주소를 넣어도 반영되지 않는다. rewrite 주소는 빌드할 때 굳는다.
 #     주소를 바꾸려면 --build-arg 로 다시 빌드해야 한다.
-#   ※ 바깥 포트 28080 을 바꾸면 admin-service 의 CORS 허용 목록(AppConfig)도 같이 바꿔야 한다.
+#   ※ 접속 주소(seoulit.pe.kr:18090)를 바꾸면 admin-service 의 CORS 허용 목록(AppConfig)도 같이 바꿔야 한다.
 #     브라우저가 보내는 Origin 이 이 주소라서, 목록에 없으면 로그인부터 403 이 난다.
 #
-# 로그 보기 (원격 서버)
-#   docker compose logs -f hisfront
+# 로그 보기 (서버)
+#   kubectl -n his logs deploy/hisfrontend -f
 #
-#   ※ 공용 서버에서 docker compose down 처럼 전체를 내리는 명령을 쓰지 말 것.
-#     다른 팀 서비스까지 같이 멈춘다. 항상 서비스 이름을 지정한다.
+#   ※ 공용 서버에서는 kubectl 명령에 항상 -n his 를 붙인다. 다른 팀 자원을 건드리지 않기 위해서다.
