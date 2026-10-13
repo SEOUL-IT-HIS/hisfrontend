@@ -48,7 +48,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # 기본값을 넣어두는 이유: 값이 비면 next.config.ts 가 빈 주소로 rewrite 를 만들어 전부 깨진다.
 #
 # 다른 주소로 만들고 싶으면 빌드할 때 덮어쓴다.
-#   docker build --build-arg PATIENT_API_ORIGIN=http://192.168.1.149:8087 -t kwonsugeun/hisfrontend:v2.2 .
+#   docker build --build-arg PATIENT_API_ORIGIN=http://192.168.1.149:8087 -t kwonsugeun/hisfrontend:v2.3 .
 ARG ADMIN_API_ORIGIN=http://admin:9191
 ARG BILLING_API_ORIGIN=http://billing:8081
 ARG PHARMACY_API_ORIGIN=http://pharmacy:8082
@@ -59,6 +59,12 @@ ARG INPATIENT_API_ORIGIN=http://inpatient:8086
 ARG PATIENT_API_ORIGIN=http://patient:8087
 ARG OUTPATIENT_API_ORIGIN=http://outpatient:8088
 ARG EMERGENCY_API_ORIGIN=http://emergency:8089
+
+# 직원 프로필 사진 저장소(SeaweedFS S3) 주소.
+# 이 ARG 가 없으면 next.config.ts 의 기본값 http://localhost:8333 이 굳는다.
+# 컨테이너 안의 localhost 는 SeaweedFS 가 아니라서 사진이 안 나온다.
+# 그래서 쿠버네티스 안의 Service 이름(seaweedfs)으로 박는다. (브라우저의 /files/** 요청을 Next 서버가 여기로 넘긴다)
+ARG SEAWEED_ORIGIN=http://seaweedfs:8333
 
 RUN npm run build
 
@@ -94,14 +100,14 @@ CMD ["node", "server.js"]
 # ══════════════ 사용법 ══════════════
 #
 # 이미지 만들기 (이 파일이 있는 폴더에서)
-#   docker build -t kwonsugeun/hisfrontend:v2.2 .
+#   docker build -t kwonsugeun/hisfrontend:v2.3 .
 #   서비스 주소는 2단계의 ARG 기본값(쿠버네티스 Service 주소)으로 들어간다.
-#   태그는 배포 버전 하나만 붙인다 (v2.0, v2.1, v2.2 …). latest 는 쓰지 않는다.
+#   태그는 배포 버전 하나만 붙인다 (v2.0, v2.1, v2.2, v2.3 …). latest 는 쓰지 않는다.
 #   같은 태그를 덮어쓰지 말고 새 태그로 올린다. 쿠버네티스는 같은 태그면 바뀐 줄 모른다.
 #
 # 서버로 옮기기 (Docker Hub)
 #   docker login -u kwonsugeun        (Password 칸에는 Read & Write 액세스 토큰)
-#   docker push kwonsugeun/hisfrontend:v2.2
+#   docker push kwonsugeun/hisfrontend:v2.3
 #   서버의 쿠버네티스가 YAML 의 image 이름으로 Docker Hub 에서 직접 받아간다. 서버에서 따로 pull 하지 않는다.
 #
 # 실행하기 (서버의 쿠버네티스)
