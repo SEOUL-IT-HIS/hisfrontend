@@ -63,8 +63,9 @@ ARG EMERGENCY_API_ORIGIN=http://emergency:8089
 # 직원 프로필 사진 저장소(SeaweedFS S3) 주소.
 # 이 ARG 가 없으면 next.config.ts 의 기본값 http://localhost:8333 이 굳는다.
 # 컨테이너 안의 localhost 는 SeaweedFS 가 아니라서 사진이 안 나온다.
-# 그래서 쿠버네티스 안의 Service 이름(seaweedfs)으로 박는다. (브라우저의 /files/** 요청을 Next 서버가 여기로 넘긴다)
-ARG SEAWEED_ORIGIN=http://seaweedfs:8333
+# 그래서 터미널 SeaweedFS 로 연결되는 주소(192.168.49.1:18891)로 박는다. (브라우저의 /files/** 요청을 Next 서버가 여기로 넘긴다)
+# 터미널 화면과 같은 저장소를 보게 하려고 쿠버네티스 안의 seaweedfs 대신 이 주소를 쓴다.
+ARG SEAWEED_ORIGIN=http://192.168.49.1:18891
 
 RUN npm run build
 
