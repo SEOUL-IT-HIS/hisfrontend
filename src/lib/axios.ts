@@ -53,11 +53,31 @@ export function setHasSession(value: boolean) {
   hasSession = value;
 }
 
+/*
+ * 서버가 마지막으로 응답한 시각(ms).
+ *
+ * 서버 세션은 "마지막 요청으로부터" 정해진 시간이 지나면 끊긴다. 요청이 갈 때마다 처음 시간으로 돌아간다.
+ * 화면의 남은 시간 표시(Header 의 SessionTimer)가 이 시각부터 흐른 시간을 계산한다.
+ * 401 은 세션이 이미 끊겼다는 뜻이라 시간을 되돌리지 않는다.
+ */
+let lastRequestAt = Date.now();
+
+export function getLastRequestAt() {
+  return lastRequestAt;
+}
+
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    lastRequestAt = Date.now();
+    return response;
+  },
   (error) => {
     const status = error.response?.status;
     const url = error.config?.url ?? "";
+
+    if (error.response && status !== 401) {
+      lastRequestAt = Date.now();
+    }
 
     /*
      * 세션이 끊긴 상태(401)면 로그인 화면으로 보낸다.

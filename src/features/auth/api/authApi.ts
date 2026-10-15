@@ -51,6 +51,18 @@ export async function fetchAuthMeApi(): Promise<AuthUser> {
   return toAuthUser(response.data.data);
 }
 
+/**
+ * 세션이 아무 요청 없이 버틸 수 있는 시간(초)
+ * 화면의 남은 시간 표시에 쓴다. 서버가 이 세션에 실제로 저장된 값을 준다.
+ */
+export async function fetchSessionTimeApi(): Promise<number> {
+  const response = await apiClient.get<ApiResponse<number>>("/api/admin/auth/session-time");
+  if (response.data.code !== 200 || typeof response.data.data !== "number") {
+    throw new Error(response.data.message || "Could not read the session time.");
+  }
+  return response.data.data;
+}
+
 /** 로그아웃 */
 export async function fetchAuthLogoutApi(): Promise<void> {
   const response = await apiClient.post<ApiResponse<null>>("/api/admin/auth/logout");

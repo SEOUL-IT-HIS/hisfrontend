@@ -1,14 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Alert, Button, FormField, Input, Modal } from "@/components/common";
-import { changePasswordApi } from "@/features/auth/api/authApi";
-import type { RootState } from "@/store/store";
+import { changePasswordApi, fetchSessionTimeApi } from "@/features/auth/api/authApi";
+import { fetchAuthMeRequest } from "@/features/auth/slice/authSlice";
+import { getLastRequestAt } from "@/lib/axios";
+import type { AppDispatch, RootState } from "@/store/store";
 
 /** ROLE.ROLE_CODE — 시스템 관리자. 팀원 공용 계정이라 비밀번호 변경 메뉴를 보여주지 않는다 */
 const ROLE_CODE_ADMIN = "01";
+
+/** 세션 남은 시간이 이 값(초) 이하가 되면 표시 색을 바꿔 알린다 */
+const SESSION_WARN_SECONDS = 5 * 60;
 
 /** 새 비밀번호 규칙 — admin-service AuthServiceImpl 과 같은 값 (8~20자, 영문·숫자 각 1개 이상) */
 const PASSWORD_MIN_LENGTH = 8;
@@ -77,6 +82,7 @@ export default function Header() {
           <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/15 sm:inline-flex">
             Operational
           </span>
+          <SessionTimer />
           {isAdmin || user == null ? (
             <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5">
               {badgeInner}
@@ -128,6 +134,71 @@ export default function Header() {
         <ChangePasswordForm onClose={() => setPasswordOpen(false)} />
       </Modal>
     </>
+  );
+}
+
+/**
+ * 세션 남은 시간 (mm:ss)
+ *
+ * 서버 세션은 "마지막 요청으로부터" 일정 시간이 지나면 끊긴다. 요청이 갈 때마다 처음 시간으로 돌아간다.
+ * 그래서 마지막으로 서버가 응답한 시각(getLastRequestAt)부터 흐른 시간을 빼서 남은 시간을 계산한다.
+ *
+ * - 전체 시간은 서버에서 받아온다. 설정을 바꾸기 전에 로그인한 세션은 예전 값을 갖고 있기 때문이다.
+ * - 서버에서 받지 못하면(주소가 없는 옛 서버 등) 아무것도 보여주지 않는다.
+ * - 0 이 되면 서버에 한 번 물어본다. 다른 탭에서 쓰고 있었다면 세션이 살아 있어 시간이 다시 채워지고,
+ *   정말 끊겼다면 AppFrame 이 로그인 화면으로 보낸다.
+ */
+function SessionTimer() {
+  const dispatch = useDispatch<AppDispatch>();
+  const [timeoutSeconds, setTimeoutSeconds] = useState<number | null>(null);
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+
+  // 서버가 알려주는 전체 시간을 한 번 가져온다
+  useEffect(() => {
+    fetchSessionTimeApi()
+      .then((seconds) => setTimeoutSeconds(seconds))
+      .catch(() => setTimeoutSeconds(null));
+  }, []);
+
+  // 1초마다 남은 시간을 다시 계산한다
+  useEffect(() => {
+    if (timeoutSeconds == null) return;
+    const limitMs = timeoutSeconds * 1000;
+    let askedServer = false;
+
+    const timerId = setInterval(() => {
+      const leftMs = limitMs - (Date.now() - getLastRequestAt());
+      const left = Math.max(0, Math.floor(leftMs / 1000));
+      setRemainingSeconds(left);
+
+      if (left > 0) {
+        askedServer = false;
+      } else if (!askedServer) {
+        askedServer = true;
+        dispatch(fetchAuthMeRequest());
+      }
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, [timeoutSeconds, dispatch]);
+
+  if (remainingSeconds == null) return null;
+
+  const minutes = String(Math.floor(remainingSeconds / 60)).padStart(2, "0");
+  const seconds = String(remainingSeconds % 60).padStart(2, "0");
+  const isLow = remainingSeconds <= SESSION_WARN_SECONDS;
+
+  return (
+    <span
+      title="Time left before you are signed out automatically. It resets whenever you use the system."
+      className={
+        isLow
+          ? "inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium tabular-nums text-amber-700 ring-1 ring-inset ring-amber-600/20"
+          : "inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium tabular-nums text-slate-600 ring-1 ring-inset ring-slate-500/15"
+      }
+    >
+      Session {minutes}:{seconds}
+    </span>
   );
 }
 
