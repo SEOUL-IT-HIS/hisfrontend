@@ -34,37 +34,8 @@ COPY . .
 # 텔레메트리(사용 통계 전송) 끄기. 사내망이라 어차피 못 나가고 빌드만 느려진다.
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# 프론트가 API 를 넘겨줄 서비스 주소들.
-#
-# next.config.ts 의 rewrite 는 "npm run build 할 때" 이 값들을 읽어서 결과물(.next)에 박아 넣는다.
-# 그래서 실행할 때(docker run -e ...) 넣으면 이미 굳은 뒤라 아무 효과가 없다. 여기 빌드 단계에서 넣는다.
-#
-# ARG 로 적은 값은 바로 아래 RUN npm run build 안에서 환경변수로 보인다.
-# 기본값은 쿠버네티스 안에서의 Service 주소다 (http://서비스이름:포트).
-# 프론트 Pod 가 같은 클러스터 안의 서비스들을 부르기 때문에, 바깥 포트가 아니라 이 주소를 쓴다.
-# 그래서 각 백엔드의 Service 이름과 port 를 아래 값과 똑같이 만들어야 한다.
-#   admin 9191 · billing 8081 · pharmacy 8082 · reception 8083 · surgery 8084
-#   labimaging 8085 · inpatient 8086 · patient 8087 · outpatient 8088 · emergency 8089
-# 기본값을 넣어두는 이유: 값이 비면 next.config.ts 가 빈 주소로 rewrite 를 만들어 전부 깨진다.
-#
-# 다른 주소로 만들고 싶으면 빌드할 때 덮어쓴다.
-#   docker build --build-arg PATIENT_API_ORIGIN=http://192.168.1.149:8087 -t kwonsugeun/hisfrontend:v2.3 .
-ARG ADMIN_API_ORIGIN=http://admin:9191
-ARG BILLING_API_ORIGIN=http://billing:8081
-ARG PHARMACY_API_ORIGIN=http://pharmacy:8082
-ARG RECEPTION_API_ORIGIN=http://reception:8083
-ARG SURGERY_API_ORIGIN=http://surgery:8084
-ARG LABIMAGING_API_ORIGIN=http://labimaging:8085
-ARG INPATIENT_API_ORIGIN=http://inpatient:8086
-ARG PATIENT_API_ORIGIN=http://patient:8087
-ARG OUTPATIENT_API_ORIGIN=http://outpatient:8088
-ARG EMERGENCY_API_ORIGIN=http://emergency:8089
-
-# 직원 프로필 사진 저장소(SeaweedFS S3) 주소.
-# 이 ARG 가 없으면 next.config.ts 의 기본값 http://localhost:8333 이 굳는다.
-# 컨테이너 안의 localhost 는 SeaweedFS 가 아니라서 사진이 안 나온다.
-# 그래서 쿠버네티스 안의 Service 이름(seaweedfs)으로 박는다. (브라우저의 /files/** 요청을 Next 서버가 여기로 넘긴다)
-ARG SEAWEED_ORIGIN=http://seaweedfs:8333
+# 서비스 주소 ARG(ADMIN_API_ORIGIN, SEAWEED_ORIGIN 등)는 두지 않는다.
+# 이 브랜치의 next.config.ts 에는 rewrites 가 없다. /api, /files 는 Nginx 가 전달한다.
 
 RUN npm run build
 

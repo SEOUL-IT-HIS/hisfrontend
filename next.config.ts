@@ -1,40 +1,10 @@
 import type { NextConfig } from "next";
 
 /**
- * Plan B — Next.js rewrite (path-based proxy)
- * - axios baseURL "" → 브라우저는 /api/... 만 호출
- * - Next 서버가 경로별로 MSA origin 으로 전달
- * - 같은 출처라 CORS / 세션 쿠키 유지
- *
- * 개인 로컬: .env.local 에서 ORIGIN 수정 (.env.local 은 git 제외)
+ * API 전달(/api/**, /files/**)은 Nginx 가 한다. 이 Next 서버는 화면만 담당한다.
+ * - axios baseURL "" → 브라우저는 같은 주소(/api/...)로만 호출 → Nginx 가 각 서비스로 전달
+ * - rewrites 가 없으므로 npm run dev 로 띄운 로컬에서는 /api 가 동작하지 않는다 (로컬 개발은 develop 브랜치)
  */
-// MSA 를 전부 원격 서버 한 대에서 같이 띄운다. 그래서 기본값이 전부 localhost 다.
-// 포트만 서비스마다 다르다. admin 만 9191 이고 나머지는 808x 다.
-// 내 PC 에서 다른 사람 백엔드를 부르려면 .env.local 에 그 주소를 적는다. (.env.local 은 git 제외)
-const adminApiOrigin =
-process.env.ADMIN_API_ORIGIN ?? "http://localhost:9191";
-const patientApiOrigin =
-process.env.PATIENT_API_ORIGIN ?? "http://localhost:8087";
-const labImagingApiOrigin =
-  process.env.LABIMAGING_API_ORIGIN ?? "http://localhost:8085";
-const inpatientApiOrigin =
-  process.env.INPATIENT_API_ORIGIN ?? "http://localhost:8086";
-const outpatientApiOrigin =
-  process.env.OUTPATIENT_API_ORIGIN ?? "http://localhost:8088";
-const emergencyApiOrigin =
-  process.env.EMERGENCY_API_ORIGIN ?? "http://localhost:8089";
-const surgeryApiOrigin =
-  process.env.SURGERY_API_ORIGIN ?? "http://localhost:8084";
-const receptionApiOrigin =
-  process.env.RECEPTION_API_ORIGIN ?? "http://localhost:8083";
-const billingApiOrigin =
-  process.env.BILLING_API_ORIGIN ?? "http://localhost:8081";
-const pharmacyApiOrigin =
-  process.env.PHARMACY_API_ORIGIN ?? "http://localhost:8082";
-// 직원 프로필 사진 저장소(SeaweedFS S3). 서버에서 8333 은 밖으로 안 열려 있어서
-// 브라우저는 /files/... 로 요청하고, Next 서버가 대신 받아서 넘겨준다.
-const seaweedOrigin =
-  process.env.SEAWEED_ORIGIN ?? "http://localhost:8333";
 
 const nextConfig: NextConfig = {
   /*
@@ -72,109 +42,6 @@ const nextConfig: NextConfig = {
     "seoulit.pe.kr",
     "117.16.154.233",
   ],
-  async rewrites() {
-    return [
-      // ---------- outpatient-service (구체 경로 먼저) ----------
-      {
-        source: "/api/outpatient",
-        destination: `${outpatientApiOrigin}/api/outpatient`,
-      },
-      {
-        source: "/api/outpatient/:path*",
-        destination: `${outpatientApiOrigin}/api/outpatient/:path*`,
-      },
-
-      // ---------- emergency-service (구체 경로 먼저) ----------
-      {
-        source: "/api/emergency",
-        destination: `${emergencyApiOrigin}/api/emergency`,
-      },
-      {
-        source: "/api/emergency/:path*",
-        destination: `${emergencyApiOrigin}/api/emergency/:path*`,
-      },
-
-      // ---------- patient-service (구체 경로 먼저) ----------
-      {
-        source: "/api/patient",
-        destination: `${patientApiOrigin}/api/patient`,
-      },
-      {
-        source: "/api/patient/:path*",
-        destination: `${patientApiOrigin}/api/patient/:path*`,
-      },
-
-      // ---------- lab-imaging-service (구체 경로 먼저) ----------
-      {
-        source: "/api/lab-imaging",
-        destination: `${labImagingApiOrigin}/api/lab-imaging`,
-      },
-      {
-        source: "/api/lab-imaging/:path*",
-        destination: `${labImagingApiOrigin}/api/lab-imaging/:path*`,
-      },
-      // ---------- surgery-service (구체 경로 먼저) ----------
-      {
-        source: "/api/surgery",
-        destination: `${surgeryApiOrigin}/api/surgery`,
-      },
-      {
-        source: "/api/surgery/:path*",
-        destination: `${surgeryApiOrigin}/api/surgery/:path*`,
-      },
-      // ---------- billing-service (구체 경로 먼저) ----------
-      {
-        source: "/api/billing",
-        destination: `${billingApiOrigin}/api/billing`,
-      },
-      {
-        source: "/api/billing/:path*",
-        destination: `${billingApiOrigin}/api/billing/:path*`,
-      },
-      // ----------- reception-service (구체 경로 먼저) ----------
-      {
-        source: "/api/reception",
-        destination: `${receptionApiOrigin}/api/reception`,
-      },
-      {
-        source: "/api/reception/:path*",
-        destination: `${receptionApiOrigin}/api/reception/:path*`,
-      },
-      // ---------- inpatient-service (구체 경로 먼저) ----------
-      {
-        source: "/api/inpatient",
-        destination: `${inpatientApiOrigin}/api/inpatient`,
-      },
-      {
-        source: "/api/inpatient/:path*",
-        destination: `${inpatientApiOrigin}/api/inpatient/:path*`,
-      },
-
-      // ---------- pharmacy-service (구체 경로 먼저) ----------
-      {
-        source: "/api/pharmacy",
-        destination: `${pharmacyApiOrigin}/api/pharmacy`,
-      },
-      {
-        source: "/api/pharmacy/:path*",
-        destination: `${pharmacyApiOrigin}/api/pharmacy/:path*`,
-      },
-
-      // ---------- 직원 프로필 사진 (SeaweedFS S3) ----------
-      // admin 의 seaweed.public-base-url=/files 와 짝이다.
-      // 예: /files/emp-photo/abc.jpg → http://localhost:8333/emp-photo/abc.jpg
-      {
-        source: "/files/:path*",
-        destination: `${seaweedOrigin}/:path*`,
-      },
-
-      // ---------- admin-service (나머지 /api) ----------
-      {
-        source: "/api/:path*",
-        destination: `${adminApiOrigin}/api/:path*`,
-      },
-    ];
-  },
 };
 
 export default nextConfig;
