@@ -193,7 +193,7 @@ export default function MainPage() {
           );
         })}
 
-        {/* 메뉴 트리와 별개로 붙인 외부 링크 카드 — 새 탭으로 연다 */}
+        {/* 메뉴 트리와 별개로 붙인 외부 링크 카드 — 새 탭으로 연다
         <a
           href="https://www.youtube.com/"
           target="_blank"
@@ -235,7 +235,7 @@ export default function MainPage() {
               <p className="mt-1 text-xs text-slate-400">youtube.com</p>
             </div>
           </div>
-        </a>
+        </a> */}
       </div>
     </div>
   );
