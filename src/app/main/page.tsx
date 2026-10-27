@@ -192,6 +192,50 @@ export default function MainPage() {
             </div>
           );
         })}
+
+        {/* 메뉴 트리와 별개로 붙인 외부 링크 카드 — 새 탭으로 연다 */}
+        <a
+          href="https://www.youtube.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <div
+            className={`group flex h-full flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)] ${AREA_PALETTE[menuTree.length % AREA_PALETTE.length].ring}`}
+          >
+            <div className="flex items-start justify-between">
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors ${AREA_PALETTE[menuTree.length % AREA_PALETTE.length].chip}`}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <rect x="2.5" y="5" width="19" height="14" rx="4" />
+                  <path d="M10 9.5v5l4.5-2.5z" fill="currentColor" />
+                </svg>
+              </div>
+              <svg
+                viewBox="0 0 20 20"
+                className="h-4 w-4 -translate-x-1 text-slate-300 opacity-0 transition-all group-hover:translate-x-0 group-hover:text-slate-400 group-hover:opacity-100"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                aria-hidden
+              >
+                <path d="M7.5 5 12.5 10 7.5 15" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-slate-800">YouTube</h2>
+              <p className="mt-1 text-xs text-slate-400">youtube.com</p>
+            </div>
+          </div>
+        </a>
       </div>
     </div>
   );
