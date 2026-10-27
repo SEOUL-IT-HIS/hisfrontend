@@ -1,0 +1,58 @@
+# [CI/CD] 프론트(hisfrontend-nginx) Deployment + Service — hisfront-nginx-v1.0.yaml 에서 분리
+# image 의 __IMAGE__ 는 frontend/Jenkinsfile 이 sed 로 채운다. 이 파일을 직접 kubectl apply 하지 않는다.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hisfrontend-nginx
+  namespace: his
+  labels:
+    app: hisfrontend-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hisfrontend-nginx
+  template:
+    metadata:
+      labels:
+        app: hisfrontend-nginx
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: hisfrontend
+          image: __IMAGE__                 # 파이프라인이 jinki238/hisfrontend:b<빌드번호> 로 채운다
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hisfrontend-nginx
+  namespace: his
+spec:
+  type: ClusterIP
+  selector:
+    app: hisfrontend-nginx
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
